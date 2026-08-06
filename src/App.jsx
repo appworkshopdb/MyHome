@@ -5,11 +5,13 @@ import ModuleRegister from './core/ModuleRegister';
 import LockedModule from './core/LockedModule';
 import { MODULES, getModule } from './core/modules';
 import FinanceModule from './modules/finance/FinanceModule';
+import NutritionModule from './modules/nutrition/NutritionModule';
 
-// Nur "finance" hat bereits eine echte Komponente. Weitere Module tragen
-// hier künftig einfach ihren eigenen Eintrag ein.
+// "finance" und "nutrition" haben bereits eine echte Komponente.
+// Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
 const MODULE_COMPONENTS = {
   finance: FinanceModule,
+  nutrition: NutritionModule,
 };
 
 export default function App() {

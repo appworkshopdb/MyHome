@@ -1,0 +1,302 @@
+/* Ernährungs-Modul — Ergänzungen zum globalen Design-System.
+   Nutzt ausschließlich die bestehenden CSS-Variablen aus styles/base.css
+   und styles/themes.css. Ampel-Farben (erlaubt/okay/tabu) laufen bewusst
+   über --success/--warning/--danger, nicht über --accent (siehe
+   Design-System.md: funktionale Signalfarben bleiben vom
+   Ein-Akzent-Prinzip ausgenommen). */
+
+.nut-search {
+  position: relative;
+  margin-bottom: 10px;
+}
+.nut-search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.nut-search input { padding-left: 36px; }
+
+.chip-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.chip.active { background: var(--accent); color: var(--on-accent); }
+
+.tag-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ampel-badge {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+.ampel-badge.erlaubt { background: var(--success-light); color: var(--success); }
+.ampel-badge.okay { background: var(--warning-light); color: var(--warning); }
+.ampel-badge.tabu { background: var(--danger-light); color: var(--danger); }
+
+.food-group-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 4px;
+  background: var(--bg-primary);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.food-group-header .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.food-group-header .name {
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.food-group-header .count { font-size: 0.72rem; color: var(--text-muted); }
+.food-group-header svg { width: 14px; height: 14px; color: var(--text-muted); }
+
+.food-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.food-row .bar { width: 3px; align-self: stretch; border-radius: 3px; flex: none; }
+.food-row .info { flex: 1; min-width: 0; }
+.food-row .name { font-weight: 600; font-size: 0.9rem; }
+.food-row .name .sub { font-size: 0.66rem; font-weight: 700; color: var(--success); margin-left: 6px; }
+.food-row .meta { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+.food-row .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--nav-height) + 16px);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+.fab svg { width: 24px; height: 24px; }
+
+.segmented {
+  display: grid;
+  gap: 8px;
+}
+.segmented.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.segmented.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.segmented.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.segmented button {
+  padding: 10px 6px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--border);
+  background: var(--bg-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.segmented button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.result-tile {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.result-tile .label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.result-tile .value { font-size: 1.3rem; font-weight: 700; margin-top: 2px; }
+.result-tile .value span { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); margin-left: 3px; }
+.result-tile .note { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+.cat-carousel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.cat-carousel .center { flex: 1; text-align: center; }
+.cat-carousel .emoji { font-size: 1.8rem; }
+.cat-carousel .label { font-weight: 700; }
+.cat-carousel .count { font-size: 0.72rem; color: var(--text-muted); }
+.cat-dots { display: flex; justify-content: center; gap: 4px; margin: 8px 0 4px; }
+.cat-dots .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--border-strong); }
+.cat-dots .dot.active { width: 18px; background: var(--accent); }
+
+.recipe-card { cursor: pointer; }
+.recipe-card .head { display: flex; align-items: flex-start; gap: 10px; }
+.recipe-card .emoji { font-size: 1.5rem; }
+.recipe-card .title { font-weight: 700; }
+.recipe-card .servings { font-size: 0.72rem; color: var(--text-muted); }
+.recipe-card .macros { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+.recipe-card .note { font-size: 0.76rem; color: var(--text-muted); margin-top: 6px; }
+.recipe-card .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+.goal-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  background: var(--accent-light);
+  color: var(--text-primary);
+  border: 1px solid var(--accent-dark);
+}
+
+.lex-columns { columns: 2; column-gap: 10px; }
+.lex-card {
+  display: block;
+  width: 100%;
+  break-inside: avoid;
+  margin-bottom: 10px;
+  text-align: left;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.lex-card .cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.lex-card .term { font-weight: 700; font-size: 0.85rem; margin-bottom: 3px; }
+.lex-card .short { font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+
+.lex-detail-block {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.lex-detail-block .heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.lex-detail-block.pro { background: var(--success-light); }
+.lex-detail-block.pro .heading { color: var(--success); }
+.lex-detail-block.con { background: var(--danger-light); }
+.lex-detail-block.con .heading { color: var(--danger); }
+
+.tip-group { margin-bottom: 10px; }
+.tip-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+.tip-group-header .emoji { font-size: 1.3rem; }
+.tip-group-header .title { flex: 1; font-weight: 700; }
+.tip-group-header .count { font-size: 0.72rem; color: var(--text-muted); }
+.tip-item { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+.tip-item-head { display: flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; }
+.tip-item-head .bullet {
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.tip-item-head .bullet svg { width: 10px; height: 10px; }
+.tip-item-title { font-weight: 600; font-size: 0.85rem; }
+.tip-item-sub { font-size: 0.76rem; color: var(--text-muted); }
+.tip-item-body {
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.organ-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.organ-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 12px; text-align: left; }
+.organ-card .emoji { font-size: 1.4rem; margin-bottom: 4px; }
+.organ-card .name { font-weight: 700; font-size: 0.82rem; }
+.organ-card .kat { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+.nutrient-block { border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
+.nutrient-block .head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.nutrient-block .name { font-weight: 700; font-size: 0.85rem; }
+.nutrient-block .badge { font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.nutrient-block .text { font-size: 0.82rem; line-height: 1.5; }
+
+.compare-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.compare-table th, .compare-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: center; }
+.compare-table td:first-child, .compare-table th:first-child { text-align: left; color: var(--text-muted); }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.empty-state svg { width: 32px; height: 32px; margin-bottom: 10px; opacity: 0.5; }
+
+.ingredient-row { display: flex; align-items: center; gap: 8px; }
+.ingredient-row .food-name { flex: 1; font-size: 0.85rem; }
+.ingredient-row input { width: 72px; text-align: right; }
