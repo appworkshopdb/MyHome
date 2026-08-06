@@ -1,0 +1,55 @@
+/* ============================================================
+   Ein Design, zwei Modi — Schwarz/Weiß + Limette-Akzent.
+   Aktiviert über  .dark  auf <html> (per JS: Hell / Dunkel / System,
+   siehe core/lib/theme.js). Alle Werte kommen aus base.css :root
+   und werden hier für den Dunkel-Modus überschrieben.
+   ============================================================ */
+
+.dark {
+  color-scheme: dark;
+
+  --bg-primary: #0D0D0D;
+  --bg-secondary: #0D0D0D;
+  --bg-card: #1B1B1B;
+  --bg-input: #1B1B1B;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8A8A8;
+  --text-muted: #6B6B6B;
+  --accent: #D6FF3D;
+  --accent-light: #2A331A;
+  --accent-dark: #C2E82E;
+  --on-accent: #0D0D0D;
+  --danger: #E07860;
+  --danger-light: #301A16;
+  --warning: #D4AE5C;
+  --warning-light: #2C2410;
+  --success: #70A880;
+  --success-light: #1A2E20;
+  --border: #2A2A2A;
+  --border-strong: #3D3D3D;
+  --shadow: none;
+  --shadow-sm: none;
+}
+
+/* Modus-Umschalter (Hell / Dunkel / System) in den Einstellungen */
+.mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+.mode-toggle button {
+  padding: 8px 6px;
+  border-radius: var(--radius-xs);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.mode-toggle button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}

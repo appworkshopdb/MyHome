@@ -1,0 +1,321 @@
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--accent-dark); }
+
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--border); }
+
+.btn-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+.btn-danger:hover { opacity: 0.8; }
+
+.btn-ghost {
+  color: var(--text-secondary);
+  padding: 6px 10px;
+}
+.btn-ghost:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+}
+.btn-icon:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+.btn-icon svg { width: 16px; height: 16px; }
+
+/* Summary Chips */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.summary-chip {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.summary-chip .label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.summary-chip .value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-chip.positive .value { color: var(--success); }
+.summary-chip.negative .value { color: var(--danger); }
+.summary-chip.neutral .value { color: var(--accent); }
+
+/* Monatsansicht: Einnahmen / Ausgaben / Verfügbar immer nebeneinander */
+#month-summary {
+  grid-template-columns: repeat(3, 1fr);
+}
+#month-summary .summary-chip {
+  min-width: 0; /* erlaubt echtes Drittel, ohne dass langer Betrag das Raster sprengt */
+}
+
+/* Tables */
+.entry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.entry-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+}
+
+.entry-table td {
+  padding: 8px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.entry-table tr:last-child td { border-bottom: none; }
+
+/* Monatstabellen: festes Layout -> nie breiter als der Bildschirm */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.month-table { table-layout: fixed; width: 100%; }
+.month-table .c-pay  { width: 64px; }
+.month-table .c-amt  { width: 88px; }
+.month-table .c-paid { width: 44px; }
+.entry-row { transition: background 0.12s; }
+.entry-row:hover { background: var(--bg-input); }
+.month-table td:first-child {
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+.month-table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#month-columns { grid-template-columns: minmax(0, 1fr); }
+
+.entry-table .amount {
+  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-table .actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.entry-table tfoot td {
+  font-weight: 600;
+  border-top: 2px solid var(--border-strong);
+  padding-top: 10px;
+}
+
+/* Payment Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.badge-bank { background: #EAF0FA; color: #3B6FAA; }
+.badge-bar { background: #FBF5E6; color: #A07828; }
+.badge-paypal { background: #EAF0FA; color: #1A5296; }
+.badge-sepa { background: #EBF3ED; color: #3A7550; }
+.badge-gutschein { background: #F3EBF5; color: #7A4F9A; }
+.badge-klarna { background: #FCE3EF; color: #B0327A; }
+
+.dark .badge-bank { background: #1A2A40; color: #6A9ED4; }
+.dark .badge-bar { background: #2C2410; color: #C4A050; }
+.dark .badge-paypal { background: #1A2A40; color: #5A8EC8; }
+.dark .badge-sepa { background: #1A2E20; color: #6AAA80; }
+.dark .badge-gutschein { background: #28183A; color: #B07FD4; }
+.dark .badge-klarna { background: #3A1A2A; color: #E58FBE; }
+
+/* Form Groups */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Month Nav */
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.month-nav .month-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 140px;
+  text-align: center;
+}
+
+.month-nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.month-nav-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+.month-nav-btn svg { width: 16px; height: 16px; }
+
+/* Add entry row */
+.add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.add-row input, .add-row select {
+  font-size: 0.85rem;
+  padding: 6px 8px;
+}
+/* ===== Mobile / iPhone (≤480px) ===== */
+@media (max-width: 480px) {
+  .summary-row { gap: 8px; }
+
+  .summary-chip { padding: 11px 12px; }
+  .summary-chip .value { font-size: 1.05rem; }
+
+  /* Die drei Monats-Chips kompakter, damit sie zu dritt passen */
+  #month-summary .summary-chip { padding: 10px 8px; }
+  #month-summary .summary-chip .label {
+    font-size: 0.64rem;
+    letter-spacing: 0.02em;
+  }
+  #month-summary .summary-chip .value {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Tabellen kleiner und randlos passend */
+  .entry-table { font-size: 0.75rem; }
+  .entry-table th { padding: 5px 3px; font-size: 0.62rem; }
+  .entry-table td { padding: 6px 3px; }
+  .entry-table .amount { white-space: nowrap; }
+
+  /* Feste Spalten für die Monatsansicht (ohne Aktionsspalte) */
+  .month-table .c-pay  { width: 54px; }
+  .month-table .c-amt  { width: 78px; }
+  .month-table .c-paid { width: 30px; }
+
+  /* Karten-Header darf nicht überlaufen: Titel schrumpft, Button bleibt */
+  #month-columns .card-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #month-columns .btn { flex-shrink: 0; }
+
+  /* Zahlungs-Badge dünner; lange Begriffe werden gekürzt statt zu überlaufen */
+  .badge {
+    font-size: 0.58rem;
+    padding: 2px 5px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .btn-icon { width: 26px; height: 26px; }
+  .btn-icon svg { width: 14px; height: 14px; }
+  .entry-table .actions { padding-left: 0; padding-right: 1px; }
+
+  .card { padding: 14px; }
+  .btn { padding: 8px 13px; }
+}

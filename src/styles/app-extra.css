@@ -1,0 +1,132 @@
+/* Ergänzungen, die es in der reinen HTML-Version nicht brauchte:
+   Login-Bildschirm und Ladezustände der React-Fassung. */
+
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg-primary);
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card h1 { font-size: 1.25rem; }
+.auth-card .sub { font-size: 0.88rem; color: var(--text-secondary); margin-top: 2px; }
+
+.auth-msg { font-size: 0.85rem; line-height: 1.5; }
+.auth-msg.error { color: var(--danger); }
+.auth-msg.ok { color: var(--success); }
+.auth-msg.warn {
+  background: var(--danger-light);
+  color: var(--danger);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-block { width: 100%; justify-content: center; }
+
+.link-btn {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  width: 100%;
+  text-align: center;
+}
+.link-btn:hover { color: var(--text-secondary); }
+
+.loading-note {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.chart-box { position: relative; }
+.status-note { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; }
+.status-note.ok { color: var(--success); }
+.status-note.error { color: var(--danger); }
+
+/* ===== App-Hülle: Modul-Register (rechter Rand) ===== */
+
+/* Platz für das Register reservieren, damit Inhalte nicht darunter
+   verschwinden — analog zu --nav-height für die untere Leiste. */
+.module-content {
+  padding-right: calc(38px + env(safe-area-inset-right));
+}
+
+.module-register {
+  position: fixed;
+  top: 18px;
+  right: 0;
+  right: env(safe-area-inset-right, 0);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 90;
+}
+
+.module-tab {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  width: 32px;
+  height: 84px;
+  border: 1.5px solid var(--border-strong);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.15s ease, background 0.15s ease, color 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.module-tab:hover { width: 38px; }
+
+.module-tab.active {
+  width: 40px;
+  background: var(--tab-color, var(--accent));
+  color: #fff;
+  border-color: var(--tab-color, var(--accent));
+}
+
+@media (max-width: 480px) {
+  .module-content { padding-right: calc(30px + env(safe-area-inset-right)); }
+  .module-tab { width: 26px; height: 70px; font-size: 0.62rem; }
+  .module-tab.active { width: 32px; }
+}
+
+/* ===== Vorschau für noch nicht gebaute Module ===== */
+
+.locked-module {
+  text-align: center;
+  padding: 60px 16px 20px;
+}
+
+.locked-pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+}

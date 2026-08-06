@@ -1,0 +1,96 @@
+:root {
+  /* Hell-Modus: Weiß mit schwarzen Elementen, ein Akzent (Limette) */
+  --bg-primary: #FAFAFA;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #F2F2F2;
+  --bg-input: #F2F2F2;
+  --text-primary: #0D0D0D;
+  --text-secondary: #5C5C5C;
+  --text-muted: #9A9A9A;
+  --accent: #D6FF3D;
+  --accent-light: #EEFAC2;
+  --accent-dark: #BEE62A;
+  --on-accent: #0D0D0D;
+  --danger: #C0624A;
+  --danger-light: #FAF0EE;
+  --warning: #C49A3C;
+  --warning-light: #FBF5E6;
+  --success: #5A8F6A;
+  --success-light: #EBF3ED;
+  --border: #E5E5E5;
+  --border-strong: #CCCCCC;
+  --shadow: none;
+  --shadow-sm: none;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-xs: 10px;
+  --nav-height: 64px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+
+/* Dunkel-/Hell-Umschaltung läuft über .dark (siehe themes.css) */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1 { font-size: 1.5rem; font-weight: 600; }
+h2 { font-size: 1.2rem; font-weight: 600; }
+h3 { font-size: 1rem; font-weight: 600; }
+
+p { line-height: 1.6; color: var(--text-secondary); }
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input, select, textarea {
+  font-family: var(--font);
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolyline points='6,9 12,15 18,9' stroke='%236B6B67' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+/* Dropdown-Pfeil im Dunkelmodus heller, damit er sichtbar bleibt */
+.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolyline points='6,9 12,15 18,9' stroke='%23A8A8A4' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+.hidden { display: none !important; }
