@@ -59,58 +59,147 @@
 .status-note.ok { color: var(--success); }
 .status-note.error { color: var(--danger); }
 
-/* ===== App-Hülle: Modul-Register (rechter Rand) ===== */
+/* ===== App-Kopfzeile (global — über Hub und allen Modulen sichtbar) ===== */
 
-/* Platz für das Register reservieren, damit Inhalte nicht darunter
-   verschwinden — analog zu --nav-height für die untere Leiste. */
-.module-content {
-  padding-right: calc(38px + env(safe-area-inset-right));
-}
-
-.module-register {
-  position: fixed;
-  top: 18px;
-  right: 0;
-  right: env(safe-area-inset-right, 0);
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 110;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 90;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
 }
 
-.module-tab {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  width: 32px;
-  height: 84px;
-  border: 1.5px solid var(--border-strong);
-  border-right: none;
-  border-radius: 10px 0 0 10px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.app-brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.app-menu-toggle {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: width 0.15s ease, background 0.15s ease, color 0.15s ease;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-input);
+  flex-shrink: 0;
+}
+.app-menu-toggle svg { width: 20px; height: 20px; }
+
+.app-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 105;
+  background: rgba(0, 0, 0, 0.25);
 }
 
-.module-tab:hover { width: 38px; }
-
-.module-tab.active {
-  width: 40px;
-  background: var(--tab-color, var(--accent));
-  color: #fff;
-  border-color: var(--tab-color, var(--accent));
+.app-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 111;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  max-width: 420px;
+  margin-left: auto;
 }
 
-@media (max-width: 480px) {
-  .module-content { padding-right: calc(30px + env(safe-area-inset-right)); }
-  .module-tab { width: 26px; height: 70px; font-size: 0.62rem; }
-  .module-tab.active { width: 32px; }
+.app-menu .mode-toggle { margin-bottom: 18px; }
+
+.app-menu-section-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 4px 0 8px;
+}
+
+.app-menu-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+.app-menu-row:last-child { border-bottom: none; }
+.app-menu-row:disabled { color: var(--text-muted); cursor: default; }
+.app-menu-row.active { color: var(--accent); }
+
+.app-menu-row-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-menu-row-label svg { width: 16px; height: 16px; }
+
+/* ===== Hub (Landingpage) ===== */
+
+.hub-stat-card { margin-bottom: 18px; }
+.hub-stat-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px; }
+.hub-stat-value { font-size: 1.7rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+
+.hub-module-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--pill-color, var(--accent)) 16%, transparent);
+  color: var(--text-primary);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+.hub-module-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hub-activity-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; }
+.hub-activity-card { padding-top: 4px; padding-bottom: 4px; }
+
+.hub-activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-activity-left { display: flex; align-items: center; gap: 10px; }
+.hub-activity-title { font-size: 0.9rem; color: var(--text-primary); }
+.hub-activity-time { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+.hub-activity-value { font-size: 0.9rem; color: var(--text-primary); font-weight: 500; }
+
+.hub-hint {
+  text-align: center;
+  padding: 18px 0 4px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 /* ===== Vorschau für noch nicht gebaute Module ===== */
