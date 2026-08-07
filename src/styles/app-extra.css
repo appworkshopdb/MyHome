@@ -155,6 +155,11 @@
 }
 .app-menu-row-label svg { width: 16px; height: 16px; }
 
+/* IconChevronRight/IconLock sitzen als Zeilen-Endsymbol außerhalb von
+   .app-menu-row-label — ohne diese Regel rendern SVGs ohne eigene
+   Größe (wie IconChevronRight) in Browser-Standardgröße statt 16px. */
+.app-menu-row > svg { width: 16px; height: 16px; flex-shrink: 0; }
+
 /* ===== Hub (Landingpage) ===== */
 
 .hub-stat-card { margin-bottom: 18px; }
