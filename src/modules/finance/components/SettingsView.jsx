@@ -4,7 +4,6 @@ import { useUi } from '../../../core/lib/UiContext';
 import * as rawAuth from '../../../core/lib/rawAuth';
 import * as db from '../lib/finData';
 import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE } from '../lib/finance';
-import { THEMES, THEME_LABELS, THEME_PREVIEW } from '../../../core/lib/theme';
 import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
@@ -24,7 +23,7 @@ function loadSheetJS() {
 
 export default function SettingsView() {
   const { session, setSession } = useAuth();
-  const { theme, setTheme, showToast } = useUi();
+  const { showToast } = useUi();
   const [templates, setTemplates] = useState([]);
   const [modal, setModal] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
@@ -198,24 +197,8 @@ export default function SettingsView() {
       {/* Darstellung */}
       <div className="card">
         <div className="card-title">Darstellung</div>
-        <p style={{ marginBottom: 12, fontSize: '0.9rem' }}>Farbvorlage</p>
-        <div className="theme-grid">
-          {THEMES.map((t) => {
-            const p = THEME_PREVIEW[t];
-            return (
-              <button key={t} className={`theme-option ${t === theme ? 'active' : ''}`} onClick={() => setTheme(t)}>
-                <span className="theme-swatch">
-                  <span style={{ background: p.light }} />
-                  <span style={{ background: p.accent }} />
-                  <span style={{ background: p.dark }} />
-                </span>
-                <span className="theme-name">{THEME_LABELS[t]}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p style={{ marginTop: 14, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          Hell/Dunkel/System gilt jetzt app-weit — umschaltbar oben im Menü.
+        <p style={{ fontSize: '0.9rem' }}>
+          Hell/Dunkel/System gilt app-weit — umschaltbar oben im Menü.
         </p>
       </div>
 

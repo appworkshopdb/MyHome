@@ -30,13 +30,13 @@ function getChartColors() {
 
 export default function SummaryView() {
   const { session } = useAuth();
-  const { theme, mode } = useUi();
+  const { mode } = useUi();
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthData, setMonthData] = useState(null);
   const [colors, setColors] = useState(getChartColors);
 
   // Diagrammfarben nachziehen, wenn die Palette gewechselt wird
-  useEffect(() => { setColors(getChartColors()); }, [theme, mode]);
+  useEffect(() => { setColors(getChartColors()); }, [mode]);
 
   useEffect(() => {
     (async () => {
