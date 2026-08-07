@@ -4,7 +4,7 @@ import { useUi } from '../../../core/lib/UiContext';
 import * as rawAuth from '../../../core/lib/rawAuth';
 import * as db from '../lib/finData';
 import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE } from '../lib/finance';
-import { MODES } from '../../../core/lib/theme';
+import { THEMES, THEME_LABELS, THEME_PREVIEW } from '../../../core/lib/theme';
 import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
@@ -24,7 +24,7 @@ function loadSheetJS() {
 
 export default function SettingsView() {
   const { session, setSession } = useAuth();
-  const { mode, setMode, showToast } = useUi();
+  const { theme, setTheme, showToast } = useUi();
   const [templates, setTemplates] = useState([]);
   const [modal, setModal] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
@@ -198,14 +198,25 @@ export default function SettingsView() {
       {/* Darstellung */}
       <div className="card">
         <div className="card-title">Darstellung</div>
-        <p style={{ marginBottom: 12, fontSize: '0.9rem' }}>Modus</p>
-        <div className="mode-toggle">
-          {MODES.map((m) => (
-            <button key={m.key} className={m.key === mode ? 'active' : ''} onClick={() => setMode(m.key)}>
-              {m.label}
-            </button>
-          ))}
+        <p style={{ marginBottom: 12, fontSize: '0.9rem' }}>Farbvorlage</p>
+        <div className="theme-grid">
+          {THEMES.map((t) => {
+            const p = THEME_PREVIEW[t];
+            return (
+              <button key={t} className={`theme-option ${t === theme ? 'active' : ''}`} onClick={() => setTheme(t)}>
+                <span className="theme-swatch">
+                  <span style={{ background: p.light }} />
+                  <span style={{ background: p.accent }} />
+                  <span style={{ background: p.dark }} />
+                </span>
+                <span className="theme-name">{THEME_LABELS[t]}</span>
+              </button>
+            );
+          })}
         </div>
+        <p style={{ marginTop: 14, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Hell/Dunkel/System gilt jetzt app-weit — umschaltbar oben im Menü.
+        </p>
       </div>
 
       {/* Export */}
