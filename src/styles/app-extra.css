@@ -145,7 +145,6 @@
   font-size: 0.92rem;
 }
 .app-menu-row:last-child { border-bottom: none; }
-.app-menu-row:disabled { color: var(--text-muted); cursor: default; }
 .app-menu-row.active { color: var(--accent); }
 
 .app-menu-row-label {
