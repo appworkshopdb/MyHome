@@ -30,8 +30,7 @@ export default function AppMenu({ activeModule, onNavigate }) {
         <button
           key={m.id}
           className={`app-menu-row ${activeModule === m.id ? 'active' : ''}`}
-          onClick={() => m.built && onNavigate(m.id)}
-          disabled={!m.built}
+          onClick={() => onNavigate(m.id)}
           title={m.built ? m.name : `${m.name} — noch nicht verfügbar`}
         >
           <span className="app-menu-row-label">
