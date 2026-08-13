@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum, getRecentMeasurements } from './lib/measurementsData';
+import { getAllRequirementStatus } from './lib/requiredDataRegistry';
+import RequiredDataBanner from './components/RequiredDataBanner';
 import { formatEur, formatRelativeDate } from './lib/format';
 import { getModule } from './modules';
 
@@ -23,6 +25,7 @@ export default function Hub({ onOpenModule }) {
   const { session } = useAuth();
   const [saldo, setSaldo] = useState(null);
   const [activity, setActivity] = useState([]);
+  const [warnings, setWarnings] = useState([]);
   const [ladeVorgang, setLadeVorgang] = useState(true);
 
   useEffect(() => {
@@ -30,14 +33,16 @@ export default function Hub({ onOpenModule }) {
     async function load() {
       const now = new Date();
       try {
-        const [income, expense, recent] = await Promise.all([
+        const [income, expense, recent, requirementStatus] = await Promise.all([
           getMonthSum(session, 'finance.income', now.getFullYear(), now.getMonth() + 1),
           getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
           getRecentMeasurements(session, 5),
+          getAllRequirementStatus(session),
         ]);
         if (!aktiv) return;
         setSaldo(income - expense);
         setActivity(recent);
+        setWarnings(requirementStatus);
       } catch (e) {
         console.error('[Hub] Laden fehlgeschlagen:', e);
       } finally {
@@ -57,6 +62,19 @@ export default function Hub({ onOpenModule }) {
         <h1>{greeting()}, {name}</h1>
         <p style={{ marginTop: 2 }}>{heute}</p>
       </div>
+
+      {warnings.map((w) => {
+        const mod = getModule(w.moduleId);
+        return (
+          <RequiredDataBanner
+            key={w.moduleId}
+            title={`${mod?.name || w.moduleId}: Pflichtdaten unvollständig`}
+            missing={w.missing}
+            ctaLabel="Ausfüllen"
+            onFix={() => onOpenModule(w.moduleId)}
+          />
+        );
+      })}
 
       {!ladeVorgang && saldo !== null && (
         <div className="card hub-stat-card">
