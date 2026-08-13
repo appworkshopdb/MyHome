@@ -1,7 +1,7 @@
 import { useUi } from './lib/UiContext';
 import { MODES } from './lib/theme';
 import { MODULES } from './modules';
-import { IconHome, IconLock, IconChevronRight } from './components/Icons';
+import { IconHome, IconLock, IconChevronRight, IconUserRound } from './components/Icons';
 
 export default function AppMenu({ activeModule, onNavigate }) {
   const { mode, setMode } = useUi();
@@ -16,6 +16,15 @@ export default function AppMenu({ activeModule, onNavigate }) {
           </button>
         ))}
       </div>
+
+      <div className="app-menu-section-label">Konto</div>
+      <button
+        className={`app-menu-row ${activeModule === 'profile' ? 'active' : ''}`}
+        onClick={() => onNavigate('profile')}
+      >
+        <span className="app-menu-row-label"><IconUserRound /> Profil</span>
+        <IconChevronRight />
+      </button>
 
       <div className="app-menu-section-label">Module</div>
 
