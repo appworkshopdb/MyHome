@@ -3,33 +3,38 @@ import { useAuth } from './core/lib/AuthContext';
 import Login from './core/components/Login';
 import AppHeader from './core/AppHeader';
 import Hub from './core/Hub';
+import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
 import { getModule } from './core/modules';
 import FinanceModule from './modules/finance/FinanceModule';
+import NutritionModule from './modules/nutrition/NutritionModule';
 
-// Nur "finance" hat bereits eine echte Komponente. Weitere Module tragen
-// hier künftig einfach ihren eigenen Eintrag ein.
+// Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
 const MODULE_COMPONENTS = {
   finance: FinanceModule,
+  nutrition: NutritionModule,
 };
 
 export default function App() {
   const { session, ladeVorgang } = useAuth();
-  // null = Hub (Landingpage nach dem Login). Modul-Wechsel läuft über
-  // das Menü in AppHeader, nicht mehr über ein eigenes Register.
+  // null = Hub (Landingpage), 'profile' = Profil-Seite, sonst Modul-Id.
+  // Modul-Wechsel läuft über das Menü in AppHeader, nicht mehr über ein
+  // eigenes Register.
   const [activeModule, setActiveModule] = useState(null);
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
 
-  const mod = activeModule ? getModule(activeModule) : null;
+  const isModule = activeModule && activeModule !== 'profile';
+  const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod ? MODULE_COMPONENTS[mod.id] : null;
 
   return (
     <>
       <AppHeader activeModule={activeModule} onNavigate={setActiveModule} />
       <main className="main-content">
-        {!mod && <Hub onOpenModule={setActiveModule} />}
+        {activeModule === null && <Hub onOpenModule={setActiveModule} />}
+        {activeModule === 'profile' && <Profile onOpenModule={setActiveModule} />}
         {mod && (ModuleComponent ? <ModuleComponent /> : <LockedModule module={mod} />)}
       </main>
     </>
