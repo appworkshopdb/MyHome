@@ -148,7 +148,10 @@ export async function deleteRecipe(id) {
 }
 
 // ---------------------------------------------------------------------
-// Profil (1 Zeile pro Nutzer:in)
+// Profil (1 Zeile pro Nutzer:in) — enthält seit der body_profile-
+// Migration (siehe Projektkontext.md) nur noch die wirklich
+// ernährungsspezifischen Felder. Geschlecht/Alter/Größe/Gewicht/
+// Aktivität/Ziel kommen jetzt aus core/lib/bodyProfileData.js.
 // ---------------------------------------------------------------------
 
 export async function getProfile(session) {
@@ -158,15 +161,12 @@ export async function getProfile(session) {
     .eq('owner_id', ownerId(session))
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { ...DEFAULT_PROFILE };
-  return {
-    gender: data.gender, age: data.age, height: data.height, weight: data.weight,
-    activity: data.activity, goal: data.goal, diet: data.diet, allergies: data.allergies || [],
-  };
+  if (!data) return { diet: DEFAULT_PROFILE.diet, allergies: [] };
+  return { diet: data.diet, allergies: data.allergies || [] };
 }
 
 export async function saveProfile(session, profile) {
-  const payload = { owner_id: ownerId(session), ...profile };
+  const payload = { owner_id: ownerId(session), diet: profile.diet, allergies: profile.allergies || [] };
   const { error } = await getSupabase().from('nut_profile').upsert(payload, { onConflict: 'owner_id' });
   if (error) throw error;
 }
