@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import './nutrition.css';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
-import { getBodyProfile, saveBodyProfile } from '../../core/lib/bodyProfileData';
+import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfileData';
+import { registerRequirement } from '../../core/lib/requiredDataRegistry';
+import { getMissingFields } from '../../core/lib/requiredData';
 import BottomNav from './components/BottomNav';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
@@ -11,6 +13,15 @@ import TippsView from './components/TippsView';
 import ProfilView from './components/ProfilView';
 import * as db from './lib/nutData';
 import { DEFAULT_PROFILE } from './lib/nutrition';
+
+// Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
+// (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
+// dieser Datei, unabhängig davon, ob der Hub oder das Modul gerade
+// angezeigt wird. Der Hub kennt dadurch "Ernährung" nicht direkt.
+registerRequirement('nutrition', async (session) => {
+  const body = await getBodyProfile(session);
+  return getMissingFields(BODY_REQUIRED_FIELDS, body);
+});
 
 const VIEW_TITLES = {
   ampel: 'Ernährungsampel',
