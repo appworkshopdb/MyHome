@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import './nutrition.css';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
+import { getBodyProfile, saveBodyProfile } from '../../core/lib/bodyProfileData';
 import BottomNav from './components/BottomNav';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
@@ -37,14 +38,15 @@ export default function NutritionModule() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [customFoods, recipeRows, profileRow] = await Promise.all([
+      const [customFoods, recipeRows, bodyProfile, nutProfile] = await Promise.all([
         db.getCustomFoods(session),
         db.getRecipes(session),
+        getBodyProfile(session),
         db.getProfile(session),
       ]);
       setFoods(db.mergeFoods(customFoods));
       setRecipes(recipeRows);
-      setProfile(profileRow);
+      setProfile({ ...DEFAULT_PROFILE, ...bodyProfile, ...nutProfile });
     } catch (e) {
       console.error(e);
       showToast('Daten konnten nicht geladen werden');
@@ -82,9 +84,16 @@ export default function NutritionModule() {
     setRecipes((prev) => prev.filter((r) => r.id !== id));
   }
 
+  // Körperdaten (core, geteilt mit z.B. Sport) und Ernährungs-spezifische
+  // Felder (diet/allergies, nut_profile) getrennt speichern, dem UI aber
+  // weiterhin als ein zusammengeführtes Profil-Objekt zeigen.
   async function handleSaveProfile(next) {
     setProfile(next);
-    await db.saveProfile(session, next);
+    const { gender, age, height, weight, activity, goal, diet, allergies } = next;
+    await Promise.all([
+      saveBodyProfile(session, { gender, age, height, weight, activity, goal }),
+      db.saveProfile(session, { diet, allergies }),
+    ]);
   }
 
   if (loading) return <div className="loading-note">Lädt…</div>;
