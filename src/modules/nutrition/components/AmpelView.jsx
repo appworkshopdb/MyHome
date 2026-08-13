@@ -11,7 +11,7 @@ export default function AmpelView({ foods, onSaveFood, onDeleteFood }) {
   const [tag, setTag] = useState('all');
   const [glutenfrei, setGlutenfrei] = useState(false);
   const [laktosefrei, setLaktosefrei] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => new Set());
+  const [collapsed, setCollapsed] = useState(() => new Set(foods.map((f) => f.group)));
   const [selected, setSelected] = useState(null);
   const [formFood, setFormFood] = useState(null); // undefined = closed, null = new, object = edit
   const [showForm, setShowForm] = useState(false);
