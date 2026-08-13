@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { IconUserRound } from '../../../core/components/Icons';
 import BodyProfileForm from '../../../core/components/BodyProfileForm';
 import GoalsSection from '../../../core/components/GoalsSection';
+import RequiredDataBanner from '../../../core/components/RequiredDataBanner';
+import { getMissingFields } from '../../../core/lib/requiredData';
+import { BODY_REQUIRED_FIELDS } from '../../../core/lib/bodyProfileData';
 import { computeBody } from '../lib/nutrition';
 
 const DIET = [
@@ -15,6 +18,7 @@ export default function ProfilView({ profile, onSaveProfile, email }) {
   useEffect(() => setLocal(profile), [profile]);
 
   const body = useMemo(() => computeBody(local), [local.age, local.height, local.weight, local.gender, local.activity, local.goal]);
+  const missing = useMemo(() => getMissingFields(BODY_REQUIRED_FIELDS, local), [local]);
 
   function set(key, value) {
     const next = { ...local, [key]: value };
@@ -47,7 +51,14 @@ export default function ProfilView({ profile, onSaveProfile, email }) {
         </div>
       </div>
 
-      {body && (
+      {missing.length > 0 ? (
+        <RequiredDataBanner
+          title="Für dein Ergebnis fehlen noch Angaben"
+          missing={missing}
+          ctaLabel="Nach oben"
+          onFix={() => document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
+        />
+      ) : body && (
         <>
           <div className="card-title">Dein Ergebnis</div>
           <div className="result-grid">
