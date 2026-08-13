@@ -86,3 +86,24 @@ export async function refreshSession(refreshToken) {
 export function signOut() {
   persist(null);
 }
+
+// Passwort ändern — läuft über PUT /auth/v1/user (GoTrue REST-API),
+// authentifiziert mit dem aktuellen Access-Token. Bewusst nicht über
+// supabase.auth.updateUser(), aus demselben Grund wie beim Rest dieser
+// Datei: der navigator.locks-Bug (siehe Workaround-Hinweis oben).
+export async function updatePassword(session, newPassword) {
+  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error_description || data.msg || data.error || 'Passwort konnte nicht geändert werden');
+  }
+  return data;
+}
