@@ -4,6 +4,18 @@ import { getSupabase } from './supabaseClient';
 // bewusst in core/, nicht in einem Modul: die Daten gehören mehreren
 // Modulen (Ernährung, künftig Sport), siehe Projektkontext.md.
 
+// Welche Felder für aussagekräftige Ergebnisse/Statistiken nötig sind.
+// Lebt hier (nicht im Ernährungs-Modul), weil body_profile eine
+// core-Tabelle ist — jedes Modul, das darauf aufbaut, nutzt dieselbe Spec.
+export const BODY_REQUIRED_FIELDS = [
+  { key: 'gender', label: 'Geschlecht' },
+  { key: 'age', label: 'Alter' },
+  { key: 'height', label: 'Größe' },
+  { key: 'weight', label: 'Gewicht' },
+  { key: 'activity', label: 'Aktivitätslevel' },
+  { key: 'goal', label: 'Ziel' },
+];
+
 function ownerId(session) {
   return session.user.id;
 }
