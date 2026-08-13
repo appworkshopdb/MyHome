@@ -270,4 +270,8 @@ create policy "eigene Vorlagen" on fin_fixtemplates
 -- Fertig. Danach: Email-Auth in Supabase aktivieren (Authentication >
 -- Providers > Email) und die Werte aus Project Settings > API in die
 -- .env-Datei der App eintragen.
+--
+-- Hinweis: nut_* (Ernährungs-Modul) sowie body_profile und goals sind
+-- nicht in diesem Grundschema enthalten, siehe supabase/migrations/
+-- (jeweils eigene, im SQL-Editor separat auszuführende Dateien).
 -- =====================================================================
