@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
-import * as rawAuth from '../../../core/lib/rawAuth';
 import * as db from '../lib/finData';
 import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE } from '../lib/finance';
 import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
+import GoalsSection from '../../../core/components/GoalsSection';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
 
 // SheetJS erst bei Bedarf nachladen (wie im Original) — spart Ladezeit,
@@ -22,7 +22,7 @@ function loadSheetJS() {
 }
 
 export default function SettingsView() {
-  const { session, setSession } = useAuth();
+  const { session } = useAuth();
   const { showToast } = useUi();
   const [templates, setTemplates] = useState([]);
   const [modal, setModal] = useState(null);
@@ -194,6 +194,8 @@ export default function SettingsView() {
         </div>
       </div>
 
+      <GoalsSection sourceModule="finance" />
+
       {/* Darstellung */}
       <div className="card">
         <div className="card-title">Darstellung</div>
@@ -269,12 +271,9 @@ export default function SettingsView() {
         <button className="btn btn-danger" onClick={clearAll}>Alle Daten löschen</button>
       </div>
 
-      {/* Konto */}
-      <div className="card">
-        <div className="card-title">Konto</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>{session.user.email}</p>
-        <button className="btn btn-danger" onClick={() => { rawAuth.signOut(); setSession(null); }}>Abmelden</button>
-      </div>
+      <p style={{ textAlign: 'center', margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        Konto, Passwort und Abmelden findest du im Profil-Menü oben rechts.
+      </p>
 
       <div style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
         Zuhause · Finanzen-Modul · Cloud-Sync über Supabase
