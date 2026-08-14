@@ -9,11 +9,15 @@ function ownerId(session) {
 // ---------------------------------------------------------------------
 // Bewusst nur diese eine Tabelle im Zugriff: eine Einheit wird als
 // Ganzes erfasst (Datum, Typ, Dauer, Notiz), nicht Satz für Satz.
-// spo_entries existiert in der DB weiterhin, wird hier aber (noch)
-// nicht beschrieben — direktes Eintragen setzt status sofort auf
-// 'done', ohne einen 'active'-Zwischenzustand zu durchlaufen.
+// spo_entries existiert in der DB weiterhin, wird hier aber nicht
+// beschrieben. Eine Einheit kann 'planned' (im Kalender vorausgeplant)
+// oder 'done' (abgehakt/direkt eingetragen) sein — der Wechsel läuft
+// über setWorkoutStatus().
 
-export async function getWorkouts(session, limit = 50) {
+// Limit großzügig: der Kalender blättert durch Monate und die Auswertung
+// rechnet über mehrere Monate — bei 50 Zeilen würden ältere Monate
+// unbemerkt leer wirken.
+export async function getWorkouts(session, limit = 500) {
   const { data, error } = await getSupabase()
     .from('spo_workouts')
     .select('*')
@@ -30,15 +34,31 @@ export async function saveWorkout(session, workout) {
   const payload = {
     ...workout,
     owner_id: ownerId(session),
-    // Direktes Eintragen: es gibt keinen Start/Stop-Zustand, die Einheit
-    // ist beim Speichern bereits abgeschlossen. Der DB-Trigger
-    // (spo_workouts_to_measurement) übernimmt daraufhin automatisch die
-    // Hub-Kennzahlen (sport.session, sport.duration).
-    status: 'done',
+    // status kommt jetzt vom Aufrufer: 'done' beim direkten Eintragen,
+    // 'planned' beim Vorausplanen im Kalender. Der DB-Trigger
+    // (spo_workouts_to_measurement) schreibt die Hub-/Auswertungs-
+    // Kennzahlen NUR bei 'done' — geplante Einheiten tauchen also
+    // korrekterweise noch nicht in der Auswertung auf.
+    status: workout.status ?? 'done',
   };
   const { data, error } = await getSupabase().from('spo_workouts').upsert(payload).select().single();
   if (error) throw error;
   return data;
+}
+
+// Abhaken/Zurücksetzen direkt aus der Tagesansicht. Der Statuswechsel
+// allein genügt — der DB-Trigger legt die measurements-Zeilen an bzw.
+// räumt sie beim Zurücksetzen wieder ab (er löscht am Anfang immer
+// erst alles zu dieser source_ref_id).
+export async function setWorkoutStatus(id, done) {
+  const { error } = await getSupabase()
+    .from('spo_workouts')
+    .update({
+      status: done ? 'done' : 'planned',
+      completed_at: done ? new Date().toISOString() : null,
+    })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function deleteWorkout(id) {
