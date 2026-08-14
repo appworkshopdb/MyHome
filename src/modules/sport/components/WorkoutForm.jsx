@@ -3,25 +3,28 @@ import { TRAINING_TYPES } from '../lib/data/trainingTypes';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-// Direktes Eintragen: die Einheit ist beim Speichern bereits
-// abgeschlossen (kein Start/Stop-Zustand), siehe Konzept-Entscheidung
-// "nur die Einheit als Ganzes, nicht Satz für Satz". type_key ist
-// optional — "frei starten, Typ optional später".
-// initialValues (optional): { type_key, title } — befüllt beim Start
-// aus einem vorgeschlagenen Plan (siehe PlanSuggestions), bleibt aber
-// frei überschreibbar, kein Zwang zum Plan.
+// Eine Einheit wird als Ganzes erfasst (kein Satz-für-Satz-Log).
+// initialValues deckt drei Fälle ab:
+//   - {}                       neue Einheit, heute, erledigt
+//   - { occurred_on, status }  neue Einheit für einen Kalendertag
+//   - vollständige Workout-Zeile (mit id) → Bearbeiten-Modus
+// Der Status ist umschaltbar, weil eine Einheit sowohl vorausgeplant
+// ('planned') als auch nachträglich eingetragen ('done') werden kann.
 export default function WorkoutForm({ onSave, onCancel, showToast, initialValues }) {
-  const [occurredOn, setOccurredOn] = useState(TODAY());
-  const [typeKey, setTypeKey] = useState(initialValues?.type_key ?? '');
-  const [title, setTitle] = useState(initialValues?.title ?? '');
-  const [durationMin, setDurationMin] = useState('');
-  const [notes, setNotes] = useState('');
+  const iv = initialValues ?? {};
+  const isEdit = Boolean(iv.id);
+
+  const [occurredOn, setOccurredOn] = useState(iv.occurred_on ?? TODAY());
+  const [typeKey, setTypeKey] = useState(iv.type_key && iv.type_key !== 'sonstiges' ? iv.type_key : '');
+  const [title, setTitle] = useState(iv.title ?? '');
+  const [durationMin, setDurationMin] = useState(iv.duration_min != null ? String(iv.duration_min) : '');
+  const [notes, setNotes] = useState(iv.notes ?? '');
+  const [status, setStatus] = useState(iv.status ?? 'done');
 
   function handleTypeChange(key) {
     setTypeKey(key);
-    // Titel nur vorbelegen, wenn er noch nicht manuell verändert wurde —
-    // sonst überschreibt eine spätere Typ-Auswahl einen bereits
-    // eingetippten eigenen Titel.
+    // Titel nur vorbelegen, wenn er noch nicht gesetzt ist — sonst
+    // überschreibt eine spätere Typ-Auswahl einen eigenen Titel.
     if (!title) {
       const type = TRAINING_TYPES.find((t) => t.key === key);
       if (type) setTitle(type.label);
@@ -35,17 +38,21 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       return showToast('Bitte gültige Dauer eingeben (0–1440 Minuten)');
     }
     onSave({
+      // id nur mitgeben, wenn vorhanden — sonst würde das Upsert eine
+      // neue Zeile statt eines Updates erzeugen.
+      ...(isEdit ? { id: iv.id } : {}),
       occurred_on: occurredOn,
       type_key: typeKey || 'sonstiges',
       title: title.trim(),
       duration_min: duration,
       notes: notes.trim() || null,
+      status,
     });
   }
 
   return (
     <div className="card">
-      <div className="card-title">Training eintragen</div>
+      <div className="card-title">{isEdit ? 'Training bearbeiten' : 'Training eintragen'}</div>
 
       <div className="form-row">
         <div className="form-group">
@@ -55,6 +62,31 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
         <div className="form-group">
           <label>Dauer (Min.)</label>
           <input type="number" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} min="0" max="1440" placeholder="z.B. 60" />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Status</label>
+        {/* Bewusst inline gestylt statt mit .segmented: diese Klasse lebt
+            in modules/nutrition/nutrition.css und wäre eine versteckte
+            Abhängigkeit von Sport auf Ernährung (Architektur-Regel:
+            Module importieren nie voneinander). */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+          {[['planned', 'Geplant'], ['done', 'Erledigt']].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setStatus(key)}
+              style={{
+                padding: '10px 6px', borderRadius: 'var(--radius-xs)',
+                border: `1.5px solid ${status === key ? 'var(--accent)' : 'var(--border)'}`,
+                background: status === key ? 'var(--accent)' : 'var(--bg-secondary)',
+                color: status === key ? 'var(--on-accent)' : 'var(--text-secondary)',
+                fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 

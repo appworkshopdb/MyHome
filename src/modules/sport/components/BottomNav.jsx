@@ -7,7 +7,7 @@ import ModuleBottomNav from '../../../core/components/ModuleBottomNav';
 // modules/finance/components/BottomNav.jsx.
 const ITEMS = [
   { key: 'training', label: 'Training', Icon: IconDumbbell },
-  { key: 'verlauf', label: 'Verlauf', Icon: IconCalendarSmall },
+  { key: 'verlauf', label: 'Kalender', Icon: IconCalendarSmall },
   { key: 'plaene', label: 'Pläne', Icon: IconBulb },
   { key: 'auswertung', label: 'Auswertung', Icon: IconSummary },
 ];
