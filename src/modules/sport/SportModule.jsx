@@ -8,6 +8,7 @@ import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
 import WorkoutForm from './components/WorkoutForm';
 import WorkoutList from './components/WorkoutList';
+import PlanSuggestions from './components/PlanSuggestions';
 
 // Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
 // (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
@@ -30,7 +31,9 @@ export default function SportModule() {
 
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  // false = kein Formular offen; {} = leeres Formular; { type_key, title }
+  // = Formular vorbefüllt aus einem gewählten Plan (siehe PlanSuggestions).
+  const [formInitial, setFormInitial] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,7 +52,7 @@ export default function SportModule() {
   async function handleSave(workout) {
     try {
       await db.saveWorkout(session, workout);
-      setShowForm(false);
+      setFormInitial(false);
       showToast('Training gespeichert');
       await load();
     } catch (e) {
@@ -70,12 +73,20 @@ export default function SportModule() {
 
   return (
     <div className="page">
-      {showForm ? (
-        <WorkoutForm onSave={handleSave} onCancel={() => setShowForm(false)} showToast={showToast} />
+      {formInitial !== false ? (
+        <WorkoutForm
+          onSave={handleSave}
+          onCancel={() => setFormInitial(false)}
+          showToast={showToast}
+          initialValues={formInitial}
+        />
       ) : (
-        <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => setShowForm(true)}>
-          + Training eintragen
-        </button>
+        <>
+          <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => setFormInitial({})}>
+            + Training eintragen
+          </button>
+          <PlanSuggestions session={session} onStartFromPlan={(plan) => setFormInitial({ type_key: plan.type_key, title: plan.title })} />
+        </>
       )}
 
       {loading ? (
