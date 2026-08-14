@@ -28,7 +28,7 @@ export async function getBodyProfile(session) {
     .maybeSingle();
   if (error) throw error;
   if (!data) {
-    return { gender: null, age: '', height: '', weight: '', activity: null, goal: null };
+    return { gender: null, age: '', height: '', weight: '', activity: null, goal: null, training_focus: null };
   }
   return data;
 }
@@ -42,6 +42,10 @@ export async function saveBodyProfile(session, profile) {
     weight: profile.weight || null,
     activity: profile.activity ?? null,
     goal: profile.goal ?? null,
+    // Trainingsfokus: nutzt Sport, gehört aber ins Körperprofil, weil er
+    // zur Zielsetzung der Person gehört, nicht zum Modul. Bewusst ?? statt
+    // ||, damit '' (leere Auswahl) nicht am DB-Check-Constraint scheitert.
+    training_focus: profile.training_focus ?? null,
   };
   const { error } = await getSupabase().from('body_profile').upsert(payload, { onConflict: 'owner_id' });
   if (error) throw error;
