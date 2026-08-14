@@ -180,3 +180,11 @@ export const IconCalendarSmall = () => (
     <line x1="8" y1="2" x2="8" y2="6" /><line x1="16" y1="2" x2="16" y2="6" />
   </svg>
 );
+
+export const IconDumbbell = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 6.5v11" /><path d="M17.5 6.5v11" />
+    <path d="M4 9v6" /><path d="M20 9v6" />
+    <line x1="6.5" y1="12" x2="17.5" y2="12" />
+  </svg>
+);
