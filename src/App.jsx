@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from './core/lib/AuthContext';
+import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import Login from './core/components/Login';
 import AppHeader from './core/AppHeader';
+import RequiredDataToast from './core/components/RequiredDataToast';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
@@ -22,6 +24,10 @@ export default function App() {
   // eigenes Register.
   const [activeModule, setActiveModule] = useState(null);
 
+  // App-weit geladen (nicht nur im Hub), damit Popup + Menü-Warnpunkt
+  // auf jedem Screen aktuell sind — siehe useRequiredDataStatus.js.
+  const { warnings } = useRequiredDataStatus(session);
+
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
 
@@ -31,12 +37,13 @@ export default function App() {
 
   return (
     <>
-      <AppHeader activeModule={activeModule} onNavigate={setActiveModule} />
+      <AppHeader activeModule={activeModule} onNavigate={setActiveModule} hasWarnings={warnings.length > 0} />
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={setActiveModule} />}
         {activeModule === 'profile' && <Profile onOpenModule={setActiveModule} />}
         {mod && (ModuleComponent ? <ModuleComponent /> : <LockedModule module={mod} />)}
       </main>
+      <RequiredDataToast warnings={warnings} onFix={setActiveModule} />
     </>
   );
 }
