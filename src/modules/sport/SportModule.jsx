@@ -6,34 +6,38 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
-import WorkoutForm from './components/WorkoutForm';
-import WorkoutList from './components/WorkoutList';
-import PlanSuggestions from './components/PlanSuggestions';
+import BottomNav from './components/BottomNav';
+import TrainingView from './components/TrainingView';
+import VerlaufView from './components/VerlaufView';
+import PlaeneView from './components/PlaeneView';
+import AuswertungView from './components/AuswertungView';
 
 // Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
 // (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
-// dieser Datei, unabhängig davon, ob der Hub oder das Modul gerade
-// angezeigt wird. Der Hub kennt dadurch "Sport" nicht direkt. Analog zu
-// NutritionModule.jsx, aber mit eigener Feld-Spec (SPORT_REQUIRED_FIELDS
-// statt BODY_REQUIRED_FIELDS) — siehe lib/requiredFields.js.
+// dieser Datei. Analog zu NutritionModule.jsx, aber mit eigener Feld-
+// Spec (SPORT_REQUIRED_FIELDS statt BODY_REQUIRED_FIELDS) — siehe
+// lib/requiredFields.js.
 registerRequirement('sport', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-// Erster Screen: "Training" — direktes Eintragen abgeschlossener
-// Einheiten (kein Start/Stop-Zustand, kein Satz-für-Satz-Log, siehe
-// Konzept-Entscheidung). Verlauf/Pläne/Auswertung folgen als eigene
-// Ansichten, sobald dieser Kern steht.
+// Eigene Leisten-Hülle wie jedes andere Modul (siehe Projektkontext.md,
+// "Modul-Leiste"): BottomNav definiert nur die ITEMS, die Optik kommt
+// aus core/components/ModuleBottomNav.jsx. Vier Bereiche wie im Konzept
+// festgelegt: Training / Verlauf / Pläne / Auswertung.
+//
+// Formular-Zustand (formInitial) liegt bewusst hier oben und nicht in
+// TrainingView, weil "Starten" im Pläne-Tab (PlaeneView) sowohl den Tab
+// wechseln als auch das Formular vorbefüllen muss.
 export default function SportModule() {
   const { session } = useAuth();
   const { showToast } = useUi();
 
+  const [view, setView] = useState('training');
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
-  // false = kein Formular offen; {} = leeres Formular; { type_key, title }
-  // = Formular vorbefüllt aus einem gewählten Plan (siehe PlanSuggestions).
-  const [formInitial, setFormInitial] = useState(false);
+  const [formInitial, setFormInitial] = useState(false); // false = kein Formular offen
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,29 +75,30 @@ export default function SportModule() {
     }
   }
 
-  return (
-    <div className="page">
-      {formInitial !== false ? (
-        <WorkoutForm
-          onSave={handleSave}
-          onCancel={() => setFormInitial(false)}
-          showToast={showToast}
-          initialValues={formInitial}
-        />
-      ) : (
-        <>
-          <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => setFormInitial({})}>
-            + Training eintragen
-          </button>
-          <PlanSuggestions session={session} onStartFromPlan={(plan) => setFormInitial({ type_key: plan.type_key, title: plan.title })} />
-        </>
-      )}
+  function startFromPlan(plan) {
+    setFormInitial({ type_key: plan.type_key, title: plan.title });
+    setView('training');
+  }
 
-      {loading ? (
-        <div className="card">Lädt…</div>
-      ) : (
-        <WorkoutList workouts={workouts} onDelete={handleDelete} />
-      )}
-    </div>
+  const VIEWS = {
+    training: (
+      <TrainingView
+        formInitial={formInitial}
+        onOpenForm={setFormInitial}
+        onCancelForm={() => setFormInitial(false)}
+        onSave={handleSave}
+        showToast={showToast}
+      />
+    ),
+    verlauf: <VerlaufView workouts={workouts} loading={loading} onDelete={handleDelete} />,
+    plaene: <PlaeneView session={session} onStartFromPlan={startFromPlan} />,
+    auswertung: <AuswertungView />,
+  };
+
+  return (
+    <>
+      {VIEWS[view]}
+      <BottomNav active={view} onChange={setView} />
+    </>
   );
 }
