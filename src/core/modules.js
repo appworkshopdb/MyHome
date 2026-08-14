@@ -8,7 +8,7 @@ export const MODULES = [
   { id: 'shopping', name: 'Einkauf', tier: 'frei', color: '#4F8A52', built: false },
   { id: 'nutrition', name: 'Ernährung', tier: 'paid', price: '4,99 €', color: '#BE8225', built: true },
   { id: 'finance', name: 'Finanzen', tier: 'paid', price: '4,99 €', color: '#75579B', built: true },
-  { id: 'sport', name: 'Sport', tier: 'paid', price: '4,99 €', color: '#B94A3E', built: false },
+  { id: 'sport', name: 'Sport', tier: 'paid', price: '4,99 €', color: '#B94A3E', built: true },
   { id: 'habits', name: 'Gewohnheiten', tier: 'paid', price: '3,99 €', color: '#2F8385', built: false },
 ];
 
