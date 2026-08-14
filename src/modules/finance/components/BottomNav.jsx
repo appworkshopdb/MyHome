@@ -1,5 +1,9 @@
 import { IconMonth, IconSummary, IconContracts, IconSettings } from '../../../core/components/Icons';
+import ModuleBottomNav from '../../../core/components/ModuleBottomNav';
 
+// Menüpunkte für dieses Modul — die Leisten-Hülle selbst kommt aus
+// core/components/ModuleBottomNav.jsx (siehe Projektkontext.md,
+// Abschnitt "Modul-Leiste").
 const ITEMS = [
   { key: 'months', label: 'Monat', Icon: IconMonth },
   { key: 'summary', label: 'Auswertung', Icon: IconSummary },
@@ -8,18 +12,5 @@ const ITEMS = [
 ];
 
 export default function BottomNav({ active, onChange }) {
-  return (
-    <nav className="bottom-nav">
-      {ITEMS.map(({ key, label, Icon }) => (
-        <button
-          key={key}
-          className={`nav-item ${active === key ? 'active' : ''}`}
-          onClick={() => onChange(key)}
-        >
-          <Icon />
-          <span>{label}</span>
-        </button>
-      ))}
-    </nav>
-  );
+  return <ModuleBottomNav items={ITEMS} active={active} onChange={onChange} />;
 }
