@@ -7,10 +7,13 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 // abgeschlossen (kein Start/Stop-Zustand), siehe Konzept-Entscheidung
 // "nur die Einheit als Ganzes, nicht Satz für Satz". type_key ist
 // optional — "frei starten, Typ optional später".
-export default function WorkoutForm({ onSave, onCancel, showToast }) {
+// initialValues (optional): { type_key, title } — befüllt beim Start
+// aus einem vorgeschlagenen Plan (siehe PlanSuggestions), bleibt aber
+// frei überschreibbar, kein Zwang zum Plan.
+export default function WorkoutForm({ onSave, onCancel, showToast, initialValues }) {
   const [occurredOn, setOccurredOn] = useState(TODAY());
-  const [typeKey, setTypeKey] = useState('');
-  const [title, setTitle] = useState('');
+  const [typeKey, setTypeKey] = useState(initialValues?.type_key ?? '');
+  const [title, setTitle] = useState(initialValues?.title ?? '');
   const [durationMin, setDurationMin] = useState('');
   const [notes, setNotes] = useState('');
 
