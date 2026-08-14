@@ -7,6 +7,12 @@ export const GOAL = [
   { key: 'abnehmen', label: 'Abnehmen' }, { key: 'halten', label: 'Halten' },
   { key: 'zunehmen', label: 'Zunehmen' }, { key: 'muskel', label: 'Muskelaufbau' },
 ];
+// Trainingsfokus: separat vom Körperziel, weil mehrere Module (aktuell
+// nur Sport) ihn brauchen könnten, ohne dass Ernährung ihn einfordert —
+// siehe BODY_REQUIRED_FIELDS in bodyProfileData.js, die unverändert bleibt.
+export const TRAINING_FOCUS = [
+  { key: 'kraft', label: 'Kraft' }, { key: 'ausdauer', label: 'Ausdauer' }, { key: 'beides', label: 'Beides' },
+];
 const NUMBER_FIELDS = [
   ['age', 'Alter', 'Jahre', 1, 120],
   ['height', 'Größe', 'cm', 100, 230],
@@ -52,11 +58,19 @@ export default function BodyProfileForm({ value, onChange }) {
           ))}
         </div>
       </div>
-      <div className="form-group">
+      <div className="form-group" style={{ marginBottom: 10 }}>
         <label>Ziel</label>
         <div className="segmented cols-4">
           {GOAL.map((g) => (
             <button key={g.key} className={value.goal === g.key ? 'active' : ''} onClick={() => set('goal', g.key)}>{g.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="form-group">
+        <label>Trainingsfokus</label>
+        <div className="segmented cols-3">
+          {TRAINING_FOCUS.map((f) => (
+            <button key={f.key} className={value.training_focus === f.key ? 'active' : ''} onClick={() => set('training_focus', f.key)}>{f.label}</button>
           ))}
         </div>
       </div>
