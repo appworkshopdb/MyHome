@@ -11,6 +11,7 @@ import StubModule from './core/StubModule';
 import { getModule } from './core/modules';
 import FinanceModule from './modules/finance/FinanceModule';
 import NutritionModule from './modules/nutrition/NutritionModule';
+import SportModule from './modules/sport/SportModule';
 
 // Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
 // module.built steuert (in App.jsx unten), ob überhaupt gerendert wird —
@@ -18,9 +19,9 @@ import NutritionModule from './modules/nutrition/NutritionModule';
 const MODULE_COMPONENTS = {
   finance: FinanceModule,
   nutrition: NutritionModule,
+  sport: SportModule,
   everyday: StubModule,
   shopping: StubModule,
-  sport: StubModule,
   habits: StubModule,
 };
 
