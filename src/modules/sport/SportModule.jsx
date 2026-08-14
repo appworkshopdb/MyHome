@@ -1,39 +1,88 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
+import { useUi } from '../../core/lib/UiContext';
 import { getBodyProfile } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
+import * as db from './lib/spoData';
+import WorkoutForm from './components/WorkoutForm';
+import WorkoutList from './components/WorkoutList';
 
 // Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
 // (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
 // dieser Datei, unabhängig davon, ob der Hub oder das Modul gerade
-// angezeigt wird. Der Hub kennt dadurch "Sport" nicht direkt.
-// Analog zu NutritionModule.jsx, aber mit eigener Feld-Spec
-// (SPORT_REQUIRED_FIELDS statt BODY_REQUIRED_FIELDS) — siehe
-// lib/requiredFields.js für die Begründung.
+// angezeigt wird. Der Hub kennt dadurch "Sport" nicht direkt. Analog zu
+// NutritionModule.jsx, aber mit eigener Feld-Spec (SPORT_REQUIRED_FIELDS
+// statt BODY_REQUIRED_FIELDS) — siehe lib/requiredFields.js.
 registerRequirement('sport', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-// Grundgerüst — noch ohne eigene Views (Training/Verlauf/Pläne/
-// Auswertung, siehe Konzept). Bewusst als eigener, minimaler Schritt:
-// erst die Datenbasis (trainingTypes/exercises/plans/matching) stand,
-// jetzt hängt das Modul am Pflichtdaten-Register, damit App.jsx/
-// modules.js als Nächstes gefahrlos auf built: true gestellt werden
-// können, ohne dass Sport im Hub-Warnbanner fehlt.
+// Erster Screen: "Training" — direktes Eintragen abgeschlossener
+// Einheiten (kein Start/Stop-Zustand, kein Satz-für-Satz-Log, siehe
+// Konzept-Entscheidung). Verlauf/Pläne/Auswertung folgen als eigene
+// Ansichten, sobald dieser Kern steht.
 export default function SportModule() {
   const { session } = useAuth();
+  const { showToast } = useUi();
+
+  const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setWorkouts(await db.getWorkouts(session));
+    } catch (e) {
+      console.error(e);
+      showToast('Trainingseinheiten konnten nicht geladen werden');
+    } finally {
+      setLoading(false);
+    }
+  }, [session, showToast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleSave(workout) {
+    try {
+      await db.saveWorkout(session, workout);
+      setShowForm(false);
+      showToast('Training gespeichert');
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Speichern fehlgeschlagen');
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      await db.deleteWorkout(id);
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Löschen fehlgeschlagen');
+    }
+  }
 
   return (
     <div className="page">
-      <div className="card">
-        <div className="card-title">Sport</div>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Modul im Aufbau — Trainingstypen, Übungen und Pläne sind bereits
-          hinterlegt, die Ansichten folgen als Nächstes.
-        </p>
-      </div>
+      {showForm ? (
+        <WorkoutForm onSave={handleSave} onCancel={() => setShowForm(false)} showToast={showToast} />
+      ) : (
+        <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => setShowForm(true)}>
+          + Training eintragen
+        </button>
+      )}
+
+      {loading ? (
+        <div className="card">Lädt…</div>
+      ) : (
+        <WorkoutList workouts={workouts} onDelete={handleDelete} />
+      )}
     </div>
   );
 }
