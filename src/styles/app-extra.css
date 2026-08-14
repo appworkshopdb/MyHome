@@ -93,6 +93,7 @@
 }
 
 .app-menu-toggle {
+  position: relative;
   width: 36px;
   height: 36px;
   display: flex;
@@ -104,6 +105,17 @@
   flex-shrink: 0;
 }
 .app-menu-toggle svg { width: 20px; height: 20px; }
+
+.app-menu-toggle-alert {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 1.5px solid var(--bg-secondary);
+}
 
 .app-menu-backdrop {
   position: fixed;
@@ -153,6 +165,14 @@
   gap: 10px;
 }
 .app-menu-row-label svg { width: 16px; height: 16px; }
+
+.menu-alert-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
 
 /* IconChevronRight/IconLock sitzen als Zeilen-Endsymbol außerhalb von
    .app-menu-row-label — ohne diese Regel rendern SVGs ohne eigene
@@ -272,6 +292,48 @@
   white-space: nowrap;
 }
 .required-banner-cta svg { width: 14px; height: 14px; }
+
+/* ===== Pflichtdaten-Popup (core/components/RequiredDataToast.jsx) ===== */
+/* Gleicher Bottom-Offset wie .toast (layout.css), aber links statt */
+/* zentriert und ohne Auto-Dismiss — bleibt sichtbar, bis alle Pflicht- */
+/* felder ausgefüllt sind. Rahmen statt Schatten (Design-System: keine */
+/* Schatten), damit es sich trotzdem von beliebigem Hintergrund abhebt. */
+
+.required-toast-stack {
+  position: fixed;
+  left: 16px;
+  bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
+  z-index: 200;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+
+.required-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  max-width: 280px;
+  text-align: left;
+}
+
+.required-toast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
+
+.required-toast-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.required-toast-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.required-toast-sub { font-size: 0.74rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.required-toast svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
 
 /* ===== Vorschau für noch nicht gebaute Module ===== */
 
