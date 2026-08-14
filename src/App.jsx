@@ -7,14 +7,21 @@ import RequiredDataToast from './core/components/RequiredDataToast';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
+import StubModule from './core/StubModule';
 import { getModule } from './core/modules';
 import FinanceModule from './modules/finance/FinanceModule';
 import NutritionModule from './modules/nutrition/NutritionModule';
 
 // Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
+// module.built steuert (in App.jsx unten), ob überhaupt gerendert wird —
+// ein Eintrag hier allein schaltet noch nichts frei.
 const MODULE_COMPONENTS = {
   finance: FinanceModule,
   nutrition: NutritionModule,
+  everyday: StubModule,
+  shopping: StubModule,
+  sport: StubModule,
+  habits: StubModule,
 };
 
 export default function App() {
@@ -33,7 +40,10 @@ export default function App() {
 
   const isModule = activeModule && activeModule !== 'profile';
   const mod = isModule ? getModule(activeModule) : null;
-  const ModuleComponent = mod ? MODULE_COMPONENTS[mod.id] : null;
+  // built ist der EINE Schalter: false → immer LockedModule, egal ob
+  // zufällig eine Komponente registriert ist. So lässt sich vor dem
+  // echten Launch alles mit einer Zeile in modules.js wieder sperren.
+  const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
   return (
     <>
@@ -41,7 +51,7 @@ export default function App() {
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={setActiveModule} />}
         {activeModule === 'profile' && <Profile onOpenModule={setActiveModule} />}
-        {mod && (ModuleComponent ? <ModuleComponent /> : <LockedModule module={mod} />)}
+        {mod && (ModuleComponent ? <ModuleComponent module={mod} /> : <LockedModule module={mod} />)}
       </main>
       <RequiredDataToast warnings={warnings} onFix={setActiveModule} />
     </>
