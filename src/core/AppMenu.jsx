@@ -3,7 +3,7 @@ import { MODES } from './lib/theme';
 import { MODULES } from './modules';
 import { IconHome, IconLock, IconChevronRight, IconUserRound } from './components/Icons';
 
-export default function AppMenu({ activeModule, onNavigate }) {
+export default function AppMenu({ activeModule, onNavigate, hasWarnings }) {
   const { mode, setMode } = useUi();
 
   return (
@@ -22,7 +22,10 @@ export default function AppMenu({ activeModule, onNavigate }) {
         className={`app-menu-row ${activeModule === 'profile' ? 'active' : ''}`}
         onClick={() => onNavigate('profile')}
       >
-        <span className="app-menu-row-label"><IconUserRound /> Profil</span>
+        <span className="app-menu-row-label">
+          <IconUserRound /> Profil
+          {hasWarnings && <span className="menu-alert-dot" aria-label="Pflichtdaten unvollständig" />}
+        </span>
         <IconChevronRight />
       </button>
 
