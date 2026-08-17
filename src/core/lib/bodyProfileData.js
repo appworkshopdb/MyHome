@@ -28,9 +28,12 @@ export async function getBodyProfile(session) {
     .maybeSingle();
   if (error) throw error;
   if (!data) {
-    return { gender: null, age: '', height: '', weight: '', activity: null, goal: null, training_focus: null };
+    return { gender: null, age: '', height: '', weight: '', activity: null, goal: null, training_focus: null, sports: [] };
   }
-  return data;
+  // sports ist erst seit der Sportarten-Migration vorhanden — ältere
+  // Zeilen liefern hier undefined, was die Mehrfachauswahl im Formular
+  // sonst zum Absturz bringen würde.
+  return { ...data, sports: data.sports ?? [] };
 }
 
 export async function saveBodyProfile(session, profile) {
@@ -46,6 +49,9 @@ export async function saveBodyProfile(session, profile) {
     // zur Zielsetzung der Person gehört, nicht zum Modul. Bewusst ?? statt
     // ||, damit '' (leere Auswahl) nicht am DB-Check-Constraint scheitert.
     training_focus: profile.training_focus ?? null,
+    // Ausgeübte Sportarten (Mehrfachauswahl). Steuert im Sport-Modul,
+    // welche Sportarten beim Anlegen einer Einheit zur Auswahl stehen.
+    sports: profile.sports ?? [],
   };
   const { error } = await getSupabase().from('body_profile').upsert(payload, { onConflict: 'owner_id' });
   if (error) throw error;
