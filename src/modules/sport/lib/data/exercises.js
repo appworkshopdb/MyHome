@@ -28,8 +28,16 @@ export const EXERCISES = [
   { key: 'kreuzheben', name: 'Kreuzheben', stimulus: 'kraft', muscle_groups: ['beine', 'ruecken', 'gesaess'], equipment: 'langhantel', unit: 'reps_weight', level: 'fortgeschritten' },
   { key: 'ausfallschritte', name: 'Ausfallschritte', stimulus: 'kraft', muscle_groups: ['beine', 'gesaess'], equipment: 'koerpergewicht', unit: 'reps_weight', level: 'einsteiger' },
 
+  // Rumpf
+  { key: 'plank', name: 'Plank', stimulus: 'kraft', muscle_groups: ['rumpf'], equipment: 'koerpergewicht', unit: 'duration', level: 'einsteiger' },
+  { key: 'crunches', name: 'Crunches', stimulus: 'kraft', muscle_groups: ['rumpf'], equipment: 'koerpergewicht', unit: 'reps_weight', level: 'einsteiger' },
+  { key: 'beinheben', name: 'Beinheben', stimulus: 'kraft', muscle_groups: ['rumpf'], equipment: 'koerpergewicht', unit: 'reps_weight', level: 'alle' },
+
   // Ausdauer
   { key: 'laufen', name: 'Laufen', stimulus: 'ausdauer', muscle_groups: ['beine', 'herz_kreislauf'], equipment: 'keins', unit: 'distance', level: 'alle' },
+  { key: 'radfahren', name: 'Radfahren', stimulus: 'ausdauer', muscle_groups: ['beine', 'herz_kreislauf'], equipment: 'fahrrad', unit: 'distance', level: 'alle' },
+  { key: 'schwimmen', name: 'Schwimmen', stimulus: 'ausdauer', muscle_groups: ['ganzkoerper', 'herz_kreislauf'], equipment: 'keins', unit: 'distance', level: 'alle' },
+  { key: 'rudergeraet', name: 'Rudergerät', stimulus: 'ausdauer', muscle_groups: ['ruecken', 'beine', 'herz_kreislauf'], equipment: 'rudergeraet', unit: 'distance', level: 'alle' },
 ];
 
 export function getExercise(key) {
