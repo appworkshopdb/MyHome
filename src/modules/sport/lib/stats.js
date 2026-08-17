@@ -8,7 +8,10 @@ import { resolveTypeLabel } from './typeLabel';
 // der measurements nur bei status='done' schreibt).
 
 function isDone(w) {
-  return w.status === 'done';
+  // is_rest explizit ausschließen: ein Ruhetag hat status='done' (siehe
+  // applyPlan), ist aber keine absolvierte Einheit. Ohne diesen
+  // Ausschluss würde jeder Ruhetag die Statistik als Training zählen.
+  return w.status === 'done' && !w.is_rest;
 }
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());

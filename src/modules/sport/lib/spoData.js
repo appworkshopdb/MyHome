@@ -160,23 +160,29 @@ export async function deletePlan(id) {
 export async function applyPlan(session, plan, startDate) {
   const start = new Date(`${startDate}T00:00:00`);
 
-  const rows = plan.items
-    .filter((item) => !item.is_rest)
-    .map((item) => {
-      const date = new Date(start);
-      date.setDate(date.getDate() + item.day_index);
-      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      return {
-        owner_id: ownerId(session),
-        occurred_on: iso,
-        status: 'planned',
-        type_key: item.type_key || 'sonstiges',
-        title: item.title,
-        duration_min: item.duration_min ?? null,
-        notes: item.notes ?? null,
-        plan_id: plan.id,
-      };
-    });
+  // Ruhetage werden jetzt MIT angelegt (is_rest: true), damit der
+  // Kalender sie markieren kann — sie verschieben weiterhin nur die
+  // Folgetage (day_index bleibt unverändert), zählen aber wegen
+  // is_rest weder in der Auswertung noch im Hub als Training (siehe
+  // DB-Trigger, der bei is_rest keine measurements schreibt).
+  const rows = plan.items.map((item) => {
+    const date = new Date(start);
+    date.setDate(date.getDate() + item.day_index);
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return {
+      owner_id: ownerId(session),
+      occurred_on: iso,
+      // Ein Ruhetag hat nichts zu erledigen — 'done' statt 'planned',
+      // damit er nicht wie eine offene Aufgabe wirkt.
+      status: item.is_rest ? 'done' : 'planned',
+      is_rest: item.is_rest,
+      type_key: item.is_rest ? null : (item.type_key || 'sonstiges'),
+      title: item.title,
+      duration_min: item.duration_min ?? null,
+      notes: item.notes ?? null,
+      plan_id: plan.id,
+    };
+  });
 
   if (rows.length === 0) return 0;
 
