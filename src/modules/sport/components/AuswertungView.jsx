@@ -1,4 +1,5 @@
 import { computeStats, formatDuration } from '../lib/stats';
+import BadgesCard from './BadgesCard';
 
 function Stat({ label, value }) {
   return (
@@ -46,6 +47,8 @@ export default function AuswertungView({ workouts, loading }) {
           <Stat label="Wochen-Serie" value={stats.streakWeeks} />
         </div>
       </div>
+
+      <BadgesCard workouts={workouts} stats={stats} />
 
       <div className="card">
         <div className="card-title">Dieser Monat</div>
