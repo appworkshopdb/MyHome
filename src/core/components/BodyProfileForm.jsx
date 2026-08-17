@@ -1,3 +1,5 @@
+import SportsSelect from './SportsSelect';
+
 export const GENDER = [{ key: 'm', label: 'Männlich' }, { key: 'w', label: 'Weiblich' }];
 export const ACTIVITY = [
   { key: 'sitzend', label: 'Sitzend' }, { key: 'leicht', label: 'Leicht aktiv' },
@@ -66,7 +68,7 @@ export default function BodyProfileForm({ value, onChange }) {
           ))}
         </div>
       </div>
-      <div className="form-group">
+      <div className="form-group" style={{ marginBottom: 10 }}>
         <label>Trainingsfokus</label>
         <div className="segmented cols-3">
           {TRAINING_FOCUS.map((f) => (
@@ -74,6 +76,7 @@ export default function BodyProfileForm({ value, onChange }) {
           ))}
         </div>
       </div>
+      <SportsSelect value={value.sports ?? []} onChange={(sports) => set('sports', sports)} />
     </>
   );
 }
