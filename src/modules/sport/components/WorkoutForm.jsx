@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TRAINING_TYPES } from '../lib/data/trainingTypes';
+import { getSport, sportTypeKey, sportFromTypeKey } from '../../../core/lib/sportsData';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
@@ -10,7 +11,7 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 //   - vollständige Workout-Zeile (mit id) → Bearbeiten-Modus
 // Der Status ist umschaltbar, weil eine Einheit sowohl vorausgeplant
 // ('planned') als auch nachträglich eingetragen ('done') werden kann.
-export default function WorkoutForm({ onSave, onCancel, showToast, initialValues }) {
+export default function WorkoutForm({ onSave, onCancel, showToast, initialValues, userSports = [] }) {
   const iv = initialValues ?? {};
   const isEdit = Boolean(iv.id);
 
@@ -26,8 +27,9 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
     // Titel nur vorbelegen, wenn er noch nicht gesetzt ist — sonst
     // überschreibt eine spätere Typ-Auswahl einen eigenen Titel.
     if (!title) {
-      const type = TRAINING_TYPES.find((t) => t.key === key);
-      if (type) setTitle(type.label);
+      const label = TRAINING_TYPES.find((t) => t.key === key)?.label
+        ?? sportFromTypeKey(key)?.label;
+      if (label) setTitle(label);
     }
   }
 
@@ -94,9 +96,23 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
         <label>Trainingstyp (optional)</label>
         <select value={typeKey} onChange={(e) => handleTypeChange(e.target.value)}>
           <option value="">Frei / kein Typ</option>
-          {TRAINING_TYPES.map((t) => (
-            <option key={t.key} value={t.key}>{t.label}</option>
-          ))}
+          <optgroup label="Training">
+            {TRAINING_TYPES.map((t) => (
+              <option key={t.key} value={t.key}>{t.label}</option>
+            ))}
+          </optgroup>
+          {/* Nur die im Profil gewählten Sportarten — die volle Liste von
+              70+ Einträgen wäre hier unbenutzbar. Wer Fußball spielt,
+              sieht Fußball; wer nichts gewählt hat, sieht die Gruppe nicht. */}
+          {userSports.length > 0 && (
+            <optgroup label="Deine Sportarten">
+              {userSports.map((key) => {
+                const sport = getSport(key);
+                if (!sport) return null;
+                return <option key={key} value={sportTypeKey(key)}>{sport.label}</option>;
+              })}
+            </optgroup>
+          )}
         </select>
       </div>
 

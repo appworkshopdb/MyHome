@@ -5,11 +5,11 @@ import WorkoutForm from './WorkoutForm';
 // wechseln und das Formular vorbefüllt öffnen soll (siehe
 // PlaeneView.jsx) — der Formular-Zustand darf deshalb nicht lokal in
 // dieser View liegen.
-export default function TrainingView({ formInitial, onOpenForm, onCancelForm, onSave, showToast }) {
+export default function TrainingView({ formInitial, onOpenForm, onCancelForm, onSave, showToast, userSports }) {
   return (
     <div className="page">
       {formInitial !== false ? (
-        <WorkoutForm onSave={onSave} onCancel={onCancelForm} showToast={showToast} initialValues={formInitial} />
+        <WorkoutForm onSave={onSave} onCancel={onCancelForm} showToast={showToast} initialValues={formInitial} userSports={userSports} />
       ) : (
         <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => onOpenForm({})}>
           + Training eintragen

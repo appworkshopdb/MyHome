@@ -1,11 +1,85 @@
 import PlanSuggestions from './PlanSuggestions';
+import PlanEditor from './PlanEditor';
+import ApplyPlanDialog from './ApplyPlanDialog';
 
-// "Starten" wechselt hier ins Training-Tab mit vorbefülltem Formular —
-// onStartFromPlan kommt von SportModule, das sowohl den Tab-Wechsel als
-// auch den Formular-Zustand kennt.
-export default function PlaeneView({ session, onStartFromPlan }) {
+// Drei Zustände in einem Tab: Liste (Standard), Editor (Vorlage bauen/
+// bearbeiten), Anwenden-Dialog. Der jeweilige Zustand kommt von
+// SportModule, weil das Anwenden anschließend in den Kalender wechselt.
+export default function PlaeneView({
+  session, plans, loading, userSports,
+  editing, applying,
+  onNewPlan, onEditPlan, onDeletePlan, onSavePlan, onCancelEdit,
+  onOpenApply, onApplyPlan, onCancelApply,
+  onStartFromPlan, showToast,
+}) {
+  if (editing) {
+    return (
+      <div className="page">
+        <PlanEditor
+          initialPlan={editing.id ? editing : null}
+          userSports={userSports}
+          onSave={onSavePlan}
+          onCancel={onCancelEdit}
+          showToast={showToast}
+        />
+      </div>
+    );
+  }
+
+  if (applying) {
+    return (
+      <div className="page">
+        <ApplyPlanDialog plan={applying} onApply={onApplyPlan} onCancel={onCancelApply} />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
+      <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={onNewPlan}>
+        + Trainingsplan erstellen
+      </button>
+
+      <div className="card">
+        <div className="card-title">Deine Pläne</div>
+        {loading ? (
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Lädt…</p>
+        ) : plans.length === 0 ? (
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            Noch kein eigener Plan. Erstelle eine Vorlage aus mehreren Tagen und
+            trage sie ab einem beliebigen Starttag in den Kalender ein.
+          </p>
+        ) : (
+          plans.map((plan) => {
+            const trainingDays = plan.items.filter((i) => !i.is_rest).length;
+            return (
+              <div
+                key={plan.id}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: 8, padding: '10px 0', borderBottom: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{plan.title}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {plan.items.length} Tage · {trainingDays} Einheiten
+                  </div>
+                  {plan.notes && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{plan.notes}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button className="btn btn-primary" onClick={() => onOpenApply(plan)}>Eintragen</button>
+                  <button className="btn btn-secondary" onClick={() => onEditPlan(plan)}>Bearbeiten</button>
+                  <button className="btn btn-secondary" onClick={() => onDeletePlan(plan.id)}>×</button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
       <PlanSuggestions session={session} onStartFromPlan={onStartFromPlan} />
     </div>
   );

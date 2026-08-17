@@ -1,5 +1,5 @@
 import { formatRelativeDate } from '../../../core/lib/format';
-import { getTrainingType } from '../lib/data/trainingTypes';
+import { resolveTypeLabel } from '../lib/typeLabel';
 import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
 
 // Zeigt alle Einheiten des gewählten Tages. Das Abhaken passiert direkt
@@ -18,7 +18,7 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
       ) : (
         dayWorkouts.map((w) => {
           const done = w.status === 'done';
-          const type = getTrainingType(w.type_key);
+          const typeLabel = resolveTypeLabel(w.type_key);
           return (
             <div
               key={w.id}
@@ -47,7 +47,7 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   {done ? 'Erledigt' : 'Geplant'}
                   {w.duration_min ? ` · ${w.duration_min} Min.` : ''}
-                  {type ? ` · ${type.label}` : ''}
+                  {typeLabel ? ` · ${typeLabel}` : ''}
                 </div>
                 {w.notes && (
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{w.notes}</div>
