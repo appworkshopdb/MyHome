@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TRAINING_TYPES } from '../lib/data/trainingTypes';
+import { TRAINING_TYPES, TRAINING_TYPE_GROUPS, trainingTypesByGroup } from '../lib/data/trainingTypes';
 import { getSport, sportTypeKey, sportFromTypeKey } from '../../../core/lib/sportsData';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
@@ -96,11 +96,15 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
         <label>Trainingstyp (optional)</label>
         <select value={typeKey} onChange={(e) => handleTypeChange(e.target.value)}>
           <option value="">Frei / kein Typ</option>
-          <optgroup label="Training">
-            {TRAINING_TYPES.map((t) => (
-              <option key={t.key} value={t.key}>{t.label}</option>
-            ))}
-          </optgroup>
+          {/* Nach Gruppen (Kraft/Ausdauer/Beweglichkeit) statt einer
+              flachen Liste — bei 20+ Typen sonst unlesbar. */}
+          {TRAINING_TYPE_GROUPS.map((group) => (
+            <optgroup key={group} label={group}>
+              {trainingTypesByGroup(group).map((t) => (
+                <option key={t.key} value={t.key}>{t.label}</option>
+              ))}
+            </optgroup>
+          ))}
           {/* Nur die im Profil gewählten Sportarten — die volle Liste von
               70+ Einträgen wäre hier unbenutzbar. Wer Fußball spielt,
               sieht Fußball; wer nichts gewählt hat, sieht die Gruppe nicht. */}

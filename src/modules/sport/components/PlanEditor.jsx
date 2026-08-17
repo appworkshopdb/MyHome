@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TRAINING_TYPES } from '../lib/data/trainingTypes';
+import { TRAINING_TYPES, TRAINING_TYPE_GROUPS, trainingTypesByGroup } from '../lib/data/trainingTypes';
 import { getSport, sportTypeKey, sportFromTypeKey } from '../../../core/lib/sportsData';
 
 // Baukasten für eine Mehrtages-Vorlage. Die Länge ergibt sich aus der
@@ -112,11 +112,13 @@ export default function PlanEditor({ initialPlan, userSports = [], onSave, onCan
                 style={{ marginBottom: 6 }}
               >
                 <option value="">Frei / kein Typ</option>
-                <optgroup label="Training">
-                  {TRAINING_TYPES.map((t) => (
-                    <option key={t.key} value={t.key}>{t.label}</option>
-                  ))}
-                </optgroup>
+                {TRAINING_TYPE_GROUPS.map((group) => (
+                  <optgroup key={group} label={group}>
+                    {trainingTypesByGroup(group).map((t) => (
+                      <option key={t.key} value={t.key}>{t.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
                 {userSports.length > 0 && (
                   <optgroup label="Deine Sportarten">
                     {userSports.map((key) => {
