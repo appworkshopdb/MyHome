@@ -12,38 +12,45 @@ import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
 import AuswertungView from './components/AuswertungView';
 
-// Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
-// (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
-// dieser Datei. Analog zu NutritionModule.jsx, aber mit eigener Feld-
-// Spec (SPORT_REQUIRED_FIELDS statt BODY_REQUIRED_FIELDS).
 registerRequirement('sport', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-// Vier Bereiche über die modul-eigene Leiste (siehe Projektkontext.md,
-// "Modul-Leiste"): Training / Verlauf (= Kalender) / Pläne / Auswertung.
-//
-// workouts wird EINMAL hier geladen und an alle Views durchgereicht —
-// Kalender, Tagesansicht und Auswertung arbeiten damit garantiert auf
-// demselben Stand, und ein Abhaken im Kalender schlägt sofort in der
-// Auswertung durch, ohne zweiten Ladevorgang.
+// Hält den gesamten Modul-Zustand: Einheiten, Plan-Vorlagen und die im
+// Profil gewählten Sportarten. Alles wird EINMAL geladen und an die
+// Views durchgereicht — dadurch arbeiten Kalender, Auswertung und
+// Plan-Anwendung garantiert auf demselben Stand.
 export default function SportModule() {
   const { session } = useAuth();
   const { showToast } = useUi();
 
   const [view, setView] = useState('training');
   const [workouts, setWorkouts] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [userSports, setUserSports] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formInitial, setFormInitial] = useState(false); // false = kein Formular offen
+
+  const [formInitial, setFormInitial] = useState(false); // Workout-Formular
+  const [editingPlan, setEditingPlan] = useState(null);  // Plan-Editor
+  const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setWorkouts(await db.getWorkouts(session));
+      // Parallel, weil die drei Quellen unabhängig sind — sequenziell
+      // würde das Öffnen des Moduls unnötig dreimal so lange dauern.
+      const [ws, ps, profile] = await Promise.all([
+        db.getWorkouts(session),
+        db.getPlans(session),
+        getBodyProfile(session),
+      ]);
+      setWorkouts(ws);
+      setPlans(ps);
+      setUserSports(profile.sports ?? []);
     } catch (e) {
       console.error(e);
-      showToast('Trainingseinheiten konnten nicht geladen werden');
+      showToast('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
     }
@@ -73,9 +80,9 @@ export default function SportModule() {
     }
   }
 
-  // Abhaken im Kalender: nur der Statuswechsel, kein Formular. Der
-  // DB-Trigger schreibt bzw. entfernt daraufhin die measurements-Zeilen,
-  // wodurch die Einheit in Auswertung und Hub auftaucht.
+  // Abhaken im Kalender: nur der Statuswechsel. Der DB-Trigger schreibt
+  // bzw. entfernt daraufhin die measurements-Zeilen, wodurch die Einheit
+  // in Auswertung und Hub auftaucht.
   async function handleToggleDone(workout) {
     try {
       await db.setWorkoutStatus(workout.id, workout.status !== 'done');
@@ -86,8 +93,6 @@ export default function SportModule() {
     }
   }
 
-  // Bearbeiten und Neuplanen öffnen dasselbe Formular im Training-Tab —
-  // deshalb liegt formInitial hier oben und nicht in einer einzelnen View.
   function handleEdit(workout) {
     setFormInitial(workout);
     setView('training');
@@ -98,9 +103,48 @@ export default function SportModule() {
     setView('training');
   }
 
-  function startFromPlan(plan) {
-    setFormInitial({ type_key: plan.type_key, title: plan.title });
+  function startFromPlan(preset) {
+    setFormInitial({ type_key: preset.type_key, title: preset.title });
     setView('training');
+  }
+
+  // --- Plan-Vorlagen -------------------------------------------------
+
+  async function handleSavePlan(plan, items) {
+    try {
+      await db.savePlan(session, plan, items);
+      setEditingPlan(null);
+      showToast('Plan gespeichert');
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Plan konnte nicht gespeichert werden');
+    }
+  }
+
+  async function handleDeletePlan(id) {
+    try {
+      await db.deletePlan(id);
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Plan konnte nicht gelöscht werden');
+    }
+  }
+
+  // Nach dem Eintragen direkt in den Kalender wechseln — dort sieht man
+  // sofort, was angelegt wurde, statt auf eine Erfolgsmeldung zu starren.
+  async function handleApplyPlan(plan, startDate) {
+    try {
+      const count = await db.applyPlan(session, plan, startDate);
+      setApplyingPlan(null);
+      showToast(`${count} Einheiten eingetragen`);
+      await load();
+      setView('verlauf');
+    } catch (e) {
+      console.error(e);
+      showToast('Plan konnte nicht eingetragen werden');
+    }
   }
 
   const VIEWS = {
@@ -111,6 +155,7 @@ export default function SportModule() {
         onCancelForm={() => setFormInitial(false)}
         onSave={handleSave}
         showToast={showToast}
+        userSports={userSports}
       />
     ),
     verlauf: (
@@ -123,7 +168,26 @@ export default function SportModule() {
         onPlanNew={handlePlanNew}
       />
     ),
-    plaene: <PlaeneView session={session} onStartFromPlan={startFromPlan} />,
+    plaene: (
+      <PlaeneView
+        session={session}
+        plans={plans}
+        loading={loading}
+        userSports={userSports}
+        editing={editingPlan}
+        applying={applyingPlan}
+        onNewPlan={() => setEditingPlan({})}
+        onEditPlan={setEditingPlan}
+        onDeletePlan={handleDeletePlan}
+        onSavePlan={handleSavePlan}
+        onCancelEdit={() => setEditingPlan(null)}
+        onOpenApply={setApplyingPlan}
+        onApplyPlan={handleApplyPlan}
+        onCancelApply={() => setApplyingPlan(null)}
+        onStartFromPlan={startFromPlan}
+        showToast={showToast}
+      />
+    ),
     auswertung: <AuswertungView workouts={workouts} loading={loading} />,
   };
 
