@@ -72,3 +72,115 @@ export async function deleteWorkout(id) {
     .eq('id', id);
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------
+// Trainingsplan-Vorlagen (spo_plans + spo_plan_items)
+// ---------------------------------------------------------------------
+// Eine Vorlage ist eine Folge von TAGEN beliebiger Länge (day_index 0..n),
+// jeder Tag entweder eine Einheit oder ein Ruhetag. Die Länge ergibt
+// sich aus der Anzahl der Tage, nicht aus einer festen Wochenstruktur —
+// dadurch sind 5-, 6-, 8-Tage-Rhythmen gleichermaßen möglich.
+
+export async function getPlans(session) {
+  const { data, error } = await getSupabase()
+    .from('spo_plans')
+    .select('*, items:spo_plan_items(*)')
+    .eq('owner_id', ownerId(session))
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+
+  // Gelöschte Tage filtern und sortieren — der eingebettete Select
+  // kennt weder unsere Soft-Delete-Konvention noch die Reihenfolge.
+  return (data ?? []).map((plan) => ({
+    ...plan,
+    items: (plan.items ?? [])
+      .filter((i) => !i.deleted_at)
+      .sort((a, b) => a.day_index - b.day_index),
+  }));
+}
+
+export async function savePlan(session, plan, items) {
+  const owner = ownerId(session);
+
+  const { data: savedPlan, error: planError } = await getSupabase()
+    .from('spo_plans')
+    .upsert({
+      ...(plan.id ? { id: plan.id } : {}),
+      owner_id: owner,
+      title: plan.title,
+      notes: plan.notes ?? null,
+    })
+    .select()
+    .single();
+  if (planError) throw planError;
+
+  // Tage komplett ersetzen statt einzeln zu diffen: eine Vorlage ist
+  // klein (meist < 10 Zeilen), und Einfügen/Löschen/Umsortieren von
+  // Tagen wäre sonst deutlich fehleranfälliger als ein sauberer Neuaufbau.
+  const { error: delError } = await getSupabase()
+    .from('spo_plan_items')
+    .delete()
+    .eq('plan_id', savedPlan.id);
+  if (delError) throw delError;
+
+  if (items.length > 0) {
+    const { error: itemError } = await getSupabase()
+      .from('spo_plan_items')
+      .insert(items.map((item, index) => ({
+        owner_id: owner,
+        plan_id: savedPlan.id,
+        day_index: index,
+        title: item.title,
+        type_key: item.type_key ?? null,
+        duration_min: item.duration_min ?? null,
+        is_rest: item.is_rest ?? false,
+        notes: item.notes ?? null,
+      })));
+    if (itemError) throw itemError;
+  }
+
+  return savedPlan;
+}
+
+export async function deletePlan(id) {
+  const { error } = await getSupabase()
+    .from('spo_plans')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// Überträgt eine Vorlage ab startDate in den Kalender: day_index 0 liegt
+// auf startDate, day_index 3 drei Tage später usw. Ruhetage erzeugen
+// bewusst KEINE Einheit — sie verschieben nur die Folgetage, damit ein
+// 5-Tage-Plan mit Ruhetag am dritten Tag korrekt über 5 Kalendertage
+// läuft. Bestehende Einträge bleiben unangetastet, deshalb lassen sich
+// ein Wochenplan und einzelne Sport-Einheiten am selben Tag kombinieren.
+export async function applyPlan(session, plan, startDate) {
+  const start = new Date(`${startDate}T00:00:00`);
+
+  const rows = plan.items
+    .filter((item) => !item.is_rest)
+    .map((item) => {
+      const date = new Date(start);
+      date.setDate(date.getDate() + item.day_index);
+      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      return {
+        owner_id: ownerId(session),
+        occurred_on: iso,
+        status: 'planned',
+        type_key: item.type_key || 'sonstiges',
+        title: item.title,
+        duration_min: item.duration_min ?? null,
+        notes: item.notes ?? null,
+        plan_id: plan.id,
+      };
+    });
+
+  if (rows.length === 0) return 0;
+
+  const { error } = await getSupabase().from('spo_workouts').insert(rows);
+  if (error) throw error;
+  return rows.length;
+}

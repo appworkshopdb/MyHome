@@ -1,4 +1,4 @@
-import { getTrainingType } from './data/trainingTypes';
+import { resolveTypeLabel } from './typeLabel';
 
 // Reine Funktionen (keine DB-Zugriffe), damit sie sowohl von der
 // Auswertung als auch später von Badges/Hub genutzt werden können.
@@ -39,7 +39,7 @@ export function computeStats(workouts) {
   // einseitig ist (z.B. nur Push, nie Beine).
   const byType = new Map();
   for (const w of done) {
-    const label = getTrainingType(w.type_key)?.label ?? 'Sonstiges';
+    const label = resolveTypeLabel(w.type_key) ?? 'Sonstiges';
     byType.set(label, (byType.get(label) || 0) + 1);
   }
   const typeDistribution = [...byType.entries()]
