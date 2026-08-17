@@ -161,11 +161,13 @@ export default function SportModule() {
     verlauf: (
       <VerlaufView
         workouts={workouts}
+        plans={plans}
         loading={loading}
         onToggleDone={handleToggleDone}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onPlanNew={handlePlanNew}
+        onApplyPlan={handleApplyPlan}
       />
     ),
     plaene: (
