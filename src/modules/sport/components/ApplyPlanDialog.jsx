@@ -6,8 +6,8 @@ const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Fr
 // Zeigt vor dem Übertragen konkret, auf welche Kalendertage die Vorlage
 // fällt. Ohne diese Vorschau müsste man raten, wo ein 5-Tage-Plan mit
 // Ruhetag in der Mitte endet.
-export default function ApplyPlanDialog({ plan, onApply, onCancel }) {
-  const [startDate, setStartDate] = useState(TODAY);
+export default function ApplyPlanDialog({ plan, defaultDate, onApply, onCancel }) {
+  const [startDate, setStartDate] = useState(defaultDate ?? TODAY());
 
   const start = new Date(`${startDate}T00:00:00`);
   const preview = plan.items.map((item) => {

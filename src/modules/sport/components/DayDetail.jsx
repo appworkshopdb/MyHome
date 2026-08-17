@@ -6,7 +6,7 @@ import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
 // hier über die Checkbox (Konzept-Entscheidung) — ein Klick genügt,
 // kein Umweg über das Formular. Der DB-Trigger übernimmt daraufhin die
 // Auswertungs-Kennzahlen.
-export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDelete, onPlanNew }) {
+export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDelete, onPlanNew, onPickPlan }) {
   const dayWorkouts = workouts.filter((w) => w.occurred_on === date);
 
   return (
@@ -61,9 +61,14 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
         })
       )}
 
-      <button className="btn btn-primary" style={{ width: '100%', marginTop: 12 }} onClick={() => onPlanNew(date)}>
-        + Einheit für diesen Tag
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => onPlanNew(date)}>
+          + Einzelne Einheit
+        </button>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onPickPlan(date)}>
+          + Trainingsplan
+        </button>
+      </div>
     </div>
   );
 }
