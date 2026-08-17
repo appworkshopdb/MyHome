@@ -62,16 +62,26 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
 
           const key = iso(date);
           const dayWorkouts = byDate.get(key) ?? [];
-          const hasDone = dayWorkouts.some((w) => w.status === 'done');
-          const hasPlanned = dayWorkouts.some((w) => w.status !== 'done');
+          // Ruhetage separat behandeln: sie haben status='done' (siehe
+          // applyPlan), zählen aber nicht als absolvierte/geplante
+          // Einheit — sonst würde ein Ruhetag fälschlich limette
+          // gefüllt erscheinen wie ein echtes Training.
+          const realWorkouts = dayWorkouts.filter((w) => !w.is_rest);
+          const hasDone = realWorkouts.some((w) => w.status === 'done');
+          const hasPlanned = realWorkouts.some((w) => w.status !== 'done');
+          const hasRest = dayWorkouts.some((w) => w.is_rest);
           const isSelected = key === selectedDate;
           const isToday = key === todayIso;
 
-          // Abgehakt = gefüllte Akzentfläche, geplant = nur Rahmen.
+          // Abgehakt = gefüllte Akzentfläche, geplant = nur Rahmen,
+          // Ruhetag = dezente graue Fläche (niedrigste Priorität — ein
+          // zusätzlich eingetragenes echtes Training überstimmt sie).
           // Auf --accent immer --on-accent als Textfarbe (Design-System).
           const background = isSelected
             ? 'var(--text-primary)'
-            : hasDone ? 'var(--accent)' : 'transparent';
+            : hasDone ? 'var(--accent)'
+            : hasRest && !hasPlanned ? 'var(--border-strong)'
+            : 'transparent';
           const color = isSelected
             ? 'var(--bg-primary)'
             : hasDone ? 'var(--on-accent)' : 'var(--text-primary)';
@@ -94,9 +104,10 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '0.75rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
         <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'var(--accent)', marginRight: 4 }} />erledigt</span>
         <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, border: '2px solid var(--accent)', marginRight: 4 }} />geplant</span>
+        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'var(--border-strong)', marginRight: 4 }} />Ruhetag</span>
       </div>
     </div>
   );

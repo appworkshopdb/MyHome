@@ -17,6 +17,31 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
         <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>Keine Einheit an diesem Tag.</p>
       ) : (
         dayWorkouts.map((w) => {
+          // Ruhetag: eigene, bewusst ruhigere Darstellung — kein
+          // Abhaken (es gibt nichts zu erledigen) und kein Bearbeiten
+          // (WorkoutForm kennt is_rest nicht, würde es beim Speichern
+          // verlieren). Löschen bleibt möglich, falls der Tag doch
+          // Training bekommen soll.
+          if (w.is_rest) {
+            return (
+              <div
+                key={w.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 0', borderBottom: '1px solid var(--border)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <div style={{
+                  width: 26, height: 26, flexShrink: 0, borderRadius: 'var(--radius-xs)',
+                  background: 'var(--border-strong)',
+                }} />
+                <div style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{w.title}</div>
+                <button className="btn btn-secondary" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
+              </div>
+            );
+          }
+
           const done = w.status === 'done';
           const typeLabel = resolveTypeLabel(w.type_key);
           return (
