@@ -58,7 +58,20 @@ export function computeStats(workouts) {
     monthDuration: sumDuration(thisMonth),
     typeDistribution,
     streakWeeks: computeStreakWeeks(done),
+    // Höchste Einheitenzahl in einem einzelnen Kalendermonat, über die
+    // gesamte Historie — Grundlage für die "starker Monat"-Badges.
+    bestMonthCount: computeBestMonthCount(done),
   };
+}
+
+function computeBestMonthCount(doneWorkouts) {
+  const byMonth = new Map();
+  for (const w of doneWorkouts) {
+    const d = new Date(w.occurred_on);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    byMonth.set(key, (byMonth.get(key) || 0) + 1);
+  }
+  return byMonth.size === 0 ? 0 : Math.max(...byMonth.values());
 }
 
 // Konsistenz-Streak in Wochen: wie viele zusammenhängende Wochen (ab
