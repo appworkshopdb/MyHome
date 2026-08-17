@@ -80,8 +80,15 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
           const background = isSelected
             ? 'var(--text-primary)'
             : hasDone ? 'var(--accent)'
-            : hasRest && !hasPlanned ? 'var(--border-strong)'
             : 'transparent';
+
+          // Streifenmuster statt Flächenfarbe: eine reine Graufläche war
+          // im Dunkelmodus kontrastarm und kaum von einem leeren Tag zu
+          // unterscheiden. Das Muster ist unabhängig vom Farbschema klar
+          // als "eigener Zustand" erkennbar.
+          const restPattern = hasRest && !hasPlanned && !hasDone && !isSelected
+            ? 'repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 4px, var(--border-strong) 4px, var(--border-strong) 8px)'
+            : undefined;
           const color = isSelected
             ? 'var(--bg-primary)'
             : hasDone ? 'var(--on-accent)' : 'var(--text-primary)';
@@ -92,7 +99,7 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
               onClick={() => onSelectDate(key)}
               style={{
                 aspectRatio: '1', border: hasPlanned && !hasDone ? '2px solid var(--accent)' : 'none',
-                borderRadius: 'var(--radius-xs)', background, color,
+                borderRadius: 'var(--radius-xs)', background: restPattern ?? background, color,
                 fontWeight: isToday ? 700 : 400, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '0.85rem', padding: 0,
@@ -107,7 +114,7 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
       <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '0.75rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
         <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'var(--accent)', marginRight: 4 }} />erledigt</span>
         <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, border: '2px solid var(--accent)', marginRight: 4 }} />geplant</span>
-        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'var(--border-strong)', marginRight: 4 }} />Ruhetag</span>
+        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 2px, var(--border-strong) 2px, var(--border-strong) 4px)', marginRight: 4 }} />Ruhetag</span>
       </div>
     </div>
   );
