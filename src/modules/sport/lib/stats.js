@@ -109,3 +109,70 @@ export function formatDuration(minutes) {
   if (h === 0) return `${m} Min.`;
   return m === 0 ? `${h} Std.` : `${h} Std. ${m} Min.`;
 }
+
+// ---------------------------------------------------------------------
+// Wochenweise Aktivität (Jahres-Heatmap)
+// ---------------------------------------------------------------------
+// Eine Zelle = eine Woche, nicht ein Tag (Konzept-Entscheidung: mehrere
+// Einheiten an einem Tag sind selten, eine Wochenansicht ist
+// aussagekräftiger). Der Wert kombiniert Menge UND Erledigung:
+// erledigte Einheiten zählen doppelt, nur geplante einfach — eine Woche
+// mit vielen erledigten Einheiten färbt sich stärker als eine mit
+// gleich vielen, aber nur geplanten.
+const SCORE_DONE = 2;
+const SCORE_PLANNED = 1;
+
+function scoreToLevel(score) {
+  if (score <= 0) return 0;
+  if (score <= 2) return 1;
+  if (score <= 4) return 2;
+  return 3;
+}
+
+// Gibt die letzten `weeksBack` Wochen zurück (älteste zuerst), jede mit
+// erledigt/geplant-Zahl, Intensitätsstufe (0–3) und den genutzten
+// Trainingsarten. Ruhetage sind bewusst ausgeschlossen — sie sind kein
+// Training (gleiche Logik wie computeStats/isDone).
+export function computeWeeklyActivity(workouts, weeksBack = 54) {
+  const relevant = workouts.filter((w) => !w.is_rest);
+
+  const byWeek = new Map();
+  for (const w of relevant) {
+    const key = startOfWeek(new Date(w.occurred_on)).getTime();
+    if (!byWeek.has(key)) byWeek.set(key, { done: [], planned: [] });
+    const label = resolveTypeLabel(w.type_key) ?? 'Sonstiges';
+    byWeek.get(key)[w.status === 'done' ? 'done' : 'planned'].push(label);
+  }
+
+  const currentWeekStart = startOfWeek(new Date()).getTime();
+  const WEEK = 7 * 86400000;
+  const weeks = [];
+
+  for (let i = weeksBack - 1; i >= 0; i--) {
+    const weekStartTime = currentWeekStart - i * WEEK;
+    const entry = byWeek.get(weekStartTime) ?? { done: [], planned: [] };
+    const doneCount = entry.done.length;
+    const plannedCount = entry.planned.length;
+    const score = doneCount * SCORE_DONE + plannedCount * SCORE_PLANNED;
+
+    weeks.push({
+      weekStart: new Date(weekStartTime),
+      doneCount,
+      plannedCount,
+      score,
+      level: scoreToLevel(score),
+      // Distinkte Trainingsarten dieser Woche, erledigt zuerst — für die
+      // Detailkarte beim Antippen einer Zelle.
+      types: [...new Set([...entry.done, ...entry.planned])],
+    });
+  }
+
+  return weeks;
+}
+
+export function formatWeekRange(weekStart) {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  return `${fmt(weekStart)}–${fmt(end)}`;
+}
