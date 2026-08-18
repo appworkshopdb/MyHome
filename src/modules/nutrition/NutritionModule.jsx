@@ -30,17 +30,20 @@ const VIEW_TITLES = {
   tipps: 'Tipps',
   profil: 'Profil',
 };
+const DEFAULT_VIEW = 'ampel';
 
 // Das Ernährungs-Modul in seiner Gesamtheit. Lädt die persönlichen Daten
 // (eigene Lebensmittel-Ergänzungen, Rezepte, Profil) einmalig aus
 // Supabase und reicht sie an die fünf Unteransichten weiter — inhaltlich
 // identisch zur ursprünglichen GoodFood-App, nur ohne eigenen Login und
 // ohne eigenes Supabase-Projekt.
-export default function NutritionModule() {
+// view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
+// useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
+export default function NutritionModule({ view, onNavigateView }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
-  const [view, setView] = useState('ampel');
+  const activeView = VIEW_TITLES[view] ? view : DEFAULT_VIEW;
   const [foods, setFoods] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [profile, setProfile] = useState({ ...DEFAULT_PROFILE });
@@ -111,11 +114,11 @@ export default function NutritionModule() {
 
   return (
     <>
-      <div className="page-header"><h1>{VIEW_TITLES[view]}</h1></div>
-      {view === 'ampel' && (
+      <div className="page-header"><h1>{VIEW_TITLES[activeView]}</h1></div>
+      {activeView === 'ampel' && (
         <AmpelView foods={foods} onSaveFood={handleSaveFood} onDeleteFood={handleDeleteFood} />
       )}
-      {view === 'rezepte' && (
+      {activeView === 'rezepte' && (
         <RezepteView
           foods={foods}
           recipes={recipes}
@@ -124,12 +127,12 @@ export default function NutritionModule() {
           showToast={showToast}
         />
       )}
-      {view === 'lexikon' && <LexikonView />}
-      {view === 'tipps' && <TippsView />}
-      {view === 'profil' && (
+      {activeView === 'lexikon' && <LexikonView />}
+      {activeView === 'tipps' && <TippsView />}
+      {activeView === 'profil' && (
         <ProfilView profile={profile} onSaveProfile={handleSaveProfile} email={session.user.email} />
       )}
-      <BottomNav active={view} onChange={setView} />
+      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
