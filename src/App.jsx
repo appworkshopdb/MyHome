@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { useAuth } from './core/lib/AuthContext';
+import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import Login from './core/components/Login';
 import AppHeader from './core/AppHeader';
@@ -27,10 +27,12 @@ const MODULE_COMPONENTS = {
 
 export default function App() {
   const { session, ladeVorgang } = useAuth();
-  // null = Hub (Landingpage), 'profile' = Profil-Seite, sonst Modul-Id.
-  // Modul-Wechsel läuft über das Menü in AppHeader, nicht mehr über ein
-  // eigenes Register.
-  const [activeModule, setActiveModule] = useState(null);
+  // module: null = Hub (Landingpage), 'profile' = Profil-Seite, sonst
+  // Modul-Id. view: Unteransicht innerhalb eines Moduls. Kommt komplett
+  // aus der URL (core/lib/useRoute.js) — dadurch übersteht der aktuelle
+  // Bildschirm einen Reload, statt immer zurück zum Hub zu springen, und
+  // jede Ansicht hat automatisch einen eigenen, teilbaren Link.
+  const { module: activeModule, view, navigate } = useRoute();
 
   // App-weit geladen (nicht nur im Hub), damit Popup + Menü-Warnpunkt
   // auf jedem Screen aktuell sind — siehe useRequiredDataStatus.js.
@@ -48,13 +50,21 @@ export default function App() {
 
   return (
     <>
-      <AppHeader activeModule={activeModule} onNavigate={setActiveModule} hasWarnings={warnings.length > 0} />
+      <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
       <main className="main-content">
-        {activeModule === null && <Hub onOpenModule={setActiveModule} />}
-        {activeModule === 'profile' && <Profile onOpenModule={setActiveModule} />}
-        {mod && (ModuleComponent ? <ModuleComponent module={mod} /> : <LockedModule module={mod} />)}
+        {activeModule === null && <Hub onOpenModule={navigate} />}
+        {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
+        {mod && (ModuleComponent ? (
+          <ModuleComponent
+            module={mod}
+            view={view}
+            onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
+          />
+        ) : (
+          <LockedModule module={mod} />
+        ))}
       </main>
-      <RequiredDataToast warnings={warnings} onFix={setActiveModule} />
+      <RequiredDataToast warnings={warnings} onFix={navigate} />
     </>
   );
 }
