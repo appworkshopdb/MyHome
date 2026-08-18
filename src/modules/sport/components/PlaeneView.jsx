@@ -53,14 +53,8 @@ export default function PlaeneView({
           plans.map((plan) => {
             const trainingDays = plan.items.filter((i) => !i.is_rest).length;
             return (
-              <div
-                key={plan.id}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: 8, padding: '10px 0', borderBottom: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
+              <div key={plan.id} className="row-actions">
+                <div className="row-actions-info">
                   <div style={{ fontWeight: 600 }}>{plan.title}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                     {plan.items.length} Tage · {trainingDays} Einheiten
@@ -69,7 +63,7 @@ export default function PlaeneView({
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{plan.notes}</div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                <div className="row-actions-buttons">
                   <button className="btn btn-primary" onClick={() => onOpenApply(plan)}>Eintragen</button>
                   <button className="btn btn-secondary" onClick={() => onEditPlan(plan)}>Bearbeiten</button>
                   <button className="btn btn-secondary" onClick={() => onDeletePlan(plan.id)}>×</button>

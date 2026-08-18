@@ -15,20 +15,16 @@ export default function PlanPicker({ plans, onChoose, onCancel }) {
         plans.map((plan) => {
           const trainingDays = plan.items.filter((i) => !i.is_rest).length;
           return (
-            <div
-              key={plan.id}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 0', borderBottom: '1px solid var(--border)',
-              }}
-            >
-              <div>
+            <div key={plan.id} className="row-actions">
+              <div className="row-actions-info">
                 <div style={{ fontWeight: 600 }}>{plan.title}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   {plan.items.length} Tage · {trainingDays} Einheiten
                 </div>
               </div>
-              <button className="btn btn-primary" onClick={() => onChoose(plan)}>Wählen</button>
+              <div className="row-actions-buttons">
+                <button className="btn btn-primary" onClick={() => onChoose(plan)}>Wählen</button>
+              </div>
             </div>
           );
         })
