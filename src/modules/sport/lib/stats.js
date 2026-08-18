@@ -129,11 +129,18 @@ function scoreToLevel(score) {
   return 3;
 }
 
-// Gibt die letzten `weeksBack` Wochen zurück (älteste zuerst), jede mit
-// erledigt/geplant-Zahl, Intensitätsstufe (0–3) und den genutzten
-// Trainingsarten. Ruhetage sind bewusst ausgeschlossen — sie sind kein
-// Training (gleiche Logik wie computeStats/isDone).
-export function computeWeeklyActivity(workouts, weeksBack = 54) {
+// Gibt alle Wochen eines konkreten Kalenderjahres zurück (älteste
+// zuerst) — nicht mehr "die letzten N Wochen ab heute". Grund: die
+// Heatmap muss mit dem Zeitraum-Filter der Auswertung mitgehen können.
+// Ein fixes rollierendes Fenster hätte z.B. April 2025 nie zeigen
+// können, sobald "heute" mehr als ein Jahr weiter ist — die Woche fiel
+// dann schlicht aus dem Fenster heraus, obwohl Daten existierten.
+//
+// Wochen vor dem 1.1. bzw. nach dem 31.12. werden nicht künstlich
+// abgeschnitten: gehört der Wochenbeginn (Montag) noch ins Vorjahr,
+// wird die Woche trotzdem mitgezählt, damit der 1. Januar nicht in
+// einer unvollständigen Woche hängt.
+export function computeWeeklyActivity(workouts, year) {
   const relevant = workouts.filter((w) => !w.is_rest);
 
   const byWeek = new Map();
@@ -144,19 +151,19 @@ export function computeWeeklyActivity(workouts, weeksBack = 54) {
     byWeek.get(key)[w.status === 'done' ? 'done' : 'planned'].push(label);
   }
 
-  const currentWeekStart = startOfWeek(new Date()).getTime();
+  const firstWeekStart = startOfWeek(new Date(year, 0, 1)).getTime();
+  const lastWeekStart = startOfWeek(new Date(year, 11, 31)).getTime();
   const WEEK = 7 * 86400000;
   const weeks = [];
 
-  for (let i = weeksBack - 1; i >= 0; i--) {
-    const weekStartTime = currentWeekStart - i * WEEK;
-    const entry = byWeek.get(weekStartTime) ?? { done: [], planned: [] };
+  for (let t = firstWeekStart; t <= lastWeekStart; t += WEEK) {
+    const entry = byWeek.get(t) ?? { done: [], planned: [] };
     const doneCount = entry.done.length;
     const plannedCount = entry.planned.length;
     const score = doneCount * SCORE_DONE + plannedCount * SCORE_PLANNED;
 
     weeks.push({
-      weekStart: new Date(weekStartTime),
+      weekStart: new Date(t),
       doneCount,
       plannedCount,
       score,
