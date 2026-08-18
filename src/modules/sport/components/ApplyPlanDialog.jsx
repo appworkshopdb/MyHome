@@ -9,12 +9,22 @@ const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Fr
 export default function ApplyPlanDialog({ plan, defaultDate, onApply, onCancel }) {
   const [startDate, setStartDate] = useState(defaultDate ?? TODAY());
 
+  // Manche Browser (v.a. Firefox) feuern bei <input type="date"> schon
+  // während des Eintippens einzelner Ziffern ein onChange mit
+  // unvollständigem Wert (z.B. "2026-07-"). new Date(...) daraus ergibt
+  // ein Invalid Date — ohne diese Prüfung würde date.getDay() NaN
+  // liefern und WEEKDAYS[NaN].slice(...) die ganze Seite abstürzen
+  // lassen. Bis ein vollständiges Datum eingegeben ist, einfach keine
+  // Vorschau zeigen statt abzustürzen.
   const start = new Date(`${startDate}T00:00:00`);
-  const preview = plan.items.map((item) => {
-    const date = new Date(start);
-    date.setDate(date.getDate() + item.day_index);
-    return { item, date };
-  });
+  const validStart = !isNaN(start.getTime());
+  const preview = validStart
+    ? plan.items.map((item) => {
+        const date = new Date(start);
+        date.setDate(date.getDate() + item.day_index);
+        return { item, date };
+      })
+    : [];
 
   return (
     <div className="card">
@@ -28,6 +38,12 @@ export default function ApplyPlanDialog({ plan, defaultDate, onApply, onCancel }
       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
         Vorschau
       </div>
+
+      {!validStart && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+          Bitte ein vollständiges Startdatum eingeben.
+        </p>
+      )}
 
       {preview.map(({ item, date }) => (
         <div
@@ -49,7 +65,12 @@ export default function ApplyPlanDialog({ plan, defaultDate, onApply, onCancel }
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
         <button className="btn btn-secondary" onClick={onCancel}>Abbrechen</button>
-        <button className="btn btn-primary" onClick={() => onApply(plan, startDate)}>In Kalender eintragen</button>
+        <button
+          className="btn btn-primary"
+          onClick={() => { if (validStart) onApply(plan, startDate); }}
+        >
+          In Kalender eintragen
+        </button>
       </div>
     </div>
   );

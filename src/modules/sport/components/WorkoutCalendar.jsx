@@ -1,10 +1,6 @@
-import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
+import { computeCellStyle } from '../lib/dayVisualState';
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const MONTHS = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -20,9 +16,11 @@ function buildGrid(year, month) {
   return cells;
 }
 
-export default function WorkoutCalendar({ workouts, month, onMonthChange, selectedDate, onSelectDate }) {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
+// Nur noch das Raster selbst — Navigation (Monat/Woche-Umschalter,
+// Vor/Zurück, Jahresauswahl) sitzt jetzt in CalendarHeader.jsx, die
+// Legende in CalendarLegend.jsx. Beide Ansichten teilen sich dieselbe
+// Kopf-/Fußzeile, nur das Raster dazwischen unterscheidet sich.
+export default function WorkoutCalendar({ workouts, year, monthIndex, selectedDate, onSelectDate }) {
   const cells = buildGrid(year, monthIndex);
   const todayIso = iso(new Date());
 
@@ -34,88 +32,35 @@ export default function WorkoutCalendar({ workouts, month, onMonthChange, select
     byDate.get(w.occurred_on).push(w);
   }
 
-  function shiftMonth(delta) {
-    onMonthChange(new Date(year, monthIndex + delta, 1));
-  }
-
   return (
-    <div className="card">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button className="btn btn-secondary" onClick={() => shiftMonth(-1)} aria-label="Vorheriger Monat">
-          <IconChevronLeft />
-        </button>
-        <div style={{ fontWeight: 600 }}>{MONTHS[monthIndex]} {year}</div>
-        <button className="btn btn-secondary" onClick={() => shiftMonth(1)} aria-label="Nächster Monat">
-          <IconChevronRight />
-        </button>
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+      {WEEKDAYS.map((d) => (
+        <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', paddingBottom: 4 }}>
+          {d}
+        </div>
+      ))}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-        {WEEKDAYS.map((d) => (
-          <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', paddingBottom: 4 }}>
-            {d}
-          </div>
-        ))}
+      {cells.map((date, i) => {
+        if (!date) return <div key={`empty-${i}`} />;
 
-        {cells.map((date, i) => {
-          if (!date) return <div key={`empty-${i}`} />;
+        const key = iso(date);
+        const dayWorkouts = byDate.get(key) ?? [];
+        const style = computeCellStyle({ dayWorkouts, isSelected: key === selectedDate, isToday: key === todayIso });
 
-          const key = iso(date);
-          const dayWorkouts = byDate.get(key) ?? [];
-          // Ruhetage separat behandeln: sie haben status='done' (siehe
-          // applyPlan), zählen aber nicht als absolvierte/geplante
-          // Einheit — sonst würde ein Ruhetag fälschlich limette
-          // gefüllt erscheinen wie ein echtes Training.
-          const realWorkouts = dayWorkouts.filter((w) => !w.is_rest);
-          const hasDone = realWorkouts.some((w) => w.status === 'done');
-          const hasPlanned = realWorkouts.some((w) => w.status !== 'done');
-          const hasRest = dayWorkouts.some((w) => w.is_rest);
-          const isSelected = key === selectedDate;
-          const isToday = key === todayIso;
-
-          // Abgehakt = gefüllte Akzentfläche, geplant = nur Rahmen,
-          // Ruhetag = dezente graue Fläche (niedrigste Priorität — ein
-          // zusätzlich eingetragenes echtes Training überstimmt sie).
-          // Auf --accent immer --on-accent als Textfarbe (Design-System).
-          const background = isSelected
-            ? 'var(--text-primary)'
-            : hasDone ? 'var(--accent)'
-            : 'transparent';
-
-          // Streifenmuster statt Flächenfarbe: eine reine Graufläche war
-          // im Dunkelmodus kontrastarm und kaum von einem leeren Tag zu
-          // unterscheiden. Das Muster ist unabhängig vom Farbschema klar
-          // als "eigener Zustand" erkennbar.
-          const restPattern = hasRest && !hasPlanned && !hasDone && !isSelected
-            ? 'repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 4px, var(--border-strong) 4px, var(--border-strong) 8px)'
-            : undefined;
-          const color = isSelected
-            ? 'var(--bg-primary)'
-            : hasDone ? 'var(--on-accent)' : 'var(--text-primary)';
-
-          return (
-            <button
-              key={key}
-              onClick={() => onSelectDate(key)}
-              style={{
-                aspectRatio: '1', border: hasPlanned && !hasDone ? '2px solid var(--accent)' : 'none',
-                borderRadius: 'var(--radius-xs)', background: restPattern ?? background, color,
-                fontWeight: isToday ? 700 : 400, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.85rem', padding: 0,
-              }}
-            >
-              {date.getDate()}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: '0.75rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'var(--accent)', marginRight: 4 }} />erledigt</span>
-        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, border: '2px solid var(--accent)', marginRight: 4 }} />geplant</span>
-        <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: 'repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 2px, var(--border-strong) 2px, var(--border-strong) 4px)', marginRight: 4 }} />Ruhetag</span>
-      </div>
+        return (
+          <button
+            key={key}
+            onClick={() => onSelectDate(key)}
+            style={{
+              aspectRatio: '1', borderRadius: 'var(--radius-xs)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.85rem', padding: 0, ...style,
+            }}
+          >
+            {date.getDate()}
+          </button>
+        );
+      })}
     </div>
   );
 }
