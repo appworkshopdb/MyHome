@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { computeWeeklyActivity, formatWeekRange } from '../lib/stats';
 
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
@@ -26,10 +26,14 @@ function groupByMonth(weeks) {
   return rows;
 }
 
-export default function ActivityHeatmap({ workouts }) {
-  const weeks = useMemo(() => computeWeeklyActivity(workouts), [workouts]);
+export default function ActivityHeatmap({ workouts, year }) {
+  const weeks = useMemo(() => computeWeeklyActivity(workouts, year), [workouts, year]);
   const rows = useMemo(() => groupByMonth(weeks), [weeks]);
+  // Ausgewählte Zelle zurücksetzen, wenn sich das Jahr ändert — sonst
+  // zeigt die Detailkarte nach einem Jahreswechsel kurz einen Index,
+  // der im neuen Jahr etwas ganz anderes bedeutet.
   const [selectedIndex, setSelectedIndex] = useState(weeks.length - 1);
+  useEffect(() => { setSelectedIndex(weeks.length - 1); }, [year]);
 
   const selected = weeks[selectedIndex];
   const prev = weeks[selectedIndex - 1];
@@ -37,7 +41,7 @@ export default function ActivityHeatmap({ workouts }) {
 
   return (
     <div className="card">
-      <div className="card-title">Aktivität</div>
+      <div className="card-title">Aktivität {year}</div>
 
       {rows.map((row) => (
         <div key={`${row.year}-${row.month}`} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>

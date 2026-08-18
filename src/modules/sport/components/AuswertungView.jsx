@@ -71,9 +71,15 @@ export default function AuswertungView({ workouts, loading }) {
   const statsFiltered = computeStats(filteredWorkouts);
   const maxCount = statsFiltered.typeDistribution[0]?.count ?? 1;
 
+  // Heatmap zeigt das Kalenderjahr, auf das der Filter gerade zeigt —
+  // egal ob Woche/Monat/Jahr/Zeitraum, das Jahr des Bereichsanfangs
+  // reicht als Orientierung. Ohne diese Kopplung würde die Heatmap z.B.
+  // April 2025 nie zeigen können, während der Filter genau dort steht.
+  const heatmapYear = range ? Number(range.startIso.slice(0, 4)) : new Date().getFullYear();
+
   return (
     <div className="page">
-      <ActivityHeatmap workouts={workouts} />
+      <ActivityHeatmap workouts={workouts} year={heatmapYear} />
 
       <FilterBar
         mode={mode}
