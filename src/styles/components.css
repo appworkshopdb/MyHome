@@ -264,6 +264,40 @@
   padding: 6px 8px;
 }
 /* ===== Mobile / iPhone (≤480px) ===== */
+/* Zeile mit Titel/Meta links + Aktions-Buttons rechts (z. B. Pläne,
+   Verträge, Listen mit mehreren Buttons pro Eintrag). Mobile-first:
+   auf schmalen Screens (Basis-Breakpoint, siehe base.css) bricht die
+   Button-Gruppe unter den Titel um, statt ihn zusammenzuquetschen. */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.row-actions > .row-actions-info {
+  min-width: 0;
+  flex: 1 1 160px;
+}
+.row-actions > .row-actions-buttons {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 430px) {
+  .row-actions > .row-actions-buttons {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+  .row-actions > .row-actions-buttons .btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
 @media (max-width: 480px) {
   .summary-row { gap: 8px; }
 
