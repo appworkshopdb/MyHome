@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import BottomNav from './components/BottomNav';
 import MonthsView from './components/MonthsView';
 import SummaryView from './components/SummaryView';
@@ -11,17 +10,20 @@ const VIEWS = {
   contracts: ContractsView,
   settings: SettingsView,
 };
+const DEFAULT_VIEW = 'months';
 
 // Das Finanzen-Modul in seiner Gesamtheit — genau der Inhalt, der vorher
-// die komplette App war. Jetzt ist es ein austauschbarer Baustein neben
-// den anderen (noch ungebauten) Modulen in der App-Hülle.
-export default function FinanceModule() {
-  const [view, setView] = useState('months');
-  const View = VIEWS[view];
+// die komplette App war. view/onNavigateView kommen von App.jsx (URL-
+// Routing, core/lib/useRoute.js) — kein eigener useState mehr, dadurch
+// übersteht die aktuelle Unteransicht einen Reload automatisch und hat
+// einen eigenen Link (#/finance/summary usw.), siehe Projektkontext.md.
+export default function FinanceModule({ view, onNavigateView }) {
+  const activeView = VIEWS[view] ? view : DEFAULT_VIEW;
+  const View = VIEWS[activeView];
   return (
     <>
       <View />
-      <BottomNav active={view} onChange={setView} />
+      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
