@@ -17,7 +17,7 @@ function isDone(w) {
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 // Montag als Wochenstart (deutsche Konvention, getDay() liefert 0=So).
-function startOfWeek(date) {
+export function startOfWeek(date) {
   const d = startOfDay(date);
   const weekday = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - weekday);
