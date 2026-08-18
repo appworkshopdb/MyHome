@@ -19,7 +19,9 @@
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-height: var(--touch-target);
   padding: 9px 16px;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;

@@ -27,9 +27,37 @@
   --nav-height: 64px;
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
+
+  /* Spacing-Skala (4/8px-Raster) — feste Werte statt beliebiger px,
+     damit Abstände über alle Module hinweg konsistent bleiben */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Mindestgröße für tippbare Elemente (Buttons, Nav-Items, Checkboxen) */
+  --touch-target: 44px;
+
+  /* Maximale Inhaltsbreite auf großen Screens, damit Karten auf
+     Desktop nicht über die volle Breite auseinandergezogen werden */
+  --content-max: 560px;
 }
 
-/* Dunkel-/Hell-Umschaltung läuft über .dark (siehe themes.css) */
+/*
+  Breakpoints (Referenzwerte, im ganzen Projekt einheitlich verwenden —
+  CSS-Variablen funktionieren nicht in @media-Bedingungen, deshalb hier
+  nur als feste Zahlen dokumentiert statt als --Variable):
+
+    Basis (Design-Ausgangspunkt) : bis 430px   → 1–2 Spalten, Bottom-Nav
+    Große Handys / kl. Tablets   : 431–767px   → wie Basis, mehr Weißraum
+    Tablet                       : 768–1023px  → 2–3 Spalten
+    Desktop                      : ab 1024px   → 3–4 Spalten, --content-max greift
+
+  Neue Komponenten/Module übernehmen diese Werte 1:1, damit die App an
+  keiner Stelle uneinheitlich umbricht.
+*/
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
