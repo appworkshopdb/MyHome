@@ -17,15 +17,19 @@ registerRequirement('sport', async (session) => {
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
+const DEFAULT_VIEW = 'training';
+
 // Hält den gesamten Modul-Zustand: Einheiten, Plan-Vorlagen und die im
 // Profil gewählten Sportarten. Alles wird EINMAL geladen und an die
 // Views durchgereicht — dadurch arbeiten Kalender, Auswertung und
 // Plan-Anwendung garantiert auf demselben Stand.
-export default function SportModule() {
+// view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
+// useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
+export default function SportModule({ view, onNavigateView }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
-  const [view, setView] = useState('training');
+  const activeView = ['training', 'verlauf', 'plaene', 'auswertung'].includes(view) ? view : DEFAULT_VIEW;
   const [workouts, setWorkouts] = useState([]);
   const [plans, setPlans] = useState([]);
   const [userSports, setUserSports] = useState([]);
@@ -95,17 +99,17 @@ export default function SportModule() {
 
   function handleEdit(workout) {
     setFormInitial(workout);
-    setView('training');
+    onNavigateView('training');
   }
 
   function handlePlanNew(date) {
     setFormInitial({ occurred_on: date, status: 'planned' });
-    setView('training');
+    onNavigateView('training');
   }
 
   function startFromPlan(preset) {
     setFormInitial({ type_key: preset.type_key, title: preset.title });
-    setView('training');
+    onNavigateView('training');
   }
 
   // --- Plan-Vorlagen -------------------------------------------------
@@ -140,7 +144,7 @@ export default function SportModule() {
       setApplyingPlan(null);
       showToast(`${count} Einheiten eingetragen`);
       await load();
-      setView('verlauf');
+      onNavigateView('verlauf');
     } catch (e) {
       console.error(e);
       showToast('Plan konnte nicht eingetragen werden');
@@ -195,8 +199,8 @@ export default function SportModule() {
 
   return (
     <>
-      {VIEWS[view]}
-      <BottomNav active={view} onChange={setView} />
+      {VIEWS[activeView]}
+      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
