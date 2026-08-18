@@ -1,5 +1,6 @@
 import { computeStats, formatDuration } from '../lib/stats';
 import BadgesCard from './BadgesCard';
+import ActivityHeatmap from './ActivityHeatmap';
 
 function Stat({ label, value }) {
   return (
@@ -47,6 +48,8 @@ export default function AuswertungView({ workouts, loading }) {
           <Stat label="Wochen-Serie" value={stats.streakWeeks} />
         </div>
       </div>
+
+      <ActivityHeatmap workouts={workouts} />
 
       <BadgesCard workouts={workouts} stats={stats} />
 
