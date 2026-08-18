@@ -26,6 +26,13 @@ export function startOfWeek(date) {
 
 export function computeStats(workouts) {
   const done = workouts.filter(isDone);
+  // Zusätzlich zu "erledigt" jetzt auch "offen" (geplant, noch nicht
+  // abgehakt) und "Ruhetag" separat zählen — bisher wurden beide
+  // komplett ignoriert. isDone() bleibt unverändert (steuert weiterhin
+  // totalCount/streakWeeks/badges), diese beiden sind rein additiv.
+  const open = workouts.filter((w) => w.status !== 'done' && !w.is_rest);
+  const rest = workouts.filter((w) => w.is_rest);
+
   const now = new Date();
 
   const thisWeekStart = startOfWeek(now);
@@ -52,6 +59,12 @@ export function computeStats(workouts) {
   return {
     totalCount: done.length,
     totalDuration: sumDuration(done),
+    // Neu: vollständiger Überblick über den Zeitraum, nicht nur
+    // Erledigtes. allCount = erledigt + offen (Ruhetage zählen bewusst
+    // nicht als Trainingseinheit mit, siehe restCount separat).
+    allCount: done.length + open.length,
+    openCount: open.length,
+    restCount: rest.length,
     weekCount: thisWeek.length,
     weekDuration: sumDuration(thisWeek),
     monthCount: thisMonth.length,
