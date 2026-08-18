@@ -43,7 +43,7 @@ export default function AuswertungView({ workouts, loading }) {
 
   const statsAll = computeStats(workouts);
 
-  if (statsAll.totalCount === 0) {
+  if (statsAll.allCount === 0 && statsAll.restCount === 0) {
     return (
       <div className="page">
         <div className="card">
@@ -98,7 +98,7 @@ export default function AuswertungView({ workouts, loading }) {
             Das Bis-Datum liegt vor dem Von-Datum. Bitte Zeitraum prüfen.
           </p>
         </div>
-      ) : statsFiltered.totalCount === 0 ? (
+      ) : statsFiltered.allCount === 0 && statsFiltered.restCount === 0 ? (
         <div className="card">
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Keine Einheit in diesem Zeitraum.
@@ -108,9 +108,16 @@ export default function AuswertungView({ workouts, loading }) {
         <>
           <div className="card">
             <div className="card-title">{range.label}</div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+              <Stat label="Einheiten gesamt" value={statsFiltered.allCount} />
+              <Stat label="Erledigt" value={statsFiltered.totalCount} />
+            </div>
             <div style={{ display: 'flex', gap: 12 }}>
-              <Stat label="Einheiten" value={statsFiltered.totalCount} />
-              <Stat label="Dauer" value={formatDuration(statsFiltered.totalDuration)} />
+              <Stat label="Offen" value={statsFiltered.openCount} />
+              <Stat label="Restdays" value={statsFiltered.restCount} />
+            </div>
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+              <Stat label="Dauer (erledigt)" value={formatDuration(statsFiltered.totalDuration)} />
             </div>
           </div>
 
@@ -135,9 +142,16 @@ export default function AuswertungView({ workouts, loading }) {
 
       <div className="card">
         <div className="card-title">Insgesamt</div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          <Stat label="Einheiten gesamt" value={statsAll.allCount} />
+          <Stat label="Erledigt" value={statsAll.totalCount} />
+        </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Stat label="Einheiten" value={statsAll.totalCount} />
-          <Stat label="Dauer" value={formatDuration(statsAll.totalDuration)} />
+          <Stat label="Offen" value={statsAll.openCount} />
+          <Stat label="Restdays" value={statsAll.restCount} />
+        </div>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 12 }}>
+          <Stat label="Dauer (erledigt)" value={formatDuration(statsAll.totalDuration)} />
           <Stat label="Wochen-Serie" value={statsAll.streakWeeks} />
         </div>
       </div>
