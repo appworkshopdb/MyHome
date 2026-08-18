@@ -86,18 +86,23 @@ export function computeStreakWeeks(doneWorkouts) {
     doneWorkouts.map((w) => startOfWeek(new Date(w.occurred_on)).getTime())
   );
 
-  const WEEK = 7 * 86400000;
-  let cursor = startOfWeek(new Date()).getTime();
+  // Wichtig: über setDate(-7) statt Millisekunden-Subtraktion weiter-
+  // laufen. Reines "-= 7*86400000" driftet bei jeder Zeitumstellung um
+  // eine Stunde ab (siehe computeWeeklyActivity-Fix) — die Serie würde
+  // dann nach jedem Wechsel Sommer-/Winterzeit fälschlich abreißen,
+  // weil der berechnete Zeitstempel keiner echten Wochenanfang-Zeile
+  // in weekKeys mehr entspricht.
+  const cursor = startOfWeek(new Date());
 
   // Läuft die aktuelle Woche noch ohne Training, zählt die Serie ab
   // letzter Woche weiter — sonst würde der Streak jeden Montag
   // fälschlich auf 0 fallen.
-  if (!weekKeys.has(cursor)) cursor -= WEEK;
+  if (!weekKeys.has(cursor.getTime())) cursor.setDate(cursor.getDate() - 7);
 
   let streak = 0;
-  while (weekKeys.has(cursor)) {
+  while (weekKeys.has(cursor.getTime())) {
     streak += 1;
-    cursor -= WEEK;
+    cursor.setDate(cursor.getDate() - 7);
   }
   return streak;
 }
@@ -151,12 +156,19 @@ export function computeWeeklyActivity(workouts, year) {
     byWeek.get(key)[w.status === 'done' ? 'done' : 'planned'].push(label);
   }
 
-  const firstWeekStart = startOfWeek(new Date(year, 0, 1)).getTime();
-  const lastWeekStart = startOfWeek(new Date(year, 11, 31)).getTime();
-  const WEEK = 7 * 86400000;
+  const firstWeekStart = startOfWeek(new Date(year, 0, 1));
+  const lastWeekStartTime = startOfWeek(new Date(year, 11, 31)).getTime();
   const weeks = [];
 
-  for (let t = firstWeekStart; t <= lastWeekStart; t += WEEK) {
+  // Wichtig: per setDate(+7) auf einem echten Date-Objekt weiterlaufen,
+  // nicht per Millisekunden-Addition (t += 7*86400000). Letzteres
+  // driftet bei jeder Zeitumstellung (Sommer-/Winterzeit) um eine
+  // Stunde ab — genau das ließ die Heatmap ab dem Frühjahr komplett
+  // leer erscheinen, obwohl Einheiten eingetragen waren: der berechnete
+  // Zeitstempel passte zu keinem echten Wochenanfang mehr aus byWeek.
+  const cursor = new Date(firstWeekStart);
+  while (cursor.getTime() <= lastWeekStartTime) {
+    const t = cursor.getTime();
     const entry = byWeek.get(t) ?? { done: [], planned: [] };
     const doneCount = entry.done.length;
     const plannedCount = entry.planned.length;
@@ -172,6 +184,8 @@ export function computeWeeklyActivity(workouts, year) {
       // Detailkarte beim Antippen einer Zelle.
       types: [...new Set([...entry.done, ...entry.planned])],
     });
+
+    cursor.setDate(cursor.getDate() + 7);
   }
 
   return weeks;
