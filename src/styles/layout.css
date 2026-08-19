@@ -7,52 +7,68 @@
 .view { display: none; }
 .view.active { display: block; }
 
-/* Bottom Navigation */
+/* Bottom Navigation — flache 5-Zellen-Leiste, mittlere Zelle ist immer
+   der globale "+"-FAB (siehe core/components/ModuleBottomNav.jsx).
+   Aktive Zelle = volle Füllung, keine Pille mehr. */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   height: var(--nav-height);
   background: var(--bg-secondary);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--text-primary);
   display: flex;
-  justify-content: space-around;
-  align-items: center;
+  align-items: stretch;
   z-index: 100;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .nav-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
+  justify-content: center;
+  gap: 4px;
   color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
-  min-width: 60px;
+  min-height: var(--touch-target);
 }
 
 .nav-item svg {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
 .nav-item span {
-  font-size: 0.68rem;
-  font-weight: 500;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .nav-item.active {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-radius: 999px;
+  color: var(--bg-primary);
+  background: var(--text-primary);
 }
 
 .nav-item:hover:not(.active) {
   color: var(--text-primary);
-  background: var(--bg-input);
 }
+
+/* Zentraler FAB-Slot in der Bottom-Nav — modulabhängig vorbelegtes
+   Erfassen (Finanzen: Ausgabe, Sport: Einheit loggen, usw.) */
+.nav-fab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+}
+.nav-fab:hover { background: var(--accent-dark); }
 
 /* Page Header */
 .page-header {

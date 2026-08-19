@@ -1,5 +1,5 @@
 /* ============================================================
-   Ein Design, zwei Modi — Schwarz/Weiß + Limette-Akzent.
+   Editorial Bold — Schwarz/Weiß + Elektroblau-Akzent, scharfe Kanten.
    Aktiviert über  .dark  auf <html> (per JS: Hell / Dunkel / System,
    siehe core/lib/theme.js). Alle Werte kommen aus base.css :root
    und werden hier für den Dunkel-Modus überschrieben.
@@ -10,15 +10,15 @@
 
   --bg-primary: #0D0D0D;
   --bg-secondary: #0D0D0D;
-  --bg-card: #1B1B1B;
-  --bg-input: #1B1B1B;
+  --bg-card: #161616;
+  --bg-input: #161616;
   --text-primary: #FFFFFF;
   --text-secondary: #A8A8A8;
   --text-muted: #6B6B6B;
-  --accent: #D6FF3D;
-  --accent-light: #2A331A;
-  --accent-dark: #C2E82E;
-  --on-accent: #0D0D0D;
+  --accent: #4B6BFF;
+  --accent-light: #16224D;
+  --accent-dark: #6B85FF;
+  --on-accent: #FFFFFF;
   --danger: #E07860;
   --danger-light: #301A16;
   --warning: #D4AE5C;
@@ -26,30 +26,29 @@
   --success: #70A880;
   --success-light: #1A2E20;
   --border: #2A2A2A;
-  --border-strong: #3D3D3D;
+  --border-strong: #FFFFFF;
   --shadow: none;
   --shadow-sm: none;
 }
 
-/* Modus-Umschalter (Hell / Dunkel / System) in den Einstellungen */
+/* Modus-Umschalter (Hell / Dunkel / System): schwarz/weißer Segmented
+   Control statt farbiger Pill — passend zur Editorial-Bold-Richtung */
 .mode-toggle {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 4px;
+  gap: 0;
+  border: 1.5px solid var(--text-primary);
 }
 .mode-toggle button {
-  padding: 8px 6px;
-  border-radius: var(--radius-xs);
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 10px 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--text-secondary);
+  border-right: 1px solid var(--border);
   transition: background 0.15s, color 0.15s;
 }
+.mode-toggle button:last-child { border-right: none; }
 .mode-toggle button.active {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }

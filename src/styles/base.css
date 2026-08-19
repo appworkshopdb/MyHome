@@ -1,31 +1,31 @@
 :root {
-  /* Hell-Modus: Weiß mit schwarzen Elementen, ein Akzent (Limette) */
-  --bg-primary: #FAFAFA;
+  /* "Editorial Bold": Weiß, scharfe Kanten, ein Akzent (Elektroblau) */
+  --bg-primary: #FFFFFF;
   --bg-secondary: #FFFFFF;
-  --bg-card: #F2F2F2;
-  --bg-input: #F2F2F2;
+  --bg-card: #F0F0F0;
+  --bg-input: #F0F0F0;
   --text-primary: #0D0D0D;
   --text-secondary: #5C5C5C;
   --text-muted: #9A9A9A;
-  --accent: #D6FF3D;
-  --accent-light: #EEFAC2;
-  --accent-dark: #BEE62A;
-  --on-accent: #0D0D0D;
+  --accent: #2B4BFF;
+  --accent-light: #EAF0FF;
+  --accent-dark: #1E3ACC;
+  --on-accent: #FFFFFF;
   --danger: #C0624A;
   --danger-light: #FAF0EE;
   --warning: #C49A3C;
   --warning-light: #FBF5E6;
   --success: #5A8F6A;
   --success-light: #EBF3ED;
-  --border: #E5E5E5;
-  --border-strong: #CCCCCC;
+  --border: #E4E4E4;
+  --border-strong: #0D0D0D;
   --shadow: none;
   --shadow-sm: none;
-  --radius: 16px;
-  --radius-sm: 12px;
-  --radius-xs: 10px;
-  --nav-height: 64px;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --radius-xs: 0px;
+  --nav-height: 68px;
+  --font: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
 
   /* Spacing-Skala (4/8px-Raster) — feste Werte statt beliebiger px,
@@ -43,6 +43,7 @@
   /* Maximale Inhaltsbreite auf großen Screens, damit Karten auf
      Desktop nicht über die volle Breite auseinandergezogen werden */
   --content-max: 560px;
+
 }
 
 /*
