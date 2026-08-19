@@ -6,8 +6,19 @@ import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
 // hier über die Checkbox (Konzept-Entscheidung) — ein Klick genügt,
 // kein Umweg über das Formular. Der DB-Trigger übernimmt daraufhin die
 // Auswertungs-Kennzahlen.
-export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDelete, onPlanNew, onPickPlan }) {
+export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit, onDelete, onPlanNew, onPickPlan }) {
   const dayWorkouts = workouts.filter((w) => w.occurred_on === date);
+
+  // "Tag X von Y" nur berechenbar, wenn plan_day_index gesetzt ist
+  // (erst seit dieser Migration) UND der zugehörige Plan noch existiert
+  // (nicht gelöscht wurde) — sonst bewusst kein Fortschritt anzeigen
+  // statt zu raten.
+  function planProgress(w) {
+    if (w.plan_id == null || w.plan_day_index == null) return null;
+    const plan = plans?.find((p) => p.id === w.plan_id);
+    if (!plan) return null;
+    return `Tag ${w.plan_day_index + 1} von ${plan.items.length} · ${plan.title}`;
+  }
 
   return (
     <div className="card">
@@ -36,7 +47,12 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
                   width: 26, height: 26, flexShrink: 0, borderRadius: 'var(--radius-xs)',
                   background: 'var(--border-strong)',
                 }} />
-                <div style={{ flex: 1, minWidth: 0, fontWeight: 600 }}>{w.title}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{w.title}</div>
+                  {planProgress(w) && (
+                    <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>{planProgress(w)}</div>
+                  )}
+                </div>
                 <button className="btn btn-secondary" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
               </div>
             );
@@ -76,6 +92,9 @@ export default function DayDetail({ date, workouts, onToggleDone, onEdit, onDele
                 </div>
                 {w.notes && (
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{w.notes}</div>
+                )}
+                {planProgress(w) && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{planProgress(w)}</div>
                 )}
               </div>
 

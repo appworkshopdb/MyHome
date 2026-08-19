@@ -92,6 +92,7 @@ export default function VerlaufView({ workouts, plans, loading, onToggleDone, on
         <DayDetail
           date={selectedDate}
           workouts={workouts}
+          plans={plans}
           onToggleDone={onToggleDone}
           onEdit={onEdit}
           onDelete={onDelete}
