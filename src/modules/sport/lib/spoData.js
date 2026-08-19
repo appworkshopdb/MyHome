@@ -181,6 +181,11 @@ export async function applyPlan(session, plan, startDate) {
       duration_min: item.duration_min ?? null,
       notes: item.notes ?? null,
       plan_id: plan.id,
+      // Speichert die Position in der Vorlage direkt mit — sonst ließe
+      // sich "Tag X von Y" später nicht mehr zuverlässig rekonstruieren,
+      // vor allem wenn derselbe Plan mehrfach zu unterschiedlichen
+      // Terminen eingetragen wird (dann wäre plan_id allein mehrdeutig).
+      plan_day_index: item.day_index,
     };
   });
 
