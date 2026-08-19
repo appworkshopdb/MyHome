@@ -25,24 +25,30 @@
 .nav-item {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
   min-height: var(--touch-target);
 }
 
 .nav-item svg {
-  width: 18px;
-  height: 18px;
+  width: 21px;
+  height: 21px;
 }
 
 .nav-item span {
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  /* Label bleibt für Screenreader im DOM, wird aber visuell versteckt
+     ("nur Symbol, kein Text" laut Design-Entscheidung) */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
   text-transform: uppercase;
 }
 
