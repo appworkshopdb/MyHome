@@ -338,7 +338,7 @@ export default function ContractsView() {
   return (
     <>
       <div className="page-header">
-        <h1>Regelmäßig</h1>
+        <h1>Laufende Posten</h1>
       </div>
 
       {/* 1. Einnahmequellen */}
