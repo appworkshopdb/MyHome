@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import * as db from '../lib/finData';
-import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE } from '../lib/finance';
+import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE, intervalLabel, INTERVALS } from '../lib/finance';
 import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
 import GoalsSection from '../../../core/components/GoalsSection';
@@ -170,11 +170,16 @@ export default function SettingsView() {
                   <tr key={t.id} className="entry-row" style={{ cursor: 'pointer' }} onClick={() => setModal({ tpl: t })}>
                     <td>
                       {t.name}
-                      {t.quarterly && (
-                        <><br /><span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                          alle 3 Monate ab {MONTHS_DE[(t.start_month || 1) - 1]}
-                        </span></>
-                      )}
+                      {(() => {
+                        const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
+                        if (iv === 'monthly') return null;
+                        const ivMonths = INTERVALS[iv]?.months ?? 1;
+                        return (
+                          <><br /><span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            alle {ivMonths} Monate ab {MONTHS_DE[(t.start_month || 1) - 1]}
+                          </span></>
+                        );
+                      })()}
                     </td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                       {FIX_TEMPLATE_CATEGORIES[t.category] || t.category}

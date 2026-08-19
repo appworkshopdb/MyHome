@@ -4,10 +4,13 @@ import ModuleBottomNav from '../../../core/components/ModuleBottomNav';
 // Menüpunkte für dieses Modul — die Leisten-Hülle selbst kommt aus
 // core/components/ModuleBottomNav.jsx (siehe Projektkontext.md,
 // Abschnitt "Modul-Leiste").
+//
+// "contracts" → "Regelmäßig": Oberbegriff für Verträge, Abos,
+// Einnahmequellen — alles was regelmäßig/dauerhaft anfällt.
 const ITEMS = [
-  { key: 'months', label: 'Monat', Icon: IconMonth },
-  { key: 'summary', label: 'Auswertung', Icon: IconSummary },
-  { key: 'contracts', label: 'Verträge', Icon: IconContracts },
+  { key: 'months',    label: 'Monat',       Icon: IconMonth },
+  { key: 'summary',  label: 'Auswertung',  Icon: IconSummary },
+  { key: 'contracts', label: 'Regelmäßig', Icon: IconContracts },
   { key: 'settings', label: 'Einstellungen', Icon: IconSettings },
 ];
 
