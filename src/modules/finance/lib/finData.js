@@ -40,7 +40,6 @@ export async function saveEntry(session, entry) {
 }
 
 export async function deleteEntry(id) {
-  // Soft delete, damit Sync und spätere Auswertungen konsistent bleiben.
   const { error } = await getSupabase()
     .from('fin_entries')
     .update({ deleted_at: new Date().toISOString() })
@@ -68,18 +67,118 @@ export async function getFixTemplates(session) {
 }
 
 export async function saveFixTemplate(session, tpl) {
+  const isUpdate = !!tpl.id;
   const payload = { ...tpl, owner_id: ownerId(session) };
-  const { data, error } = await getSupabase().from('fin_fixtemplates').upsert(payload).select().single();
+  const { data: saved, error } = await getSupabase()
+    .from('fin_fixtemplates')
+    .upsert(payload)
+    .select()
+    .single();
   if (error) throw error;
-  return data;
+
+  // Bei einem Update: abhängige fin_entries synchronisieren.
+  // Nur nicht-bezahlte Einträge werden aktualisiert — bezahlte sind
+  // bereits abgerechnet und sollen die historische Wahrheit bewahren.
+  if (isUpdate) {
+    await syncTemplateEntries(session, saved);
+  }
+
+  return saved;
 }
 
-export async function deleteFixTemplate(id) {
-  const { error } = await getSupabase()
-    .from('fin_fixtemplates')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+// Synchronisiert alle fin_entries die von dieser Vorlage stammen:
+//  • Name und Betrag werden in noch nicht bezahlten Einträgen aktualisiert
+//  • Einträge in Monaten die nach dem Intervall nicht mehr fällig sind
+//    werden soft-deleted
+//  • Fehlende Einträge in Monaten wo die Vorlage fällig ist werden
+//    angelegt (nur für bereits existierende Monate, nicht in der Zukunft
+//    über den aktuellen Monat hinaus)
+async function syncTemplateEntries(session, tpl) {
+  const now = new Date();
+  const currentYear  = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  // Alle Einträge dieser Vorlage holen (inkl. soft-deleted, um
+  // Doppelanlage zu vermeiden)
+  const { data: allEntries, error } = await getSupabase()
+    .from('fin_entries')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .eq('from_template', tpl.id);
   if (error) throw error;
+
+  const activeEntries = allEntries.filter((e) => !e.deleted_at);
+
+  for (const entry of activeEntries) {
+    const applies = templateAppliesTo(tpl, entry.year, entry.month);
+    const isFuture = entry.year > currentYear ||
+      (entry.year === currentYear && entry.month > currentMonth);
+
+    if (!applies) {
+      // Vorlage gilt nicht mehr für diesen Monat (Intervall geändert) →
+      // nur löschen wenn noch nicht bezahlt; bezahlte sind historisch
+      if (!entry.paid) {
+        await getSupabase()
+          .from('fin_entries')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', entry.id);
+      }
+    } else {
+      // Vorlage gilt noch — Name und Betrag nachziehen wenn unbezahlt
+      // Zukünftige Einträge immer aktualisieren (noch nicht "real")
+      if (!entry.paid || isFuture) {
+        await getSupabase()
+          .from('fin_entries')
+          .update({ name: tpl.name, amount: tpl.amount, payment: tpl.payment })
+          .eq('id', entry.id);
+      }
+    }
+  }
+
+  // Fehlende Einträge für bereits existierende Monate anlegen
+  // (nur bis inkl. aktuellem Monat — keine Zukunft)
+  const existingKeys = new Set(
+    allEntries.filter((e) => !e.deleted_at).map((e) => `${e.year}-${e.month}`)
+  );
+  // Welche Monate wurden überhaupt je für diesen User genutzt?
+  const allUserEntries = await getAllEntries(session);
+  const usedKeys = new Set(allUserEntries.map((e) => `${e.year}-${e.month}`));
+  usedKeys.add(`${currentYear}-${currentMonth}`);
+
+  for (const key of usedKeys) {
+    const [y, m] = key.split('-').map(Number);
+    const isFutureMonth = y > currentYear || (y === currentYear && m > currentMonth);
+    if (isFutureMonth) continue;
+    if (existingKeys.has(key)) continue;
+    if (!templateAppliesTo(tpl, y, m)) continue;
+    await saveEntry(session, templateToEntry(tpl, y, m));
+  }
+}
+
+// ---------------------------------------------------------------------
+// Vorlage löschen — entfernt auch alle abhängigen fin_entries
+// ---------------------------------------------------------------------
+
+export async function deleteFixTemplate(session, id) {
+  const now = new Date().toISOString();
+
+  // 1. Vorlage selbst soft-deleten
+  const { error: tplErr } = await getSupabase()
+    .from('fin_fixtemplates')
+    .update({ deleted_at: now })
+    .eq('id', id);
+  if (tplErr) throw tplErr;
+
+  // 2. Alle noch nicht bezahlten fin_entries dieser Vorlage soft-deleten.
+  //    Bezahlte Einträge bleiben als historische Buchung erhalten —
+  //    sie sind bereits abgerechnet und gehören zur Monatswahrheit.
+  const { error: entryErr } = await getSupabase()
+    .from('fin_entries')
+    .update({ deleted_at: now })
+    .eq('from_template', id)
+    .eq('paid', false)
+    .is('deleted_at', null);
+  if (entryErr) throw entryErr;
 }
 
 function templateToEntry(t, year, month) {
@@ -96,10 +195,7 @@ function templateToEntry(t, year, month) {
 }
 
 // Prüft direkt gegen die Datenbank, welche Vorlagen in diesem Monat noch
-// fehlen, und legt sie an. Bewusst ohne lokalen "seeded"-Zwischenspeicher
-// (wie es das Original per localStorage tat) — das wäre bei mehreren
-// Geräten die falsche Quelle der Wahrheit. Der Datenbestand selbst
-// entscheidet, was schon existiert.
+// fehlen, und legt sie an.
 export async function applyMissingFixTemplates(session, year, month) {
   const [templates, monthEntries] = await Promise.all([
     getFixTemplates(session),
@@ -188,7 +284,7 @@ export async function saveSaving(session, saving) {
 }
 
 // ---------------------------------------------------------------------
-// Export/Import (Backup, nicht die primäre Sync-Methode)
+// Export/Import
 // ---------------------------------------------------------------------
 
 export async function exportAllData(session) {
@@ -202,14 +298,11 @@ export async function exportAllData(session) {
 }
 
 // ---------------------------------------------------------------------
-// Alle Daten des Kontos löschen (Einstellungen → "Alle Daten löschen")
+// Alle Daten löschen
 // ---------------------------------------------------------------------
 
 export async function deleteAllData(session) {
   const owner = ownerId(session);
-  // Hartes Löschen (nicht soft): der Nutzer will die Daten wirklich weg
-  // haben. Die measurements im Kern hängen per Trigger an fin_entries und
-  // werden dadurch automatisch mitentfernt.
   for (const table of ['fin_entries', 'fin_savings', 'fin_contracts', 'fin_fixtemplates']) {
     const { error } = await getSupabase().from(table).delete().eq('owner_id', owner);
     if (error) throw error;
@@ -217,10 +310,7 @@ export async function deleteAllData(session) {
 }
 
 // ---------------------------------------------------------------------
-// XLSX-Migration: Buchungen und Ersparnisse aus der alten Excel-/Google-
-// Sheets-Tabelle einlesen. Spaltenaufteilung wie im Original:
-// A–C Einnahmen, D–F Fixkosten, G–I Sonstige Ausgaben; das Blatt
-// "Auswertung" enthält zusätzlich die Ersparnisse pro Monat.
+// XLSX-Migration
 // ---------------------------------------------------------------------
 
 export function parseXlsxWorkbook(XLSX, workbook, importYear) {
@@ -239,7 +329,6 @@ export function parseXlsxWorkbook(XLSX, workbook, importYear) {
       const row = rows[r];
       if (!row) continue;
 
-      // Einnahmen (Spalten 0-2)
       const nameA = row[0], payA = row[1], amtA = row[2];
       if (nameA && typeof nameA === 'string') {
         if (nameA === 'Fixeinnahmen') currentCat = 'fixeinnahmen';
@@ -255,7 +344,6 @@ export function parseXlsxWorkbook(XLSX, workbook, importYear) {
         }
       }
 
-      // Fixkosten (Spalten 3-5)
       const nameB = row[3], payB = row[4], amtB = row[5];
       if (nameB && typeof nameB === 'string' &&
           !['Summe', 'Name', 'Fixkosten'].includes(nameB) && typeof amtB === 'number') {
@@ -263,7 +351,6 @@ export function parseXlsxWorkbook(XLSX, workbook, importYear) {
           name: nameB.trim(), payment: payB || 'Bank', amount: amtB });
       }
 
-      // Sonstige Ausgaben (Spalten 6-8)
       const nameC = row[6], payC = row[7], amtC = row[8];
       if (nameC && typeof nameC === 'string' &&
           !['Summe', 'Name', 'Sonstige Ausgaben'].includes(nameC) && typeof amtC === 'number') {
@@ -273,7 +360,6 @@ export function parseXlsxWorkbook(XLSX, workbook, importYear) {
     }
   }
 
-  // Auswertungsblatt: Ersparnisse lesen
   if (workbook.SheetNames.includes('Auswertung')) {
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets['Auswertung'], { header: 1, defval: null });
     let inSavings = false;
@@ -301,16 +387,13 @@ export async function saveXlsxImport(session, entries, savings) {
   }
   return counters;
 }
+
 function toIso(msOrIso) {
   if (!msOrIso) return new Date().toISOString();
   if (typeof msOrIso === 'number') return new Date(msOrIso).toISOString();
-  return msOrIso; // bereits ein ISO-String (neues Format)
+  return msOrIso;
 }
 
-// Repliziert die Heuristik aus dem Original-app.js (migrateVariableKosten):
-// Fixkosten-Posten mit "urlaub"/"spargeld" im Namen gehören eigentlich zu
-// Variable Kosten. Die "Finanzen 2"-Version (DB_VERSION 1) hatte diese
-// Migration nie durchlaufen — beim Import holen wir das hier nach.
 function fixLegacyCategory(category, name) {
   if (category === 'fixkosten') {
     const n = (name || '').toLowerCase();
@@ -319,11 +402,6 @@ function fixLegacyCategory(category, name) {
   return category;
 }
 
-// Ältere Exporte enthalten teils frei getippte Zahlungsart-Werte (Tippfehler,
-// Klammerzusätze wie "Bank (Revolut)", Reste aus einer noch älteren Excel-
-// Migration wie "übrig"). Die Datenbank erlaubt nur eine feste Werteliste —
-// unbekannte Werte werden hier auf "Bank" normalisiert, statt den Import
-// mit einem Datenbankfehler abbrechen zu lassen.
 const KNOWN_PAYMENTS = new Set(['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna']);
 function normalizePayment(p, counters) {
   const trimmed = (p || '').trim();
@@ -335,24 +413,12 @@ function normalizePayment(p, counters) {
 export async function importLegacyBackup(session, data, currentYear, currentMonth) {
   const counts = { entries: 0, savings: 0, contracts: 0, fixtemplates: 0, paymentFixed: 0 };
 
-  // Reihenfolge bewusst so: erst die eigentlichen Buchungen importieren
-  // (das ist die historische Wahrheit, so wie sie tatsächlich passiert
-  // ist), danach erst die Vorlagen anlegen — ohne sie rückwirkend auf
-  // Monate zu erzwingen. Andersherum (Vorlagen zuerst automatisch
-  // anwenden) erzeugt Duplikate für den aktuellen Monat, weil die
-  // "gibt's das schon?"-Prüfung zu dem Zeitpunkt noch nichts von den
-  // gleich folgenden echten Buchungen weiß.
   for (const e of data.entries || []) {
     const category = fixLegacyCategory(e.category, e.name);
     await saveEntry(session, {
-      id: e.id,
-      year: e.year,
-      month: e.month,
-      category,
-      name: e.name,
-      payment: normalizePayment(e.payment, counts),
-      amount: e.amount,
-      paid: !!e.paid,
+      id: e.id, year: e.year, month: e.month, category,
+      name: e.name, payment: normalizePayment(e.payment, counts),
+      amount: e.amount, paid: !!e.paid,
       from_template: e.from_template ?? e.fromTemplate ?? null,
       created_at: toIso(e.created_at ?? e.createdAt),
     });
@@ -361,40 +427,24 @@ export async function importLegacyBackup(session, data, currentYear, currentMont
 
   for (const t of data.fixtemplates || []) {
     await saveFixTemplate(session, {
-      id: t.id,
-      category: t.category,
-      name: t.name,
+      id: t.id, category: t.category, name: t.name,
       payment: normalizePayment(t.payment, counts),
-      amount: t.amount,
-      quarterly: !!t.quarterly,
+      amount: t.amount, quarterly: !!t.quarterly,
       start_month: t.start_month ?? t.startMonth ?? null,
       start_year: t.start_year ?? t.startYear ?? null,
     });
     counts.fixtemplates++;
-    // Bewusst KEIN automatisches Zurückanwenden auf vergangene oder den
-    // aktuellen Monat mehr — die importierten Buchungen sind bereits die
-    // korrekte historische Wahrheit. Für zukünftige Monate übernimmt die
-    // normale App-Logik (applyMissingFixTemplates beim Öffnen eines
-    // Monats) die Vorlage automatisch, sobald sie fällig wird.
   }
 
   for (const s of data.savings || []) {
-    await saveSaving(session, {
-      year: s.year,
-      month: s.month,
-      amount: s.amount,
-      note: s.note || null,
-    });
+    await saveSaving(session, { year: s.year, month: s.month, amount: s.amount, note: s.note || null });
     counts.savings++;
   }
 
   for (const c of data.contracts || []) {
     const isMonthly = c.is_monthly ?? c.end === 'monatlich';
     await saveContract(session, {
-      id: c.id,
-      name: c.name,
-      amount: c.amount,
-      duration: c.duration || null,
+      id: c.id, name: c.name, amount: c.amount, duration: c.duration || null,
       start_date: c.start_date ?? c.start ?? null,
       end_date: isMonthly ? null : (c.end_date ?? (c.end !== 'monatlich' ? c.end : null)) || null,
       is_monthly: isMonthly,
