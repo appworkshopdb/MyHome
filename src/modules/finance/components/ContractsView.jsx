@@ -401,7 +401,7 @@ export default function ContractsView() {
 
   async function handleDeleteTemplate(id) {
     if (!confirm('Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
-    await db.deleteFixTemplate(id);
+    await db.deleteFixTemplate(session, id);
     setModal(null);
     showToast('Posten gelöscht');
     load();
