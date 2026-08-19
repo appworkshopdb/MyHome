@@ -32,10 +32,26 @@ export default function Login() {
 
   return (
     <div className="auth-screen">
+      <div className="auth-wordmark">ZUHAUSE</div>
+
       <form className="auth-card" onSubmit={submit}>
         <div>
-          <h1>Zuhause</h1>
-          <div className="sub">{mode === 'signin' ? 'Melde dich an' : 'Konto anlegen'}</div>
+          <h1>
+            {(mode === 'signin'
+              ? ['Dein Leben,', 'in Zahlen die', 'dir gehören.']
+              : ['Neu hier?', 'Ein Konto für', 'alles.']
+            ).map((line, i, arr) => (
+              <span key={i}>
+                {line}
+                {i < arr.length - 1 && <br />}
+              </span>
+            ))}
+          </h1>
+          <div className="sub">
+            {mode === 'signin'
+              ? 'Geld, Sport, Ernährung, Gewohnheiten — ein Konto, sechs Module, alles auf jedem Gerät.'
+              : 'Ein Konto, alle Module. Kein zusätzliches Passwort pro Bereich.'}
+          </div>
         </div>
 
         {!supabaseConfigured && (
@@ -45,25 +61,29 @@ export default function Login() {
           </div>
         )}
 
-        <div className="form-group">
+        <div className="auth-field">
           <label>E-Mail</label>
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
 
-        <div className="form-group">
+        <div className="auth-field">
           <label>Passwort</label>
           <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
 
         {status && <div className={`auth-msg ${status.type}`}>{status.text}</div>}
 
-        <button type="submit" className="btn btn-primary btn-block" disabled={busy || !supabaseConfigured}>
-          {busy ? 'Bitte warten…' : mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
-        </button>
+        <div className="auth-actions">
+          <button type="submit" className="btn btn-primary btn-block" disabled={busy || !supabaseConfigured}>
+            {busy ? 'Bitte warten…' : mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
+          </button>
 
-        <button type="button" className="link-btn" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-          {mode === 'signin' ? 'Noch kein Konto? Registrieren' : 'Schon ein Konto? Anmelden'}
-        </button>
+          <button type="button" className="btn btn-outline-block" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
+            {mode === 'signin' ? 'Konto erstellen' : 'Schon ein Konto? Anmelden'}
+          </button>
+        </div>
+
+        <div className="auth-footnote">Server in Frankfurt. Keine Werbung, keine Weitergabe.</div>
       </form>
     </div>
   );
