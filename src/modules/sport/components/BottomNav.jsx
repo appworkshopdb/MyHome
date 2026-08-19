@@ -1,5 +1,6 @@
 import { IconDumbbell, IconCalendarSmall, IconBulb, IconSummary } from '../../../core/components/Icons';
 import ModuleBottomNav from '../../../core/components/ModuleBottomNav';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 
 // Menüpunkte für dieses Modul — die Leisten-Hülle selbst kommt aus
 // core/components/ModuleBottomNav.jsx (siehe Projektkontext.md,
@@ -13,5 +14,6 @@ const ITEMS = [
 ];
 
 export default function BottomNav({ active, onChange }) {
-  return <ModuleBottomNav items={ITEMS} active={active} onChange={onChange} />;
+  const { open } = useEntrySheet();
+  return <ModuleBottomNav items={ITEMS} active={active} onChange={onChange} onAdd={() => open('sport')} />;
 }
