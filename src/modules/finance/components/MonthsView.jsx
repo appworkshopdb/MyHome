@@ -197,7 +197,7 @@ export default function MonthsView() {
                 className="fin-add-row"
                 onClick={() => setModal({ entry: null, defaultCategory: col.cats[col.cats.length - 1] })}
               >
-                + Eintrag zu {col.label.toLowerCase()}
+                + Eintrag zu {col.label}
               </button>
             </div>
           );
