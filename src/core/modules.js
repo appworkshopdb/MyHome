@@ -9,11 +9,11 @@
 // wenn built: false).
 
 export const MODULES = [
-  { id: 'everyday', name: 'Alltag', tier: 'frei', color: '#426A9E', built: true },
-  { id: 'shopping', name: 'Einkauf', tier: 'frei', color: '#4F8A52', built: true },
-  { id: 'nutrition', name: 'Ernährung', tier: 'paid', price: '4,99 €', color: '#BE8225', built: true },
-  { id: 'finance', name: 'Finanzen', tier: 'paid', price: '4,99 €', color: '#75579B', built: true },
-  { id: 'sport', name: 'Sport', tier: 'paid', price: '4,99 €', color: '#B94A3E', built: true },
+  { id: 'everyday', name: 'Alltag', tier: 'frei', color: '#3F6BA8', built: true },
+  { id: 'shopping', name: 'Einkauf', tier: 'frei', color: '#4E8A56', built: true },
+  { id: 'nutrition', name: 'Ernährung', tier: 'paid', price: '4,99 €', color: '#A8792A', built: true },
+  { id: 'finance', name: 'Finanzen', tier: 'paid', price: '4,99 €', color: '#7A57A8', built: true },
+  { id: 'sport', name: 'Sport', tier: 'paid', price: '4,99 €', color: '#A84A3F', built: true },
   { id: 'habits', name: 'Gewohnheiten', tier: 'paid', price: '3,99 €', color: '#2F8385', built: true },
 ];
 
