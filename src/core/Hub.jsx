@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum, getRecentMeasurements } from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
-import { getModule } from './modules';
+import { MODULES, getModule } from './modules';
 
 // Menschenlesbare Labels je metric_key. Bewusst hier zentral gepflegt,
 // nicht pro Modul verstreut — neue Module tragen hier einfach ihre
@@ -12,16 +12,10 @@ const METRIC_LABELS = {
   'finance.expense': 'Ausgabe',
 };
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 11) return 'Guten Morgen';
-  if (h < 18) return 'Guten Tag';
-  return 'Guten Abend';
-}
-
 export default function Hub({ onOpenModule }) {
   const { session } = useAuth();
-  const [saldo, setSaldo] = useState(null);
+  const [income, setIncome] = useState(0);
+  const [expense, setExpense] = useState(0);
   const [activity, setActivity] = useState([]);
   const [ladeVorgang, setLadeVorgang] = useState(true);
 
@@ -30,13 +24,14 @@ export default function Hub({ onOpenModule }) {
     async function load() {
       const now = new Date();
       try {
-        const [income, expense, recent] = await Promise.all([
+        const [inc, exp, recent] = await Promise.all([
           getMonthSum(session, 'finance.income', now.getFullYear(), now.getMonth() + 1),
           getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
           getRecentMeasurements(session, 5),
         ]);
         if (!aktiv) return;
-        setSaldo(income - expense);
+        setIncome(inc);
+        setExpense(exp);
         setActivity(recent);
       } catch (e) {
         console.error('[Hub] Laden fehlgeschlagen:', e);
@@ -48,56 +43,104 @@ export default function Hub({ onOpenModule }) {
     return () => { aktiv = false; };
   }, [session]);
 
-  const name = session.user.email.split('@')[0];
-  const heute = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  const saldo = income - expense;
+  const hatDaten = !ladeVorgang && activity.length > 0;
+  const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
+  // Modul mit der jüngsten Aktivität bekommt die invertierte Kachel —
+  // kein erfundener "wichtigster" Wert, sondern das, was gerade lief.
+  const hervorgehobenesModul = activity[0]?.source_module || 'finance';
 
   return (
     <div className="hub">
-      <div className="page-header">
-        <h1>{greeting()}, {name}</h1>
-        <p style={{ marginTop: 2 }}>{heute}</p>
-      </div>
+      {ladeVorgang && <div className="status-note">Wird geladen…</div>}
 
-      {!ladeVorgang && saldo !== null && (
-        <div className="card hub-stat-card">
-          <div className="hub-stat-label">Diesen Monat</div>
-          <div className="hub-stat-value">{formatEur(saldo)}</div>
-          <button
-            className="hub-module-pill"
-            style={{ '--pill-color': getModule('finance').color }}
-            onClick={() => onOpenModule('finance')}
-          >
-            <span className="hub-module-dot" />
-            Finanzen
-          </button>
-        </div>
+      {!ladeVorgang && !hatDaten && (
+        <>
+          <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
+          <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
+
+          <div className="hub-empty-steps">
+            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
+              <div>
+                <div className="hub-empty-step-title">Erste Ausgabe eintragen</div>
+                <div className="hub-empty-step-sub">Betrag, Name, fertig</div>
+              </div>
+              <span className="hub-empty-step-arrow">›</span>
+            </button>
+            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
+              <div>
+                <div className="hub-empty-step-title">Fixkosten anlegen</div>
+                <div className="hub-empty-step-sub">Miete, Handy, Abos — einmal, dann jeden Monat automatisch</div>
+              </div>
+              <span className="hub-empty-step-arrow">›</span>
+            </button>
+            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
+              <div>
+                <div className="hub-empty-step-title">Alte Daten importieren</div>
+                <div className="hub-empty-step-sub">JSON oder XLSX</div>
+              </div>
+              <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
+            </button>
+          </div>
+
+          <div className="hub-empty-note">
+            <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
+          </div>
+        </>
       )}
 
-      <div className="hub-activity-label">Letzte Aktivität</div>
-      <div className="card hub-activity-card">
-        {ladeVorgang && <div className="status-note">Wird geladen…</div>}
-        {!ladeVorgang && activity.length === 0 && (
-          <div className="status-note">Noch keine Einträge — leg los, sobald ein Modul offen ist.</div>
-        )}
-        {activity.map((m, i) => {
-          const mod = getModule(m.source_module);
-          const signedValue = m.metric_key.endsWith('.expense') ? -Math.abs(m.value) : m.value;
+      {hatDaten && (
+        <>
+          <div className="hub-eyebrow">Saldo diesen Monat</div>
+          <div className="hub-lead-stat">{formatEur(saldo)}</div>
+          <div className="hub-lead-substats">
+            <span>Ein <b>{formatEur(income)}</b></span>
+            <span>Aus <b>{formatEur(expense)}</b></span>
+          </div>
+        </>
+      )}
+
+      <div className="hub-divider" />
+
+      <div className="hub-module-grid">
+        {MODULES.filter((m) => m.built).map((m) => {
+          const invert = m.id === hervorgehobenesModul && hatDaten;
           return (
-            <div className="hub-activity-row" key={m.id} style={{ borderBottom: i === activity.length - 1 ? 'none' : undefined }}>
-              <div className="hub-activity-left">
-                <span className="hub-module-dot" style={{ background: mod?.color || 'var(--text-muted)' }} />
-                <div>
-                  <div className="hub-activity-title">{METRIC_LABELS[m.metric_key] || m.metric_key}</div>
-                  <div className="hub-activity-time">{mod?.name || m.source_module} · {formatRelativeDate(m.created_at)}</div>
-                </div>
-              </div>
-              <div className="hub-activity-value">{m.unit === 'EUR' ? formatEur(signedValue) : `${signedValue} ${m.unit}`}</div>
-            </div>
+            <button
+              key={m.id}
+              className={`hub-module-cell ${invert ? 'invert' : ''}`}
+              onClick={() => onOpenModule(m.id)}
+            >
+              <span className="hub-module-dot" style={{ background: invert ? 'currentColor' : m.color }} />
+              <span>{m.name}</span>
+            </button>
           );
         })}
       </div>
 
-      <div className="hub-hint">Weitere Module erscheinen hier automatisch, sobald sie gebaut sind.</div>
+      {hatDaten && (
+        <>
+          <div className="hub-section-label">Aktivität</div>
+          <div className="hub-activity-list">
+            {activity.map((m) => {
+              const mod = getModule(m.source_module);
+              const isIncome = m.metric_key.endsWith('.income');
+              const signedValue = m.metric_key.endsWith('.expense') ? -Math.abs(m.value) : m.value;
+              return (
+                <div className="hub-activity-row" key={m.id}>
+                  <div>
+                    <div className="hub-activity-title">{METRIC_LABELS[m.metric_key] || m.metric_key}</div>
+                    <div className="hub-activity-time">{mod?.name || m.source_module} · {formatRelativeDate(m.created_at)}</div>
+                  </div>
+                  <div className={`hub-activity-value ${isIncome ? 'accent' : ''}`}>
+                    {m.unit === 'EUR' ? formatEur(signedValue) : `${signedValue} ${m.unit}`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
