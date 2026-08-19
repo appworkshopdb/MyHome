@@ -2,16 +2,26 @@ import { useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { FIX_TEMPLATE_CATEGORIES, INTERVALS, PAYMENTS, MONTHS_DE } from '../lib/finance';
 
-// Alle unterstützten Intervalle als Array für das Select
 const INTERVAL_OPTIONS = Object.entries(INTERVALS).map(([value, { label }]) => ({ value, label }));
 
-export default function FixTemplateModal({ tpl, currentMonth, currentYear, onSave, onDelete, onClose, showToast }) {
-  const [category, setCategory] = useState(tpl?.category || 'fixeinnahmen');
+// initialCategory: vorausgewählte Kategorie wenn tpl=null (neuer Eintrag).
+// Kommt von ContractsView je nachdem ob "+ Hinzufügen" unter Einnahmequellen
+// oder Fixe Ausgaben gedrückt wurde.
+export default function FixTemplateModal({
+  tpl,
+  initialCategory = 'fixkosten',
+  currentMonth,
+  currentYear,
+  onSave,
+  onDelete,
+  onClose,
+  showToast,
+}) {
+  const [category, setCategory] = useState(tpl?.category || initialCategory);
   const [name, setName] = useState(tpl?.name || '');
   const [payment, setPayment] = useState(tpl?.payment || 'Bank');
   const [amount, setAmount] = useState(tpl?.amount ?? '');
 
-  // Rückwärtskompatibilität: ältere Einträge haben quarterly:true statt interval
   const initialInterval = tpl?.interval ?? (tpl?.quarterly ? 'quarterly' : 'monthly');
   const [interval, setInterval] = useState(initialInterval);
 
@@ -30,7 +40,6 @@ export default function FixTemplateModal({ tpl, currentMonth, currentYear, onSav
       payment,
       amount: amt,
       interval,
-      // quarterly-Flag für Rückwärtskompatibilität mitschicken
       quarterly: interval === 'quarterly',
       start_month: isRecurring ? startMonth : null,
       start_year: isRecurring ? (tpl?.start_year || currentYear) : null,
@@ -44,7 +53,7 @@ export default function FixTemplateModal({ tpl, currentMonth, currentYear, onSav
     : null;
 
   return (
-    <Modal title="Fester Posten" onClose={onClose}>
+    <Modal title={tpl ? 'Posten bearbeiten' : 'Posten hinzufügen'} onClose={onClose}>
       <div className="form-group">
         <label>Art</label>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -98,7 +107,6 @@ export default function FixTemplateModal({ tpl, currentMonth, currentYear, onSav
         </select>
       </div>
 
-      {/* Startmonat — nur relevant wenn nicht monatlich */}
       {isRecurring && (
         <div className="form-group">
           <label>Startmonat</label>

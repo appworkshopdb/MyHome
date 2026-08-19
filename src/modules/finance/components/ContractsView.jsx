@@ -9,58 +9,139 @@ import {
   getContractEndDate,
   intervalLabel,
   monthlyAmount,
+  INTERVALS,
+  MONTHS_DE,
 } from '../lib/finance';
 import ContractModal from './ContractModal';
+import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 
-const STATUS = {
-  active:   { label: 'Aktiv',       bg: 'var(--success-light)', fg: 'var(--success)' },
-  expiring: { label: 'Läuft aus',   bg: 'var(--warning-light)', fg: 'var(--warning)' },
+const CONTRACT_STATUS = {
+  active:   { label: 'Aktiv',      bg: 'var(--success-light)', fg: 'var(--success)' },
+  expiring: { label: 'Läuft aus',  bg: 'var(--warning-light)', fg: 'var(--warning)' },
   expired:  { label: 'Abgelaufen', bg: 'var(--danger-light)',  fg: 'var(--danger)'  },
 };
 
-export default function ContractsView() {
-  const { session } = useAuth();
-  const { showToast } = useUi();
-  const [contracts, setContracts] = useState([]);
-  const [modal, setModal] = useState(null);
+// -----------------------------------------------------------------------
+// Hilfsfunktion: Unterzeile für nicht-monatliche Intervalle
+// -----------------------------------------------------------------------
+function IntervalHint({ tpl }) {
+  const iv = tpl.interval ?? (tpl.quarterly ? 'quarterly' : 'monthly');
+  if (iv === 'monthly') return null;
+  const ivMonths = INTERVALS[iv]?.months ?? 1;
+  return (
+    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>
+      alle {ivMonths} Monate ab {MONTHS_DE[(tpl.start_month || 1) - 1]}
+    </span>
+  );
+}
 
-  const load = useCallback(async () => {
-    setContracts(await db.getContracts(session));
-  }, [session]);
+// -----------------------------------------------------------------------
+// Sektion: Einnahmequellen & Fixe Ausgaben (FixTemplates)
+// -----------------------------------------------------------------------
+function TemplateSection({ title, description, category, templates, onEdit, onAdd, onApply }) {
+  const filtered = templates.filter((t) => t.category === category);
 
-  useEffect(() => { load(); }, [load]);
+  // Monatliche Summe (anteilig bei nicht-monatlichen Intervallen)
+  const totalMonthly = filtered.reduce((s, t) => {
+    const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
+    return s + monthlyAmount(t.amount, iv);
+  }, 0);
 
-  async function handleSave(c) {
-    await db.saveContract(session, c);
-    setModal(null);
-    showToast(c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt');
-    load();
-  }
+  return (
+    <div className="card">
+      <div className="card-title">{title}</div>
+      <p style={{ marginBottom: 14, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+        {description}
+      </p>
 
-  async function handleDelete(id) {
-    if (!confirm('Vertrag löschen?')) return;
-    await db.deleteContract(id);
-    showToast('Vertrag gelöscht');
-    load();
-  }
+      {filtered.length === 0 ? (
+        <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '6px 0 10px' }}>
+          Noch keine Einträge angelegt.
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="entry-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Zahlung</th>
+                <th style={{ textAlign: 'right' }}>Betrag</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((t) => {
+                const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
+                const monthly = monthlyAmount(t.amount, iv);
+                return (
+                  <tr key={t.id} className="entry-row" style={{ cursor: 'pointer' }} onClick={() => onEdit(t)}>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{t.name}</div>
+                      <IntervalHint tpl={t} />
+                    </td>
+                    <td><PaymentBadge payment={t.payment} /></td>
+                    <td className="amount">
+                      <div>{formatEur(t.amount)}</div>
+                      {iv !== 'monthly' && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          ≈ {formatEur(monthly)}/Mo.
+                        </div>
+                      )}
+                    </td>
+                    <td className="actions" onClick={(e) => e.stopPropagation()}>
+                      <button className="btn-icon" title="Bearbeiten" onClick={() => onEdit(t)}>
+                        <IconEdit />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {filtered.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={2} style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Gesamt/Monat
+                  </td>
+                  <td className="amount" style={{ color: category === 'fixeinnahmen' ? 'var(--success)' : 'var(--danger)' }}>
+                    {formatEur(totalMonthly)}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      )}
 
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+        <button className="btn btn-primary" onClick={onAdd}>+ Hinzufügen</button>
+        <button className="btn btn-secondary" onClick={onApply}>Auf aktuellen Monat anwenden</button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Sektion: Verträge (fin_contracts)
+// -----------------------------------------------------------------------
+function ContractsSection({ contracts, onEdit, onAdd, onDelete }) {
   const active = contracts.filter((c) => getContractStatus(c) !== 'expired');
   const expired = contracts.filter((c) => getContractStatus(c) === 'expired');
 
-  // Monatliche Gesamtkosten aller aktiven Verträge
-  const totalMonthly = active.reduce(
-    (s, c) => s + monthlyAmount(c.amount, c.interval ?? (c.quarterly ? 'quarterly' : 'monthly')),
-    0
-  );
+  const totalMonthly = active.reduce((s, c) => {
+    const iv = c.interval ?? (c.quarterly ? 'quarterly' : 'monthly');
+    return s + monthlyAmount(c.amount, iv);
+  }, 0);
   const expiringSoon = active.filter((c) => getContractStatus(c) === 'expiring').length;
 
   function renderRow(c) {
     const st = getContractStatus(c);
-    const interval = c.interval ?? (c.quarterly ? 'quarterly' : 'monthly');
+    const iv = c.interval ?? (c.quarterly ? 'quarterly' : 'monthly');
     const endDate = getContractEndDate(c);
-    const monthly = monthlyAmount(c.amount, interval);
+    const monthly = monthlyAmount(c.amount, iv);
 
     return (
       <tr key={c.id} style={{ opacity: st === 'expired' ? 0.5 : 1 }}>
@@ -69,13 +150,17 @@ export default function ContractsView() {
           {c.notes && (
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.notes}</div>
           )}
+          {iv !== 'monthly' && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              {intervalLabel(iv)}
+            </div>
+          )}
         </td>
         <td style={{ whiteSpace: 'nowrap' }}>
           <div style={{ fontWeight: 600 }}>{formatEur(c.amount)}</div>
-          {interval !== 'monthly' && (
+          {iv !== 'monthly' && (
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              {intervalLabel(interval)}
-              <br />≈ {formatEur(monthly)}/Mo.
+              ≈ {formatEur(monthly)}/Mo.
             </div>
           )}
         </td>
@@ -85,144 +170,225 @@ export default function ContractsView() {
         <td style={{ fontSize: '0.85rem' }}>
           {c.is_open || c.is_monthly
             ? <span style={{ color: 'var(--text-muted)' }}>unbefristet</span>
-            : endDate
-              ? formatDate(endDate)
-              : '—'}
+            : endDate ? formatDate(endDate) : '—'}
         </td>
         <td><PaymentBadge payment={c.payment} /></td>
-        <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          {c.cancellation || '—'}
-        </td>
         <td>
           <span
             className="badge"
-            style={{ background: STATUS[st].bg, color: STATUS[st].fg, whiteSpace: 'nowrap' }}
+            style={{ background: CONTRACT_STATUS[st].bg, color: CONTRACT_STATUS[st].fg, whiteSpace: 'nowrap' }}
           >
-            {STATUS[st].label}
+            {CONTRACT_STATUS[st].label}
           </span>
         </td>
         <td className="actions">
-          <button
-            className="btn-icon"
-            title="Bearbeiten"
-            onClick={() => setModal({ contract: c })}
-          >
-            <IconEdit />
-          </button>
-          <button
-            className="btn-icon"
-            title="Löschen"
-            style={{ color: 'var(--danger)' }}
-            onClick={() => handleDelete(c.id)}
-          >
-            <IconTrash />
-          </button>
+          <button className="btn-icon" title="Bearbeiten" onClick={() => onEdit(c)}><IconEdit /></button>
+          <button className="btn-icon" title="Löschen" style={{ color: 'var(--danger)' }} onClick={() => onDelete(c.id)}><IconTrash /></button>
         </td>
       </tr>
     );
   }
 
-  function renderTable(rows, emptyText) {
-    if (rows.length === 0) {
-      return (
-        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          {emptyText}
-        </div>
-      );
-    }
+  function renderTable(rows) {
+    if (rows.length === 0) return null;
     return (
       <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table className="entry-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Betrag</th>
-              <th>Beginn</th>
-              <th>Ende</th>
-              <th>Zahlung</th>
-              <th>Kündigung</th>
-              <th>Status</th>
-              <th></th>
+              <th>Name</th><th>Betrag</th><th>Beginn</th><th>Ende</th>
+              <th>Zahlung</th><th>Status</th><th></th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map(renderRow)}
-          </tbody>
+          <tbody>{rows.map(renderRow)}</tbody>
         </table>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="page-header">
-        <h1>Verträge</h1>
-        <button className="btn btn-primary" onClick={() => setModal({ contract: null })}>
-          + Vertrag
-        </button>
-      </div>
+    <div className="card">
+      <div className="card-title">Verträge</div>
+      <p style={{ marginBottom: 14, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+        Laufende Verträge mit Start, Ende und automatisch berechnetem Ablauf-Status.
+      </p>
 
       {/* Kennzahlen */}
-      <div className="summary-row">
-        <div className="summary-chip negative">
-          <div className="label">Kosten/Monat</div>
-          <div className="value">{formatEur(totalMonthly)}</div>
-        </div>
-        <div className="summary-chip">
-          <div className="label">Aktive Verträge</div>
-          <div className="value">{active.length}</div>
-        </div>
-        <div className={`summary-chip ${expiringSoon > 0 ? 'negative' : ''}`}>
-          <div className="label">Läuft bald aus</div>
-          <div className="value">{expiringSoon}</div>
-        </div>
-        <div className="summary-chip neutral">
-          <div className="label">Kosten/Jahr</div>
-          <div className="value">{formatEur(totalMonthly * 12)}</div>
-        </div>
-      </div>
-
-      {/* Aktive Verträge */}
-      <div className="card">
-        <div className="card-title">Laufende Verträge</div>
-        {renderTable(active, 'Noch keine Verträge eingetragen')}
-
-        {active.length > 0 && (
-          <div style={{
-            marginTop: 10,
-            paddingTop: 10,
-            borderTop: '1px solid var(--border)',
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}>
-            <span>Gesamt monatlich (aktiv)</span>
-            <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatEur(totalMonthly)}</span>
+      {contracts.length > 0 && (
+        <div className="summary-row" style={{ marginBottom: 14 }}>
+          <div className="summary-chip negative">
+            <div className="label">Kosten/Monat</div>
+            <div className="value">{formatEur(totalMonthly)}</div>
           </div>
-        )}
-
-        <div style={{ marginTop: 14 }}>
-          <button className="btn btn-primary" onClick={() => setModal({ contract: null })}>
-            + Vertrag hinzufügen
-          </button>
-        </div>
-      </div>
-
-      {/* Abgelaufene Verträge — nur anzeigen wenn vorhanden */}
-      {expired.length > 0 && (
-        <div className="card">
-          <div className="card-title" style={{ color: 'var(--text-muted)' }}>
-            Abgelaufene Verträge ({expired.length})
+          <div className="summary-chip">
+            <div className="label">Aktiv</div>
+            <div className="value">{active.length}</div>
           </div>
-          {renderTable(expired, '')}
+          {expiringSoon > 0 && (
+            <div className="summary-chip negative">
+              <div className="label">Läuft bald aus</div>
+              <div className="value">{expiringSoon}</div>
+            </div>
+          )}
         </div>
       )}
 
-      {modal && (
+      {active.length === 0 && expired.length === 0 ? (
+        <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '6px 0 10px' }}>
+          Noch keine Verträge eingetragen.
+        </div>
+      ) : (
+        <>
+          {renderTable(active)}
+          {active.length > 0 && (
+            <div style={{
+              marginTop: 8, paddingTop: 8,
+              borderTop: '1px solid var(--border)',
+              fontSize: '0.85rem', color: 'var(--text-secondary)',
+              display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>Gesamt monatlich (aktiv)</span>
+              <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatEur(totalMonthly)}</span>
+            </div>
+          )}
+
+          {expired.length > 0 && (
+            <>
+              <div style={{ marginTop: 16, marginBottom: 6, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                Abgelaufen ({expired.length})
+              </div>
+              {renderTable(expired)}
+            </>
+          )}
+        </>
+      )}
+
+      <div style={{ marginTop: 12 }}>
+        <button className="btn btn-primary" onClick={onAdd}>+ Vertrag hinzufügen</button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Hauptkomponente
+// -----------------------------------------------------------------------
+export default function ContractsView() {
+  const { session } = useAuth();
+  const { showToast } = useUi();
+
+  const [templates, setTemplates] = useState([]);
+  const [contracts, setContracts] = useState([]);
+
+  // modal: { type: 'contract', contract } | { type: 'template', tpl, category }
+  const [modal, setModal] = useState(null);
+
+  const now = new Date();
+
+  const load = useCallback(async () => {
+    const [tpls, ctrts] = await Promise.all([
+      db.getFixTemplates(session),
+      db.getContracts(session),
+    ]);
+    tpls.sort((a, b) => a.name.localeCompare(b.name));
+    setTemplates(tpls);
+    setContracts(ctrts);
+  }, [session]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // --- FixTemplate-Aktionen ---
+  async function handleSaveTemplate(tpl) {
+    const isNew = !tpl.id;
+    const saved = await db.saveFixTemplate(session, tpl);
+    if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
+    setModal(null);
+    showToast(isNew ? 'Posten in alle Monate übernommen' : 'Posten aktualisiert');
+    load();
+  }
+
+  async function handleDeleteTemplate(id) {
+    if (!confirm('Festen Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
+    await db.deleteFixTemplate(id);
+    setModal(null);
+    showToast('Posten gelöscht');
+    load();
+  }
+
+  async function applyToCurrentMonth() {
+    const added = await db.applyMissingFixTemplates(session, now.getFullYear(), now.getMonth() + 1);
+    showToast(added > 0 ? `${added} Posten übernommen` : 'Monat bereits aktuell');
+  }
+
+  // --- Vertrags-Aktionen ---
+  async function handleSaveContract(c) {
+    await db.saveContract(session, c);
+    setModal(null);
+    showToast(c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt');
+    load();
+  }
+
+  async function handleDeleteContract(id) {
+    if (!confirm('Vertrag löschen?')) return;
+    await db.deleteContract(id);
+    showToast('Vertrag gelöscht');
+    load();
+  }
+
+  return (
+    <>
+      <div className="page-header">
+        <h1>Regelmäßig</h1>
+      </div>
+
+      {/* 1. Einnahmequellen */}
+      <TemplateSection
+        title="Einnahmequellen"
+        description="Feste Einnahmen die automatisch in jeden neuen Monat übernommen werden."
+        category="fixeinnahmen"
+        templates={templates}
+        onEdit={(t) => setModal({ type: 'template', tpl: t, category: 'fixeinnahmen' })}
+        onAdd={() => setModal({ type: 'template', tpl: null, category: 'fixeinnahmen' })}
+        onApply={applyToCurrentMonth}
+      />
+
+      {/* 2. Fixe Ausgaben */}
+      <TemplateSection
+        title="Fixe Ausgaben"
+        description="Feste Kosten die automatisch in jeden neuen Monat übernommen werden."
+        category="fixkosten"
+        templates={templates}
+        onEdit={(t) => setModal({ type: 'template', tpl: t, category: 'fixkosten' })}
+        onAdd={() => setModal({ type: 'template', tpl: null, category: 'fixkosten' })}
+        onApply={applyToCurrentMonth}
+      />
+
+      {/* 3. Verträge */}
+      <ContractsSection
+        contracts={contracts}
+        onEdit={(c) => setModal({ type: 'contract', contract: c })}
+        onAdd={() => setModal({ type: 'contract', contract: null })}
+        onDelete={handleDeleteContract}
+      />
+
+      {/* Modals */}
+      {modal?.type === 'template' && (
+        <FixTemplateModal
+          tpl={modal.tpl}
+          initialCategory={modal.category}
+          currentMonth={now.getMonth() + 1}
+          currentYear={now.getFullYear()}
+          onSave={handleSaveTemplate}
+          onDelete={handleDeleteTemplate}
+          onClose={() => setModal(null)}
+          showToast={showToast}
+        />
+      )}
+
+      {modal?.type === 'contract' && (
         <ContractModal
           contract={modal.contract}
-          onSave={handleSave}
+          onSave={handleSaveContract}
           onClose={() => setModal(null)}
           showToast={showToast}
         />

@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import * as db from '../lib/finData';
-import { FIX_TEMPLATE_CATEGORIES, formatEur, MONTHS_DE, intervalLabel, INTERVALS } from '../lib/finance';
-import FixTemplateModal from './FixTemplateModal';
-import PaymentBadge from './PaymentBadge';
 import GoalsSection from '../../../core/components/GoalsSection';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
 
@@ -24,44 +21,11 @@ function loadSheetJS() {
 export default function SettingsView() {
   const { session } = useAuth();
   const { showToast } = useUi();
-  const [templates, setTemplates] = useState([]);
-  const [modal, setModal] = useState(null);
   const [importStatus, setImportStatus] = useState(null);
   const [xlsxStatus, setXlsxStatus] = useState(null);
   const [xlsxPreview, setXlsxPreview] = useState(null);
 
   const now = new Date();
-
-  const load = useCallback(async () => {
-    const data = await db.getFixTemplates(session);
-    const order = { fixeinnahmen: 0, fixkosten: 1 };
-    data.sort((a, b) => (order[a.category] - order[b.category]) || a.name.localeCompare(b.name));
-    setTemplates(data);
-  }, [session]);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function handleSaveTemplate(tpl) {
-    const isNew = !tpl.id;
-    const saved = await db.saveFixTemplate(session, tpl);
-    if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
-    setModal(null);
-    showToast(isNew ? 'Posten in alle Monate übernommen' : 'Posten aktualisiert');
-    load();
-  }
-
-  async function handleDeleteTemplate(id) {
-    if (!confirm('Festen Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
-    await db.deleteFixTemplate(id);
-    setModal(null);
-    showToast('Posten gelöscht');
-    load();
-  }
-
-  async function applyToCurrentMonth() {
-    const added = await db.applyMissingFixTemplates(session, now.getFullYear(), now.getMonth() + 1);
-    showToast(added > 0 ? `${added} Posten übernommen` : 'Monat bereits aktuell');
-  }
 
   async function exportJSON() {
     try {
@@ -94,7 +58,6 @@ export default function SettingsView() {
           (c.paymentFixed > 0 ? ` · ${c.paymentFixed}× unbekannte Zahlungsart auf „Bank" gesetzt` : ''),
       });
       showToast('Import erfolgreich');
-      load();
     } catch (err) {
       setImportStatus({ type: 'error', text: '✗ Import fehlgeschlagen: ' + err.message });
     }
@@ -134,7 +97,6 @@ export default function SettingsView() {
     try {
       await db.deleteAllData(session);
       showToast('Alle Daten gelöscht');
-      load();
     } catch (e) {
       showToast('Löschen fehlgeschlagen');
       console.error(e);
@@ -144,60 +106,6 @@ export default function SettingsView() {
   return (
     <>
       <div className="page-header"><h1>Einstellungen</h1></div>
-
-      {/* Feste monatliche Posten */}
-      <div className="card">
-        <div className="card-title">Feste monatliche Posten</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>
-          Diese Posten (Fixeinnahmen &amp; Fixkosten) werden automatisch in jeden
-          neuen Monat übernommen. Tippe einen Posten an, um ihn zu ändern.
-        </p>
-
-        {templates.length === 0 ? (
-          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '6px 0' }}>
-            Noch keine festen Posten angelegt.
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table className="entry-table">
-              <thead>
-                <tr>
-                  <th>Name</th><th>Art</th><th>Zahlung</th><th style={{ textAlign: 'right' }}>Betrag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map((t) => (
-                  <tr key={t.id} className="entry-row" style={{ cursor: 'pointer' }} onClick={() => setModal({ tpl: t })}>
-                    <td>
-                      {t.name}
-                      {(() => {
-                        const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
-                        if (iv === 'monthly') return null;
-                        const ivMonths = INTERVALS[iv]?.months ?? 1;
-                        return (
-                          <><br /><span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            alle {ivMonths} Monate ab {MONTHS_DE[(t.start_month || 1) - 1]}
-                          </span></>
-                        );
-                      })()}
-                    </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {FIX_TEMPLATE_CATEGORIES[t.category] || t.category}
-                    </td>
-                    <td><PaymentBadge payment={t.payment} /></td>
-                    <td className="amount">{formatEur(t.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          <button className="btn btn-primary" onClick={() => setModal({ tpl: null })}>+ Posten</button>
-          <button className="btn btn-secondary" onClick={applyToCurrentMonth}>Auf aktuellen Monat anwenden</button>
-        </div>
-      </div>
 
       <GoalsSection sourceModule="finance" />
 
@@ -283,18 +191,6 @@ export default function SettingsView() {
       <div style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
         Zuhause · Finanzen-Modul · Cloud-Sync über Supabase
       </div>
-
-      {modal && (
-        <FixTemplateModal
-          tpl={modal.tpl}
-          currentMonth={now.getMonth() + 1}
-          currentYear={now.getFullYear()}
-          onSave={handleSaveTemplate}
-          onDelete={handleDeleteTemplate}
-          onClose={() => setModal(null)}
-          showToast={showToast}
-        />
-      )}
     </>
   );
 }
