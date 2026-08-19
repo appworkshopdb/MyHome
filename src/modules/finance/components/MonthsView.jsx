@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
-import { CATEGORIES, MONTHS_DE, formatEur, sumCat } from '../lib/finance';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
+import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
-import PaymentBadge from './PaymentBadge';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
 // Spaltenaufteilung wie im Original
 const COLUMNS = [
-  { key: 'einnahmen', label: 'Einnahmen', cats: ['fixeinnahmen', 'sonstige_einnahmen'], color: 'var(--success)' },
-  { key: 'fixkosten', label: 'Fixkosten', cats: ['fixkosten'], color: 'var(--warning)' },
-  { key: 'variable', label: 'Variable Kosten', cats: ['variable_kosten'], color: 'var(--danger)' },
-  { key: 'sonstige', label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'], color: 'var(--danger)' },
+  { key: 'einnahmen', label: 'Einnahmen', cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
+  { key: 'fixkosten', label: 'Fixkosten', cats: ['fixkosten'] },
+  { key: 'variable', label: 'Variable Kosten', cats: ['variable_kosten'] },
+  { key: 'sonstige', label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
+];
+
+const FILTERS = [
+  { key: 'alle', label: 'Alle' },
+  { key: 'offen', label: 'Offen' },
+  { key: 'fix', label: 'Fix' },
+  { key: 'ein', label: 'Ein' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -23,12 +31,14 @@ function sortByCreated(arr, dir = 'asc') {
 export default function MonthsView() {
   const { session } = useAuth();
   const { showToast } = useUi();
+  const { version } = useEntrySheet();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [filter, setFilter] = useState('alle');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,7 +52,10 @@ export default function MonthsView() {
     setLoading(false);
   }, [session, year, month, showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  // Lädt auch neu, wenn im globalen Erfassen-Sheet (core/components/
+  // EntrySheet.jsx) ein Eintrag für Finanzen gespeichert wurde, ohne
+  // dass das Sheet diese View direkt kennen muss.
+  useEffect(() => { load(); }, [load, version]);
 
   function shiftMonth(delta) {
     let m = month + delta, y = year;
@@ -65,7 +78,8 @@ export default function MonthsView() {
     load();
   }
 
-  async function togglePaid(entry) {
+  async function togglePaid(entry, e) {
+    e.stopPropagation();
     await db.togglePaid(entry.id, !entry.paid);
     showToast(!entry.paid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
     load();
@@ -76,140 +90,118 @@ export default function MonthsView() {
   const totalEin = fixEin + sonstEin;
   const totalAus = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
   const verfuegbar = totalEin - totalAus;
+  const offeneEintraege = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
+  const offeneSumme = offeneEintraege.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const spentRatio = totalEin > 0 ? Math.min(100, (totalAus / totalEin) * 100) : 0;
+  const openRatio = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 
-  function entryRow(e, showPaid) {
+  const heuteTag = now.getDate();
+  const istAktuellerMonat = year === now.getFullYear() && month === now.getMonth() + 1;
+
+  function visibleColumns() {
+    if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
+    if (filter === 'ein') return COLUMNS.filter((c) => c.key === 'einnahmen');
+    return COLUMNS;
+  }
+
+  function entriesForColumn(col) {
+    const colEntries = entries.filter((e) => col.cats.includes(e.category));
+    if (filter === 'offen') return colEntries.filter((e) => !e.paid);
+    return colEntries;
+  }
+
+  function entryRow(e) {
+    const showCheck = e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen';
     return (
-      <tr
+      <div
         key={e.id}
-        className="entry-row"
+        className="fin-row"
         onClick={() => setModal({ entry: e, defaultCategory: e.category })}
-        style={{ cursor: 'pointer', opacity: e.paid ? 0.5 : 1 }}
       >
-        <td>
-          <span style={e.paid ? { textDecoration: 'line-through', color: 'var(--text-muted)' } : undefined}>
-            {e.name}
-          </span>
-        </td>
-        <td><PaymentBadge payment={e.payment} /></td>
-        <td className="amount">{formatEur(e.amount)}</td>
-        {showPaid && (
-          <td style={{ textAlign: 'center' }} onClick={(ev) => ev.stopPropagation()}>
-            <input
-              type="checkbox" checked={e.paid}
-              onChange={() => togglePaid(e)}
-              style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
-              title={e.paid ? 'Als offen markieren' : 'Als bezahlt markieren'}
-            />
-          </td>
+        {showCheck && (
+          <div
+            className={`fin-row-check ${e.paid ? 'checked' : ''}`}
+            onClick={(ev) => togglePaid(e, ev)}
+          >
+            {e.paid && '✓'}
+          </div>
         )}
-      </tr>
+        <div className="fin-row-info">
+          <div className={`fin-row-name ${e.paid ? 'paid' : ''}`}>{e.name}</div>
+          <div className="fin-row-meta">
+            {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          </div>
+        </div>
+        <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>{formatEur(e.amount).replace('€', '').trim()}</div>
+      </div>
     );
   }
 
   return (
     <>
-      <div className="page-header">
+      <div className="fin-header">
         <div className="month-nav">
           <button className="month-nav-btn" onClick={() => shiftMonth(-1)}><IconChevronLeft /></button>
-          <span className="month-label">{MONTHS_DE[month - 1]} {year}</span>
+          <span className="month-label">{MONTHS_DE[month - 1]} {String(year).slice(2)}</span>
           <button className="month-nav-btn" onClick={() => shiftMonth(1)}><IconChevronRight /></button>
         </div>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          style={{ width: 'auto', fontSize: '0.9rem', padding: '6px 28px 6px 10px' }}
-        >
-          {Array.from({ length: 11 }, (_, i) => 2020 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
+        {istAktuellerMonat && <div className="fin-today-pill">Heute {heuteTag}.</div>}
       </div>
 
-      <div className="summary-row" id="month-summary">
-        <div className="summary-chip">
-          <div className="label">Einnahmen</div>
-          <div className="value">{formatEur(totalEin)}</div>
+      <div className="fin-lead">
+        <div className="hub-eyebrow">Saldo diesen Monat</div>
+        <div className="hub-lead-stat">{formatEur(verfuegbar)}</div>
+        <div className="hub-lead-substats">
+          <span>Ein <b>{formatEur(totalEin)}</b></span>
+          <span>Aus <b>{formatEur(totalAus)}</b></span>
+          {offeneEintraege.length > 0 && <span style={{ color: 'var(--accent)' }}>{offeneEintraege.length} offen</span>}
         </div>
-        <div className="summary-chip negative">
-          <div className="label">Ausgaben</div>
-          <div className="value">{formatEur(totalAus)}</div>
+        <div className="fin-bar">
+          <div className="fin-bar-spent" style={{ width: `${spentRatio}%` }} />
+          <div className="fin-bar-open" style={{ width: `${openRatio}%` }} />
         </div>
-        <div className={`summary-chip ${verfuegbar >= 0 ? 'positive' : 'negative'}`}>
-          <div className="label">Verfügbar</div>
-          <div className="value">{formatEur(verfuegbar)}</div>
-        </div>
+      </div>
+
+      <div className="fin-filter-row">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            className={`fin-filter-cell ${filter === f.key ? 'active' : ''}`}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
         <div className="loading-note">Lädt…</div>
       ) : (
-        <div id="month-columns" style={{ display: 'grid', gap: 12 }}>
-          {COLUMNS.map((col) => {
-            const colEntries = entries.filter((e) => col.cats.includes(e.category));
-            const total = colEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-            const hasPaid = col.key !== 'einnahmen';
+        visibleColumns().map((col) => {
+          const colEntries = entriesForColumn(col);
+          const total = colEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+          if (filter === 'offen' && colEntries.length === 0) return null;
 
-            return (
-              <div className="card" key={col.key} style={{ marginBottom: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div className="card-title" style={{ marginBottom: 0, color: col.color }}>{col.label}</div>
-                  <button
-                    className="btn btn-primary"
-                    style={{ padding: '5px 12px', fontSize: '0.82rem' }}
-                    onClick={() => setModal({ entry: null, defaultCategory: col.cats[col.cats.length - 1] })}
-                  >
-                    + Eintrag
-                  </button>
-                </div>
-
-                <div className="table-wrap">
-                  <table className="entry-table month-table">
-                    <colgroup>
-                      <col className="c-name" /><col className="c-pay" /><col className="c-amt" />
-                      {hasPaid && <col className="c-paid" />}
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Zahl.</th>
-                        <th style={{ textAlign: 'right' }}>Betrag</th>
-                        {hasPaid && <th style={{ textAlign: 'center' }}>Bez.</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {col.cats.length > 1
-                        ? ['fixeinnahmen', 'sonstige_einnahmen'].flatMap((cat) => [
-                            <tr key={`h-${cat}`}>
-                              <td
-                                colSpan={hasPaid ? 4 : 3}
-                                style={{
-                                  padding: '10px 8px 4px', fontSize: '0.75rem', fontWeight: 600,
-                                  textTransform: 'uppercase', letterSpacing: '0.04em',
-                                  color: 'var(--text-muted)', borderBottom: 'none',
-                                }}
-                              >
-                                {CATEGORIES[cat]}
-                              </td>
-                            </tr>,
-                            // Einnahmen: älteste oben, neueste unten
-                            ...sortByCreated(entries.filter((e) => e.category === cat), 'asc')
-                              .map((e) => entryRow(e, hasPaid)),
-                          ])
-                        // Sonstige Ausgaben & Variable Kosten: neueste oben; Fixkosten: älteste oben
-                        : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc')
-                            .map((e) => entryRow(e, hasPaid))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan="2" style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Summe</td>
-                        <td className="amount" style={{ color: col.color }}>{formatEur(total)}</td>
-                        {hasPaid && <td></td>}
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+          return (
+            <div className="fin-section" key={col.key}>
+              <div className="fin-section-header">
+                <div>{col.label}</div>
+                <div>{formatEur(total).replace('€', '').trim()}</div>
               </div>
-            );
-          })}
-        </div>
+              {col.cats.length > 1
+                ? sortByCreated(colEntries, 'asc').map((e) => entryRow(e))
+                : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc').map((e) => entryRow(e))}
+              {colEntries.length === 0 && <div className="fin-row-empty">Keine Einträge</div>}
+
+              <button
+                className="fin-add-row"
+                onClick={() => setModal({ entry: null, defaultCategory: col.cats[col.cats.length - 1] })}
+              >
+                + Eintrag zu {col.label.toLowerCase()}
+              </button>
+            </div>
+          );
+        })
       )}
 
       {modal && (
