@@ -1,9 +1,11 @@
 import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
+import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import Login from './core/components/Login';
 import AppHeader from './core/AppHeader';
 import RequiredDataToast from './core/components/RequiredDataToast';
+import EntrySheet from './core/components/EntrySheet';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
@@ -49,7 +51,7 @@ export default function App() {
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
   return (
-    <>
+    <EntrySheetProvider>
       <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={navigate} />}
@@ -65,6 +67,7 @@ export default function App() {
         ))}
       </main>
       <RequiredDataToast warnings={warnings} onFix={navigate} />
-    </>
+      <EntrySheet />
+    </EntrySheetProvider>
   );
 }
