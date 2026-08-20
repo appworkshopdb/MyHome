@@ -120,7 +120,9 @@
 .status-note.ok { color: var(--success); }
 .status-note.error { color: var(--danger); }
 
-/* ===== App-Kopfzeile (global — über Hub und allen Modulen sichtbar) ===== */
+/* ===== App-Kopfzeile (global — nur auf dem Hub sichtbar, siehe App.jsx) ===== */
+/* Gleiche Maße/Optik wie .module-topbar (Module/Profil), damit der */
+/* Wechsel zwischen Hub und Modul nicht wie ein Bruch wirkt. */
 
 .app-header {
   position: sticky;
@@ -129,35 +131,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-  padding: 0 20px;
+  height: 58px;
+  padding: 0 14px;
   padding-top: env(safe-area-inset-top);
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
 }
-
-.app-brand {
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-primary);
-}
-
-.app-brand-dot { display: none; }
-
-.app-menu-toggle {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-primary);
-  background: var(--bg-card);
-  flex-shrink: 0;
-}
-.app-menu-toggle svg { width: 18px; height: 18px; }
 
 .app-menu-toggle-alert {
   position: absolute;
@@ -192,6 +171,15 @@
 }
 
 .app-menu .mode-toggle { margin-bottom: 18px; }
+
+.app-menu-heading {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
 
 .app-menu-section-label {
   font-size: 0.78rem;
@@ -267,6 +255,7 @@
 .module-topbar-home svg { width: 18px; height: 18px; }
 
 .module-topbar-avatar {
+  position: relative;
   background: var(--text-primary);
   color: var(--bg-primary);
   font-size: 14px;
