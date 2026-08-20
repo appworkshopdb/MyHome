@@ -53,7 +53,7 @@ export default function App() {
   return (
     <EntrySheetProvider>
       {activeModule === null && (
-        <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
+        <AppHeader onNavigate={navigate} hasWarnings={warnings.length > 0} />
       )}
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={navigate} />}
