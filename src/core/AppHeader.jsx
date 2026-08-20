@@ -1,35 +1,44 @@
 import { useState } from 'react';
+import { useAuth } from './lib/AuthContext';
 import AppMenu from './AppMenu';
-import { IconMenu, IconClose } from './components/Icons';
+import { IconChevronDown } from './components/Icons';
 
-export default function AppHeader({ activeModule, onNavigate, hasWarnings }) {
+// Nur auf dem Hub sichtbar (App.jsx rendert AppHeader ausschließlich
+// wenn activeModule === null) — Module/Profil nutzen stattdessen
+// ModuleTopBar.jsx mit Home-Icon links. Hier links dagegen ein
+// Dropdown (kein Navigationsziel, man ist ja schon zuhause) für
+// Design/Einstellungen; rechts wie überall der direkte Profil-Zugang.
+export default function AppHeader({ onNavigate, hasWarnings }) {
+  const { session } = useAuth();
   const [open, setOpen] = useState(false);
-
-  function navigate(id) {
-    onNavigate(id);
-    setOpen(false);
-  }
+  const initial = (session?.user?.email || '?').charAt(0).toUpperCase();
 
   return (
     <header className="app-header">
-      <div className="app-brand">
-        <span className="app-brand-dot" />
-        Zuhause
-      </div>
       <button
-        className="app-menu-toggle"
+        className="module-topbar-home"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={open ? 'Menü schließen' : hasWarnings ? 'Menü öffnen — Pflichtdaten unvollständig' : 'Menü öffnen'}
+        aria-label={open ? 'Einstellungen schließen' : 'Einstellungen öffnen'}
       >
-        {open ? <IconClose /> : <IconMenu />}
-        {!open && hasWarnings && <span className="app-menu-toggle-alert" aria-hidden="true" />}
+        <IconChevronDown />
+      </button>
+
+      <div className="module-topbar-title">Zuhause</div>
+
+      <button
+        className="module-topbar-avatar"
+        onClick={() => onNavigate('profile')}
+        aria-label={hasWarnings ? 'Zum Profil — Pflichtdaten unvollständig' : 'Zum Profil'}
+      >
+        {initial}
+        {hasWarnings && <span className="app-menu-toggle-alert" aria-hidden="true" />}
       </button>
 
       {open && (
         <>
           <div className="app-menu-backdrop" onClick={() => setOpen(false)} />
-          <AppMenu activeModule={activeModule} onNavigate={navigate} hasWarnings={hasWarnings} />
+          <AppMenu />
         </>
       )}
     </header>
