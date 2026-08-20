@@ -6,6 +6,7 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
+import ModuleTopBar from '../../core/components/ModuleTopBar';
 import ModuleTabs from '../../core/components/ModuleTabs';
 import TrainingView from './components/TrainingView';
 import VerlaufView from './components/VerlaufView';
@@ -205,6 +206,7 @@ export default function SportModule({ view, onNavigateView }) {
 
   return (
     <>
+      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} />
       <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       {VIEWS[activeView]}
     </>
