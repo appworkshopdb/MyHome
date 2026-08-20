@@ -11,12 +11,12 @@
   --accent-light: #EAF0FF;
   --accent-dark: #1E3ACC;
   --on-accent: #FFFFFF;
-  --danger: #C0624A;
-  --danger-light: #FAF0EE;
-  --warning: #C49A3C;
-  --warning-light: #FBF5E6;
-  --success: #5A8F6A;
-  --success-light: #EBF3ED;
+  --danger: #D60B00;
+  --danger-light: #FFF0F0;
+  --warning: #D3D600;
+  --warning-light: #FAFAE0;
+  --success: #00D604;
+  --success-light: #E0FFE0;
   --border: #E4E4E4;
   --border-strong: #0D0D0D;
   --shadow: none;
