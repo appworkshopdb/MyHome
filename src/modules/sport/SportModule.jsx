@@ -6,6 +6,7 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
+import ModuleTopBar from '../../core/components/ModuleTopBar';
 import BottomNav from './components/BottomNav';
 import TrainingView from './components/TrainingView';
 import VerlaufView from './components/VerlaufView';
@@ -18,6 +19,12 @@ registerRequirement('sport', async (session) => {
 });
 
 const DEFAULT_VIEW = 'training';
+const TITLES = {
+  training: 'Training',
+  verlauf: 'Verlauf',
+  plaene: 'Pläne',
+  auswertung: 'Auswertung',
+};
 
 // Hält den gesamten Modul-Zustand: Einheiten, Plan-Vorlagen und die im
 // Profil gewählten Sportarten. Alles wird EINMAL geladen und an die
@@ -199,6 +206,7 @@ export default function SportModule({ view, onNavigateView }) {
 
   return (
     <>
+      <ModuleTopBar title={TITLES[activeView]} />
       {VIEWS[activeView]}
       <BottomNav active={activeView} onChange={onNavigateView} />
     </>
