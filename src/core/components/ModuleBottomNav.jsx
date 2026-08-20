@@ -3,38 +3,34 @@
 // styles/layout.css) — ein Modul entscheidet nur noch, welche
 // Menüpunkte (items) es bekommt, siehe z.B.
 // modules/finance/components/BottomNav.jsx als Vorlage für neue Module.
-// Die feste Leiste, die jedes Modul bekommt: 2 Menüpunkte, ein
-// zentraler "+"-FAB (global, modulabhängig vorbelegt via onAdd), dann
-// 2 weitere Menüpunkte. Layout/Optik kommt komplett aus den globalen
-// .bottom-nav/.nav-item/.nav-fab-Klassen (siehe styles/layout.css) —
-// ein Modul entscheidet nur, welche 4 Menüpunkte (items) und was der
-// FAB tun soll (onAdd), siehe z.B.
-// modules/finance/components/BottomNav.jsx als Vorlage für neue Module.
-export default function ModuleBottomNav({ items, active, onChange, onAdd }) {
-  const mid = Math.ceil(items.length / 2);
-  const left = items.slice(0, mid);
-  const right = items.slice(mid);
+import { IconHome, IconSummary, IconUtensils, IconDumbbell, IconCheck, IconUserRound } from './Icons';
 
+// Globale Bottom-Nav — NICHT mehr pro Modul, sondern einmal in App.jsx
+// gerendert. Wechselt zwischen Start, den vier "Alltags"-Modulen und
+// Profil. Kein FAB mehr (siehe BOTTOMNAV_6MODULE.md) — Erfassen
+// passiert jetzt innerhalb jedes Moduls selbst (siehe
+// core/components/ModuleTabs.jsx für die Unteransicht-Navigation
+// INNERHALB eines Moduls, die dadurch hier frei wurde).
+//
+// Bewusst eine feste, kuratierte Liste statt aller Einträge aus
+// core/modules.js — Alltag/Einkauf sind noch reine Platzhalter und
+// stehen bewusst nicht in dieser Leiste, auch wenn built:true nur
+// zum Testen gesetzt ist (siehe Projektkontext.md, "Status der Module").
+const ITEMS = [
+  { key: '', label: 'Start', Icon: IconHome },
+  { key: 'finance', label: 'Finanzen', Icon: IconSummary },
+  { key: 'nutrition', label: 'Ernährung', Icon: IconUtensils },
+  { key: 'sport', label: 'Sport', Icon: IconDumbbell },
+  { key: 'habits', label: 'Gewohnheiten', Icon: IconCheck },
+  { key: 'profile', label: 'Profil', Icon: IconUserRound },
+];
+
+export default function ModuleBottomNav({ active, onChange }) {
   return (
     <nav className="bottom-nav">
-      {left.map(({ key, label, Icon }) => (
+      {ITEMS.map(({ key, label, Icon }) => (
         <button
-          key={key}
-          className={`nav-item ${active === key ? 'active' : ''}`}
-          onClick={() => onChange(key)}
-        >
-          <Icon />
-          <span>{label}</span>
-        </button>
-      ))}
-
-      <button className="nav-fab" onClick={onAdd} aria-label="Neuer Eintrag">
-        +
-      </button>
-
-      {right.map(({ key, label, Icon }) => (
-        <button
-          key={key}
+          key={key || 'start'}
           className={`nav-item ${active === key ? 'active' : ''}`}
           onClick={() => onChange(key)}
         >
