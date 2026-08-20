@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum, getRecentMeasurements } from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
-import { MODULES, getModule } from './modules';
+import { getModule } from './modules';
 
 // Menschenlesbare Labels je metric_key. Bewusst hier zentral gepflegt,
 // nicht pro Modul verstreut — neue Module tragen hier einfach ihre
@@ -46,9 +46,6 @@ export default function Hub({ onOpenModule }) {
   const saldo = income - expense;
   const hatDaten = !ladeVorgang && activity.length > 0;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
-  // Modul mit der jüngsten Aktivität bekommt die invertierte Kachel —
-  // kein erfundener "wichtigster" Wert, sondern das, was gerade lief.
-  const hervorgehobenesModul = activity[0]?.source_module || 'finance';
 
   return (
     <div className="hub">
@@ -99,24 +96,6 @@ export default function Hub({ onOpenModule }) {
           </div>
         </>
       )}
-
-      <div className="hub-divider" />
-
-      <div className="hub-module-grid">
-        {MODULES.filter((m) => m.built).map((m) => {
-          const invert = m.id === hervorgehobenesModul && hatDaten;
-          return (
-            <button
-              key={m.id}
-              className={`hub-module-cell ${invert ? 'invert' : ''}`}
-              onClick={() => onOpenModule(m.id)}
-            >
-              <span className="hub-module-dot" style={{ background: invert ? 'currentColor' : m.color }} />
-              <span>{m.name}</span>
-            </button>
-          );
-        })}
-      </div>
 
       {hatDaten && (
         <>
