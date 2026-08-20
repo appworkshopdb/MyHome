@@ -1,3 +1,4 @@
+import ModuleTopBar from '../../core/components/ModuleTopBar';
 import ModuleTabs from '../../core/components/ModuleTabs';
 import MonthsView from './components/MonthsView';
 import SummaryView from './components/SummaryView';
@@ -33,6 +34,7 @@ export default function FinanceModule({ view, onNavigateView }) {
   const View = VIEWS[activeView];
   return (
     <>
+      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} />
       <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       <View />
     </>
