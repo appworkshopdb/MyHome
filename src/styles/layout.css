@@ -1,5 +1,5 @@
 .main-content {
-  padding: 16px 16px calc(var(--nav-height) + 16px);
+  padding: 16px 16px calc(var(--nav-height) + 52px + 16px);
   max-width: 900px;
   margin: 0 auto;
 }
@@ -170,7 +170,7 @@
 /* Toast */
 .toast {
   position: fixed;
-  bottom: calc(var(--nav-height) + 16px);
+  bottom: calc(var(--nav-height) + 52px + 16px);
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--text-primary);
@@ -193,7 +193,7 @@
 /* ===== Mobile / iPhone (≤480px) ===== */
 @media (max-width: 480px) {
   .main-content {
-    padding: 12px 12px calc(var(--nav-height) + 12px);
+    padding: 12px 12px calc(var(--nav-height) + 52px + 12px);
   }
 
   .page-header { margin-bottom: 16px; }
@@ -206,3 +206,24 @@
   }
   .month-nav-btn { width: 32px; height: 32px; }
 }
+
+/* Globale Erfassen-Leiste (core/components/EntryBar.jsx) — sitzt
+   zwischen Content und Bottom-Nav, auf jedem Screen. z-index unter
+   .bottom-nav (100), damit die Nav immer obenauf bleibt. */
+.entry-bar {
+  position: fixed;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  left: 0; right: 0;
+  z-index: 99;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-top: 1px solid var(--text-primary);
+}
+.entry-bar svg { width: 17px; height: 17px; stroke-width: 2; }
+.entry-bar span { font-size: 14px; font-weight: 600; }
