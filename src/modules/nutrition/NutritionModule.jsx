@@ -5,8 +5,7 @@ import { useUi } from '../../core/lib/UiContext';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
-import ModuleTopBar from '../../core/components/ModuleTopBar';
-import BottomNav from './components/BottomNav';
+import ModuleTabs from '../../core/components/ModuleTabs';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
 import LexikonView from './components/LexikonView';
@@ -32,6 +31,7 @@ const VIEW_TITLES = {
   profil: 'Profil',
 };
 const DEFAULT_VIEW = 'ampel';
+const TABS = Object.entries(VIEW_TITLES).map(([key, label]) => ({ key, label }));
 
 // Das Ernährungs-Modul in seiner Gesamtheit. Lädt die persönlichen Daten
 // (eigene Lebensmittel-Ergänzungen, Rezepte, Profil) einmalig aus
@@ -115,7 +115,8 @@ export default function NutritionModule({ view, onNavigateView }) {
 
   return (
     <>
-      <ModuleTopBar title={VIEW_TITLES[activeView]} />
+      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
+      <div className="page-header"><h1>{VIEW_TITLES[activeView]}</h1></div>
       {activeView === 'ampel' && (
         <AmpelView foods={foods} onSaveFood={handleSaveFood} onDeleteFood={handleDeleteFood} />
       )}
@@ -133,7 +134,6 @@ export default function NutritionModule({ view, onNavigateView }) {
       {activeView === 'profil' && (
         <ProfilView profile={profile} onSaveProfile={handleSaveProfile} email={session.user.email} />
       )}
-      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
