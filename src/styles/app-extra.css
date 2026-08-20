@@ -227,6 +227,66 @@
   flex-shrink: 0;
 }
 
+/* ===== Modul-Kopfzeile (core/components/ModuleTopBar.jsx) ===== */
+/* Ersetzt app-header innerhalb eines Moduls/auf der Profil-Seite — */
+/* Home links, Titel mittig als reiner Kontext-Text, Profil rechts. */
+
+.module-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 58px;
+  /* .main-content hat eigenes 16px-Padding — negative Margin holt die
+     Leiste randlos an den Bildschirmrand, analog zu app-header (der
+     außerhalb von .main-content sitzt und deshalb schon randlos ist). */
+  margin: -16px -16px 16px;
+  width: calc(100% + 32px);
+  padding: 0 14px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.module-topbar-home,
+.module-topbar-avatar {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.module-topbar-home {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+.module-topbar-home svg { width: 18px; height: 18px; }
+
+.module-topbar-avatar {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.module-topbar-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-align: center;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 10px;
+}
+
 /* IconChevronRight/IconLock sitzen als Zeilen-Endsymbol außerhalb von
    .app-menu-row-label — ohne diese Regel rendern SVGs ohne eigene
    Größe (wie IconChevronRight) in Browser-Standardgröße statt 16px. */
