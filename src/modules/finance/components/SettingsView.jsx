@@ -105,8 +105,6 @@ export default function SettingsView() {
 
   return (
     <>
-      <div className="page-header"><h1>Einstellungen</h1></div>
-
       <GoalsSection sourceModule="finance" />
 
       {/* Darstellung */}

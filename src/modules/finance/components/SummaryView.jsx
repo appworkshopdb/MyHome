@@ -79,7 +79,6 @@ export default function SummaryView() {
   return (
     <>
       <div className="page-header">
-        <h1>Auswertung</h1>
         <select
           value={year} onChange={(e) => setYear(Number(e.target.value))}
           style={{ width: 'auto', fontSize: '0.9rem', padding: '6px 28px 6px 10px' }}

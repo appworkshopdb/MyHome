@@ -428,10 +428,6 @@ export default function ContractsView() {
 
   return (
     <>
-      <div className="page-header">
-        <h1>Laufende Posten</h1>
-      </div>
-
       <EinnahmequellenSection
         templates={templates}
         onEdit={(t) => setModal({ type: 'template', tpl: t, category: 'fixeinnahmen' })}
