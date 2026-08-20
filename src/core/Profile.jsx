@@ -82,9 +82,8 @@ export default function Profile({ onOpenModule }) {
   const modulesWithGoals = MODULES.filter((m) => goalsByModule[m.id]?.length);
 
   return (
-    <>
+    <div className="hub">
       <ModuleTopBar title="Profil" />
-      <div className="hub">
 
       {/* Konto */}
       <div className="card">
@@ -164,6 +163,5 @@ export default function Profile({ onOpenModule }) {
         })}
       </div>
     </div>
-    </>
   );
 }
