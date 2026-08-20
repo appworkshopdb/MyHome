@@ -17,39 +17,39 @@ const QUICK_CATEGORIES = [
 ];
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'Klarna'];
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'];
+const MAX_CENTS = 99_999_999; // 999.999,99 € — genug Spielraum, kein absurder Überlauf
+
+function formatCents(cents) {
+  const euros = Math.floor(cents / 100);
+  const rest = String(cents % 100).padStart(2, '0');
+  return `${euros},${rest}`;
+}
 
 function FinanceSheetBody({ onClose }) {
   const { session } = useAuth();
   const { showToast } = useUi();
   const { notifySaved } = useEntrySheet();
 
-  const [amount, setAmount] = useState('0');
+  // Ziffern laufen von rechts ein, wie am Kartenterminal — die letzten
+  // zwei Stellen sind immer die Cent-Stellen. Die Komma-Taste ist damit
+  // rein optisch (siehe .sheet-key.inert), kein eigener Handler nötig.
+  const [cents, setCents] = useState(0);
   const [category, setCategory] = useState('variable_kosten');
   const [name, setName] = useState('');
   const [payment, setPayment] = useState('Bar');
   const [saving, setSaving] = useState(false);
 
   function pressKey(k) {
+    if (k === ',') return; // funktionslos, siehe oben
     if (k === '⌫') {
-      setAmount((a) => (a.length > 1 ? a.slice(0, -1) : '0'));
+      setCents((c) => Math.floor(c / 10));
       return;
     }
-    if (k === ',') {
-      if (amount.includes(',')) return;
-      setAmount((a) => a + ',');
-      return;
-    }
-    setAmount((a) => {
-      if (a === '0') return k;
-      // maximal 2 Nachkommastellen
-      const [, dec] = a.split(',');
-      if (dec && dec.length >= 2) return a;
-      return a + k;
-    });
+    setCents((c) => Math.min(MAX_CENTS, c * 10 + Number(k)));
   }
 
   async function submit() {
-    const numeric = parseFloat(amount.replace(',', '.'));
+    const numeric = cents / 100;
     if (!numeric || numeric <= 0) return showToast('Bitte einen Betrag eingeben');
     if (!name.trim()) return showToast('Bitte einen Namen eingeben');
 
@@ -78,7 +78,7 @@ function FinanceSheetBody({ onClose }) {
   return (
     <>
       <div className="sheet-amount-row">
-        <div className="sheet-amount">{amount}</div>
+        <div className="sheet-amount">{formatCents(cents)}</div>
         <div className="sheet-amount-currency">€</div>
         <div style={{ flex: 1 }} />
         <div className="sheet-cursor" />
@@ -118,15 +118,21 @@ function FinanceSheetBody({ onClose }) {
       </div>
 
       <div className="sheet-keypad">
-        {KEYS.map((k) => (
-          <button key={k} className="sheet-key" onClick={() => pressKey(k)}>
-            {k}
-          </button>
-        ))}
+        {KEYS.map((k) =>
+          k === ',' ? (
+            <div key={k} className="sheet-key inert">{k}</div>
+          ) : (
+            <button key={k} className="sheet-key" onClick={() => pressKey(k)}>{k}</button>
+          )
+        )}
       </div>
 
-      <button className="sheet-save" onClick={submit} disabled={saving}>
-        {saving ? 'Speichert…' : 'Speichern'}
+      <button
+        className={`sheet-save ${cents > 0 ? '' : 'disabled'}`}
+        onClick={submit}
+        disabled={saving || cents === 0}
+      >
+        {saving ? 'Speichert…' : cents > 0 ? 'Speichern' : 'Betrag fehlt'}
       </button>
       <div className="sheet-footnote">Betrag zuerst, Rest optional — ein Screen, kein Scrollen.</div>
     </>
