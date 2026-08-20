@@ -53,7 +53,9 @@ export default function App() {
 
   return (
     <EntrySheetProvider>
-      <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
+      {activeModule === null && (
+        <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
+      )}
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={navigate} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
