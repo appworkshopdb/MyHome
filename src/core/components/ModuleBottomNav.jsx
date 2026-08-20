@@ -3,7 +3,7 @@
 // styles/layout.css) — ein Modul entscheidet nur noch, welche
 // Menüpunkte (items) es bekommt, siehe z.B.
 // modules/finance/components/BottomNav.jsx als Vorlage für neue Module.
-import { IconSun, IconCheck, IconSummary, IconDumbbell, IconUtensils, IconCart } from './Icons';
+import { IconHome, IconBrain, IconEuro, IconDumbbell, IconUtensils, IconCart } from './Icons';
 
 // Globale Bottom-Nav — zeigt jetzt alle 6 Module direkt (kein Start/
 // Profil mehr hier, die sitzen seit ModuleTopBar.jsx oben links/rechts
@@ -12,9 +12,9 @@ import { IconSun, IconCheck, IconSummary, IconDumbbell, IconUtensils, IconCart }
 // core/modules.js (dort z.B. "Sport", hier "Sport" für "Training" –
 // aber "Gewohnheiten"→"Habbits", "Finanzen"→"Geld", "Ernährung"→"Essen").
 const ITEMS = [
-  { key: 'everyday', label: 'Alltag', Icon: IconSun },
-  { key: 'habits', label: 'Habbits', Icon: IconCheck },
-  { key: 'finance', label: 'Geld', Icon: IconSummary },
+  { key: 'everyday', label: 'Alltag', Icon: IconHome },
+  { key: 'habits', label: 'Habbits', Icon: IconBrain },
+  { key: 'finance', label: 'Geld', Icon: IconEuro },
   { key: 'sport', label: 'Sport', Icon: IconDumbbell },
   { key: 'nutrition', label: 'Essen', Icon: IconUtensils },
   { key: 'shopping', label: 'Einkauf', Icon: IconCart },

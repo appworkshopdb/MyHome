@@ -210,3 +210,18 @@ export const IconCart = () => (
     <path d="M2 3h2l2.6 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L21 7H6" />
   </svg>
 );
+
+export const IconBrain = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.5 3.5a2.7 2.7 0 0 0-2.7 2.7 2.4 2.4 0 0 0-1.8 2.3c0 .5.15.95.4 1.35A2.5 2.5 0 0 0 4 12c0 1 .55 1.85 1.35 2.3-.1.3-.15.6-.15.95a2.5 2.5 0 0 0 2.5 2.5c.2 0 .4-.02.6-.07A2.6 2.6 0 0 0 11 20.5V6.2A2.7 2.7 0 0 0 9.5 3.5Z" />
+    <path d="M14.5 3.5a2.7 2.7 0 0 1 2.7 2.7 2.4 2.4 0 0 1 1.8 2.3c0 .5-.15.95-.4 1.35A2.5 2.5 0 0 1 20 12c0 1-.55 1.85-1.35 2.3.1.3.15.6.15.95a2.5 2.5 0 0 1-2.5 2.5c-.2 0-.4-.02-.6-.07A2.6 2.6 0 0 1 13 20.5V6.2a2.7 2.7 0 0 1 1.5-2.7Z" />
+  </svg>
+);
+
+export const IconEuro = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6.2A7 7 0 0 0 8.3 9M8.3 15A7 7 0 0 0 18 17.8" />
+    <line x1="4" y1="10.2" x2="14.5" y2="10.2" />
+    <line x1="4" y1="13.6" x2="13" y2="13.6" />
+  </svg>
+);
