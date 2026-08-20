@@ -188,3 +188,25 @@ export const IconDumbbell = () => (
     <line x1="6.5" y1="12" x2="17.5" y2="12" />
   </svg>
 );
+
+export const IconSun = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <circle cx="12" cy="12" r="4.2" />
+    <line x1="12" y1="2" x2="12" y2="5" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="4.2" y1="4.2" x2="6.3" y2="6.3" />
+    <line x1="17.7" y1="17.7" x2="19.8" y2="19.8" />
+    <line x1="2" y1="12" x2="5" y2="12" />
+    <line x1="19" y1="12" x2="22" y2="12" />
+    <line x1="4.2" y1="19.8" x2="6.3" y2="17.7" />
+    <line x1="17.7" y1="6.3" x2="19.8" y2="4.2" />
+  </svg>
+);
+
+export const IconCart = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="21" r="1.4" fill="currentColor" stroke="none" />
+    <path d="M2 3h2l2.6 12.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L21 7H6" />
+  </svg>
+);

@@ -3,26 +3,21 @@
 // styles/layout.css) — ein Modul entscheidet nur noch, welche
 // Menüpunkte (items) es bekommt, siehe z.B.
 // modules/finance/components/BottomNav.jsx als Vorlage für neue Module.
-import { IconHome, IconSummary, IconUtensils, IconDumbbell, IconCheck, IconUserRound } from './Icons';
+import { IconSun, IconCheck, IconSummary, IconDumbbell, IconUtensils, IconCart } from './Icons';
 
-// Globale Bottom-Nav — NICHT mehr pro Modul, sondern einmal in App.jsx
-// gerendert. Wechselt zwischen Start, den vier "Alltags"-Modulen und
-// Profil. Kein FAB mehr (siehe BOTTOMNAV_6MODULE.md) — Erfassen
-// passiert jetzt innerhalb jedes Moduls selbst (siehe
-// core/components/ModuleTabs.jsx für die Unteransicht-Navigation
-// INNERHALB eines Moduls, die dadurch hier frei wurde).
-//
-// Bewusst eine feste, kuratierte Liste statt aller Einträge aus
-// core/modules.js — Alltag/Einkauf sind noch reine Platzhalter und
-// stehen bewusst nicht in dieser Leiste, auch wenn built:true nur
-// zum Testen gesetzt ist (siehe Projektkontext.md, "Status der Module").
+// Globale Bottom-Nav — zeigt jetzt alle 6 Module direkt (kein Start/
+// Profil mehr hier, die sitzen seit ModuleTopBar.jsx oben links/rechts
+// auf jedem Screen). Reihenfolge und Kurznamen sind eine bewusste
+// Nutzer-Entscheidung, nicht identisch mit den vollen Modulnamen aus
+// core/modules.js (dort z.B. "Sport", hier "Sport" für "Training" –
+// aber "Gewohnheiten"→"Habbits", "Finanzen"→"Geld", "Ernährung"→"Essen").
 const ITEMS = [
-  { key: '', label: 'Start', Icon: IconHome },
-  { key: 'finance', label: 'Finanzen', Icon: IconSummary },
-  { key: 'nutrition', label: 'Ernährung', Icon: IconUtensils },
+  { key: 'everyday', label: 'Alltag', Icon: IconSun },
+  { key: 'habits', label: 'Habbits', Icon: IconCheck },
+  { key: 'finance', label: 'Geld', Icon: IconSummary },
   { key: 'sport', label: 'Sport', Icon: IconDumbbell },
-  { key: 'habits', label: 'Gewohnheiten', Icon: IconCheck },
-  { key: 'profile', label: 'Profil', Icon: IconUserRound },
+  { key: 'nutrition', label: 'Essen', Icon: IconUtensils },
+  { key: 'shopping', label: 'Einkauf', Icon: IconCart },
 ];
 
 export default function ModuleBottomNav({ active, onChange }) {
@@ -30,7 +25,7 @@ export default function ModuleBottomNav({ active, onChange }) {
     <nav className="bottom-nav">
       {ITEMS.map(({ key, label, Icon }) => (
         <button
-          key={key || 'start'}
+          key={key}
           className={`nav-item ${active === key ? 'active' : ''}`}
           onClick={() => onChange(key)}
         >
