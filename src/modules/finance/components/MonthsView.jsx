@@ -30,7 +30,7 @@ function sortByCreated(arr, dir = 'asc') {
 export default function MonthsView() {
   const { session } = useAuth();
   const { showToast } = useUi();
-  const { version, open } = useEntrySheet();
+  const { version } = useEntrySheet();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -146,7 +146,6 @@ export default function MonthsView() {
         </div>
         <div className="fin-header-right">
           {istAktuellerMonat && <div className="fin-today-pill">Heute {heuteTag}.</div>}
-          <button className="fin-quick-add" onClick={() => open('finance')}>+ Neu</button>
         </div>
       </div>
 
