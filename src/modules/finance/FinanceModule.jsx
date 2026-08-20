@@ -1,5 +1,4 @@
-import ModuleTopBar from '../../core/components/ModuleTopBar';
-import BottomNav from './components/BottomNav';
+import ModuleTabs from '../../core/components/ModuleTabs';
 import MonthsView from './components/MonthsView';
 import SummaryView from './components/SummaryView';
 import ContractsView from './components/ContractsView';
@@ -11,12 +10,12 @@ const VIEWS = {
   contracts: ContractsView,
   settings: SettingsView,
 };
-const TITLES = {
-  months: 'Monat',
-  summary: 'Auswertung',
-  contracts: 'Verträge',
-  settings: 'Einstellungen',
-};
+const TABS = [
+  { key: 'months', label: 'Monat' },
+  { key: 'summary', label: 'Auswertung' },
+  { key: 'contracts', label: 'Verträge' },
+  { key: 'settings', label: 'Einstellungen' },
+];
 const DEFAULT_VIEW = 'months';
 
 // Das Finanzen-Modul in seiner Gesamtheit — genau der Inhalt, der vorher
@@ -24,17 +23,18 @@ const DEFAULT_VIEW = 'months';
 // Routing, core/lib/useRoute.js) — kein eigener useState mehr, dadurch
 // übersteht die aktuelle Unteransicht einen Reload automatisch und hat
 // einen eigenen Link (#/finance/summary usw.), siehe Projektkontext.md.
-// ModuleTopBar sitzt hier zentral (nicht in jeder View einzeln) — die
-// drei Views mit eigenem page-header (Auswertung/Verträge/Einstellungen)
-// haben ihren <h1> deshalb verloren, sonst stünde der Titel doppelt da.
+//
+// Die Bottom-Nav (core/components/ModuleBottomNav.jsx) ist seit
+// BOTTOMNAV_6MODULE.md global/modulübergreifend — die Unteransichten
+// dieses Moduls (Monat/Auswertung/Verträge/Einstellungen) laufen daher
+// über ModuleTabs oben im Content statt über eine modul-eigene Leiste.
 export default function FinanceModule({ view, onNavigateView }) {
   const activeView = VIEWS[view] ? view : DEFAULT_VIEW;
   const View = VIEWS[activeView];
   return (
     <>
-      <ModuleTopBar title={TITLES[activeView]} />
+      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       <View />
-      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
