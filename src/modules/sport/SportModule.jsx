@@ -6,8 +6,7 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
-import ModuleTopBar from '../../core/components/ModuleTopBar';
-import BottomNav from './components/BottomNav';
+import ModuleTabs from '../../core/components/ModuleTabs';
 import TrainingView from './components/TrainingView';
 import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
@@ -19,12 +18,12 @@ registerRequirement('sport', async (session) => {
 });
 
 const DEFAULT_VIEW = 'training';
-const TITLES = {
-  training: 'Training',
-  verlauf: 'Verlauf',
-  plaene: 'Pläne',
-  auswertung: 'Auswertung',
-};
+const TABS = [
+  { key: 'training', label: 'Training' },
+  { key: 'verlauf', label: 'Kalender' },
+  { key: 'plaene', label: 'Pläne' },
+  { key: 'auswertung', label: 'Auswertung' },
+];
 
 // Hält den gesamten Modul-Zustand: Einheiten, Plan-Vorlagen und die im
 // Profil gewählten Sportarten. Alles wird EINMAL geladen und an die
@@ -206,9 +205,8 @@ export default function SportModule({ view, onNavigateView }) {
 
   return (
     <>
-      <ModuleTopBar title={TITLES[activeView]} />
+      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       {VIEWS[activeView]}
-      <BottomNav active={activeView} onChange={onNavigateView} />
     </>
   );
 }
