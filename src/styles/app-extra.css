@@ -446,7 +446,7 @@
 .required-toast-stack {
   position: fixed;
   left: 16px;
-  bottom: calc(var(--nav-height) + 52px + 16px + env(safe-area-inset-bottom));
+  bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
   z-index: 200;
   display: flex;
   flex-direction: column-reverse;
