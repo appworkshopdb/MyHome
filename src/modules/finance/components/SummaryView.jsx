@@ -164,54 +164,53 @@ export default function SummaryView() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div className="card-title">Verfügbares Kapital</div>
-          <div className="chart-box" style={{ height: 200 }}>
-            <Line
-              options={{
-                ...base,
-                scales: {
-                  x: { ticks: { color: colors.tick, font: { size: 11 } }, grid: { color: colors.grid } },
-                  y: { ticks: { color: colors.tick, callback: (v) => v + ' €', font: { size: 11 } }, grid: { color: colors.grid } },
-                },
-              }}
-              data={{
-                labels,
-                datasets: [{
-                  label: 'Verfügbar',
-                  data: monthData.map((m) => (m.totalEin > 0 || m.totalAus > 0 ? m.verfuegbar : null)),
-                  borderColor: colors.verfuegbar,
-                  backgroundColor: colors.verfuegbar + '22',
-                  fill: true, tension: 0.4, pointRadius: 4,
-                  pointBackgroundColor: colors.verfuegbar, spanGaps: false,
-                }],
-              }}
-            />
-          </div>
+      <div className="card">
+        <div className="card-title">Verfügbares Kapital</div>
+        <div className="chart-box" style={{ height: 220 }}>
+          <Line
+            options={{
+              ...base,
+              scales: {
+                x: { ticks: { color: colors.tick, font: { size: 11 } }, grid: { color: colors.grid } },
+                y: { ticks: { color: colors.tick, callback: (v) => v + ' €', font: { size: 11 } }, grid: { color: colors.grid } },
+              },
+            }}
+            data={{
+              labels,
+              datasets: [{
+                label: 'Verfügbar',
+                data: monthData.map((m) => (m.totalEin > 0 || m.totalAus > 0 ? m.verfuegbar : null)),
+                borderColor: colors.verfuegbar,
+                backgroundColor: colors.verfuegbar + '22',
+                fill: true, tension: 0.4, pointRadius: 4,
+                pointBackgroundColor: colors.verfuegbar, spanGaps: false,
+              }],
+            }}
+          />
         </div>
+      </div>
 
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div className="card-title">Ausgaben-Kategorien</div>
-          <div className="chart-box" style={{ height: 200 }}>
-            <Doughnut
-              options={{
-                ...base, cutout: '62%',
-                plugins: { legend: { position: 'bottom', labels: { color: colors.tick, font: { size: 12 }, boxWidth: 12, padding: 10 } } },
-              }}
-              data={{
-                labels: ['Fixkosten', 'Variable', 'Sonstige'],
-                datasets: [{
-                  data: [totFix, totVar, totSonst],
-                  backgroundColor: [colors.fixkosten + 'CC', colors.variable + 'CC', colors.sonstige + 'CC'],
-                  borderColor: [colors.fixkosten, colors.variable, colors.sonstige],
-                  borderWidth: 1.5, hoverOffset: 6,
-                }],
-              }}
-            />
-          </div>
+      <div className="card">
+        <div className="card-title">Ausgaben-Kategorien</div>
+        <div className="chart-box" style={{ height: 260 }}>
+          <Doughnut
+            options={{
+              ...base, cutout: '62%',
+              plugins: { legend: { position: 'bottom', labels: { color: colors.tick, font: { size: 12 }, boxWidth: 12, padding: 10 } } },
+            }}
+            data={{
+              labels: ['Fixkosten', 'Variable', 'Sonstige'],
+              datasets: [{
+                data: [totFix, totVar, totSonst],
+                backgroundColor: [colors.fixkosten + 'CC', colors.variable + 'CC', colors.sonstige + 'CC'],
+                borderColor: [colors.fixkosten, colors.variable, colors.sonstige],
+                borderWidth: 1.5, hoverOffset: 6,
+              }],
+            }}
+          />
         </div>
       </div>
     </>
   );
 }
+
