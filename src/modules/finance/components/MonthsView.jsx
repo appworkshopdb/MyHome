@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
-import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
-import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
@@ -31,7 +30,7 @@ function sortByCreated(arr, dir = 'asc') {
 export default function MonthsView() {
   const { session } = useAuth();
   const { showToast } = useUi();
-  const { version } = useEntrySheet();
+  const { version, open } = useEntrySheet();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -145,7 +144,10 @@ export default function MonthsView() {
           <span className="month-label">{MONTHS_DE[month - 1]} {String(year).slice(2)}</span>
           <button className="month-nav-btn" onClick={() => shiftMonth(1)}><IconChevronRight /></button>
         </div>
-        {istAktuellerMonat && <div className="fin-today-pill">Heute {heuteTag}.</div>}
+        <div className="fin-header-right">
+          {istAktuellerMonat && <div className="fin-today-pill">Heute {heuteTag}.</div>}
+          <button className="fin-quick-add" onClick={() => open('finance')}>+ Neu</button>
+        </div>
       </div>
 
       <div className="fin-lead">
