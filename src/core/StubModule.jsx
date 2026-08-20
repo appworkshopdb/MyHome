@@ -1,4 +1,5 @@
 import GoalsSection from './components/GoalsSection';
+import ModuleTopBar from './components/ModuleTopBar';
 
 // NUR zum Testen: zeigt kein echtes Modul, sondern hält die App-Hülle
 // (Menü, Ziele-Muster) für Module durchklickbar, die noch keinen
@@ -7,12 +8,14 @@ import GoalsSection from './components/GoalsSection';
 // setzen — dann greift automatisch wieder LockedModule.jsx.
 export default function StubModule({ module }) {
   return (
-    <div className="hub">
-      <div className="page-header">
-        <h1>{module.name}</h1>
-        <p style={{ marginTop: 2 }}>Platzhalter — Modul wird noch gebaut, nur zum Testen freigeschaltet.</p>
+    <>
+      <ModuleTopBar title={module.name} />
+      <div className="hub">
+        <div className="page-header">
+          <p style={{ marginTop: 2 }}>Platzhalter — Modul wird noch gebaut, nur zum Testen freigeschaltet.</p>
+        </div>
+        <GoalsSection sourceModule={module.id} />
       </div>
-      <GoalsSection sourceModule={module.id} />
-    </div>
+    </>
   );
 }

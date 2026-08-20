@@ -5,6 +5,7 @@ import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile } from './lib/bodyProfileData';
 import { getGoals } from './lib/goalsData';
 import BodyProfileForm from './components/BodyProfileForm';
+import ModuleTopBar from './components/ModuleTopBar';
 import { MODULES } from './modules';
 
 function memberSince(isoDate) {
@@ -81,8 +82,9 @@ export default function Profile({ onOpenModule }) {
   const modulesWithGoals = MODULES.filter((m) => goalsByModule[m.id]?.length);
 
   return (
-    <div className="hub">
-      <div className="page-header"><h1>Profil</h1></div>
+    <>
+      <ModuleTopBar title="Profil" />
+      <div className="hub">
 
       {/* Konto */}
       <div className="card">
@@ -162,5 +164,6 @@ export default function Profile({ onOpenModule }) {
         })}
       </div>
     </div>
+    </>
   );
 }
