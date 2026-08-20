@@ -7,9 +7,12 @@
 .view { display: none; }
 .view.active { display: block; }
 
-/* Bottom Navigation — flache 5-Zellen-Leiste, mittlere Zelle ist immer
-   der globale "+"-FAB (siehe core/components/ModuleBottomNav.jsx).
-   Aktive Zelle = volle Füllung, keine Pille mehr. */
+/* Bottom Navigation — GLOBAL (nicht mehr pro Modul), 6 feste Zellen:
+   Start + 4 Alltags-Module + Profil (siehe core/components/
+   ModuleBottomNav.jsx). Kein FAB mehr — Erfassen passiert jetzt
+   innerhalb jedes Moduls selbst. Nur Icons, kein Text-Label (Text
+   bleibt fürs Screenreader-DOM erhalten, siehe .nav-item span unten).
+   Aktive Zelle = volle Füllung. */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -61,20 +64,31 @@
   color: var(--text-primary);
 }
 
-/* Zentraler FAB-Slot in der Bottom-Nav — modulabhängig vorbelegtes
-   Erfassen (Finanzen: Ausgabe, Sport: Einheit loggen, usw.) */
-.nav-fab {
-  flex: 1;
+/* Modul-interne Unteransicht-Tabs (core/components/ModuleTabs.jsx) —
+   übernimmt die Rolle, die vorher die modul-eigene Bottom-Nav hatte,
+   seit die Bottom-Nav global/modulübergreifend ist. */
+.module-tabs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 26px;
-  font-weight: 300;
-  line-height: 1;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
 }
-.nav-fab:hover { background: var(--accent-dark); }
+.module-tab {
+  flex: 1;
+  padding: 11px 8px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-left: 1px solid var(--border);
+  min-height: var(--touch-target);
+  white-space: nowrap;
+}
+.module-tab:first-child { border-left: none; }
+.module-tab.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
 
 /* Page Header */
 .page-header {
