@@ -8,11 +8,10 @@
 .view.active { display: block; }
 
 /* Bottom Navigation — GLOBAL (nicht mehr pro Modul), 6 feste Zellen:
-   Start + 4 Alltags-Module + Profil (siehe core/components/
-   ModuleBottomNav.jsx). Kein FAB mehr — Erfassen passiert jetzt
-   innerhalb jedes Moduls selbst. Nur Icons, kein Text-Label (Text
-   bleibt fürs Screenreader-DOM erhalten, siehe .nav-item span unten).
-   Aktive Zelle = volle Füllung. */
+   alle 6 Module in fester Reihenfolge (siehe core/components/
+   ModuleBottomNav.jsx). Start/Profil sitzen seit ModuleTopBar.jsx oben,
+   nicht mehr hier. Icon + kleines Label, damit bei 6 engen Zellen noch
+   Kontext lesbar bleibt. Aktive Zelle = volle Füllung. */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -28,31 +27,28 @@
 .nav-item {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+  padding: 2px;
   color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
   min-height: var(--touch-target);
 }
 
 .nav-item svg {
-  width: 21px;
-  height: 21px;
+  width: 17px;
+  height: 17px;
 }
 
 .nav-item span {
-  /* Label bleibt für Screenreader im DOM, wird aber visuell versteckt
-     ("nur Symbol, kein Text" laut Design-Entscheidung) */
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .nav-item.active {
