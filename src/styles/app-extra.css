@@ -751,3 +751,55 @@
   font-weight: 600;
   min-height: var(--touch-target);
 }
+
+/* ===== ModuleTopBar (core/components/ModuleTopBar.jsx) =====
+   Ersetzt innerhalb von Modulen/Tabs den globalen AppHeader — der
+   bleibt nur auf dem Hub. Löst "kein Weg zurück aus einem Tab". */
+.module-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 8px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  margin: 0 -16px 20px;
+}
+.module-topbar-home,
+.module-topbar-profile {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+.module-topbar-home svg { width: 19px; height: 19px; }
+.module-topbar-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-align: center;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.module-topbar-avatar {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
