@@ -8,14 +8,12 @@ import ModuleTopBar from './components/ModuleTopBar';
 // setzen — dann greift automatisch wieder LockedModule.jsx.
 export default function StubModule({ module }) {
   return (
-    <>
+    <div className="hub">
       <ModuleTopBar title={module.name} />
-      <div className="hub">
-        <div className="page-header">
-          <p style={{ marginTop: 2 }}>Platzhalter — Modul wird noch gebaut, nur zum Testen freigeschaltet.</p>
-        </div>
-        <GoalsSection sourceModule={module.id} />
+      <div className="page-header">
+        <p style={{ marginTop: 2 }}>Platzhalter — Modul wird noch gebaut, nur zum Testen freigeschaltet.</p>
       </div>
-    </>
+      <GoalsSection sourceModule={module.id} />
+    </div>
   );
 }
