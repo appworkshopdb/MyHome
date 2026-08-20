@@ -5,6 +5,7 @@ import { useUi } from '../../core/lib/UiContext';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
+import ModuleTopBar from '../../core/components/ModuleTopBar';
 import BottomNav from './components/BottomNav';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
@@ -114,7 +115,7 @@ export default function NutritionModule({ view, onNavigateView }) {
 
   return (
     <>
-      <div className="page-header"><h1>{VIEW_TITLES[activeView]}</h1></div>
+      <ModuleTopBar title={VIEW_TITLES[activeView]} />
       {activeView === 'ampel' && (
         <AmpelView foods={foods} onSaveFood={handleSaveFood} onDeleteFood={handleDeleteFood} />
       )}
