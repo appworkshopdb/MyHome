@@ -6,6 +6,7 @@ import Login from './core/components/Login';
 import AppHeader from './core/AppHeader';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
+import ModuleBottomNav from './core/components/ModuleBottomNav';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
@@ -52,9 +53,7 @@ export default function App() {
 
   return (
     <EntrySheetProvider>
-      {activeModule === null && (
-        <AppHeader onNavigate={navigate} hasWarnings={warnings.length > 0} />
-      )}
+      <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={navigate} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
@@ -70,6 +69,7 @@ export default function App() {
       </main>
       <RequiredDataToast warnings={warnings} onFix={navigate} />
       <EntrySheet />
+      <ModuleBottomNav active={activeModule === null ? '' : activeModule} onChange={navigate} />
     </EntrySheetProvider>
   );
 }
