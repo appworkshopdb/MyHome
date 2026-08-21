@@ -271,32 +271,32 @@ export function getEarnedBadges(habits, entries) {
 
 export const HABIT_LIBRARY = [
   // Gesundheit & Bewegung
-  { name: '30 Min bewegen',      category: 'Bewegung',      icon: '🏃', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Spazieren gehen',     category: 'Bewegung',      icon: '🚶', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Sport / Gym',         category: 'Bewegung',      icon: '💪', frequency: 'custom',   frequency_days: [0,2,4], target_count: 1, unit: null },
-  { name: 'Dehnen & Stretching', category: 'Bewegung',      icon: '🧘', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Treppe statt Aufzug', category: 'Bewegung',      icon: '🪜', frequency: 'weekdays', target_count: 1, unit: null },
+  { name: '30 Min bewegen',              category: 'Bewegung',      icon: '🏃', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Spazieren gehen',             category: 'Bewegung',      icon: '🚶', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Sport / Gym',                 category: 'Bewegung',      icon: '💪', frequency: 'custom',   frequency_days: [0,2,4], target_count: 1, unit: null },
+  { name: 'Dehnen & Stretching',         category: 'Bewegung',      icon: '🧘', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Treppe statt Aufzug',         category: 'Bewegung',      icon: '🪜', frequency: 'weekdays', target_count: 1,  unit: null },
   // Ernährung
-  { name: 'Wasser trinken',      category: 'Ernährung',     icon: '💧', frequency: 'daily',    target_count: 8, unit: 'Gläser' },
-  { name: 'Gemüse essen',        category: 'Ernährung',     icon: '🥦', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Kein Zucker',         category: 'Ernährung',     icon: '🚫', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Zu Hause kochen',     category: 'Ernährung',     icon: '🍳', frequency: 'daily',    target_count: 1, unit: null },
+  { name: 'Wasser trinken',              category: 'Ernährung',     icon: '💧', frequency: 'daily',    target_count: 2,  unit: 'L' },
+  { name: 'Gemüse essen',                category: 'Ernährung',     icon: '🥦', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Kein Zucker',                 category: 'Ernährung',     icon: '🚫', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Zu Hause kochen',             category: 'Ernährung',     icon: '🍳', frequency: 'daily',    target_count: 1,  unit: null },
   // Schlaf
-  { name: 'Vor 23 Uhr ins Bett', category: 'Schlaf',        icon: '😴', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Kein Handy vor dem Schlafen', category: 'Schlaf', icon: '📵', frequency: 'daily',  target_count: 1, unit: null },
-  { name: 'Feste Aufstehzeit',   category: 'Schlaf',        icon: '⏰', frequency: 'daily',    target_count: 1, unit: null },
+  { name: 'Vor 23 Uhr ins Bett',         category: 'Schlaf',        icon: '😴', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Kein Handy vor dem Schlafen', category: 'Schlaf',        icon: '📵', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Feste Aufstehzeit',           category: 'Schlaf',        icon: '⏰', frequency: 'daily',    target_count: 1,  unit: null },
   // Mental & Achtsamkeit
-  { name: 'Meditieren',          category: 'Mental',        icon: '🧠', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Dankbarkeit notieren',category: 'Mental',        icon: '🙏', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Journaling',          category: 'Mental',        icon: '📓', frequency: 'daily',    target_count: 1, unit: null },
-  { name: 'Digitale Pause',      category: 'Mental',        icon: '🌿', frequency: 'daily',    target_count: 1, unit: null },
+  { name: 'Meditieren',                  category: 'Mental',        icon: '🧠', frequency: 'daily',    target_count: 10, unit: 'Min' },
+  { name: 'Dankbarkeit notieren',        category: 'Mental',        icon: '🙏', frequency: 'daily',    target_count: 3,  unit: 'Ding' },
+  { name: 'Journaling',                  category: 'Mental',        icon: '📓', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Digitale Pause',              category: 'Mental',        icon: '🌿', frequency: 'daily',    target_count: 30, unit: 'Min' },
   // Produktivität
-  { name: 'Tagesplanung machen', category: 'Produktivität', icon: '📋', frequency: 'weekdays', target_count: 1, unit: null },
-  { name: 'Kein Handy morgens',  category: 'Produktivität', icon: '📱', frequency: 'daily',    target_count: 1, unit: null },
+  { name: 'Tagesplanung machen',         category: 'Produktivität', icon: '📋', frequency: 'weekdays', target_count: 1,  unit: null },
+  { name: 'Kein Handy morgens',          category: 'Produktivität', icon: '📱', frequency: 'daily',    target_count: 1,  unit: null },
   // Lernen
-  { name: 'Lesen (10 Seiten)',   category: 'Lernen',        icon: '📚', frequency: 'daily',    target_count: 10, unit: 'Seiten' },
+  { name: 'Lesen',                       category: 'Lernen',        icon: '📚', frequency: 'daily',    target_count: 1,  unit: null },
   // Haushalt
-  { name: 'Bett machen',         category: 'Haushalt',      icon: '🛏️', frequency: 'daily',   target_count: 1, unit: null },
+  { name: 'Bett machen',                 category: 'Haushalt',      icon: '🛏️', frequency: 'daily',   target_count: 1,  unit: null },
 ];
 
 export const HABIT_CATEGORIES = [
