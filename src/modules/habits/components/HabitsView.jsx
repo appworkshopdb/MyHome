@@ -35,6 +35,24 @@ const FREQ_LABELS = {
 
 const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
+const UNIT_OPTIONS = [
+  { value: '',         label: 'Ja / Nein (kein Zähler)' },
+  { value: 'L',        label: 'L — Liter' },
+  { value: 'ml',       label: 'ml — Milliliter' },
+  { value: 'Glas',     label: 'Glas' },
+  { value: 'Min',      label: 'Min — Minuten' },
+  { value: 'Std',      label: 'Std — Stunden' },
+  { value: '×',        label: '× — Mal / Wiederholungen' },
+  { value: 'Seiten',   label: 'Seiten' },
+  { value: 'Schritte', label: 'Schritte' },
+  { value: 'km',       label: 'km — Kilometer' },
+  { value: 'Ding',     label: 'Ding (z.B. 3 Dinge notieren)' },
+  { value: 'Portion',  label: 'Portion' },
+  { value: 'Mahlzeit', label: 'Mahlzeit' },
+  { value: 'Aufgabe',  label: 'Aufgabe' },
+  { value: 'Satz',     label: 'Satz (Training)' },
+];
+
 const EMPTY_HABIT = {
   name:           '',
   description:    '',
@@ -358,6 +376,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
           {/* Ziel-Anzahl / Einheit */}
           <div className="hab-form-row" style={{ gap: 12 }}>
+            {form.unit !== '' && (
             <div className="hab-form-field" style={{ flex: 1 }}>
               <label className="form-label">Ziel-Anzahl</label>
               <input
@@ -369,15 +388,23 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 onChange={(e) => setField('target_count', e.target.value)}
               />
             </div>
+            )}
             <div className="hab-form-field" style={{ flex: 2 }}>
-              <label className="form-label">Einheit (leer = Ja/Nein)</label>
-              <input
+              <label className="form-label">Einheit</label>
+              <select
                 className="form-input"
-                placeholder="z.B. Gläser, Seiten …"
                 value={form.unit}
-                onChange={(e) => setField('unit', e.target.value)}
-                maxLength={20}
-              />
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setField('unit', val);
+                  // Bei Ja/Nein: Ziel-Anzahl auf 1 zurücksetzen
+                  if (val === '') setField('target_count', 1);
+                }}
+              >
+                {UNIT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
           </div>
 
