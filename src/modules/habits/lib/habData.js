@@ -3,6 +3,22 @@
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 
+// owner_id aus dem JWT-Token lesen (sub-claim = user UUID)
+// Analog zum rawAuth-Workaround: kein supabase.auth.getUser(),
+// stattdessen Token selbst dekodieren.
+function getOwnerIdFromToken() {
+  try {
+    // Token liegt im localStorage unter dem Supabase-Auth-Key
+    // rawAuth.js speichert Session unter 'zuhause_session' (JSON mit access_token)
+    const token = JSON.parse(localStorage.getItem('zuhause_session') || '{}').access_token;
+    if (!token) throw new Error('Kein Token gefunden');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub; // sub = user UUID
+  } catch (e) {
+    throw new Error('Nicht eingeloggt oder Token ungültig');
+  }
+}
+
 // ─── Habits (Definitionen) ─────────────────────────────────
 
 export async function loadHabits() {
@@ -20,7 +36,6 @@ export async function loadHabits() {
 export async function saveHabit(habit) {
   const sb = getSupabase();
   if (habit.id) {
-    // Update
     const { data, error } = await sb
       .from('hab_habits')
       .update({
@@ -42,10 +57,11 @@ export async function saveHabit(habit) {
     if (error) throw error;
     return data;
   } else {
-    // Insert
+    const owner_id = getOwnerIdFromToken();
     const { data, error } = await sb
       .from('hab_habits')
       .insert({
+        owner_id,
         name:           habit.name,
         description:    habit.description ?? null,
         category:       habit.category,
@@ -67,7 +83,6 @@ export async function saveHabit(habit) {
 
 export async function deleteHabit(habitId) {
   const sb = getSupabase();
-  // Soft Delete
   const { error } = await sb
     .from('hab_habits')
     .update({ deleted_at: new Date().toISOString() })
@@ -84,28 +99,19 @@ export async function toggleHabitActive(habitId, active) {
   if (error) throw error;
 }
 
-// ─── Entries (Check-ins) ───────────────────────────────────
-
-/**
- * Lädt alle Entries für einen Zeitraum.
- * @param {string} from  ISO-Datum (YYYY-MM-DD)
- * @param {string} to    ISO-Datum (YYYY-MM-DD)
- */
-export async function loadEntries(from, to) {
+export async function updateSortOrder(items) {
   const sb = getSupabase();
-  const { data, error } = await sb
-    .from('hab_entries')
-    .select('*')
-    .is('deleted_at', null)
-    .gte('logged_on', from)
-    .lte('logged_on', to);
-  if (error) throw error;
-  return data ?? [];
+  for (const { id, sort_order } of items) {
+    const { error } = await sb
+      .from('hab_habits')
+      .update({ sort_order })
+      .eq('id', id);
+    if (error) throw error;
+  }
 }
 
-/**
- * Lädt alle Entries (ohne Zeitraum-Filter) für Streaks/Heatmap.
- */
+// ─── Entries (Check-ins) ───────────────────────────────────
+
 export async function loadAllEntries() {
   const sb = getSupabase();
   const { data, error } = await sb
@@ -117,15 +123,10 @@ export async function loadAllEntries() {
   return data ?? [];
 }
 
-/**
- * Habit abhaken (togglen): existiert bereits → Soft-Delete; fehlt → Insert.
- * Für Count-Habits: count wird gesetzt (nicht getoggelt).
- */
 export async function toggleEntry(habitId, date, countValue = 1) {
   const sb = getSupabase();
   const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
-  // Existing entry suchen (inkl. soft-deleted)
   const { data: existing, error: fetchErr } = await sb
     .from('hab_entries')
     .select('*')
@@ -135,7 +136,6 @@ export async function toggleEntry(habitId, date, countValue = 1) {
   if (fetchErr) throw fetchErr;
 
   if (existing && existing.deleted_at === null) {
-    // Bereits erledigt → rückgängig (Soft Delete)
     const { error } = await sb
       .from('hab_entries')
       .update({ deleted_at: new Date().toISOString() })
@@ -143,7 +143,6 @@ export async function toggleEntry(habitId, date, countValue = 1) {
     if (error) throw error;
     return null;
   } else if (existing && existing.deleted_at !== null) {
-    // War soft-deleted → wiederherstellen
     const { data, error } = await sb
       .from('hab_entries')
       .update({ deleted_at: null, count: countValue })
@@ -153,10 +152,11 @@ export async function toggleEntry(habitId, date, countValue = 1) {
     if (error) throw error;
     return data;
   } else {
-    // Neu einfügen
+    const owner_id = getOwnerIdFromToken();
     const { data, error } = await sb
       .from('hab_entries')
       .insert({
+        owner_id,
         habit_id:  habitId,
         logged_on: dateStr,
         count:     countValue,
@@ -168,15 +168,11 @@ export async function toggleEntry(habitId, date, countValue = 1) {
   }
 }
 
-/**
- * Count-Habit: Zähler direkt setzen (z.B. 3 von 8 Gläsern).
- */
 export async function setEntryCount(habitId, date, count) {
   const sb = getSupabase();
   const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
 
   if (count <= 0) {
-    // Auf 0 → Entry entfernen
     const { error } = await sb
       .from('hab_entries')
       .update({ deleted_at: new Date().toISOString() })
@@ -204,29 +200,13 @@ export async function setEntryCount(habitId, date, count) {
     if (error) throw error;
     return data;
   } else {
+    const owner_id = getOwnerIdFromToken();
     const { data, error } = await sb
       .from('hab_entries')
-      .insert({ habit_id: habitId, logged_on: dateStr, count })
+      .insert({ owner_id, habit_id: habitId, logged_on: dateStr, count })
       .select()
       .single();
     if (error) throw error;
     return data;
-  }
-}
-
-/**
- * Reihenfolge mehrerer Habits auf einmal aktualisieren.
- * @param {Array<{ id: string, sort_order: number }>} items
- */
-export async function updateSortOrder(items) {
-  const sb = getSupabase();
-  // Sequentiell updaten — Supabase unterstützt kein Bulk-Update mit
-  // unterschiedlichen Werten pro Zeile ohne RPC, daher einzelne Updates.
-  for (const { id, sort_order } of items) {
-    const { error } = await sb
-      .from('hab_habits')
-      .update({ sort_order })
-      .eq('id', id);
-    if (error) throw error;
   }
 }
