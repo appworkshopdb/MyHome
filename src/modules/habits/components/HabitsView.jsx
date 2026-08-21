@@ -1,0 +1,470 @@
+// modules/habits/components/HabitsView.jsx
+// Habit-Verwaltung: Liste, Erstellen, Bearbeiten, Löschen, Bibliothek
+
+import { useState } from 'react';
+import {
+  saveHabit, deleteHabit, toggleHabitActive,
+} from '../lib/habData.js';
+import {
+  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY,
+} from '../lib/habUtils.js';
+
+const FREQ_LABELS = {
+  daily:    'Täglich',
+  weekdays: 'Mo – Fr',
+  custom:   'Benutzerdefiniert',
+};
+
+const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+const EMPTY_HABIT = {
+  name:           '',
+  description:    '',
+  category:       'Gesundheit',
+  icon:           '⭐',
+  frequency:      'daily',
+  frequency_days: [0, 1, 2, 3, 4],
+  target_count:   1,
+  unit:           '',
+  reminder_time:  '',
+  active:         true,
+};
+
+export default function HabitsView({ habits, onHabitsChange }) {
+  const [showForm, setShowForm]       = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [editHabit, setEditHabit]     = useState(null);
+  const [form, setForm]               = useState(EMPTY_HABIT);
+  const [saving, setSaving]           = useState(false);
+  const [deletingId, setDeletingId]   = useState(null);
+  const [error, setError]             = useState(null);
+  const [iconPicker, setIconPicker]   = useState(false);
+
+  const activeHabits   = habits.filter((h) => h.active && !h.deleted_at);
+  const inactiveHabits = habits.filter((h) => !h.active && !h.deleted_at);
+
+  // Warnung wenn >5 aktive Habits
+  const showOverloadWarning = activeHabits.length >= 5;
+
+  function openCreate() {
+    setEditHabit(null);
+    setForm({ ...EMPTY_HABIT });
+    setShowForm(true);
+    setShowLibrary(false);
+    setError(null);
+  }
+
+  function openEdit(habit) {
+    setEditHabit(habit);
+    setForm({
+      name:           habit.name,
+      description:    habit.description ?? '',
+      category:       habit.category,
+      icon:           habit.icon,
+      frequency:      habit.frequency,
+      frequency_days: habit.frequency_days ?? [0,1,2,3,4],
+      target_count:   habit.target_count ?? 1,
+      unit:           habit.unit ?? '',
+      reminder_time:  habit.reminder_time ?? '',
+      active:         habit.active,
+    });
+    setShowForm(true);
+    setShowLibrary(false);
+    setError(null);
+  }
+
+  function openLibrary() {
+    setShowLibrary(true);
+    setShowForm(false);
+  }
+
+  function applyTemplate(template) {
+    setEditHabit(null);
+    setForm({
+      ...EMPTY_HABIT,
+      ...template,
+      unit:          template.unit ?? '',
+      reminder_time: '',
+    });
+    setShowLibrary(false);
+    setShowForm(true);
+    setError(null);
+  }
+
+  function cancel() {
+    setShowForm(false);
+    setShowLibrary(false);
+    setEditHabit(null);
+    setError(null);
+    setIconPicker(false);
+  }
+
+  function setField(key, value) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function toggleDay(day) {
+    setForm((f) => {
+      const days = f.frequency_days ?? [];
+      return {
+        ...f,
+        frequency_days: days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort(),
+      };
+    });
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) { setError('Name ist erforderlich.'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await saveHabit({
+        ...(editHabit ? { id: editHabit.id } : {}),
+        ...form,
+        unit:           form.unit.trim() || null,
+        description:    form.description.trim() || null,
+        reminder_time:  form.reminder_time || null,
+        target_count:   Math.max(1, Number(form.target_count)),
+        frequency_days: form.frequency === 'custom' ? form.frequency_days : null,
+      });
+      await onHabitsChange();
+      cancel();
+    } catch (e) {
+      setError('Speichern fehlgeschlagen. Bitte erneut versuchen.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(habitId) {
+    if (!window.confirm('Gewohnheit und alle Einträge löschen?')) return;
+    setDeletingId(habitId);
+    try {
+      await deleteHabit(habitId);
+      await onHabitsChange();
+    } catch (e) {
+      setError('Löschen fehlgeschlagen.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleToggleActive(habit) {
+    try {
+      await toggleHabitActive(habit.id, !habit.active);
+      await onHabitsChange();
+    } catch (e) {
+      setError('Status konnte nicht geändert werden.');
+    }
+  }
+
+  // ─── Bibliothek ─────────────────────────────────────────
+  if (showLibrary) {
+    const grouped = HABIT_LIBRARY.reduce((acc, t) => {
+      if (!acc[t.category]) acc[t.category] = [];
+      acc[t.category].push(t);
+      return acc;
+    }, {});
+
+    return (
+      <div className="hab-library">
+        <div className="hab-library-header">
+          <button className="hab-back-btn" onClick={() => setShowLibrary(false)}>← Zurück</button>
+          <h2 className="hab-library-title">Vorlagen</h2>
+        </div>
+        <p className="hab-library-sub">Wähle eine Vorlage als Startpunkt — du kannst alles anpassen.</p>
+        {Object.entries(grouped).map(([cat, templates]) => (
+          <div key={cat} className="hab-library-group">
+            <div className="hab-library-cat">{cat}</div>
+            <div className="hab-library-items">
+              {templates.map((t, i) => (
+                <button
+                  key={i}
+                  className="hab-library-item"
+                  onClick={() => applyTemplate(t)}
+                >
+                  <span className="hab-library-item-icon">{t.icon}</span>
+                  <span className="hab-library-item-name">{t.name}</span>
+                  {t.target_count > 1 && (
+                    <span className="hab-library-item-meta">{t.target_count}× {t.unit}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── Formular ────────────────────────────────────────────
+  if (showForm) {
+    const isCount = Number(form.target_count) > 1 || form.unit.trim().length > 0;
+
+    return (
+      <div className="hab-form-wrap">
+        <div className="hab-form-header">
+          <button className="hab-back-btn" onClick={cancel}>← Zurück</button>
+          <h2 className="hab-form-title">
+            {editHabit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}
+          </h2>
+        </div>
+
+        {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+
+        <div className="hab-form">
+          {/* Icon + Name */}
+          <div className="hab-form-row">
+            <button
+              className="hab-icon-btn"
+              onClick={() => setIconPicker((v) => !v)}
+              type="button"
+              title="Icon wählen"
+            >
+              {form.icon}
+            </button>
+            <div className="hab-form-field" style={{ flex: 1 }}>
+              <label className="form-label">Name *</label>
+              <input
+                className="form-input"
+                placeholder="z.B. 30 Min spazieren"
+                value={form.name}
+                onChange={(e) => setField('name', e.target.value)}
+                maxLength={60}
+              />
+            </div>
+          </div>
+
+          {/* Icon-Picker */}
+          {iconPicker && (
+            <div className="hab-icon-picker">
+              {HABIT_ICONS.map((ic) => (
+                <button
+                  key={ic}
+                  className={`hab-icon-option ${form.icon === ic ? 'selected' : ''}`}
+                  onClick={() => { setField('icon', ic); setIconPicker(false); }}
+                  type="button"
+                >
+                  {ic}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Beschreibung */}
+          <div className="hab-form-field">
+            <label className="form-label">Beschreibung (optional)</label>
+            <input
+              className="form-input"
+              placeholder="Kurze Notiz zu dieser Gewohnheit"
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+              maxLength={120}
+            />
+          </div>
+
+          {/* Kategorie */}
+          <div className="hab-form-field">
+            <label className="form-label">Kategorie</label>
+            <select
+              className="form-input"
+              value={form.category}
+              onChange={(e) => setField('category', e.target.value)}
+            >
+              {HABIT_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Frequenz */}
+          <div className="hab-form-field">
+            <label className="form-label">Häufigkeit</label>
+            <div className="hab-freq-tabs">
+              {Object.entries(FREQ_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`hab-freq-tab ${form.frequency === key ? 'active' : ''}`}
+                  onClick={() => setField('frequency', key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {form.frequency === 'custom' && (
+              <div className="hab-day-picker">
+                {DAY_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`hab-day-btn ${(form.frequency_days ?? []).includes(i) ? 'active' : ''}`}
+                    onClick={() => toggleDay(i)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Ziel-Anzahl / Einheit */}
+          <div className="hab-form-row" style={{ gap: 12 }}>
+            <div className="hab-form-field" style={{ flex: 1 }}>
+              <label className="form-label">Ziel-Anzahl</label>
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                max={100}
+                value={form.target_count}
+                onChange={(e) => setField('target_count', e.target.value)}
+              />
+            </div>
+            <div className="hab-form-field" style={{ flex: 2 }}>
+              <label className="form-label">Einheit (leer = Ja/Nein)</label>
+              <input
+                className="form-input"
+                placeholder="z.B. Gläser, Seiten, …"
+                value={form.unit}
+                onChange={(e) => setField('unit', e.target.value)}
+                maxLength={20}
+              />
+            </div>
+          </div>
+
+          {/* Erinnerung */}
+          <div className="hab-form-field">
+            <label className="form-label">Erinnerung (optional)</label>
+            <input
+              className="form-input"
+              type="time"
+              value={form.reminder_time}
+              onChange={(e) => setField('reminder_time', e.target.value)}
+            />
+          </div>
+
+          <button
+            className="btn btn-primary"
+            style={{ marginTop: 8 }}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Wird gespeichert …' : editHabit ? 'Speichern' : 'Gewohnheit anlegen'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Liste ───────────────────────────────────────────────
+  return (
+    <div className="hab-habits-view">
+
+      {/* Aktions-Header */}
+      <div className="hab-habits-actions">
+        <button className="btn btn-primary" onClick={openCreate}>
+          + Neue Gewohnheit
+        </button>
+        <button className="btn btn-secondary" onClick={openLibrary}>
+          Vorlagen
+        </button>
+      </div>
+
+      {/* Überladungs-Warnung */}
+      {showOverloadWarning && (
+        <div className="hab-overload-warning">
+          <span>💡</span>
+          <span>Du hast {activeHabits.length} aktive Gewohnheiten. Für nachhaltigen Erfolg empfehlen Experten max. 3–5.</span>
+        </div>
+      )}
+
+      {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+
+      {/* Leer-Zustand */}
+      {habits.filter((h) => !h.deleted_at).length === 0 && (
+        <div className="hab-empty">
+          <div className="hab-empty-icon">🌱</div>
+          <div className="hab-empty-title">Noch keine Gewohnheiten</div>
+          <div className="hab-empty-text">
+            Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={openCreate}>Selbst erstellen</button>
+            <button className="btn btn-secondary" onClick={openLibrary}>Aus Vorlagen</button>
+          </div>
+        </div>
+      )}
+
+      {/* Aktive Habits */}
+      {activeHabits.length > 0 && (
+        <div className="hab-section">
+          <div className="hab-section-label">Aktiv</div>
+          <div className="hab-manage-list">
+            {activeHabits.map((habit) => (
+              <HabitManageCard
+                key={habit.id}
+                habit={habit}
+                onEdit={() => openEdit(habit)}
+                onDelete={() => handleDelete(habit.id)}
+                onToggleActive={() => handleToggleActive(habit)}
+                deleting={deletingId === habit.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pausierte Habits */}
+      {inactiveHabits.length > 0 && (
+        <div className="hab-section" style={{ marginTop: 24 }}>
+          <div className="hab-section-label">Pausiert</div>
+          <div className="hab-manage-list">
+            {inactiveHabits.map((habit) => (
+              <HabitManageCard
+                key={habit.id}
+                habit={habit}
+                onEdit={() => openEdit(habit)}
+                onDelete={() => handleDelete(habit.id)}
+                onToggleActive={() => handleToggleActive(habit)}
+                deleting={deletingId === habit.id}
+                paused
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HabitManageCard({ habit, onEdit, onDelete, onToggleActive, deleting, paused }) {
+  return (
+    <div className={`hab-manage-card ${paused ? 'hab-manage-card--paused' : ''}`}>
+      <div className="hab-manage-card-left">
+        <span className="hab-item-icon">{habit.icon}</span>
+        <div>
+          <div className="hab-manage-name">{habit.name}</div>
+          <div className="hab-manage-meta">
+            {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
+            {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit ?? ''}`}
+          </div>
+        </div>
+      </div>
+      <div className="hab-manage-card-right">
+        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'}>
+          {paused ? '▶' : '⏸'}
+        </button>
+        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten">✏️</button>
+        <button
+          className="hab-manage-btn hab-manage-btn--del"
+          onClick={onDelete}
+          disabled={deleting}
+          title="Löschen"
+        >
+          {deleting ? '…' : '🗑'}
+        </button>
+      </div>
+    </div>
+  );
+}
