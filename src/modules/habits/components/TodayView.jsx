@@ -1,12 +1,14 @@
 // modules/habits/components/TodayView.jsx
 // Heute-Ansicht: alle fälligen Habits abhaken, Streak anzeigen
+// Alle Habits: nur Häkchen — kein +/- für Count-Habits.
+// Ein Tap = target_count erreicht (erledigt), nochmal = rückgängig.
 
 import { useState, useMemo } from 'react';
-import { today, isDueOn, isDone, getEntry, calcStreak, todayCompletionRate } from '../lib/habUtils.js';
+import { today, isDueOn, isDone, getEntry, calcStreak } from '../lib/habUtils.js';
 import { toggleEntry, setEntryCount } from '../lib/habData.js';
 
 export default function TodayView({ habits, entries, onEntriesChange, onNavigateToHabits }) {
-  const [loading, setLoading] = useState(null); // habitId das gerade geladen wird
+  const [loading, setLoading] = useState(null);
   const [error, setError]     = useState(null);
 
   const todayStr = today();
@@ -14,35 +16,31 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
     () => habits.filter((h) => h.active && isDueOn(h, todayStr)),
     [habits, todayStr]
   );
-  const doneHabits   = dueHabits.filter((h) => isDone(entries, h.id, todayStr, h.target_count));
-  const totalDue     = dueHabits.length;
-  const totalDone    = doneHabits.length;
-  const allDone      = totalDue > 0 && totalDone === totalDue;
-  const rate         = totalDue > 0 ? Math.round((totalDone / totalDue) * 100) : 0;
 
+  const totalDue  = dueHabits.length;
+  const totalDone = dueHabits.filter((h) => isDone(entries, h.id, todayStr, h.target_count)).length;
+  const allDone   = totalDue > 0 && totalDone === totalDue;
+  const rate      = totalDue > 0 ? Math.round((totalDone / totalDue) * 100) : 0;
+
+  // Ein Tap togglet: nicht erledigt → auf target_count setzen; erledigt → löschen
   async function handleToggle(habit) {
     if (loading) return;
     setError(null);
     setLoading(habit.id);
     try {
-      await toggleEntry(habit.id, todayStr);
-      await onEntriesChange();
-    } catch (e) {
-      setError('Konnte nicht gespeichert werden.');
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function handleCount(habit, delta) {
-    if (loading) return;
-    setError(null);
-    setLoading(habit.id);
-    try {
       const entry = getEntry(entries, habit.id, todayStr);
-      const current = entry ? entry.count : 0;
-      const next = Math.max(0, Math.min(habit.target_count * 2, current + delta));
-      await setEntryCount(habit.id, todayStr, next);
+      const done  = entry && !entry.deleted_at && entry.count >= habit.target_count;
+
+      if (done) {
+        // Rückgängig — Entry soft-deleten
+        await toggleEntry(habit.id, todayStr);
+      } else if (habit.target_count > 1) {
+        // Count-Habit: direkt auf Zielwert setzen
+        await setEntryCount(habit.id, todayStr, habit.target_count);
+      } else {
+        // Binär: normales Toggle
+        await toggleEntry(habit.id, todayStr);
+      }
       await onEntriesChange();
     } catch (e) {
       setError('Konnte nicht gespeichert werden.');
@@ -51,7 +49,6 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
     }
   }
 
-  // Datum formatiert
   const dateLabel = new Date().toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
@@ -70,10 +67,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
               <span className="hab-today-score-total">{totalDue}</span>
             </div>
             <div className="hab-progress-bar">
-              <div
-                className="hab-progress-fill"
-                style={{ width: `${rate}%` }}
-              />
+              <div className="hab-progress-fill" style={{ width: `${rate}%` }} />
             </div>
           </div>
         )}
@@ -103,16 +97,14 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
         </div>
       )}
 
-      {/* Habit-Liste */}
+      {/* Habit-Liste — immer Häkchen, kein +/- */}
       {totalDue > 0 && (
         <div className="hab-list">
           {dueHabits.map((habit) => {
-            const entry   = getEntry(entries, habit.id, todayStr);
-            const done    = entry && !entry.deleted_at && entry.count >= habit.target_count;
-            const count   = entry && !entry.deleted_at ? entry.count : 0;
-            const isCount = habit.target_count > 1;
-            const streak  = calcStreak(habit, entries);
-            const busy    = loading === habit.id;
+            const entry  = getEntry(entries, habit.id, todayStr);
+            const done   = entry && !entry.deleted_at && entry.count >= habit.target_count;
+            const streak = calcStreak(habit, entries);
+            const busy   = loading === habit.id;
 
             return (
               <div
@@ -125,13 +117,11 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                     <div className="hab-item-name">{habit.name}</div>
                     <div className="hab-item-meta">
                       {streak > 0 && (
-                        <span className="hab-streak-badge">
-                          🔥 {streak}
-                        </span>
+                        <span className="hab-streak-badge">🔥 {streak}</span>
                       )}
-                      {isCount && (
+                      {habit.target_count > 1 && (
                         <span className="hab-count-label">
-                          {count} / {habit.target_count} {habit.unit}
+                          {habit.target_count} {habit.unit}
                         </span>
                       )}
                     </div>
@@ -139,65 +129,24 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                 </div>
 
                 <div className="hab-item-right">
-                  {isCount ? (
-                    <div className="hab-count-controls">
-                      <button
-                        className="hab-count-btn"
-                        onClick={() => handleCount(habit, -1)}
-                        disabled={busy || count === 0}
-                        aria-label="Weniger"
-                      >−</button>
-                      <div
-                        className={`hab-count-ring ${done ? 'done' : ''}`}
-                        title={`${count} von ${habit.target_count}`}
-                      >
-                        <svg viewBox="0 0 36 36" width="44" height="44">
-                          <circle
-                            cx="18" cy="18" r="15"
-                            fill="none"
-                            stroke="var(--border)"
-                            strokeWidth="2.5"
-                          />
-                          <circle
-                            cx="18" cy="18" r="15"
-                            fill="none"
-                            stroke={done ? 'var(--accent)' : 'var(--accent)'}
-                            strokeWidth="2.5"
-                            strokeDasharray={`${Math.min(count / habit.target_count, 1) * 94.2} 94.2`}
-                            strokeLinecap="round"
-                            transform="rotate(-90 18 18)"
-                            opacity={count === 0 ? 0.3 : 1}
-                          />
-                        </svg>
-                        <span className="hab-count-ring-num">{count}</span>
-                      </div>
-                      <button
-                        className="hab-count-btn"
-                        onClick={() => handleCount(habit, 1)}
-                        disabled={busy}
-                        aria-label="Mehr"
-                      >+</button>
-                    </div>
-                  ) : (
-                    <button
-                      className={`hab-check-btn ${done ? 'hab-check-btn--done' : ''}`}
-                      onClick={() => handleToggle(habit)}
-                      disabled={busy}
-                      aria-label={done ? 'Rückgängig' : 'Erledigt markieren'}
-                    >
-                      {busy ? (
-                        <span className="hab-check-spinner" />
-                      ) : done ? (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                          <path d="M5 13l4 4L19 7" stroke="var(--on-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      ) : (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="var(--border-strong)" strokeWidth="2"/>
-                        </svg>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    className={`hab-check-btn ${done ? 'hab-check-btn--done' : ''}`}
+                    onClick={() => handleToggle(habit)}
+                    disabled={busy}
+                    aria-label={done ? 'Rückgängig' : 'Erledigt markieren'}
+                  >
+                    {busy ? (
+                      <span className="hab-check-spinner" />
+                    ) : done ? (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="var(--on-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="var(--border-strong)" strokeWidth="2"/>
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
             );
