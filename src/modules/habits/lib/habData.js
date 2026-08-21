@@ -210,3 +210,29 @@ export async function setEntryCount(habitId, date, count) {
     return data;
   }
 }
+
+/**
+ * Gelöschten Habit wiederherstellen (deleted_at auf null setzen).
+ */
+export async function restoreHabit(habitId) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('hab_habits')
+    .update({ deleted_at: null, active: true })
+    .eq('id', habitId);
+  if (error) throw error;
+}
+
+/**
+ * Alle soft-gelöschten Habits laden (Archiv).
+ */
+export async function loadDeletedHabits() {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('hab_habits')
+    .select('*')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
