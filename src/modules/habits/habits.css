@@ -1390,3 +1390,33 @@
 .hab-wizard-focus-item .hab-wizard-check.visible {
   opacity: 1;
 }
+
+/* ─── Wizard Schritt 2 — Gruppen-Trenner ──────────────────── */
+
+.hab-wizard-group {
+  margin-bottom: 8px;
+}
+
+.hab-wizard-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px 0 6px;
+  border-top: 1px solid var(--border);
+}
+
+.hab-wizard-group:first-child .hab-wizard-group-label {
+  border-top: none;
+  padding-top: 0;
+}
+
+.hab-wizard-group-icon {
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
