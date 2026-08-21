@@ -249,3 +249,12 @@
   flex-shrink: 0;
   min-width: var(--touch-target);
 }
+
+/* ─── Lade-Zustand ────────────────────────────────────────── */
+
+.page-loading {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

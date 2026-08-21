@@ -3,34 +3,28 @@
 //
 // Routing-Muster identisch zu FinanceModule/HabitsModule:
 //   view/onNavigateView kommen von App.jsx (useRoute),
-//   kein eigenes useState für die aktive Unteransicht.
+//   kein eigenes useState für die aktive Tab-Ansicht.
 //
-// Tabs:
-//   listen   → Übersicht aller Einkaufslisten
-//   (weitere Unteransichten kommen in Phase 2/3)
+// openList: die aktuell geöffnete Liste (null = Listenübersicht).
+// Das ist bewusst KEIN URL-Part — nur Modul + Tab gehören in die URL,
+// tiefere Zustände (welche Liste offen) bleiben im lokalen State
+// (siehe Projektkontext.md, Abschnitt "Routing").
 
 import { useState, useEffect, useCallback } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar.jsx';
-import ModuleTabs   from '../../core/components/ModuleTabs.jsx';
 
-import ListView from './components/ListView.jsx';
+import ListView  from './components/ListView.jsx';
+import ItemsView from './components/ItemsView.jsx';
 
 import { loadLists } from './lib/shoData.js';
 
 import './shopping.css';
 
-const TABS = [
-  { key: 'listen', label: 'Einkauf' },
-];
-
-const DEFAULT_VIEW = 'listen';
-
 export default function ShoppingModule({ view, onNavigateView }) {
-  const activeTab = TABS.find((t) => t.key === view) ? view : DEFAULT_VIEW;
-
-  const [lists,   setLists]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [lists,    setLists]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(null);
+  const [openList, setOpenList] = useState(null); // { id, name, icon }
 
   const fetchLists = useCallback(async () => {
     try {
@@ -45,8 +39,6 @@ export default function ShoppingModule({ view, onNavigateView }) {
     fetchLists().finally(() => setLoading(false));
   }, [fetchLists]);
 
-  const tabLabel = TABS.find((t) => t.key === activeTab)?.label ?? 'Einkauf';
-
   if (loading) {
     return (
       <>
@@ -56,25 +48,37 @@ export default function ShoppingModule({ view, onNavigateView }) {
     );
   }
 
+  // Artikelansicht einer bestimmten Liste
+  if (openList) {
+    return (
+      <>
+        <ModuleTopBar title={openList.name} />
+        <div className="main-content sho-module-content">
+          {error && (
+            <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
+          )}
+          <ItemsView
+            list={openList}
+            onBack={() => setOpenList(null)}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // Listenübersicht
   return (
     <>
-      <ModuleTopBar title={tabLabel} />
-      {/* Tabs erst anzeigen wenn es mehr als einen gibt */}
-      {TABS.length > 1 && (
-        <ModuleTabs items={TABS} active={activeTab} onChange={onNavigateView} />
-      )}
-
+      <ModuleTopBar title="Einkauf" />
       <div className="main-content sho-module-content">
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
-
-        {activeTab === 'listen' && (
-          <ListView
-            lists={lists}
-            onListsChange={fetchLists}
-          />
-        )}
+        <ListView
+          lists={lists}
+          onListsChange={fetchLists}
+          onOpenList={setOpenList}
+        />
       </div>
     </>
   );
