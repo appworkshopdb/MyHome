@@ -11,7 +11,7 @@ export default function ModuleTabs({ items, active, onChange }) {
       {items.map(({ key, label }) => (
         <button
           key={key}
-          className={module-tab ${active === key ? 'active' : ''}}
+          className={`module-tab ${active === key ? 'active' : ''}`}
           onClick={() => onChange(key)}
         >
           {label}
