@@ -74,7 +74,7 @@ export default function HabitsModule({ view, onNavigateView }) {
     <>
       <ModuleTopBar title={tabLabel} />
       <ModuleTabs
-        tabs={TABS}
+        items={TABS}
         active={activeTab}
         onChange={onNavigateView}
       />
