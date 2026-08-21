@@ -3,13 +3,12 @@ import { useAuth } from './lib/AuthContext';
 import { getMonthSum, getRecentMeasurements } from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
 import { getModule } from './modules';
+import { getSupabase } from './lib/supabaseClient';
 
-// Menschenlesbare Labels je metric_key. Bewusst hier zentral gepflegt,
-// nicht pro Modul verstreut — neue Module tragen hier einfach ihre
-// eigenen Keys nach, der Rest des Hubs muss nichts wissen.
 const METRIC_LABELS = {
-  'finance.income': 'Einnahme',
+  'finance.income':  'Einnahme',
   'finance.expense': 'Ausgabe',
+  'hab.checkin':     'Gewohnheit erledigt',
 };
 
 const CACHE_KEY = 'hub-cache-v1';
@@ -18,45 +17,85 @@ function readCache() {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 function writeCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, savedAt: new Date().toISOString() })); } catch { /* egal */ }
 }
 
-// Zustandsmodell statt nur ladeVorgang/hatDaten — ein Netzfehler soll
-// sich NIE wie "Monat ist leer" lesen (das wäre gelogen), und ein
-// abgelaufenes Token soll NIE eine harte Login-Wand sein, wenn wir noch
-// den letzten bekannten Stand zeigen können.
-//   'laedt'    — Skeleton in Endform-Maßen, kein Text, kein Sprung
-//   'fehler'   — eigener Bildschirm, klar als Störung erkennbar
-//   'veraltet' — letzter bekannter Stand, aber sichtbar nicht frisch
-//   'leer'     — ehrlich: noch keine Daten, drei Wege raus
-//   'daten'    — der gefüllte Hub
+// Habits-Tagesdaten direkt aus hab_habits + hab_entries laden
+// (core darf nicht aus modules/ importieren — eigene Abfrage hier)
+async function loadTodayHabits() {
+  const sb = getSupabase();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const { data: habits, error: hErr } = await sb
+    .from('hab_habits')
+    .select('id, name, icon, active, frequency, frequency_days, target_count, created_at, deleted_at')
+    .is('deleted_at', null)
+    .eq('active', true);
+  if (hErr) throw hErr;
+
+  const { data: entries, error: eErr } = await sb
+    .from('hab_entries')
+    .select('habit_id, count, logged_on, deleted_at')
+    .eq('logged_on', todayStr)
+    .is('deleted_at', null);
+  if (eErr) throw eErr;
+
+  // Welche Habits sind heute fällig?
+  const wd = (new Date().getDay() + 6) % 7; // Mo=0..So=6
+  const due = (habits ?? []).filter((h) => {
+    if (new Date(h.created_at).toISOString().split('T')[0] > todayStr) return false;
+    if (h.frequency === 'daily') return true;
+    if (h.frequency === 'weekdays') return wd < 5;
+    if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
+    return true;
+  });
+
+  const doneIds = new Set(
+    (entries ?? [])
+      .filter((e) => {
+        const habit = due.find((h) => h.id === e.habit_id);
+        return habit && e.count >= habit.target_count;
+      })
+      .map((e) => e.habit_id)
+  );
+
+  return { total: due.length, done: doneIds.size, habits: due };
+}
+
 export default function Hub({ onOpenModule }) {
   const { session } = useAuth();
-  const [status, setStatus] = useState('laedt');
-  const [income, setIncome] = useState(0);
-  const [expense, setExpense] = useState(0);
+  const [status, setStatus]     = useState('laedt');
+  const [income, setIncome]     = useState(0);
+  const [expense, setExpense]   = useState(0);
   const [activity, setActivity] = useState([]);
   const [cacheZeit, setCacheZeit] = useState(null);
+
+  // Habits-Kachel
+  const [habTotal, setHabTotal] = useState(0);
+  const [habDone, setHabDone]   = useState(0);
+  const [habHabits, setHabHabits] = useState([]);
 
   const load = useCallback(async () => {
     setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, recent] = await Promise.all([
-        getMonthSum(session, 'finance.income', now.getFullYear(), now.getMonth() + 1),
+      const [inc, exp, recent, todayHab] = await Promise.all([
+        getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         getRecentMeasurements(session, 5),
+        loadTodayHabits(),
       ]);
       setIncome(inc);
       setExpense(exp);
       setActivity(recent);
+      setHabTotal(todayHab.total);
+      setHabDone(todayHab.done);
+      setHabHabits(todayHab.habits);
       writeCache({ income: inc, expense: exp, activity: recent });
-      setStatus(recent.length > 0 || inc > 0 || exp > 0 ? 'daten' : 'leer');
+      setStatus(recent.length > 0 || inc > 0 || exp > 0 || todayHab.total > 0 ? 'daten' : 'leer');
     } catch (e) {
       console.error('[Hub] Laden fehlgeschlagen:', e);
       setStatus('fehler');
@@ -81,6 +120,10 @@ export default function Hub({ onOpenModule }) {
 
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
+
+  // Habits-Kachel Fortschritts-Prozent
+  const habRate = habTotal > 0 ? Math.round((habDone / habTotal) * 100) : 0;
+  const habAllDone = habTotal > 0 && habDone === habTotal;
 
   if (status === 'laedt') {
     return (
@@ -140,7 +183,6 @@ export default function Hub({ onOpenModule }) {
         <>
           <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
           <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
-
           <div className="hub-empty-steps">
             <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
               <div>
@@ -164,7 +206,6 @@ export default function Hub({ onOpenModule }) {
               <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
             </button>
           </div>
-
           <div className="hub-empty-note">
             <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
           </div>
@@ -173,6 +214,7 @@ export default function Hub({ onOpenModule }) {
 
       {(status === 'daten' || status === 'veraltet') && (
         <>
+          {/* Finanz-Leitzahl */}
           <div className="hub-eyebrow">Saldo diesen Monat</div>
           <div className="hub-lead-stat" style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}>
             {formatEur(saldo)}
@@ -184,26 +226,65 @@ export default function Hub({ onOpenModule }) {
 
           <div className="hub-divider" />
 
+          {/* Habits-Kachel — nur anzeigen wenn Habits vorhanden */}
+          {habTotal > 0 && (
+            <button
+              className={`hub-habits-card ${habAllDone ? 'hub-habits-card--done' : ''}`}
+              onClick={() => onOpenModule('habits')}
+            >
+              <div className="hub-habits-card-top">
+                <div className="hub-habits-card-label">
+                  {habAllDone ? '🏆 Alle Gewohnheiten erledigt!' : 'Gewohnheiten heute'}
+                </div>
+                <div className="hub-habits-card-score">
+                  <span className="hub-habits-card-done">{habDone}</span>
+                  <span className="hub-habits-card-sep">/</span>
+                  <span className="hub-habits-card-total">{habTotal}</span>
+                </div>
+              </div>
+              {/* Fortschrittsbalken */}
+              <div className="hub-habits-bar">
+                <div
+                  className="hub-habits-bar-fill"
+                  style={{ width: `${habRate}%` }}
+                />
+              </div>
+              {/* Habit-Icons als Vorschau */}
+              <div className="hub-habits-icons">
+                {habHabits.slice(0, 6).map((h) => (
+                  <span key={h.id} className="hub-habits-icon">{h.icon}</span>
+                ))}
+                {habHabits.length > 6 && (
+                  <span className="hub-habits-icon-more">+{habHabits.length - 6}</span>
+                )}
+              </div>
+            </button>
+          )}
+
           <div className="hub-section-label">Aktivität</div>
           <div className="hub-activity-list">
-            {activity.map((m) => {
-              const mod = getModule(m.source_module);
-              const isIncome = m.metric_key.endsWith('.income');
-              const signedValue = m.metric_key.endsWith('.expense') ? -Math.abs(m.value) : m.value;
-              return (
-                <div className="hub-activity-row" key={m.id}>
-                  <div>
-                    <div className="hub-activity-title">{METRIC_LABELS[m.metric_key] || m.metric_key}</div>
-                    <div className="hub-activity-time">{mod?.name || m.source_module} · {formatRelativeDate(m.created_at)}</div>
+            {activity
+              .filter((m) => m.metric_key !== 'hab.checkin') // Habit-Check-ins nicht in der Aktivitätsliste
+              .map((m) => {
+                const mod = getModule(m.source_module);
+                const isIncome = m.metric_key.endsWith('.income');
+                const signedValue = m.metric_key.endsWith('.expense') ? -Math.abs(m.value) : m.value;
+                return (
+                  <div className="hub-activity-row" key={m.id}>
+                    <div>
+                      <div className="hub-activity-title">{METRIC_LABELS[m.metric_key] || m.metric_key}</div>
+                      <div className="hub-activity-time">{mod?.name || m.source_module} · {formatRelativeDate(m.created_at)}</div>
+                    </div>
+                    <div className="hub-activity-value">
+                      {isIncome && <span className="hub-activity-value-dot" />}
+                      {m.unit === 'EUR' ? formatEur(signedValue) : `${signedValue} ${m.unit}`}
+                    </div>
                   </div>
-                  <div className="hub-activity-value">
-                    {isIncome && <span className="hub-activity-value-dot" />}
-                    {m.unit === 'EUR' ? formatEur(signedValue) : `${signedValue} ${m.unit}`}
-                  </div>
-                </div>
-              );
-            })}
-            {activity.length === 0 && <div className="fin-row-empty">Noch keine Aktivität.</div>}
+                );
+              })}
+            {activity.filter((m) => m.metric_key !== 'hab.checkin').length === 0 && (
+              <div className="fin-row-empty">Noch keine Aktivität.</div>
+            )}
           </div>
         </>
       )}
