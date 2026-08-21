@@ -2,21 +2,20 @@
 // Einstiegspunkt des Gewohnheiten-Moduls
 
 import { useState, useEffect, useCallback } from 'react';
-import ModuleTopBar from '../../core/components/ModuleTopBar.jsx';
-import ModuleTabs   from '../../core/components/ModuleTabs.jsx';
-import GoalsSection from '../../core/components/GoalsSection.jsx';
+import ModuleTopBar     from '../../core/components/ModuleTopBar.jsx';
+import ModuleTabs       from '../../core/components/ModuleTabs.jsx';
+import GoalsSection     from '../../core/components/GoalsSection.jsx';
 
-import TodayView    from './components/TodayView.jsx';
-import HabitsView   from './components/HabitsView.jsx';
-import CalendarView from './components/CalendarView.jsx';
-import StatsView    from './components/StatsView.jsx';
+import TodayView        from './components/TodayView.jsx';
+import HabitsView       from './components/HabitsView.jsx';
+import CalendarView     from './components/CalendarView.jsx';
+import StatsView        from './components/StatsView.jsx';
+import OnboardingWizard from './components/OnboardingWizard.jsx';
 
 import { loadHabits, loadAllEntries } from './lib/habData.js';
-import { today } from './lib/habUtils.js';
 
 import './habits.css';
 
-// Tabs analog zu FinanceModule / SportModule
 const TABS = [
   { key: 'today',    label: 'Heute'        },
   { key: 'habits',   label: 'Gewohnheiten' },
@@ -29,12 +28,13 @@ const DEFAULT_VIEW = 'today';
 export default function HabitsModule({ view, onNavigateView }) {
   const activeTab = view || DEFAULT_VIEW;
 
-  const [habits,  setHabits]  = useState([]);
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [habits,       setHabits]       = useState([]);
+  const [entries,      setEntries]      = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  // Wizard anzeigen wenn keine Habits vorhanden und noch nicht übersprungen
+  const [wizardDone,   setWizardDone]   = useState(false);
 
-  // Daten laden
   const fetchHabits = useCallback(async () => {
     try {
       const data = await loadHabits();
@@ -58,14 +58,39 @@ export default function HabitsModule({ view, onNavigateView }) {
       .finally(() => setLoading(false));
   }, [fetchHabits, fetchEntries]);
 
-  // Tab-Name für TopBar
   const tabLabel = TABS.find((t) => t.key === activeTab)?.label ?? 'Gewohnheiten';
+
+  // Wizard zeigen wenn: geladen, keine aktiven Habits, noch nicht weggeklickt
+  const activeHabits   = habits.filter((h) => h.active && !h.deleted_at);
+  const showWizard     = !loading && activeHabits.length === 0 && !wizardDone;
+
+  async function handleWizardDone() {
+    await fetchHabits();
+    await fetchEntries();
+    setWizardDone(true);
+    onNavigateView('today'); // nach Wizard direkt zur Heute-Ansicht
+  }
 
   if (loading) {
     return (
       <>
         <ModuleTopBar title="Gewohnheiten" />
         <div className="page-loading">Wird geladen …</div>
+      </>
+    );
+  }
+
+  // Wizard fullscreen — ohne Tabs
+  if (showWizard) {
+    return (
+      <>
+        <ModuleTopBar title="Gewohnheiten" />
+        <div className="main-content hab-module-content">
+          <OnboardingWizard
+            onDone={handleWizardDone}
+            onSkip={() => setWizardDone(true)}
+          />
+        </div>
       </>
     );
   }

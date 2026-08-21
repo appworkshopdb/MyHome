@@ -213,3 +213,20 @@ export async function setEntryCount(habitId, date, count) {
     return data;
   }
 }
+
+/**
+ * Reihenfolge mehrerer Habits auf einmal aktualisieren.
+ * @param {Array<{ id: string, sort_order: number }>} items
+ */
+export async function updateSortOrder(items) {
+  const sb = getSupabase();
+  // Sequentiell updaten — Supabase unterstützt kein Bulk-Update mit
+  // unterschiedlichen Werten pro Zeile ohne RPC, daher einzelne Updates.
+  for (const { id, sort_order } of items) {
+    const { error } = await sb
+      .from('hab_habits')
+      .update({ sort_order })
+      .eq('id', id);
+    if (error) throw error;
+  }
+}
