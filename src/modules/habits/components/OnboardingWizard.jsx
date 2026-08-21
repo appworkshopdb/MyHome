@@ -214,8 +214,14 @@ export default function OnboardingWizard({ onDone, onSkip }) {
     );
   }
 
-  // ── Schritt 2: Habits auswählen ──────────────────────────
+  // ── Schritt 2: Habits auswählen (gruppiert nach Bereich) ──
   if (step === 2) {
+    // Habits pro gewähltem Bereich gruppiert (Reihenfolge wie in Schritt 1 gewählt)
+    const groupedHabits = selectedFocusKeys.map((key) => ({
+      area: FOCUS_AREAS.find((f) => f.key === key),
+      habits: FOCUS_AREAS.find((f) => f.key === key)?.habits ?? [],
+    }));
+
     return (
       <div className="hab-wizard">
         <div className="hab-wizard-header">
@@ -237,28 +243,37 @@ export default function OnboardingWizard({ onDone, onSkip }) {
         )}
 
         <div className="hab-wizard-habit-list">
-          {availableHabits.map((habit, i) => {
-            const isSelected = !!selectedHabits.find((h) => h.name === habit.name);
-            const isDisabled = !isSelected && selectedHabits.length >= 3;
-            return (
-              <button
-                key={i}
-                className={`hab-wizard-habit-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
-                onClick={() => !isDisabled && toggleHabit(habit)}
-                disabled={isDisabled}
-              >
-                <span className="hab-wizard-habit-icon">{habit.icon}</span>
-                <div className="hab-wizard-habit-info">
-                  <div className="hab-wizard-habit-name">{habit.name}</div>
-                  <div className="hab-wizard-habit-meta">
-                    {freqLabel(habit)}
-                    {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit}`}
-                  </div>
-                </div>
-                <span className={`hab-wizard-habit-check ${isSelected ? 'visible' : ''}`}>✓</span>
-              </button>
-            );
-          })}
+          {groupedHabits.map(({ area, habits }) => (
+            <div key={area.key} className="hab-wizard-group">
+              {/* Bereichs-Trenner */}
+              <div className="hab-wizard-group-label">
+                <span className="hab-wizard-group-icon">{area.icon}</span>
+                {area.label}
+              </div>
+              {habits.map((habit, i) => {
+                const isSelected = !!selectedHabits.find((h) => h.name === habit.name);
+                const isDisabled = !isSelected && selectedHabits.length >= 3;
+                return (
+                  <button
+                    key={i}
+                    className={`hab-wizard-habit-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    onClick={() => !isDisabled && toggleHabit(habit)}
+                    disabled={isDisabled}
+                  >
+                    <span className="hab-wizard-habit-icon">{habit.icon}</span>
+                    <div className="hab-wizard-habit-info">
+                      <div className="hab-wizard-habit-name">{habit.name}</div>
+                      <div className="hab-wizard-habit-meta">
+                        {freqLabel(habit)}
+                        {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit}`}
+                      </div>
+                    </div>
+                    <span className={`hab-wizard-habit-check ${isSelected ? 'visible' : ''}`}>✓</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="hab-wizard-actions">
