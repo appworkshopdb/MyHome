@@ -16,6 +16,7 @@ import FinanceModule from './modules/finance/FinanceModule';
 import NutritionModule from './modules/nutrition/NutritionModule';
 import SportModule from './modules/sport/SportModule';
 import HabitsModule from './modules/habits/HabitsModule';
+import ShoppingModule from './modules/shopping/ShoppingModule';
 // Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
 // module.built steuert (in App.jsx unten), ob überhaupt gerendert wird —
 // ein Eintrag hier allein schaltet noch nichts frei.
@@ -25,7 +26,7 @@ const MODULE_COMPONENTS = {
   sport:     SportModule,
   habits:    HabitsModule,
   everyday:  StubModule,
-  shopping:  StubModule,
+  shopping:  ShoppingModule,
 };
 export default function App() {
   const { session, ladeVorgang } = useAuth();
