@@ -1,0 +1,1047 @@
+/* =============================================================
+   Gewohnheiten-Modul — habits.css
+   Nutzt ausschließlich CSS-Variablen aus base.css/themes.css.
+   Kein Tailwind, keine Inline-Farben ohne Variable.
+   ============================================================= */
+
+/* ─── Modul-Container ─────────────────────────────────────── */
+
+.hab-module-content {
+  padding-bottom: 32px;
+}
+
+/* ─── Empty-State ─────────────────────────────────────────── */
+
+.hab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.hab-empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.hab-empty-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hab-empty-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* ─── Sektion-Label ───────────────────────────────────────── */
+
+.hab-section {
+  margin-top: 24px;
+}
+
+.hab-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ─── TODAY VIEW ──────────────────────────────────────────── */
+
+.hab-today {}
+
+.hab-today-header {
+  padding: 16px 0 12px;
+}
+
+.hab-today-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+.hab-today-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hab-today-score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hab-today-score-sep {
+  color: var(--text-muted);
+  font-weight: 400;
+  margin: 0 2px;
+}
+
+.hab-today-score-total {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.hab-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hab-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Alles-erledigt-Banner */
+.hab-all-done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.hab-all-done-icon {
+  font-size: 1.3rem;
+}
+
+/* ─── Habit-Item (Today) ──────────────────────────────────── */
+
+.hab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hab-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity 0.15s;
+  min-height: var(--touch-target, 44px);
+}
+
+.hab-item:last-child {
+  border-bottom: none;
+}
+
+.hab-item--busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.hab-item--done .hab-item-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.hab-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hab-item-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.hab-item-info {
+  min-width: 0;
+}
+
+.hab-item-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hab-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.hab-streak-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hab-count-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.hab-item-right {
+  flex-shrink: 0;
+}
+
+/* Check-Button (binär) */
+.hab-check-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hab-check-btn:active {
+  transform: scale(0.9);
+}
+
+.hab-check-btn--done {
+  background: var(--accent);
+}
+
+.hab-check-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Count-Controls */
+.hab-count-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hab-count-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+
+.hab-count-btn:active { background: var(--border); }
+.hab-count-btn:disabled { opacity: 0.3; cursor: default; }
+
+.hab-count-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hab-count-ring-num {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ─── HABITS VIEW (Verwaltung) ────────────────────────────── */
+
+.hab-habits-view {}
+
+.hab-habits-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 0 8px;
+  flex-wrap: wrap;
+}
+
+.hab-overload-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-left: 3px solid var(--accent);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.hab-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hab-manage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.hab-manage-card:last-child { border-bottom: none; }
+
+.hab-manage-card--paused {
+  opacity: 0.5;
+}
+
+.hab-manage-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hab-manage-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hab-manage-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.hab-manage-card-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.hab-manage-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: color 0.1s;
+}
+
+.hab-manage-btn:hover { color: var(--text-primary); }
+.hab-manage-btn--del:hover { color: var(--danger); }
+.hab-manage-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ─── FORMULAR ────────────────────────────────────────────── */
+
+.hab-form-wrap {
+  padding-top: 4px;
+}
+
+.hab-form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.hab-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.hab-back-btn:hover { color: var(--text-primary); }
+
+.hab-form-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.hab-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hab-form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hab-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hab-icon-btn {
+  width: 52px;
+  height: 52px;
+  font-size: 1.6rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.hab-icon-btn:hover { border-color: var(--accent); }
+
+.hab-icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+.hab-icon-option {
+  width: 40px;
+  height: 40px;
+  font-size: 1.3rem;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.hab-icon-option:hover { background: var(--border); }
+.hab-icon-option.selected { border-color: var(--accent); background: var(--accent-light); }
+
+/* Frequenz-Tabs */
+.hab-freq-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.hab-freq-tab {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.hab-freq-tab:last-child { border-right: none; }
+.hab-freq-tab.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Wochentag-Picker */
+.hab-day-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.hab-day-btn {
+  width: 38px;
+  height: 38px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.1s, color 0.1s;
+}
+
+.hab-day-btn.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* ─── BIBLIOTHEK ──────────────────────────────────────────── */
+
+.hab-library {}
+
+.hab-library-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.hab-library-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.hab-library-sub {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.hab-library-group {
+  margin-bottom: 20px;
+}
+
+.hab-library-cat {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.hab-library-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hab-library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  background: var(--bg-card);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.hab-library-item:hover { background: var(--border); }
+
+.hab-library-item-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+}
+
+.hab-library-item-name {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hab-library-item-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ─── CALENDAR VIEW ───────────────────────────────────────── */
+
+.hab-calendar-view {}
+
+.hab-cal-filter {
+  padding: 12px 0 8px;
+}
+
+/* Monats-Navigation */
+.hab-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 12px;
+}
+
+.hab-month-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hab-nav-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+.hab-nav-btn:hover:not(:disabled) { background: var(--border); }
+.hab-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* Monats-Kachel-Kalender */
+.hab-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 24px;
+}
+
+.hab-month-weekday {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px 0;
+  letter-spacing: 0.04em;
+}
+
+.hab-month-day--empty {
+  /* Leere Zelle vor dem 1. */
+}
+
+.hab-month-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  position: relative;
+  cursor: default;
+  min-height: 36px;
+}
+
+.hab-month-day--today {
+  border: 2px solid var(--accent);
+}
+
+.hab-month-day--future {
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.hab-month-day-num {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.hab-month-day-check {
+  font-size: 0.6rem;
+  color: var(--on-accent);
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+}
+
+/* ─── Heatmap ─────────────────────────────────────────────── */
+
+.hab-heatmap-wrap {
+  margin-top: 8px;
+}
+
+.hab-heatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hab-heatmap-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hab-year-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.hab-heatmap-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hab-heatmap {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 28px 1fr;
+  gap: 2px;
+  min-width: 600px;
+}
+
+.hab-heatmap-months {
+  grid-column: 2;
+  display: flex;
+}
+
+.hab-heatmap-month-cell {
+  flex: 1;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: left;
+  padding-left: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hab-heatmap-row-labels {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hab-heatmap-row-label {
+  flex: 1;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.hab-heatmap-weeks {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  gap: 2px;
+}
+
+.hab-heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.hab-heatmap-cell {
+  aspect-ratio: 1;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 2px;
+}
+
+/* Legende */
+.hab-heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  justify-content: flex-end;
+}
+
+.hab-legend-label {
+  margin: 0 2px;
+}
+
+.hab-legend-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* ─── STATS VIEW ──────────────────────────────────────────── */
+
+.hab-stats-view {}
+
+/* KPI-Kacheln */
+.hab-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px 0 8px;
+}
+
+.hab-kpi-card {
+  background: var(--bg-card);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hab-kpi-num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.hab-kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Wochen-Balkendiagramm */
+.hab-week-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+.hab-week-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  position: relative;
+}
+
+.hab-week-bar-col {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.hab-week-bar-pct {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.hab-week-bar-track {
+  width: 100%;
+  background: var(--border);
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.hab-week-bar-fill {
+  width: 100%;
+  background: var(--bg-card);
+  border-top: 2px solid var(--border-strong);
+  transition: height 0.4s ease;
+  min-height: 0;
+}
+
+.hab-week-bar-fill.today {
+  background: var(--accent);
+  border-top-color: var(--accent-dark);
+}
+
+.hab-week-bar-label {
+  position: absolute;
+  bottom: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.hab-week-bar-label.today {
+  color: var(--accent);
+}
+
+/* Per-Habit Tabelle */
+.hab-stats-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hab-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.hab-stats-row:last-child { border-bottom: none; }
+
+.hab-stats-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.hab-stats-name {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.hab-stats-cells {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.hab-stats-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+}
+
+.hab-stats-val {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hab-stats-cell-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── BADGES ──────────────────────────────────────────────── */
+
+.hab-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.hab-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.hab-badge--earned {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.hab-badge-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.hab-badge-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+/* ─── Page Loading ────────────────────────────────────────── */
+
+.page-loading {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .hab-kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .hab-badges-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .hab-stats-cells {
+    gap: 12px;
+  }
+
+  .hab-stats-cell {
+    min-width: 56px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hab-heatmap-cell {
+    min-width: 13px;
+    min-height: 13px;
+  }
+}
