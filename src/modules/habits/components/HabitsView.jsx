@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 import {
   saveHabit, deleteHabit, toggleHabitActive, updateSortOrder,
+  restoreHabit, loadDeletedHabits,
 } from '../lib/habData.js';
 import {
   HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY,
@@ -74,6 +75,10 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
   const [error, setError]             = useState(null);
+  const [showArchive, setShowArchive] = useState(false);
+  const [archivedHabits, setArchived] = useState([]);
+  const [loadingArchive, setLoadingArchive] = useState(false);
+  const [restoringId, setRestoringId] = useState(null);
   const [iconPicker, setIconPicker]   = useState(false);
 
   // Lokale Reihenfolge für optimistisches UI beim Drag & Drop
@@ -229,6 +234,84 @@ export default function HabitsView({ habits, onHabitsChange }) {
     } catch (e) {
       setError('Status konnte nicht geändert werden.');
     }
+  }
+
+  async function openArchive() {
+    setLoadingArchive(true);
+    setShowArchive(true);
+    setShowForm(false);
+    setShowLibrary(false);
+    try {
+      const data = await loadDeletedHabits();
+      setArchived(data);
+    } catch (e) {
+      setError('Archiv konnte nicht geladen werden.');
+    } finally {
+      setLoadingArchive(false);
+    }
+  }
+
+  async function handleRestore(habitId) {
+    setRestoringId(habitId);
+    try {
+      await restoreHabit(habitId);
+      await onHabitsChange();
+      setLocalOrder(null);
+      const data = await loadDeletedHabits();
+      setArchived(data);
+    } catch (e) {
+      setError('Wiederherstellen fehlgeschlagen.');
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
+  // ─── Archiv ──────────────────────────────────────────────
+  if (showArchive) {
+    return (
+      <div className="hab-archive">
+        <div className="hab-form-header">
+          <button className="hab-back-btn" onClick={() => setShowArchive(false)}>← Zurück</button>
+          <h2 className="hab-form-title">Archiv</h2>
+        </div>
+        {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+        {loadingArchive && <div className="page-loading">Wird geladen …</div>}
+        {!loadingArchive && archivedHabits.length === 0 && (
+          <div className="hab-empty">
+            <div className="hab-empty-icon">📦</div>
+            <div className="hab-empty-title">Archiv ist leer</div>
+            <div className="hab-empty-text">Gelöschte Gewohnheiten erscheinen hier und können wiederhergestellt werden.</div>
+          </div>
+        )}
+        {!loadingArchive && archivedHabits.length > 0 && (
+          <div className="hab-manage-list">
+            {archivedHabits.map((habit) => (
+              <div key={habit.id} className="hab-manage-card hab-manage-card--paused">
+                <div className="hab-manage-card-left">
+                  <span className="hab-item-icon">{habit.icon}</span>
+                  <div>
+                    <div className="hab-manage-name">{habit.name}</div>
+                    <div className="hab-manage-meta">
+                      {habit.category} · Gelöscht am {new Date(habit.deleted_at).toLocaleDateString('de-DE')}
+                    </div>
+                  </div>
+                </div>
+                <div className="hab-manage-card-right">
+                  <button
+                    className="hab-manage-btn"
+                    onClick={() => handleRestore(habit.id)}
+                    disabled={restoringId === habit.id}
+                    title="Wiederherstellen"
+                  >
+                    {restoringId === habit.id ? '…' : '↩️'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // ─── Bibliothek ─────────────────────────────────────────
@@ -460,6 +543,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       <div className="hab-habits-actions">
         <button className="btn btn-primary" onClick={openCreate}>+ Neue Gewohnheit</button>
         <button className="btn btn-secondary" onClick={openLibrary}>Vorlagen</button>
+        <button className="hab-archive-btn" onClick={openArchive} title="Archiv">📦</button>
       </div>
 
       {showOverloadWarning && (
