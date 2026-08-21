@@ -1420,3 +1420,233 @@
   letter-spacing: 0;
   text-transform: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   WOCHENÜBERSICHT
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-week-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 4px 0 12px;
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+
+.hab-week-toggle:hover { color: var(--text-primary); }
+
+.hab-week-overview {
+  background: var(--bg-card);
+  padding: 12px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hab-week-grid-header {
+  display: grid;
+  grid-template-columns: 120px repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.hab-week-grid-name-col { /* leer */ }
+
+.hab-week-grid-day-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hab-week-grid-day-label.today {
+  color: var(--accent);
+}
+
+.hab-week-grid-row {
+  display: grid;
+  grid-template-columns: 120px repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.hab-week-grid-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.hab-week-grid-name-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hab-week-grid-cell {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+}
+
+.hab-week-cell--done {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.hab-week-cell--missed {
+  background: var(--bg-primary);
+  color: var(--text-muted);
+}
+
+.hab-week-cell--skip {
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+.hab-week-cell--future {
+  background: transparent;
+  border-color: var(--border);
+  opacity: 0.3;
+}
+
+.hab-week-cell--today {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STREAK-SCHUTZ
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-streak-shield {
+  margin-left: 3px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.hab-streak-shield-only {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ARCHIV
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-archive-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+
+.hab-archive-btn:hover { background: var(--border); }
+
+/* ═══════════════════════════════════════════════════════════
+   HUB-KACHEL (in src/styles/ ergänzen, hier als Referenz)
+   ═══════════════════════════════════════════════════════════ */
+
+.hub-habits-card {
+  display: block;
+  width: 100%;
+  background: var(--bg-card);
+  border: none;
+  cursor: pointer;
+  padding: 14px;
+  text-align: left;
+  margin-bottom: 16px;
+  transition: background 0.15s;
+}
+
+.hub-habits-card:hover { background: var(--border); }
+
+.hub-habits-card--done {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+}
+
+.hub-habits-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hub-habits-card-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hub-habits-card--done .hub-habits-card-label {
+  color: var(--text-primary);
+}
+
+.hub-habits-card-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hub-habits-card-done { color: var(--accent); }
+.hub-habits-card-sep  { color: var(--text-muted); margin: 0 2px; font-weight: 400; }
+.hub-habits-card-total { color: var(--text-secondary); }
+
+.hub-habits-bar {
+  height: 4px;
+  background: var(--border);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.hub-habits-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.hub-habits-icons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.hub-habits-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.hub-habits-icon-more {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
