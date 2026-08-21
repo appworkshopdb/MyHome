@@ -1,0 +1,251 @@
+/* =============================================================
+   Einkauf-Modul — shopping.css
+   Nutzt ausschließlich CSS-Variablen aus base.css/themes.css.
+   Kein Tailwind, keine Inline-Farben ohne Variable.
+   ============================================================= */
+
+/* ─── Modul-Container ─────────────────────────────────────── */
+
+.sho-module-content {
+  padding-bottom: 32px;
+}
+
+/* ─── Empty-State ─────────────────────────────────────────── */
+
+.sho-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.sho-empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.sho-empty-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sho-empty-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* ─── Listen-Übersicht ────────────────────────────────────── */
+
+.sho-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sho-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font);
+  color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-list-item:last-child {
+  border-bottom: none;
+}
+
+.sho-list-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.sho-list-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sho-list-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sho-list-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sho-list-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ─── Neue Liste anlegen ──────────────────────────────────── */
+
+.sho-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  border-top: 1.5px solid var(--border-strong);
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  margin-top: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-add-btn:active {
+  opacity: 0.7;
+}
+
+/* ─── Neue-Liste-Formular ─────────────────────────────────── */
+
+.sho-new-list-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  margin-top: 8px;
+}
+
+.sho-new-list-form input {
+  font-size: 1rem;
+}
+
+.sho-new-list-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sho-new-list-actions .btn {
+  flex: 1;
+}
+
+/* ─── Artikel-Ansicht (ItemsView, kommt in Phase 1 Punkt 5) ─ */
+
+.sho-items-header {
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.sho-items-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sho-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-item-row:last-child {
+  border-bottom: none;
+}
+
+.sho-item-check {
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  color: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sho-item-check.done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.sho-item-name {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: color 0.15s;
+}
+
+.sho-item-name.done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.sho-item-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Kategorie-Gruppe ────────────────────────────────────── */
+
+.sho-category-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 16px 0 6px;
+}
+
+/* ─── Schnelleingabe-Leiste ───────────────────────────────── */
+
+.sho-input-bar {
+  position: sticky;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sho-input-bar input {
+  flex: 1;
+  min-height: var(--touch-target);
+  font-size: 1rem;
+}
+
+.sho-input-bar .btn {
+  flex-shrink: 0;
+  min-width: var(--touch-target);
+}
