@@ -1045,3 +1045,327 @@
     min-height: 13px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ONBOARDING WIZARD
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-wizard {
+  padding: 8px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hab-wizard-header {
+  margin-bottom: 16px;
+}
+
+.hab-wizard-step {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.hab-wizard-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.hab-wizard-sub {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Fortschrittsbalken */
+.hab-wizard-progress {
+  height: 4px;
+  background: var(--border);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.hab-wizard-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* Fokus-Bereich-Liste (Schritt 1) */
+.hab-wizard-focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.hab-wizard-focus-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px;
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.hab-wizard-focus-item:hover {
+  background: var(--border);
+}
+
+.hab-wizard-focus-item.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.hab-wizard-focus-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.hab-wizard-focus-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hab-wizard-focus-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hab-wizard-focus-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.hab-wizard-check {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Habit-Liste (Schritt 2) */
+.hab-wizard-max-hint {
+  padding: 10px 12px;
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.hab-wizard-habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.hab-wizard-habit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.hab-wizard-habit-item:hover:not(.disabled) {
+  background: var(--border);
+}
+
+.hab-wizard-habit-item.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.hab-wizard-habit-item.disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hab-wizard-habit-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.hab-wizard-habit-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hab-wizard-habit-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hab-wizard-habit-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.hab-wizard-habit-check {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.hab-wizard-habit-check.visible {
+  opacity: 1;
+}
+
+/* Bestätigung (Schritt 3) */
+.hab-wizard-confirm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.hab-wizard-confirm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+}
+
+.hab-wizard-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Aktions-Bereich */
+.hab-wizard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hab-wizard-skip,
+.hab-wizard-back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.hab-wizard-skip:hover,
+.hab-wizard-back:hover {
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAG & DROP
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-drag-handle {
+  cursor: grab;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  padding: 0 8px 0 0;
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.hab-drag-handle:active {
+  cursor: grabbing;
+  color: var(--text-primary);
+}
+
+.hab-manage-card--dragging {
+  background: var(--bg-card);
+  border: 1px dashed var(--accent);
+}
+
+.hab-section-label-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ERINNERUNGS-UI
+   ═══════════════════════════════════════════════════════════ */
+
+.hab-form-label-hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.hab-reminder-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hab-reminder-clear {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.hab-reminder-clear:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.hab-reminder-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 6px 0 0;
+  line-height: 1.4;
+}
