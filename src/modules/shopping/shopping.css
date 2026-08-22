@@ -448,3 +448,178 @@
   font-size: 1rem;
   border-radius: 0;
 }
+
+/* ─── Eingabe-Leiste: Menge ───────────────────────────────── */
+
+/* Eingabe-Leiste hat jetzt zwei Zeilen wenn Menge aktiv */
+.sho-input-bar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+/* Haupt-Eingabezeile mit Toggle + Input + Button */
+.sho-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sho-input-row input {
+  flex: 1;
+  min-height: var(--touch-target);
+  font-size: 1rem;
+}
+
+/* Mengen-Toggle-Button (#) */
+.sho-qty-toggle {
+  width: 36px;
+  height: 44px;
+  min-width: 36px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-qty-toggle.active {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  border-color: var(--accent);
+}
+
+/* Mengen-Zeile (Menge + Einheit) */
+.sho-qty-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sho-qty-input {
+  width: 90px;
+  min-width: 0;
+  min-height: 40px;
+  font-size: 1rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Einheit-Dropdown */
+.sho-unit-select {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.95rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+/* ─── Inline-Edit (Umbenennen) ────────────────────────────── */
+
+.sho-list-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.sho-inline-edit {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-inline-edit input {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  min-height: var(--touch-target);
+}
+
+/* ─── Inline Status-Meldungen ─────────────────────────────── */
+
+.sho-msg-success {
+  font-size: 0.85rem;
+  color: var(--success);
+  padding: 6px 0;
+}
+
+.sho-msg-error {
+  font-size: 0.85rem;
+  color: var(--danger);
+  padding: 6px 0;
+}
+
+/* ─── Inline-Umbenennen ───────────────────────────────────── */
+
+.sho-list-item-wrap {
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-list-item-wrap:last-child {
+  border-bottom: none;
+}
+
+/* Überschreibt den border-bottom vom alten .sho-list-item */
+.sho-list-item {
+  border-bottom: none;
+}
+
+.sho-inline-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.sho-inline-edit input {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.95rem;
+}
+
+/* ─── Untere Aktions-Buttons (Neue Liste + Aus Vorlage) ───── */
+
+.sho-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.sho-tmpl-btn {
+  color: var(--text-secondary);
+  border-top: none;
+}
+
+/* ─── Vorlagen-Panel ──────────────────────────────────────── */
+
+.sho-tmpl-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-card);
+}
+
+.sho-tmpl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* ─── Erfolgs-Meldung ─────────────────────────────────────── */
+
+.sho-msg-success {
+  font-size: 0.85rem;
+  color: var(--success);
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
