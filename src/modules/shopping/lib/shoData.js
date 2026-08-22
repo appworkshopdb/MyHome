@@ -27,6 +27,7 @@ export async function loadLists() {
     .from('sho_lists')
     .select('*')
     .is('deleted_at', null)
+    .eq('is_template', false)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -174,4 +175,98 @@ export async function resetAllItems(listId) {
     .eq('list_id', listId)
     .is('deleted_at', null);
   if (error) throw error;
+}
+
+// ─── Vorlagen ─────────────────────────────────────────────────
+// Eine Vorlage ist eine Liste mit is_template = true.
+// Artikel einer Vorlage werden per "Als Liste laden" in eine
+// neue normale Liste kopiert — keine eigene Tabelle nötig.
+
+export async function saveListAsTemplate(listId, templateName) {
+  const sb = getSupabase();
+  const owner_id = getOwnerIdFromToken();
+
+  // Vorlage-Liste anlegen
+  const { data: tmpl, error: e1 } = await sb
+    .from('sho_lists')
+    .insert({ owner_id, name: templateName, icon: '📋', is_template: true })
+    .select()
+    .single();
+  if (e1) throw e1;
+
+  // Alle offenen Artikel der Quellliste kopieren
+  const { data: sourceItems, error: e2 } = await sb
+    .from('sho_items')
+    .select('name, category, quantity, unit, note, sort_order')
+    .eq('list_id', listId)
+    .is('deleted_at', null)
+    .eq('done', false);
+  if (e2) throw e2;
+
+  if (sourceItems && sourceItems.length > 0) {
+    const copies = sourceItems.map((item) => ({
+      owner_id,
+      list_id:    tmpl.id,
+      name:       item.name,
+      category:   item.category,
+      quantity:   item.quantity,
+      unit:       item.unit,
+      note:       item.note,
+      sort_order: item.sort_order,
+      done:       false,
+    }));
+    const { error: e3 } = await sb.from('sho_items').insert(copies);
+    if (e3) throw e3;
+  }
+  return tmpl;
+}
+
+export async function loadTemplates() {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('sho_lists')
+    .select('*')
+    .eq('is_template', true)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function loadFromTemplate(templateId, newListName, newListIcon) {
+  const sb = getSupabase();
+  const owner_id = getOwnerIdFromToken();
+
+  // Neue Liste anlegen
+  const { data: newList, error: e1 } = await sb
+    .from('sho_lists')
+    .insert({ owner_id, name: newListName, icon: newListIcon ?? '🛒', is_template: false })
+    .select()
+    .single();
+  if (e1) throw e1;
+
+  // Vorlage-Artikel kopieren
+  const { data: tmplItems, error: e2 } = await sb
+    .from('sho_items')
+    .select('name, category, quantity, unit, note, sort_order')
+    .eq('list_id', templateId)
+    .is('deleted_at', null);
+  if (e2) throw e2;
+
+  if (tmplItems && tmplItems.length > 0) {
+    const copies = tmplItems.map((item) => ({
+      owner_id,
+      list_id:    newList.id,
+      name:       item.name,
+      category:   item.category,
+      quantity:   item.quantity,
+      unit:       item.unit,
+      note:       item.note,
+      sort_order: item.sort_order,
+      done:       false,
+    }));
+    const { error: e3 } = await sb.from('sho_items').insert(copies);
+    if (e3) throw e3;
+  }
+  return newList;
 }
