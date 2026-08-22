@@ -175,7 +175,6 @@ export default function ItemsView({ list, onBack }) {
   const [input,            setInput]            = useState('');
   const [quantity,         setQuantity]         = useState('');
   const [unit,             setUnit]             = useState('');
-  const [showQty,          setShowQty]          = useState(false);
   const [suggestions,      setSuggestions]      = useState([]);
   const [saving,           setSaving]           = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -295,11 +294,11 @@ export default function ItemsView({ list, onBack }) {
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
-    if (e.key === 'Escape') { setSuggestions([]); setShowQty(false); }
+    if (e.key === 'Escape') { setSuggestions([]); }
   }
 
   function handleQtyKeyDown(e) {
-    if (e.key === 'Enter') { handleAdd(); }
+    if (e.key === 'Enter') { inputRef.current?.focus(); }
   }
 
   if (loading) {
@@ -442,58 +441,43 @@ export default function ItemsView({ list, onBack }) {
       {/* Eingabe-Leiste (sticky über Bottom-Nav) */}
       <div className="sho-input-bar">
 
-        {/* Mengen-Zeile — nur wenn showQty aktiv */}
-        {showQty && (
-          <div className="sho-qty-row">
-            <input
-              ref={quantityRef}
-              type="number"
-              inputMode="decimal"
-              placeholder="Menge"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              onKeyDown={handleQtyKeyDown}
-              className="sho-qty-input"
-              min="0"
-              step="any"
-            />
-            <select
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              className="sho-unit-select"
-            >
-              <option value="">Einheit</option>
-              <option value="Stück">Stück</option>
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="L">Liter</option>
-              <option value="Packung">Packung</option>
-              <option value="Flasche">Flasche</option>
-              <option value="Dose">Dose</option>
-              <option value="Becher">Becher</option>
-              <option value="Bund">Bund</option>
-              <option value="EL">EL</option>
-              <option value="TL">TL</option>
-            </select>
-          </div>
-        )}
-
-        {/* Haupt-Eingabezeile */}
-        <div className="sho-input-row">
-          {/* Mengen-Toggle */}
-          <button
-            className={`sho-qty-toggle ${showQty ? 'active' : ''}`}
-            onClick={() => {
-              setShowQty((v) => !v);
-              if (!showQty) setTimeout(() => quantityRef.current?.focus(), 50);
-            }}
-            title="Menge angeben"
-            aria-label="Menge angeben"
+        {/* Zeile 1: Menge + Einheit — immer sichtbar */}
+        <div className="sho-qty-row">
+          <input
+            ref={quantityRef}
+            type="number"
+            inputMode="decimal"
+            placeholder="Menge"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            onKeyDown={handleQtyKeyDown}
+            className="sho-qty-input"
+            min="0"
+            step="any"
+          />
+          <select
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            className="sho-unit-select"
           >
-            #
-          </button>
+            <option value="">Einheit (optional)</option>
+            <option value="Stück">Stück</option>
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="ml">ml</option>
+            <option value="L">Liter</option>
+            <option value="Packung">Packung</option>
+            <option value="Flasche">Flasche</option>
+            <option value="Dose">Dose</option>
+            <option value="Becher">Becher</option>
+            <option value="Bund">Bund</option>
+            <option value="EL">EL</option>
+            <option value="TL">TL</option>
+          </select>
+        </div>
 
+        {/* Zeile 2: Artikelname + Hinzufügen */}
+        <div className="sho-input-row">
           <input
             ref={inputRef}
             type="text"
