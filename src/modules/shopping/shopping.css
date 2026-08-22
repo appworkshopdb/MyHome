@@ -441,3 +441,54 @@
   min-height: var(--touch-target);
   font-size: 1rem;
 }
+
+/* ─── Item Inline-Edit ────────────────────────────────────── */
+
+.sho-item-edit {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.sho-item-edit-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sho-item-edit-fields {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sho-item-edit-fields .sho-qty-input {
+  width: 72px;
+  min-height: 36px;
+  font-size: 0.9rem;
+  padding: 4px 6px;
+}
+
+.sho-unit-select--sm {
+  min-height: 36px;
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+/* Mengen-Hint wenn noch keine Menge gesetzt */
+.sho-item-meta--hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Menge-Badge wenn gesetzt — leicht hervorgehoben */
+.sho-item-meta--qty {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  font-weight: 500;
+}
