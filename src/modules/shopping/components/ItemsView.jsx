@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
+  saveListAsTemplate,
 } from '../lib/shoData.js';
 
 // ─── Kategorie-Zuordnung (statisch, kein DB-Overhead) ─────────────────
@@ -168,13 +169,21 @@ function groupByCategory(items) {
 
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
-  const [items,       setItems]       = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [input,       setInput]       = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [saving,      setSaving]      = useState(false);
-  const inputRef = useRef(null);
+  const [items,            setItems]            = useState([]);
+  const [loading,          setLoading]          = useState(true);
+  const [error,            setError]            = useState(null);
+  const [input,            setInput]            = useState('');
+  const [quantity,         setQuantity]         = useState('');
+  const [unit,             setUnit]             = useState('');
+  const [showQty,          setShowQty]          = useState(false);
+  const [suggestions,      setSuggestions]      = useState([]);
+  const [saving,           setSaving]           = useState(false);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [templateName,     setTemplateName]     = useState('');
+  const [savingTemplate,   setSavingTemplate]   = useState(false);
+  const [templateSaved,    setTemplateSaved]    = useState(false);
+  const inputRef    = useRef(null);
+  const quantityRef = useRef(null);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -210,9 +219,13 @@ export default function ItemsView({ list, onBack }) {
         list_id:  list.id,
         name:     trimmed,
         category: getCategory(trimmed),
+        quantity: quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
+        unit:     unit.trim() || null,
       });
       await fetchItems();
       setInput('');
+      setQuantity('');
+      setUnit('');
       setSuggestions([]);
       inputRef.current?.focus();
     } catch (e) {
@@ -263,9 +276,30 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
+  async function handleSaveTemplate() {
+    const name = templateName.trim() || list.name;
+    setSavingTemplate(true);
+    setError(null);
+    try {
+      await saveListAsTemplate(list.id, name);
+      setShowTemplateForm(false);
+      setTemplateName('');
+      setTemplateSaved(true);
+      setTimeout(() => setTemplateSaved(false), 3000);
+    } catch (e) {
+      setError('Vorlage konnte nicht gespeichert werden.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
-    if (e.key === 'Escape') { setSuggestions([]); }
+    if (e.key === 'Escape') { setSuggestions([]); setShowQty(false); }
+  }
+
+  function handleQtyKeyDown(e) {
+    if (e.key === 'Enter') { handleAdd(); }
   }
 
   if (loading) {
@@ -282,6 +316,11 @@ export default function ItemsView({ list, onBack }) {
         <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
       )}
 
+      {/* Erfolgs-Meldung Vorlage */}
+      {templateSaved && (
+        <div className="sho-msg-success">✓ Vorlage gespeichert</div>
+      )}
+
       {/* Aktions-Leiste oben */}
       {items.length > 0 && (
         <div className="sho-action-row">
@@ -295,6 +334,41 @@ export default function ItemsView({ list, onBack }) {
               Alle zurücksetzen
             </button>
           )}
+          {/* Als Vorlage speichern */}
+          {!showTemplateForm && (
+            <button
+              className="btn btn-secondary sho-action-btn"
+              onClick={() => { setShowTemplateForm(true); setTemplateName(list.name); }}
+            >
+              Als Vorlage speichern
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Vorlage-Formular */}
+      {showTemplateForm && (
+        <div className="sho-new-list-form" style={{ marginBottom: 12 }}>
+          <input
+            type="text"
+            placeholder="Name der Vorlage"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTemplate(); if (e.key === 'Escape') setShowTemplateForm(false); }}
+            autoFocus
+          />
+          <div className="sho-new-list-actions">
+            <button className="btn btn-secondary" onClick={() => setShowTemplateForm(false)}>
+              Abbrechen
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveTemplate}
+              disabled={savingTemplate}
+            >
+              {savingTemplate ? 'Speichern …' : 'Speichern'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -367,25 +441,79 @@ export default function ItemsView({ list, onBack }) {
 
       {/* Eingabe-Leiste (sticky über Bottom-Nav) */}
       <div className="sho-input-bar">
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder="Artikel hinzufügen …"
-          value={input}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-          autoCapitalize="sentences"
-          maxLength={80}
-        />
-        <button
-          className="btn btn-primary"
-          onClick={() => { handleAdd(); setSuggestions([]); }}
-          disabled={saving || !input.trim()}
-          style={{ minWidth: 44, padding: '9px 14px' }}
-        >
-          <span style={{ display: 'flex', width: 18, height: 18 }}><IconPlus /></span>
-        </button>
+
+        {/* Mengen-Zeile — nur wenn showQty aktiv */}
+        {showQty && (
+          <div className="sho-qty-row">
+            <input
+              ref={quantityRef}
+              type="number"
+              inputMode="decimal"
+              placeholder="Menge"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              onKeyDown={handleQtyKeyDown}
+              className="sho-qty-input"
+              min="0"
+              step="any"
+            />
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              className="sho-unit-select"
+            >
+              <option value="">Einheit</option>
+              <option value="Stück">Stück</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="L">Liter</option>
+              <option value="Packung">Packung</option>
+              <option value="Flasche">Flasche</option>
+              <option value="Dose">Dose</option>
+              <option value="Becher">Becher</option>
+              <option value="Bund">Bund</option>
+              <option value="EL">EL</option>
+              <option value="TL">TL</option>
+            </select>
+          </div>
+        )}
+
+        {/* Haupt-Eingabezeile */}
+        <div className="sho-input-row">
+          {/* Mengen-Toggle */}
+          <button
+            className={`sho-qty-toggle ${showQty ? 'active' : ''}`}
+            onClick={() => {
+              setShowQty((v) => !v);
+              if (!showQty) setTimeout(() => quantityRef.current?.focus(), 50);
+            }}
+            title="Menge angeben"
+            aria-label="Menge angeben"
+          >
+            #
+          </button>
+
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Artikel hinzufügen …"
+            value={input}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            autoComplete="off"
+            autoCapitalize="sentences"
+            maxLength={80}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={() => { handleAdd(); setSuggestions([]); }}
+            disabled={saving || !input.trim()}
+            style={{ minWidth: 44, padding: '9px 14px', flexShrink: 0 }}
+          >
+            <span style={{ display: 'flex', width: 18, height: 18 }}><IconPlus /></span>
+          </button>
+        </div>
       </div>
     </div>
   );

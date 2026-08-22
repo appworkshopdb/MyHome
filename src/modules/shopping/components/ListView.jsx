@@ -1,44 +1,60 @@
 // modules/shopping/components/ListView.jsx
-// Übersicht aller Einkaufslisten + Neue-Liste-Formular + Löschen.
-// Tap auf eine Liste → öffnet ItemsView (via onOpenList).
+// Punkte 9 (Liste leeren ist in ItemsView), 10 (Umbenennen), 11 (Vorlagen).
+// Zeigt normale Listen + Vorlagen getrennt.
+// Tap auf Liste → öffnet ItemsView (via onOpenList).
 
 import { useState, useRef, useEffect } from 'react';
-import { IconPlus, IconTrash, IconChevronRight } from '../../../core/components/Icons.jsx';
-import { saveList, deleteList } from '../lib/shoData.js';
+import { IconPlus, IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
+import {
+  saveList, deleteList, loadTemplates, loadFromTemplate,
+} from '../lib/shoData.js';
 
 const DEFAULT_ICONS = ['🛒', '🥦', '🏠', '🎉', '💊', '🐾', '🧹', '📦'];
 
 export default function ListView({ lists, onListsChange, onOpenList }) {
-  const [showForm, setShowForm] = useState(false);
-  const [name,     setName]     = useState('');
-  const [icon,     setIcon]     = useState('🛒');
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const inputRef = useRef(null);
+  const [showForm,    setShowForm]    = useState(false);  // Neue Liste
+  const [name,        setName]        = useState('');
+  const [icon,        setIcon]        = useState('🛒');
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState(null);
+  const [deleting,    setDeleting]    = useState(null);
+
+  // Umbenennen
+  const [editId,      setEditId]      = useState(null);
+  const [editName,    setEditName]    = useState('');
+  const [editSaving,  setEditSaving]  = useState(false);
+
+  // Vorlagen
+  const [templates,   setTemplates]   = useState([]);
+  const [showTmpl,    setShowTmpl]    = useState(false);
+  const [tmplLoading, setTmplLoading] = useState(false);
+  const [loadingTmpl, setLoadingTmpl] = useState(null); // id der Vorlage die geladen wird
+
+  const inputRef   = useRef(null);
+  const editRef    = useRef(null);
 
   useEffect(() => {
     if (showForm) inputRef.current?.focus();
   }, [showForm]);
 
+  useEffect(() => {
+    if (editId) editRef.current?.focus();
+  }, [editId]);
+
+  // ─── Neue Liste ──────────────────────────────────────────────
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setSaving(true);
-    setError(null);
+    setSaving(true); setError(null);
     try {
       await saveList({ name: trimmed, icon });
       await onListsChange();
-      setName('');
-      setIcon('🛒');
-      setShowForm(false);
-    } catch (e) {
-      setError('Speichern fehlgeschlagen.');
-    } finally {
-      setSaving(false);
-    }
+      setName(''); setIcon('🛒'); setShowForm(false);
+    } catch { setError('Speichern fehlgeschlagen.'); }
+    finally { setSaving(false); }
   }
 
+  // ─── Löschen ────────────────────────────────────────────────
   async function handleDelete(e, listId) {
     e.stopPropagation();
     if (!window.confirm('Liste und alle Artikel löschen?')) return;
@@ -46,22 +62,87 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     try {
       await deleteList(listId);
       await onListsChange();
-    } catch (e) {
-      setError('Löschen fehlgeschlagen.');
-    } finally {
-      setDeleting(null);
-    }
+    } catch { setError('Löschen fehlgeschlagen.'); }
+    finally { setDeleting(null); }
   }
 
+  // ─── Umbenennen ─────────────────────────────────────────────
+  function startEdit(e, list) {
+    e.stopPropagation();
+    setEditId(list.id);
+    setEditName(list.name);
+  }
+
+  async function handleRename() {
+    const trimmed = editName.trim();
+    if (!trimmed) { setEditId(null); return; }
+    setEditSaving(true);
+    try {
+      await saveList({ id: editId, name: trimmed });
+      await onListsChange();
+      setEditId(null);
+    } catch { setError('Umbenennen fehlgeschlagen.'); }
+    finally { setEditSaving(false); }
+  }
+
+  // ─── Vorlagen ────────────────────────────────────────────────
+  async function handleShowTemplates() {
+    setTmplLoading(true);
+    try {
+      const data = await loadTemplates();
+      setTemplates(data);
+      setShowTmpl(true);
+    } catch { setError('Vorlagen konnten nicht geladen werden.'); }
+    finally { setTmplLoading(false); }
+  }
+
+  async function handleLoadTemplate(tmpl) {
+    const newName = tmpl.name.replace(' (Vorlage)', '').trim();
+    setLoadingTmpl(tmpl.id);
+    try {
+      const newList = await loadFromTemplate(tmpl.id, newName, tmpl.icon || '🛒');
+      await onListsChange();
+      setShowTmpl(false);
+      onOpenList(newList);
+    } catch { setError('Vorlage laden fehlgeschlagen.'); }
+    finally { setLoadingTmpl(null); }
+  }
+
+  async function handleDeleteTemplate(e, tmplId) {
+    e.stopPropagation();
+    if (!window.confirm('Vorlage löschen?')) return;
+    setDeleting(tmplId);
+    try {
+      await deleteList(tmplId);
+      setTemplates((prev) => prev.filter((t) => t.id !== tmplId));
+    } catch { setError('Löschen fehlgeschlagen.'); }
+    finally { setDeleting(null); }
+  }
+
+  // ─── Key-Handler ─────────────────────────────────────────────
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleSave();
     if (e.key === 'Escape') { setShowForm(false); setName(''); }
   }
 
+  function handleEditKeyDown(e) {
+    if (e.key === 'Enter') handleRename();
+    if (e.key === 'Escape') setEditId(null);
+  }
+
+  // Normale Listen (keine Vorlagen)
+  const normalLists = lists.filter((l) => !l.is_template);
+
   return (
     <div>
+      {error && (
+        <div style={{ fontSize: '0.85rem', color: 'var(--danger)', marginBottom: 12 }}>
+          {error}
+        </div>
+      )}
+
       {/* Empty State */}
-      {lists.length === 0 && !showForm && (
+      {normalLists.length === 0 && !showForm && (
         <div className="sho-empty">
           <div className="sho-empty-icon">🛒</div>
           <div className="sho-empty-title">Noch keine Liste</div>
@@ -71,32 +152,64 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         </div>
       )}
 
-      {/* Listenübersicht */}
-      {lists.length > 0 && (
+      {/* Listen */}
+      {normalLists.length > 0 && (
         <div className="sho-lists">
-          {lists.map((list) => (
-            <button
-              key={list.id}
-              className="sho-list-item"
-              onClick={() => onOpenList(list)}
-              disabled={deleting === list.id}
-            >
-              <div className="sho-list-icon">{list.icon || '🛒'}</div>
-              <div className="sho-list-info">
-                <div className="sho-list-name">{list.name}</div>
-              </div>
-              <button
-                className="btn-icon"
-                onClick={(e) => handleDelete(e, list.id)}
-                aria-label="Liste löschen"
-                style={{ marginRight: 4 }}
-              >
-                <IconTrash size={16} />
-              </button>
-              <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
-                <IconChevronRight />
-              </div>
-            </button>
+          {normalLists.map((list) => (
+            <div key={list.id} className="sho-list-item-wrap">
+              {/* Umbenennen-Modus */}
+              {editId === list.id ? (
+                <div className="sho-inline-edit">
+                  <input
+                    ref={editRef}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={handleEditKeyDown}
+                    onBlur={handleRename}
+                    maxLength={60}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleRename}
+                    disabled={editSaving}
+                    style={{ flexShrink: 0, padding: '6px 12px', minHeight: 36 }}
+                  >
+                    {editSaving ? '…' : 'OK'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="sho-list-item"
+                  onClick={() => onOpenList(list)}
+                  disabled={deleting === list.id}
+                >
+                  <div className="sho-list-icon">{list.icon || '🛒'}</div>
+                  <div className="sho-list-info">
+                    <div className="sho-list-name">{list.name}</div>
+                  </div>
+                  {/* Umbenennen */}
+                  <button
+                    className="btn-icon"
+                    onClick={(e) => startEdit(e, list)}
+                    aria-label="Umbenennen"
+                    style={{ marginRight: 0 }}
+                  >
+                    <IconEdit size={15} />
+                  </button>
+                  {/* Löschen */}
+                  <button
+                    className="btn-icon"
+                    onClick={(e) => handleDelete(e, list.id)}
+                    aria-label="Liste löschen"
+                  >
+                    <IconTrash size={15} />
+                  </button>
+                  <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
+                    <IconChevronRight />
+                  </div>
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -110,23 +223,16 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                 key={ic}
                 onClick={() => setIcon(ic)}
                 style={{
-                  fontSize: '1.4rem',
-                  width: 40,
-                  height: 40,
+                  fontSize: '1.4rem', width: 40, height: 40, borderRadius: 0,
                   border: icon === ic ? '2px solid var(--accent)' : '1.5px solid var(--border)',
                   background: icon === ic ? 'var(--accent-light)' : 'var(--bg-card)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 0,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
                 {ic}
               </button>
             ))}
           </div>
-
           <input
             ref={inputRef}
             type="text"
@@ -136,11 +242,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
             onKeyDown={handleKeyDown}
             maxLength={60}
           />
-
-          {error && (
-            <div style={{ fontSize: '0.85rem', color: 'var(--danger)' }}>{error}</div>
-          )}
-
           <div className="sho-new-list-actions">
             <button
               className="btn btn-secondary"
@@ -159,12 +260,64 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         </div>
       )}
 
-      {/* + Neue Liste */}
+      {/* Buttons: Neue Liste + Aus Vorlage */}
       {!showForm && (
-        <button className="sho-add-btn" onClick={() => setShowForm(true)}>
-          <span style={{ display: 'flex', width: 20, height: 20 }}><IconPlus /></span>
-          Neue Liste
-        </button>
+        <div className="sho-bottom-actions">
+          <button className="sho-add-btn" onClick={() => setShowForm(true)}>
+            <span style={{ display: 'flex', width: 20, height: 20 }}><IconPlus /></span>
+            Neue Liste
+          </button>
+          <button
+            className="sho-add-btn sho-tmpl-btn"
+            onClick={handleShowTemplates}
+            disabled={tmplLoading}
+          >
+            <span style={{ fontSize: '1rem' }}>📋</span>
+            {tmplLoading ? 'Laden …' : 'Aus Vorlage'}
+          </button>
+        </div>
+      )}
+
+      {/* Vorlagen-Panel */}
+      {showTmpl && (
+        <div className="sho-tmpl-panel">
+          <div className="sho-tmpl-header">
+            <span className="card-title" style={{ marginBottom: 0 }}>Vorlagen</span>
+            <button className="btn-icon" onClick={() => setShowTmpl(false)}>✕</button>
+          </div>
+
+          {templates.length === 0 && (
+            <div className="sho-empty" style={{ padding: '24px 0' }}>
+              <div className="sho-empty-text">
+                Noch keine Vorlagen. Öffne eine Liste und tippe auf „Als Vorlage speichern".
+              </div>
+            </div>
+          )}
+
+          {templates.map((tmpl) => (
+            <button
+              key={tmpl.id}
+              className="sho-list-item"
+              onClick={() => handleLoadTemplate(tmpl)}
+              disabled={loadingTmpl === tmpl.id || deleting === tmpl.id}
+            >
+              <div className="sho-list-icon">{tmpl.icon || '📋'}</div>
+              <div className="sho-list-info">
+                <div className="sho-list-name">{tmpl.name}</div>
+              </div>
+              <button
+                className="btn-icon"
+                onClick={(e) => handleDeleteTemplate(e, tmpl.id)}
+                aria-label="Vorlage löschen"
+              >
+                <IconTrash size={15} />
+              </button>
+              <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
+                <IconChevronRight />
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
