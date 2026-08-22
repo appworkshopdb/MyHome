@@ -23,15 +23,37 @@ function getOwnerIdFromToken() {
 
 export async function loadLists() {
   const sb = getSupabase();
+  // Listen laden inkl. Item-Counts für Status-Berechnung
   const { data, error } = await sb
     .from('sho_lists')
-    .select('*')
+    .select('*, sho_items!sho_items_list_id_fkey(id, done, deleted_at)')
     .is('deleted_at', null)
     .eq('is_template', false)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data ?? [];
+
+  // Item-Counts berechnen und anhängen
+  return (data ?? []).map((list) => {
+    const allItems = (list.sho_items || []).filter((i) => !i.deleted_at);
+    const total    = allItems.length;
+    const done     = allItems.filter((i) => i.done).length;
+    return {
+      ...list,
+      sho_items:   undefined, // nicht im State halten
+      _total:      total,
+      _done:       done,
+    };
+  });
+}
+
+export async function updateListStatus(listId, status) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_lists')
+    .update({ status })
+    .eq('id', listId);
+  if (error) throw error;
 }
 
 export async function saveList(list) {
@@ -275,16 +297,17 @@ export async function loadFromTemplate(templateId, newListName, newListIcon) {
 // nach Artikelname gruppieren und nach Häufigkeit sortieren.
 export async function loadFrequentItems(limit = 20) {
   const sb = getSupabase();
+  // Nur abgehakte, nicht gelöschte Items aus normalen Listen laden
   const { data, error } = await sb
     .from('sho_items')
-    .select('name, category, quantity, unit')
+    .select('name, category, quantity, unit, list_id')
     .is('deleted_at', null)
-    .eq('is_template', false)  // Vorlage-Artikel nicht mitzählen — wird ignoriert wenn Spalte fehlt
+    .eq('done', true)            // NUR abgehakte Items zählen
     .order('created_at', { ascending: false })
-    .limit(500); // genug History laden
+    .limit(1000);
   if (error) throw error;
 
-  // Client-seitig gruppieren + zählen
+  // Client-seitig nach Name gruppieren + zählen
   const counts = {};
   for (const item of (data ?? [])) {
     const key = item.name.trim().toLowerCase();
@@ -293,15 +316,21 @@ export async function loadFrequentItems(limit = 20) {
         name:     item.name,
         category: item.category,
         count:    0,
-        // letzte Menge/Einheit als Vorschlag
         quantity: item.quantity,
         unit:     item.unit,
       };
     }
     counts[key].count++;
+    // Letzte Menge/Einheit merken (neueste wins durch DESC-Order)
+    if (item.quantity || item.unit) {
+      counts[key].quantity = item.quantity;
+      counts[key].unit     = item.unit;
+    }
   }
 
-  return Object.values(counts)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit);
+  const all = Object.values(counts).sort((a, b) => b.count - a.count);
+
+  // Unter 2 verschiedenen Artikel-Typen: alle anzeigen (noch wenig Daten)
+  // Ab 2+: nach Häufigkeit sortiert zurückgeben
+  return all.slice(0, limit);
 }
