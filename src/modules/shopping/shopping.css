@@ -522,3 +522,87 @@
   z-index: 9999;
   animation: sho-fly 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* ─── Häufig-Ansicht ──────────────────────────────────────── */
+
+.sho-freq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sho-freq-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-freq-item:last-child {
+  border-bottom: none;
+}
+
+.sho-freq-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sho-freq-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sho-freq-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sho-freq-cat {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  padding: 1px 6px;
+}
+
+.sho-freq-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+.sho-freq-qty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sho-freq-add {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--border-strong);
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-freq-add:active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.sho-freq-add svg {
+  width: 16px;
+  height: 16px;
+}
