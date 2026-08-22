@@ -1,13 +1,21 @@
 /* =============================================================
    Einkauf-Modul — shopping.css
    Nutzt ausschließlich CSS-Variablen aus base.css/themes.css.
-   Kein Tailwind, keine Inline-Farben ohne Variable.
    ============================================================= */
 
 /* ─── Modul-Container ─────────────────────────────────────── */
 
 .sho-module-content {
   padding-bottom: 32px;
+}
+
+/* ─── Lade-Zustand ────────────────────────────────────────── */
+
+.page-loading {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 /* ─── Empty-State ─────────────────────────────────────────── */
@@ -44,7 +52,14 @@
 .sho-lists {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+}
+
+.sho-list-item-wrap {
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-list-item-wrap:last-child {
+  border-bottom: none;
 }
 
 .sho-list-item {
@@ -52,21 +67,14 @@
   align-items: center;
   gap: 12px;
   padding: 14px 0;
-  border-bottom: 1px solid var(--border);
   cursor: pointer;
   background: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
+  border: none;
   width: 100%;
   text-align: left;
   font-family: var(--font);
   color: var(--text-primary);
   -webkit-tap-highlight-color: transparent;
-}
-
-.sho-list-item:last-child {
-  border-bottom: none;
 }
 
 .sho-list-icon {
@@ -100,12 +108,30 @@
   margin-top: 2px;
 }
 
-.sho-list-arrow {
-  color: var(--text-muted);
-  flex-shrink: 0;
+/* ─── Inline-Umbenennen ───────────────────────────────────── */
+
+.sho-inline-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
 }
 
-/* ─── Neue Liste anlegen ──────────────────────────────────── */
+.sho-inline-edit input {
+  flex: 1;
+  min-height: 40px;
+  font-size: 0.95rem;
+}
+
+/* ─── Untere Aktions-Buttons (Neue Liste + Aus Vorlage) ───── */
+
+.sho-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+/* ─── + Neue Liste / Aus Vorlage Button ───────────────────── */
 
 .sho-add-btn {
   display: flex;
@@ -121,12 +147,16 @@
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
-  margin-top: 8px;
   -webkit-tap-highlight-color: transparent;
 }
 
 .sho-add-btn:active {
   opacity: 0.7;
+}
+
+.sho-tmpl-btn {
+  color: var(--text-secondary);
+  border-top: none;
 }
 
 /* ─── Neue-Liste-Formular ─────────────────────────────────── */
@@ -153,110 +183,28 @@
   flex: 1;
 }
 
-/* ─── Artikel-Ansicht (ItemsView, kommt in Phase 1 Punkt 5) ─ */
+/* ─── Vorlagen-Panel ──────────────────────────────────────── */
 
-.sho-items-header {
-  padding: 16px 0 12px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
+.sho-tmpl-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-card);
 }
 
-.sho-items-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.sho-item-row {
+.sho-tmpl-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.sho-item-row:last-child {
-  border-bottom: none;
-}
+/* ─── Erfolgs-Meldung ─────────────────────────────────────── */
 
-.sho-item-check {
-  width: 24px;
-  height: 24px;
-  border: 1.5px solid var(--border-strong);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-  color: transparent;
-  transition: background 0.12s, color 0.12s;
-}
-
-.sho-item-check.done {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-
-.sho-item-name {
-  flex: 1;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  transition: color 0.15s;
-}
-
-.sho-item-name.done {
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-
-.sho-item-meta {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* ─── Kategorie-Gruppe ────────────────────────────────────── */
-
-.sho-category-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 16px 0 6px;
-}
-
-/* ─── Schnelleingabe-Leiste ───────────────────────────────── */
-
-.sho-input-bar {
-  position: sticky;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border);
-  padding: 10px 0;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.sho-input-bar input {
-  flex: 1;
-  min-height: var(--touch-target);
-  font-size: 1rem;
-}
-
-.sho-input-bar .btn {
-  flex-shrink: 0;
-  min-width: var(--touch-target);
-}
-
-/* ─── Lade-Zustand ────────────────────────────────────────── */
-
-.page-loading {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.sho-msg-success {
+  font-size: 0.85rem;
+  color: var(--success);
+  padding: 8px 0;
+  margin-bottom: 8px;
 }
 
 /* ─── Items-Wrapper ───────────────────────────────────────── */
@@ -264,8 +212,8 @@
 .sho-items-wrap {
   display: flex;
   flex-direction: column;
-  /* Platz für sticky Eingabeleiste + Bottom-Nav */
-  padding-bottom: calc(var(--nav-height) + 70px + env(safe-area-inset-bottom));
+  /* Platz für sticky Eingabeleiste (2 Zeilen ~100px) + Bottom-Nav */
+  padding-bottom: calc(var(--nav-height) + 110px + env(safe-area-inset-bottom));
 }
 
 /* ─── Aktions-Leiste ──────────────────────────────────────── */
@@ -289,7 +237,16 @@
   margin-top: 4px;
 }
 
-/* ─── Artikel-Zeile ───────────────────────────────────────── */
+.sho-category-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 16px 0 6px;
+}
+
+/* ─── Artikel-Liste ───────────────────────────────────────── */
 
 .sho-items-list {
   display: flex;
@@ -335,7 +292,7 @@
   border-color: var(--accent);
 }
 
-/* Artikel-Body (klickbar zum Abhaken) */
+/* Artikel-Body */
 .sho-item-body {
   flex: 1;
   min-width: 0;
@@ -384,7 +341,8 @@
 
 .sho-suggestions {
   position: fixed;
-  bottom: calc(var(--nav-height) + 62px + env(safe-area-inset-bottom));
+  /* sitzt direkt über der 2-zeiligen Eingabeleiste */
+  bottom: calc(var(--nav-height) + 102px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   background: var(--bg-primary);
@@ -426,7 +384,7 @@
   margin-left: 8px;
 }
 
-/* ─── Eingabe-Leiste (sticky) ─────────────────────────────── */
+/* ─── Eingabe-Leiste (sticky, 2 Zeilen) ──────────────────── */
 
 .sho-input-bar {
   position: fixed;
@@ -435,30 +393,43 @@
   right: 0;
   background: var(--bg-primary);
   border-top: 1px solid var(--border);
-  padding: 10px 16px;
+  padding: 8px 16px 10px;
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   z-index: 99;
 }
 
-.sho-input-bar input {
+/* Zeile 1: Menge + Einheit */
+.sho-qty-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sho-qty-input {
+  width: 88px;
+  min-width: 0;
+  min-height: 36px;
+  font-size: 0.95rem;
+  text-align: right;
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+
+.sho-unit-select {
   flex: 1;
-  min-height: var(--touch-target);
-  font-size: 1rem;
-  border-radius: 0;
+  min-height: 36px;
+  font-size: 0.9rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-family: var(--font);
+  cursor: pointer;
 }
 
-/* ─── Eingabe-Leiste: Menge ───────────────────────────────── */
-
-/* Eingabe-Leiste hat jetzt zwei Zeilen wenn Menge aktiv */
-.sho-input-bar {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-/* Haupt-Eingabezeile mit Toggle + Input + Button */
+/* Zeile 2: Artikelname + Plus-Button */
 .sho-input-row {
   display: flex;
   gap: 8px;
@@ -469,157 +440,4 @@
   flex: 1;
   min-height: var(--touch-target);
   font-size: 1rem;
-}
-
-/* Mengen-Toggle-Button (#) */
-.sho-qty-toggle {
-  width: 36px;
-  height: 44px;
-  min-width: 36px;
-  border: 1.5px solid var(--border);
-  background: var(--bg-input);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sho-qty-toggle.active {
-  background: var(--accent-light);
-  color: var(--accent-dark);
-  border-color: var(--accent);
-}
-
-/* Mengen-Zeile (Menge + Einheit) */
-.sho-qty-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.sho-qty-input {
-  width: 90px;
-  min-width: 0;
-  min-height: 40px;
-  font-size: 1rem;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* Einheit-Dropdown */
-.sho-unit-select {
-  flex: 1;
-  min-height: 40px;
-  font-size: 0.95rem;
-  background: var(--bg-input);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  padding: 6px 8px;
-  font-family: var(--font);
-  cursor: pointer;
-}
-
-/* ─── Inline-Edit (Umbenennen) ────────────────────────────── */
-
-.sho-list-row {
-  display: flex;
-  flex-direction: column;
-}
-
-.sho-inline-edit {
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.sho-inline-edit input {
-  width: 100%;
-  font-size: 1rem;
-  font-weight: 600;
-  min-height: var(--touch-target);
-}
-
-/* ─── Inline Status-Meldungen ─────────────────────────────── */
-
-.sho-msg-success {
-  font-size: 0.85rem;
-  color: var(--success);
-  padding: 6px 0;
-}
-
-.sho-msg-error {
-  font-size: 0.85rem;
-  color: var(--danger);
-  padding: 6px 0;
-}
-
-/* ─── Inline-Umbenennen ───────────────────────────────────── */
-
-.sho-list-item-wrap {
-  border-bottom: 1px solid var(--border);
-}
-
-.sho-list-item-wrap:last-child {
-  border-bottom: none;
-}
-
-/* Überschreibt den border-bottom vom alten .sho-list-item */
-.sho-list-item {
-  border-bottom: none;
-}
-
-.sho-inline-edit {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 10px 0;
-}
-
-.sho-inline-edit input {
-  flex: 1;
-  min-height: 40px;
-  font-size: 0.95rem;
-}
-
-/* ─── Untere Aktions-Buttons (Neue Liste + Aus Vorlage) ───── */
-
-.sho-bottom-actions {
-  display: flex;
-  flex-direction: column;
-  margin-top: 8px;
-}
-
-.sho-tmpl-btn {
-  color: var(--text-secondary);
-  border-top: none;
-}
-
-/* ─── Vorlagen-Panel ──────────────────────────────────────── */
-
-.sho-tmpl-panel {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--bg-card);
-}
-
-.sho-tmpl-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-/* ─── Erfolgs-Meldung ─────────────────────────────────────── */
-
-.sho-msg-success {
-  font-size: 0.85rem;
-  color: var(--success);
-  padding: 8px 0;
-  margin-bottom: 8px;
 }
