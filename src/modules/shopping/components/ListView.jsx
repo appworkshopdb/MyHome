@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { IconPlus, IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
 import {
-  saveList, deleteList, loadTemplates, loadFromTemplate,
+  saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
 } from '../lib/shoData.js';
 
 const DEFAULT_ICONS = ['🛒', '🥦', '🏠', '🎉', '💊', '🐾', '🧹', '📦'];
@@ -18,6 +18,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
+  const [statusBusy,  setStatusBusy]  = useState(null); // id der Liste deren Status gerade gesetzt wird
 
   // Umbenennen
   const [editId,      setEditId]      = useState(null);
@@ -83,6 +84,19 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       setEditId(null);
     } catch { setError('Umbenennen fehlgeschlagen.'); }
     finally { setEditSaving(false); }
+  }
+
+  // ─── Status manuell setzen ──────────────────────────────────
+  async function handleStatusCycle(e, list) {
+    e.stopPropagation();
+    const cycle = { offen: 'im_einkauf', im_einkauf: 'erledigt', erledigt: 'offen' };
+    const next  = cycle[list.status || 'offen'];
+    setStatusBusy(list.id);
+    try {
+      await updateListStatus(list.id, next);
+      await onListsChange();
+    } catch { setError('Status konnte nicht gesetzt werden.'); }
+    finally  { setStatusBusy(null); }
   }
 
   // ─── Vorlagen ────────────────────────────────────────────────
@@ -186,6 +200,11 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                   <div className="sho-list-icon">{list.icon || '🛒'}</div>
                   <div className="sho-list-info">
                     <div className="sho-list-name">{list.name}</div>
+                    <StatusBadge
+                      list={list}
+                      busy={statusBusy === list.id}
+                      onCycle={(e) => handleStatusCycle(e, list)}
+                    />
                   </div>
                   {/* Umbenennen */}
                   <button
@@ -320,5 +339,50 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Status-Badge ─────────────────────────────────────────────────────
+// Berechnet den effektiven Status:
+//   - Manuell gesetzter Status hat Vorrang
+//   - Automatik: offen / im_einkauf / erledigt aus _done/_total
+// Tap → Status manuell weiterschalten (Cycle)
+function StatusBadge({ list, busy, onCycle }) {
+  // Effektiven Status berechnen
+  const total  = list._total ?? 0;
+  const done   = list._done  ?? 0;
+  const manual = list.status || 'offen';
+
+  let auto;
+  if (total === 0)          auto = 'offen';
+  else if (done === total)  auto = 'erledigt';
+  else if (done > 0)        auto = 'im_einkauf';
+  else                      auto = 'offen';
+
+  // Manueller Status hat Vorrang, außer wenn Auto "erledigt" und Manual noch "offen"
+  const effective = (manual === 'erledigt' || auto === 'erledigt') ? 'erledigt'
+                  : (manual === 'im_einkauf' || auto === 'im_einkauf') ? 'im_einkauf'
+                  : 'offen';
+
+  const labels = {
+    offen:      'Offen',
+    im_einkauf: 'Im Einkauf',
+    erledigt:   'Erledigt',
+  };
+
+  const openLeft = total - done;
+  const hint = effective === 'erledigt' && openLeft > 0
+    ? ` · ${openLeft} Artikel offen`
+    : '';
+
+  return (
+    <button
+      className={`sho-status-badge sho-status-${effective}`}
+      onClick={onCycle}
+      disabled={busy}
+      title="Status ändern"
+    >
+      {busy ? '…' : labels[effective]}{hint}
+    </button>
   );
 }
