@@ -256,6 +256,19 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
+  async function handleEditItem(itemId, quantity, unit) {
+    try {
+      const qty = quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null;
+      const u = unit.trim() || null;
+      await saveItem({ id: itemId, quantity: qty, unit: u });
+      setItems((prev) => prev.map((i) =>
+        i.id === itemId ? { ...i, quantity: qty, unit: u } : i
+      ));
+    } catch (e) {
+      setError('Speichern fehlgeschlagen.');
+    }
+  }
+
   async function handleClearDone() {
     try {
       await clearDoneItems(list.id);
@@ -395,6 +408,7 @@ export default function ItemsView({ list, onBack }) {
                 item={item}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                onEdit={handleEditItem}
               />
             ))}
           </div>
@@ -416,6 +430,7 @@ export default function ItemsView({ list, onBack }) {
                 item={item}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                onEdit={handleEditItem}
               />
             ))}
           </div>
@@ -504,12 +519,43 @@ export default function ItemsView({ list, onBack }) {
 }
 
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
-function ItemRow({ item, onToggle, onDelete }) {
+// Tap auf Checkbox → abhaken
+// Tap auf Artikelname/Menge → Edit-Modus (Menge + Einheit ändern)
+function ItemRow({ item, onToggle, onDelete, onEdit }) {
+  const [editing,  setEditing]  = useState(false);
+  const [qty,      setQty]      = useState(item.quantity != null ? String(item.quantity) : '');
+  const [unit,     setUnit]     = useState(item.unit || '');
+  const qtyRef = useRef(null);
+
+  function openEdit() {
+    setQty(item.quantity != null ? String(item.quantity) : '');
+    setUnit(item.unit || '');
+    setEditing(true);
+    setTimeout(() => qtyRef.current?.focus(), 50);
+  }
+
+  async function commitEdit() {
+    setEditing(false);
+    await onEdit(item.id, qty, unit);
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') commitEdit();
+    if (e.key === 'Escape') setEditing(false);
+  }
+
+  const metaLabel = item.quantity || item.unit
+    ? (item.quantity && item.unit
+        ? `${item.quantity} ${item.unit}`
+        : item.quantity ?? item.unit)
+    : null;
+
   return (
     <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}`}>
+      {/* Checkbox — immer Abhaken */}
       <button
         className={`sho-item-check ${item.done ? 'done' : ''}`}
-        onClick={() => onToggle(item)}
+        onClick={() => { setEditing(false); onToggle(item); }}
         aria-label={item.done ? 'Als offen markieren' : 'Als erledigt markieren'}
       >
         {item.done && (
@@ -517,26 +563,81 @@ function ItemRow({ item, onToggle, onDelete }) {
         )}
       </button>
 
-      <div className="sho-item-body" onClick={() => onToggle(item)}>
-        <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
-          {item.name}
-        </span>
-        {(item.quantity || item.unit) && (
-          <span className="sho-item-meta">
-            {item.quantity && item.unit
-              ? `${item.quantity} ${item.unit}`
-              : item.quantity || item.unit}
+      {editing ? (
+        /* Edit-Modus: Menge + Einheit inline */
+        <div className="sho-item-edit">
+          <span className="sho-item-edit-name">{item.name}</span>
+          <div className="sho-item-edit-fields">
+            <input
+              ref={qtyRef}
+              type="number"
+              inputMode="decimal"
+              placeholder="Menge"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="sho-qty-input"
+              min="0"
+              step="any"
+            />
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="sho-unit-select sho-unit-select--sm"
+            >
+              <option value="">Einheit</option>
+              <option value="Stück">Stück</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="L">Liter</option>
+              <option value="Packung">Packung</option>
+              <option value="Flasche">Flasche</option>
+              <option value="Dose">Dose</option>
+              <option value="Becher">Becher</option>
+              <option value="Bund">Bund</option>
+              <option value="EL">EL</option>
+              <option value="TL">TL</option>
+            </select>
+            <button
+              className="btn btn-primary"
+              onClick={commitEdit}
+              style={{ minHeight: 36, padding: '4px 12px', flexShrink: 0 }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Normal-Modus: Tap öffnet Edit */
+        <div className="sho-item-body" onClick={openEdit}>
+          <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
+            {item.name}
           </span>
-        )}
-      </div>
+          {metaLabel && (
+            <span className="sho-item-meta sho-item-meta--qty">
+              {metaLabel}
+            </span>
+          )}
+          {!metaLabel && (
+            <span className="sho-item-meta sho-item-meta--hint">
+              Menge tippen …
+            </span>
+          )}
+        </div>
+      )}
 
-      <button
-        className="btn-icon sho-item-delete"
-        onClick={() => onDelete(item.id)}
-        aria-label="Artikel löschen"
-      >
-        <IconTrash size={15} />
-      </button>
+      {/* Löschen — immer sichtbar */}
+      {!editing && (
+        <button
+          className="btn-icon sho-item-delete"
+          onClick={() => onDelete(item.id)}
+          aria-label="Artikel löschen"
+        >
+          <IconTrash size={15} />
+        </button>
+      )}
     </div>
   );
 }
