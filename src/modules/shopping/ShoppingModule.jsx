@@ -57,16 +57,20 @@ export default function ShoppingModule({ view, onNavigateView }) {
 
   // ── Artikelansicht: TopBar zeigt Zurück-Pfeil + Listenname ──
   if (openList) {
+    async function handleBack() {
+      await fetchLists(); // Status neu laden
+      setOpenList(null);
+    }
     return (
       <>
-        <ModuleTopBar title={openList.name} onBack={() => setOpenList(null)} />
+        <ModuleTopBar title={openList.name} onBack={handleBack} />
         <div className="main-content sho-module-content">
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
           )}
           <ItemsView
             list={openList}
-            onBack={() => setOpenList(null)}
+            onBack={handleBack}
           />
         </div>
       </>

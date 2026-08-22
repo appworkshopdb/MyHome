@@ -606,3 +606,106 @@
   width: 16px;
   height: 16px;
 }
+
+/* ─── Status-Badge ────────────────────────────────────────── */
+
+.sho-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  margin-top: 3px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+
+.sho-status-badge:active { opacity: 0.7; }
+
+.sho-status-offen {
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+.sho-status-im_einkauf {
+  background: #FFF3CD;
+  color: #856404;
+}
+
+.dark .sho-status-im_einkauf {
+  background: #3D2E00;
+  color: #FFC947;
+}
+
+.sho-status-erledigt {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ─── FreqView Filter + Rang ──────────────────────────────── */
+
+.sho-freq-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sho-freq-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sho-freq-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sho-freq-pill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.12s, color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-freq-pill.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.sho-freq-total {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.sho-freq-rank {
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sho-freq-medal {
+  font-size: 1.1rem;
+}
+
+.sho-freq-ranknum {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
