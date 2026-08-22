@@ -270,3 +270,38 @@ export async function loadFromTemplate(templateId, newListName, newListIcon) {
   }
   return newList;
 }
+
+// Häufig gekaufte Artikel: Alle nicht-gelöschten Items aggregieren,
+// nach Artikelname gruppieren und nach Häufigkeit sortieren.
+export async function loadFrequentItems(limit = 20) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('sho_items')
+    .select('name, category, quantity, unit')
+    .is('deleted_at', null)
+    .eq('is_template', false)  // Vorlage-Artikel nicht mitzählen — wird ignoriert wenn Spalte fehlt
+    .order('created_at', { ascending: false })
+    .limit(500); // genug History laden
+  if (error) throw error;
+
+  // Client-seitig gruppieren + zählen
+  const counts = {};
+  for (const item of (data ?? [])) {
+    const key = item.name.trim().toLowerCase();
+    if (!counts[key]) {
+      counts[key] = {
+        name:     item.name,
+        category: item.category,
+        count:    0,
+        // letzte Menge/Einheit als Vorschlag
+        quantity: item.quantity,
+        unit:     item.unit,
+      };
+    }
+    counts[key].count++;
+  }
+
+  return Object.values(counts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
