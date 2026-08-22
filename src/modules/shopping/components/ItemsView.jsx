@@ -183,6 +183,8 @@ export default function ItemsView({ list, onBack }) {
   const [templateSaved,    setTemplateSaved]    = useState(false);
   const inputRef    = useRef(null);
   const quantityRef = useRef(null);
+  const addBtnRef   = useRef(null);
+  const [flyAnim,   setFlyAnim]   = useState(null); // { x, y } Startposition
 
   const fetchItems = useCallback(async () => {
     try {
@@ -211,6 +213,14 @@ export default function ItemsView({ list, onBack }) {
   async function handleAdd(name) {
     const trimmed = (name || input).trim();
     if (!trimmed) return;
+
+    // Animation starten — Startpunkt = Plus-Button
+    if (addBtnRef.current) {
+      const rect = addBtnRef.current.getBoundingClientRect();
+      setFlyAnim({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+      setTimeout(() => setFlyAnim(null), 700);
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -453,6 +463,9 @@ export default function ItemsView({ list, onBack }) {
         </div>
       )}
 
+      {/* Flug-Animation beim Hinzufügen */}
+      {flyAnim && <FlyParticle startX={flyAnim.x} startY={flyAnim.y} />}
+
       {/* Eingabe-Leiste (sticky über Bottom-Nav) */}
       <div className="sho-input-bar">
 
@@ -505,6 +518,7 @@ export default function ItemsView({ list, onBack }) {
             maxLength={80}
           />
           <button
+            ref={addBtnRef}
             className="btn btn-primary"
             onClick={() => { handleAdd(); setSuggestions([]); }}
             disabled={saving || !input.trim()}
@@ -638,6 +652,33 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
           <IconTrash size={15} />
         </button>
       )}
+    </div>
+  );
+}
+
+// ─── Flug-Partikel Animation ──────────────────────────────────────────
+// Ein kleiner Punkt fliegt vom Plus-Button zum Warenkorb in der Bottom-Nav.
+// Rein CSS-getrieben, kein externes Package.
+function FlyParticle({ startX, startY }) {
+  // Ziel: Mitte des Einkauf-Icons in der Bottom-Nav (letztes Item, rechts)
+  // Wir nutzen window.innerWidth/Height als Annäherung
+  const targetX = window.innerWidth - 40;   // ca. Position des Einkauf-Icons
+  const targetY = window.innerHeight - 36;  // ca. Mitte der Bottom-Nav
+
+  const dx = targetX - startX;
+  const dy = targetY - startY;
+
+  return (
+    <div
+      className="sho-fly-particle"
+      style={{
+        '--fly-start-x': `${startX}px`,
+        '--fly-start-y': `${startY}px`,
+        '--fly-dx': `${dx}px`,
+        '--fly-dy': `${dy}px`,
+      }}
+    >
+      🛒
     </div>
   );
 }
