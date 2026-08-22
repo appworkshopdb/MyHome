@@ -709,3 +709,18 @@
   font-weight: 700;
   color: var(--text-muted);
 }
+
+/* ─── Status-Wrap (Badge + Hint nebeneinander) ────────────── */
+
+.sho-status-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.sho-status-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
