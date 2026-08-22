@@ -89,8 +89,19 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   // ─── Status manuell setzen ──────────────────────────────────
   async function handleStatusCycle(e, list) {
     e.stopPropagation();
+    // Effektiven aktuellen Status berechnen (wie in StatusBadge)
+    const total  = list._total ?? 0;
+    const done   = list._done  ?? 0;
+    let auto;
+    if (total === 0)         auto = 'offen';
+    else if (done === total) auto = 'erledigt';
+    else if (done > 0)       auto = 'im_einkauf';
+    else                     auto = 'offen';
+    const manual    = list.status || 'offen';
+    const effective = manual !== 'offen' ? manual : auto;
+    // Cycle: offen → im_einkauf → erledigt → offen
     const cycle = { offen: 'im_einkauf', im_einkauf: 'erledigt', erledigt: 'offen' };
-    const next  = cycle[list.status || 'offen'];
+    const next  = cycle[effective];
     setStatusBusy(list.id);
     try {
       await updateListStatus(list.id, next);
@@ -348,21 +359,21 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
 //   - Automatik: offen / im_einkauf / erledigt aus _done/_total
 // Tap → Status manuell weiterschalten (Cycle)
 function StatusBadge({ list, busy, onCycle }) {
-  // Effektiven Status berechnen
   const total  = list._total ?? 0;
   const done   = list._done  ?? 0;
-  const manual = list.status || 'offen';
+  const openLeft = total - done;
 
+  // Automatischer Status aus Item-Counts (nur Startwert wenn noch kein manueller gesetzt)
   let auto;
-  if (total === 0)          auto = 'offen';
-  else if (done === total)  auto = 'erledigt';
-  else if (done > 0)        auto = 'im_einkauf';
-  else                      auto = 'offen';
+  if (total === 0)         auto = 'offen';
+  else if (done === total) auto = 'erledigt';
+  else if (done > 0)       auto = 'im_einkauf';
+  else                     auto = 'offen';
 
-  // Manueller Status hat Vorrang, außer wenn Auto "erledigt" und Manual noch "offen"
-  const effective = (manual === 'erledigt' || auto === 'erledigt') ? 'erledigt'
-                  : (manual === 'im_einkauf' || auto === 'im_einkauf') ? 'im_einkauf'
-                  : 'offen';
+  // Manueller Status gewinnt IMMER — auto nur wenn status noch 'offen' (DB-Default)
+  // und auto etwas anderes sagt (z.B. alle abgehakt → erledigt)
+  const manual    = list.status || 'offen';
+  const effective = manual !== 'offen' ? manual : auto;
 
   const labels = {
     offen:      'Offen',
@@ -370,19 +381,22 @@ function StatusBadge({ list, busy, onCycle }) {
     erledigt:   'Erledigt',
   };
 
-  const openLeft = total - done;
-  const hint = effective === 'erledigt' && openLeft > 0
-    ? ` · ${openLeft} Artikel offen`
-    : '';
+  // Artikel-offen-Hinweis in allen Stati anzeigen (außer wenn 0 offen)
+  const showHint = openLeft > 0 && total > 0;
 
   return (
-    <button
-      className={`sho-status-badge sho-status-${effective}`}
-      onClick={onCycle}
-      disabled={busy}
-      title="Status ändern"
-    >
-      {busy ? '…' : labels[effective]}{hint}
-    </button>
+    <span className="sho-status-wrap">
+      <button
+        className={`sho-status-badge sho-status-${effective}`}
+        onClick={onCycle}
+        disabled={busy}
+        title="Status ändern — Tippen zum Wechseln"
+      >
+        {busy ? '…' : labels[effective]}
+      </button>
+      {showHint && (
+        <span className="sho-status-hint">{openLeft} offen</span>
+      )}
+    </span>
   );
 }
