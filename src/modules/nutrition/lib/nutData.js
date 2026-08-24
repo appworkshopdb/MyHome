@@ -6,6 +6,23 @@ function ownerId(session) {
   return session.user.id;
 }
 
+// Ermittelt den Haushalt der aktuell angemeldeten Person (falls
+// vorhanden). Existiert noch kein Haushalts-Flow/keine Mitgliedschaft,
+// liefert das schlicht null — Verhalten bleibt dann exakt wie bisher
+// (rein privat). Sobald der Household-Flow (core-Chat) Mitgliedschaften
+// anlegt, greift das Sharing hier automatisch, ohne dass nochmal etwas
+// im Ernährungs-Modul angepasst werden muss.
+async function getHouseholdId(session) {
+  const { data, error } = await getSupabase()
+    .from('household_members')
+    .select('household_id')
+    .eq('user_id', ownerId(session))
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.household_id ?? null;
+}
+
 // ---------------------------------------------------------------------
 // Lebensmittel: Basis ist die statische SEED_FOODS-Liste (gleich für
 // alle, kein Sync nötig). "nut_foods" enthält nur, was eine Person
@@ -13,20 +30,23 @@ function ownerId(session) {
 // Eine Änderung an einem Seed-Eintrag wird als persönliche Kopie mit
 // override_of = ursprüngliche Seed-Id gespeichert, statt den globalen
 // Datensatz zu verändern.
+//
+// Geteilt im Haushalt: eigene + vom Haushalt geteilte Zeilen kommen
+// automatisch über RLS zurück (siehe nutrition-household-sharing.sql),
+// deshalb hier bewusst KEIN .eq('owner_id', ...)-Filter mehr.
 // ---------------------------------------------------------------------
 
 export async function getCustomFoods(session) {
   const { data, error } = await getSupabase()
     .from('nut_foods')
     .select('*')
-    .eq('owner_id', ownerId(session))
     .is('deleted_at', null);
   if (error) throw error;
   return data;
 }
 
-// Führt Seed-Liste + persönliche Overrides/Ergänzungen zu einer Liste
-// zusammen, wie sie die Ansicht braucht.
+// Führt Seed-Liste + persönliche/geteilte Overrides/Ergänzungen zu einer
+// Liste zusammen, wie sie die Ansicht braucht.
 export function mergeFoods(customFoods) {
   const overridesBySeed = new Map();
   const custom = [];
@@ -47,6 +67,8 @@ function toFoodShape(row, seedId) {
     _rowId: row.id, // echte DB-Id, für Update/Delete
     _custom: true,
     override_of: row.override_of ?? null,
+    ownerId: row.owner_id,
+    householdId: row.household_id ?? null,
     name: row.name,
     group: row.food_group,
     category: row.category,
@@ -66,8 +88,10 @@ function toFoodShape(row, seedId) {
 export async function saveFood(session, food) {
   const isSeedEdit = !food._custom && SEED_FOODS.some((f) => f.id === food.id);
   const overrideOf = isSeedEdit ? food.id : (food._custom ? (food.override_of ?? null) : null);
+  const householdId = await getHouseholdId(session);
   const payload = {
     owner_id: ownerId(session),
+    household_id: householdId,
     override_of: overrideOf,
     name: food.name,
     food_group: food.group,
@@ -95,14 +119,13 @@ export async function deleteFood(rowId) {
 }
 
 // ---------------------------------------------------------------------
-// Rezepte
+// Rezepte — geteilt im Haushalt, gleiches Prinzip wie oben.
 // ---------------------------------------------------------------------
 
 export async function getRecipes(session) {
   const { data, error } = await getSupabase()
     .from('nut_recipes')
     .select('*')
-    .eq('owner_id', ownerId(session))
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -112,6 +135,8 @@ export async function getRecipes(session) {
 function fromRecipeRow(row) {
   return {
     id: row.id,
+    ownerId: row.owner_id,
+    householdId: row.household_id ?? null,
     name: row.name,
     servings: row.servings,
     category: row.category,
@@ -123,8 +148,10 @@ function fromRecipeRow(row) {
 }
 
 export async function saveRecipe(session, recipe) {
+  const householdId = await getHouseholdId(session);
   const payload = {
     owner_id: ownerId(session),
+    household_id: householdId,
     name: recipe.name,
     servings: recipe.servings,
     category: recipe.category,
@@ -148,10 +175,11 @@ export async function deleteRecipe(id) {
 }
 
 // ---------------------------------------------------------------------
-// Profil (1 Zeile pro Nutzer:in) — enthält seit der body_profile-
-// Migration (siehe Projektkontext.md) nur noch die wirklich
-// ernährungsspezifischen Felder. Geschlecht/Alter/Größe/Gewicht/
-// Aktivität/Ziel kommen jetzt aus core/lib/bodyProfileData.js.
+// Profil (1 Zeile pro Nutzer:in) — bewusst NICHT geteilt, bleibt strikt
+// individuell. Enthält seit der body_profile-Migration (siehe
+// Projektkontext.md) nur noch die wirklich ernährungsspezifischen
+// Felder. Geschlecht/Alter/Größe/Gewicht/Aktivität/Ziel kommen jetzt
+// aus core/lib/bodyProfileData.js.
 // ---------------------------------------------------------------------
 
 export async function getProfile(session) {
@@ -173,6 +201,9 @@ export async function saveProfile(session, profile) {
 
 // ---------------------------------------------------------------------
 // Alle Daten löschen (Einstellungen-Analogon zu Finanzen)
+// Löscht bewusst nur eigene Zeilen (owner_id) — geteilte Zeilen anderer
+// Haushaltsmitglieder bleiben unangetastet, auch wenn man selbst mal
+// Mitglied war.
 // ---------------------------------------------------------------------
 
 export async function deleteAllData(session) {
