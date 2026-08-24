@@ -5,7 +5,7 @@ import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
 import CompareModal from './CompareModal';
 
-export default function AmpelView({ foods, onSaveFood, onDeleteFood }) {
+export default function AmpelView({ foods, currentUserId, onSaveFood, onDeleteFood }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [tag, setTag] = useState('all');
@@ -166,6 +166,7 @@ export default function AmpelView({ foods, onSaveFood, onDeleteFood }) {
       {selected && (
         <FoodDetailModal
           food={selected}
+          currentUserId={currentUserId}
           onEdit={(f) => { setFormFood(f); setShowForm(true); setSelected(null); }}
           onDelete={handleDelete}
           onCompare={() => openCompare(selected)}

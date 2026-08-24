@@ -4,27 +4,30 @@ import { RECIPE_CATS, TAG_COLORS, fmt } from '../lib/nutrition';
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 
-export default function RecipeDetailModal({ recipe, calc, foodsById, isTemplate, onEdit, onDelete, onCopy, onClose }) {
+export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onClose }) {
   const servings = recipe.servings || 1;
   const perServing = Math.round(calc.kcal / servings);
   const cat = RECIPE_CATS.find((c) => c.key === recipe.category) || RECIPE_CATS[0];
+  const isOwner = isTemplate || recipe.ownerId === currentUserId;
+  const isShared = !!recipe.householdId;
 
   return (
     <Modal title={recipe.name} onClose={onClose}>
       <div style={{ display: 'flex', gap: 8 }}>
         {isTemplate ? (
           <button className="btn btn-primary" onClick={() => onCopy(recipe)}><IconPlus /> Übernehmen</button>
-        ) : (
+        ) : isOwner ? (
           <>
             <button className="btn btn-secondary" onClick={() => onEdit(recipe)}><IconEdit /> Bearbeiten</button>
             <button className="btn btn-danger" onClick={() => onDelete(recipe.id)}><IconTrash /> Löschen</button>
           </>
-        )}
+        ) : null}
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <span className="chip">{cat.emoji} {cat.label}</span>
         <span className="chip">{servings} Portion{servings !== 1 ? 'en' : ''}</span>
+        {isShared && <span className="chip">Vom Haushalt geteilt{!isOwner ? ' (nicht von dir)' : ''}</span>}
       </div>
 
       <div className="result-grid">

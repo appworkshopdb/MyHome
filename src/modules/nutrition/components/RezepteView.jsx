@@ -5,7 +5,7 @@ import { TEMPLATE_RECIPES } from '../lib/data/templates';
 import RecipeEditorModal from './RecipeEditorModal';
 import RecipeDetailModal from './RecipeDetailModal';
 
-export default function RezepteView({ foods, recipes, onSaveRecipe, onDeleteRecipe, showToast }) {
+export default function RezepteView({ foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast }) {
   const [tab, setTab] = useState('eigene'); // 'eigene' | 'vorlagen'
   const [catIndex, setCatIndex] = useState(0);
   const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, object = edit
@@ -121,6 +121,7 @@ export default function RezepteView({ foods, recipes, onSaveRecipe, onDeleteReci
           recipe={detail}
           calc={computeNutrition(detail.ingredients, foodsById)}
           foodsById={foodsById}
+          currentUserId={currentUserId}
           isTemplate={tab === 'vorlagen'}
           onEdit={(r) => { setDetail(null); setEditing(r); }}
           onDelete={handleDelete}

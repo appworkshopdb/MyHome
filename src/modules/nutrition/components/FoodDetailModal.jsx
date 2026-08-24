@@ -13,14 +13,27 @@ const MACRO_ROWS = [
   ['salt', 'Salz (g)', 2],
 ];
 
-export default function FoodDetailModal({ food, onEdit, onDelete, onCompare, compareCount, inCompare, onClose }) {
+export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete, onCompare, compareCount, inCompare, onClose }) {
   const micros = [...(food.vitamins || []), ...(food.minerals || []), ...(food.micros_other || [])];
+
+  // Pure Seed-Lebensmittel (noch nie von jemandem angepasst) darf jede:r
+  // bearbeiten — das legt automatisch eine eigene Überschreibung an.
+  // Ein bereits vorhandener eigener/geteilter Eintrag darf nur vom
+  // ursprünglichen Ersteller bearbeitet/gelöscht werden (RLS erlaubt
+  // Ändern/Löschen ohnehin nur dem Owner — hier nur passend zur DB
+  // ausgeblendet, statt einen Button anzuzeigen, der dann fehlschlägt).
+  const isOwner = !food._custom || food.ownerId === currentUserId;
+  const isShared = !!food.householdId;
+  const canEdit = !food._custom || isOwner;
+  const canDelete = food._rowId && isOwner;
 
   return (
     <Modal title={food.name} onClose={onClose}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-secondary" onClick={() => onEdit(food)}><IconEdit /> Bearbeiten</button>
-        {food._rowId && (
+        {canEdit && (
+          <button className="btn btn-secondary" onClick={() => onEdit(food)}><IconEdit /> Bearbeiten</button>
+        )}
+        {canDelete && (
           <button className="btn btn-danger" onClick={() => onDelete(food)}><IconTrash /> Löschen</button>
         )}
       </div>
@@ -31,6 +44,7 @@ export default function FoodDetailModal({ food, onEdit, onDelete, onCompare, com
         </span>
         <span className="chip">{food.group}</span>
         <span className="chip">{basis(food.unit)}</span>
+        {isShared && <span className="chip">Vom Haushalt geteilt{!isOwner ? ' (nicht von dir)' : ''}</span>}
         {food.glutenfrei && <span className="ampel-badge erlaubt">Glutenfrei</span>}
         {food.laktosefrei && <span className="ampel-badge erlaubt">Laktosefrei</span>}
       </div>
