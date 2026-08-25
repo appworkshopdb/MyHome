@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
-import { getMonthSum, getRecentMeasurements } from './lib/measurementsData';
+import { getMonthSum, getRecentMeasurements, getPeriodSummary, lastNDaysRange } from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
 import { getModule } from './modules';
 import { getSupabase } from './lib/supabaseClient';
+import ProgressStat from './components/ProgressStat';
 
 const METRIC_LABELS = {
   'finance.income':  'Einnahme',
@@ -72,6 +73,7 @@ export default function Hub({ onOpenModule }) {
   const [expense, setExpense]   = useState(0);
   const [activity, setActivity] = useState([]);
   const [cacheZeit, setCacheZeit] = useState(null);
+  const [week, setWeek] = useState({});
 
   // Habits-Kachel
   const [habTotal, setHabTotal] = useState(0);
@@ -82,11 +84,13 @@ export default function Hub({ onOpenModule }) {
     setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, recent, todayHab] = await Promise.all([
+      const { from, to } = lastNDaysRange(7);
+      const [inc, exp, recent, todayHab, weekSummary] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         getRecentMeasurements(session, 5),
         loadTodayHabits(),
+        getPeriodSummary(session, from, to),
       ]);
       setIncome(inc);
       setExpense(exp);
@@ -94,6 +98,7 @@ export default function Hub({ onOpenModule }) {
       setHabTotal(todayHab.total);
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
+      setWeek(weekSummary);
       writeCache({ income: inc, expense: exp, activity: recent });
       setStatus(recent.length > 0 || inc > 0 || exp > 0 || todayHab.total > 0 ? 'daten' : 'leer');
     } catch (e) {
@@ -121,8 +126,6 @@ export default function Hub({ onOpenModule }) {
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
 
-  // Habits-Kachel Fortschritts-Prozent
-  const habRate = habTotal > 0 ? Math.round((habDone / habTotal) * 100) : 0;
   const habAllDone = habTotal > 0 && habDone === habTotal;
 
   if (status === 'laedt') {
@@ -228,37 +231,47 @@ export default function Hub({ onOpenModule }) {
 
           {/* Habits-Kachel — nur anzeigen wenn Habits vorhanden */}
           {habTotal > 0 && (
-            <button
-              className={`hub-habits-card ${habAllDone ? 'hub-habits-card--done' : ''}`}
+            <ProgressStat
+              variant="card"
+              celebrate={habAllDone}
+              label={habAllDone ? '🏆 Alle Gewohnheiten erledigt!' : 'Gewohnheiten heute'}
+              value={habDone}
+              target={habTotal}
               onClick={() => onOpenModule('habits')}
-            >
-              <div className="hub-habits-card-top">
-                <div className="hub-habits-card-label">
-                  {habAllDone ? '🏆 Alle Gewohnheiten erledigt!' : 'Gewohnheiten heute'}
-                </div>
-                <div className="hub-habits-card-score">
-                  <span className="hub-habits-card-done">{habDone}</span>
-                  <span className="hub-habits-card-sep">/</span>
-                  <span className="hub-habits-card-total">{habTotal}</span>
-                </div>
+              sublabel={
+                habHabits.length > 0
+                  ? habHabits.slice(0, 6).map((h) => h.icon).join('  ') + (habHabits.length > 6 ? `  +${habHabits.length - 6}` : '')
+                  : undefined
+              }
+            />
+          )}
+
+          {Object.keys(week).length > 0 && (
+            <>
+              <div className="hub-section-label">Diese Woche</div>
+              <div className="hub-week-list">
+                {Object.entries(week).map(([moduleId, data]) => {
+                  const mod = getModule(moduleId);
+                  let netEur = null;
+                  for (const [key, m] of Object.entries(data.byMetric)) {
+                    if (m.unit === 'EUR') {
+                      const sign = key.endsWith('.expense') ? -1 : 1;
+                      netEur = (netEur ?? 0) + sign * m.sum;
+                    }
+                  }
+                  return (
+                    <div className="hub-week-row" key={moduleId}>
+                      <span className="hub-week-dot" style={{ background: mod?.color || 'var(--text-muted)' }} />
+                      <span className="hub-week-name">{mod?.name || moduleId}</span>
+                      <span className="hub-week-value">
+                        {data.count} {data.count === 1 ? 'Eintrag' : 'Einträge'}
+                        {netEur !== null && ` · ${formatEur(netEur)}`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              {/* Fortschrittsbalken */}
-              <div className="hub-habits-bar">
-                <div
-                  className="hub-habits-bar-fill"
-                  style={{ width: `${habRate}%` }}
-                />
-              </div>
-              {/* Habit-Icons als Vorschau */}
-              <div className="hub-habits-icons">
-                {habHabits.slice(0, 6).map((h) => (
-                  <span key={h.id} className="hub-habits-icon">{h.icon}</span>
-                ))}
-                {habHabits.length > 6 && (
-                  <span className="hub-habits-icon-more">+{habHabits.length - 6}</span>
-                )}
-              </div>
-            </button>
+            </>
           )}
 
           <div className="hub-section-label">Aktivität</div>
