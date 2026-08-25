@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUi } from './lib/UiContext';
 import * as rawAuth from './lib/rawAuth';
-import { getBodyProfile, saveBodyProfile } from './lib/bodyProfileData';
+import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bodyProfileData';
 import { getGoals } from './lib/goalsData';
 import BodyProfileForm from './components/BodyProfileForm';
 import ModuleTopBar from './components/ModuleTopBar';
 import { MODULES } from './modules';
+
+// Trainingsfokus zusätzlich zu BODY_REQUIRED_FIELDS: Profile.jsx ist die
+// allgemeine Seite für ALLE Module (auch Sport), core darf dafür aber
+// nicht direkt SPORT_REQUIRED_FIELDS aus modules/sport importieren
+// (Architektur-Regel: core importiert nie aus modules/*). Deshalb hier
+// eine eigene, manuell synchron zu haltende Ergänzung — ändert sich
+// modules/sport/lib/requiredFields.js, hier nachziehen.
+const PROFILE_REQUIRED_FIELDS = [...BODY_REQUIRED_FIELDS, { key: 'training_focus', label: 'Trainingsfokus' }];
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);
@@ -130,7 +138,7 @@ export default function Profile({ onOpenModule }) {
         {loading || !bodyProfile ? (
           <div className="status-note">Wird geladen…</div>
         ) : (
-          <BodyProfileForm value={bodyProfile} onChange={handleBodyChange} />
+          <BodyProfileForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} />
         )}
         <p style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
           Gilt app-weit — z.&nbsp;B. für Ernährung und künftig Sport.
