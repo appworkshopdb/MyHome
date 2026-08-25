@@ -4,20 +4,9 @@ import { useUi } from './lib/UiContext';
 import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile } from './lib/bodyProfileData';
 import { getGoals } from './lib/goalsData';
-import {
-  isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush,
-  getNotificationPrefs, saveNotificationPrefs,
-} from './lib/pushNotifications';
 import BodyProfileForm from './components/BodyProfileForm';
 import ModuleTopBar from './components/ModuleTopBar';
 import { MODULES } from './modules';
-
-const NOTIFICATION_CATEGORIES = [
-  { key: 'habits', label: 'Gewohnheiten-Erinnerung', hint: 'Abends, falls noch offen' },
-  { key: 'required_data', label: 'Pflichtdaten unvollständig', hint: 'Gelegentlich, falls Angaben fehlen' },
-  { key: 'fin_due', label: 'Fixkosten fällig', hint: 'Wenn unbezahlte Fixkosten offen sind' },
-  { key: 'weekly_recap', label: 'Wochenrückblick', hint: 'Sonntagabend' },
-];
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);
@@ -31,9 +20,12 @@ function memberSince(isoDate) {
   return `Seit ${years} ${years === 1 ? 'Jahr' : 'Jahren'}${restMonths ? ` ${restMonths} Mon.` : ''} dabei`;
 }
 
-// Die Profil-Seite legt selbst keine Ziele an — sie liest nur die
-// geteilte goals-Tabelle ungefiltert und gruppiert nach source_module.
-// Angelegt werden Ziele im jeweiligen Modul (core/components/GoalsSection.jsx).
+// Die Profil-Seite (Avatar-Button rechts) ist bewusst nur noch für
+// Konto/Körperdaten/Ziele zuständig — Benachrichtigungen sitzen jetzt im
+// linken Dropdown-Menü (AppMenu.jsx), neben Design. Legt selbst keine
+// Ziele an — liest nur die geteilte goals-Tabelle ungefiltert und
+// gruppiert nach source_module. Angelegt werden Ziele im jeweiligen
+// Modul (core/components/GoalsSection.jsx).
 export default function Profile({ onOpenModule }) {
   const { session, setSession } = useAuth();
   const { showToast } = useUi();
@@ -46,10 +38,6 @@ export default function Profile({ onOpenModule }) {
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
   const [pwStatus, setPwStatus] = useState(null);
-
-  const [pushStatus, setPushStatus] = useState('laedt'); // laedt|unsupported|denied|unsubscribed|subscribed
-  const [pushBusy, setPushBusy] = useState(false);
-  const [prefs, setPrefs] = useState(null);
 
   useEffect(() => {
     let aktiv = true;
@@ -70,73 +58,6 @@ export default function Profile({ onOpenModule }) {
     load();
     return () => { aktiv = false; };
   }, [session]);
-
-  useEffect(() => {
-    let aktiv = true;
-    async function loadPush() {
-      if (!isPushSupported()) { setPushStatus('unsupported'); return; }
-      const status = await getPushSubscriptionStatus();
-      if (!aktiv) return;
-      setPushStatus(status);
-      if (status === 'subscribed') {
-        const p = await getNotificationPrefs(session);
-        if (aktiv) setPrefs(p);
-      }
-    }
-    loadPush();
-    return () => { aktiv = false; };
-  }, [session]);
-
-  async function handleEnablePush() {
-    setPushBusy(true);
-    try {
-      await subscribeToPush(session);
-      setPushStatus('subscribed');
-      setPrefs(await getNotificationPrefs(session));
-      showToast('Benachrichtigungen aktiviert');
-    } catch (e) {
-      showToast(e.message || 'Konnte nicht aktiviert werden');
-      setPushStatus(await getPushSubscriptionStatus());
-    } finally {
-      setPushBusy(false);
-    }
-  }
-
-  async function handleDisablePush() {
-    setPushBusy(true);
-    try {
-      await unsubscribeFromPush(session);
-      setPushStatus('unsubscribed');
-      showToast('Benachrichtigungen deaktiviert');
-    } catch (e) {
-      showToast('Konnte nicht deaktiviert werden');
-      console.error(e);
-    } finally {
-      setPushBusy(false);
-    }
-  }
-
-  async function toggleCategory(key) {
-    const next = { ...prefs, [key]: !prefs[key] };
-    setPrefs(next);
-    try {
-      await saveNotificationPrefs(session, next);
-    } catch (e) {
-      showToast('Konnte nicht gespeichert werden');
-      console.error(e);
-    }
-  }
-
-  async function updateTiming(field, value) {
-    const next = { ...prefs, [field]: value };
-    setPrefs(next);
-    try {
-      await saveNotificationPrefs(session, next);
-    } catch (e) {
-      showToast('Konnte nicht gespeichert werden');
-      console.error(e);
-    }
-  }
 
   async function handleBodyChange(next) {
     setBodyProfile(next);
@@ -200,85 +121,6 @@ export default function Profile({ onOpenModule }) {
                 Abbrechen
               </button>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Benachrichtigungen */}
-      <div className="card">
-        <div className="card-title">Benachrichtigungen</div>
-        {pushStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
-        {pushStatus === 'unsupported' && (
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone:
-            erst über "Zum Home-Bildschirm" installieren, dann von dort aus öffnen.
-          </p>
-        )}
-        {pushStatus === 'denied' && (
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.
-          </p>
-        )}
-        {pushStatus === 'unsubscribed' && (
-          <>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-              Erhalte Erinnerungen auch außerhalb der App.
-            </p>
-            <button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>
-              {pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}
-            </button>
-          </>
-        )}
-        {pushStatus === 'subscribed' && prefs && (
-          <>
-            {NOTIFICATION_CATEGORIES.map((c) => (
-              <label key={c.key} className="goal-milestone" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
-                <input type="checkbox" checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} style={{ marginTop: 2 }} />
-                <span>
-                  {c.label}
-                  <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.hint}</span>
-                </span>
-              </label>
-            ))}
-
-            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label>Wunschstunde</label>
-                <select value={prefs.preferred_hour} onChange={(e) => updateTiming('preferred_hour', Number(e.target.value))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00 Uhr</option>
-                  ))}
-                </select>
-                <p style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  Zu welcher vollen Stunde du benachrichtigt werden möchtest (deutsche Zeit).
-                </p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div className="form-group">
-                  <label>Ruhezeit von</label>
-                  <select value={prefs.quiet_start} onChange={(e) => updateTiming('quiet_start', Number(e.target.value))}>
-                    {Array.from({ length: 24 }, (_, h) => (
-                      <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Ruhezeit bis</label>
-                  <select value={prefs.quiet_end} onChange={(e) => updateTiming('quiet_end', Number(e.target.value))}>
-                    {Array.from({ length: 24 }, (_, h) => (
-                      <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <p style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                In diesem Zeitfenster kommt nie eine Benachrichtigung, unabhängig von der Wunschstunde.
-              </p>
-            </div>
-
-            <button className="btn btn-secondary" style={{ marginTop: 14 }} disabled={pushBusy} onClick={handleDisablePush}>
-              Deaktivieren
-            </button>
           </>
         )}
       </div>
