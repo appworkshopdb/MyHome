@@ -43,3 +43,38 @@ export async function getRecentMeasurements(session, limit = 5) {
   if (error) throw error;
   return data;
 }
+
+// Zeitraum als ISO-Datumsgrenzen, z.B. lastNDaysRange(7) für "diese Woche".
+export function lastNDaysRange(days) {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  const fmt = (d) => d.toISOString().split('T')[0];
+  return { from: fmt(from), to: fmt(to) };
+}
+
+// Aggregiert measurements über einen Zeitraum, gruppiert nach
+// source_module und darunter nach metric_key — generische Basis für
+// Wochen-/Monatsberichte. Bleibt bewusst "dumm" (keine .expense/
+// .income-Vorzeichenlogik, das wäre modul-spezifisches Wissen) — jede
+// Anzeige entscheidet selbst, wie sie ihre eigenen metric_keys liest,
+// genau wie es die Aktivitätsliste im Hub schon für "Aktivität" tut.
+export async function getPeriodSummary(session, fromDate, toDate) {
+  const { data, error } = await getSupabase()
+    .from('measurements')
+    .select('source_module, metric_key, value, unit')
+    .eq('owner_id', ownerId(session))
+    .gte('occurred_on', fromDate)
+    .lte('occurred_on', toDate);
+  if (error) throw error;
+
+  const byModule = {};
+  for (const row of data) {
+    const mod = (byModule[row.source_module] ||= { count: 0, byMetric: {} });
+    mod.count += 1;
+    const met = (mod.byMetric[row.metric_key] ||= { count: 0, sum: 0, unit: row.unit });
+    met.count += 1;
+    met.sum += Number(row.value);
+  }
+  return byModule;
+}
