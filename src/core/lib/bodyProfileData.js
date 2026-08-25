@@ -55,4 +55,10 @@ export async function saveBodyProfile(session, profile) {
   };
   const { error } = await getSupabase().from('body_profile').upsert(payload, { onConflict: 'owner_id' });
   if (error) throw error;
+  // Popup/Warnpunkt sofort aktualisieren, egal von wo aus gespeichert
+  // wurde (Profil, Ernährung, Sport) — siehe useRequiredDataStatus.js,
+  // das auf dieses Event hört. Body-Daten sind der einzige aktuell
+  // registrierte Pflichtdaten-Fall; künftige Checks gegen andere Daten
+  // sollten nach demselben Muster ihr eigenes "gespeichert"-Event senden.
+  window.dispatchEvent(new Event('zuhause:required-data-refresh'));
 }

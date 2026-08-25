@@ -19,5 +19,14 @@ export function useRequiredDataStatus(session) {
 
   useEffect(() => { refresh(); }, [session]);
 
+  // Sofort neu prüfen, wenn irgendwo Pflichtdaten gespeichert wurden
+  // (siehe bodyProfileData.js saveBodyProfile) — sonst bliebe die
+  // Meldung bis zum nächsten vollständigen Neuladen der App stehen.
+  useEffect(() => {
+    function onDataChanged() { refresh(); }
+    window.addEventListener('zuhause:required-data-refresh', onDataChanged);
+    return () => window.removeEventListener('zuhause:required-data-refresh', onDataChanged);
+  }, [session]);
+
   return { warnings, refresh };
 }
