@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
-import { getMonthSum, getRecentMeasurements, getPeriodSummary, lastNDaysRange } from './lib/measurementsData';
+import {
+  getMonthSum, getRecentMeasurements, getPeriodSummary,
+  lastNDaysRange, todayRange, currentMonthRange,
+} from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
 import { getModule } from './modules';
 import { getSupabase } from './lib/supabaseClient';
@@ -67,6 +70,32 @@ async function loadTodayHabits() {
   return { total: due.length, done: doneIds.size, habits: due };
 }
 
+// Eine Zeilenliste für einen aggregierten Zeitraum (Heute/Woche/Monat) —
+// gemeinsam genutzt, damit die drei Abschnitte nicht dieselbe JSX
+// dreimal duplizieren.
+function renderPeriodRows(summary) {
+  return Object.entries(summary).map(([moduleId, data]) => {
+    const mod = getModule(moduleId);
+    let netEur = null;
+    for (const [key, m] of Object.entries(data.byMetric)) {
+      if (m.unit === 'EUR') {
+        const sign = key.endsWith('.expense') ? -1 : 1;
+        netEur = (netEur ?? 0) + sign * m.sum;
+      }
+    }
+    return (
+      <div className="hub-week-row" key={moduleId}>
+        <span className="hub-week-dot" style={{ background: mod?.color || 'var(--text-muted)' }} />
+        <span className="hub-week-name">{mod?.name || moduleId}</span>
+        <span className="hub-week-value">
+          {data.count} {data.count === 1 ? 'Eintrag' : 'Einträge'}
+          {netEur !== null && ` · ${formatEur(netEur)}`}
+        </span>
+      </div>
+    );
+  });
+}
+
 export default function Hub({ onOpenModule }) {
   const { session } = useAuth();
   const [status, setStatus]     = useState('laedt');
@@ -74,7 +103,10 @@ export default function Hub({ onOpenModule }) {
   const [expense, setExpense]   = useState(0);
   const [activity, setActivity] = useState([]);
   const [cacheZeit, setCacheZeit] = useState(null);
+  const [today, setToday] = useState({});
   const [week, setWeek] = useState({});
+  const [month, setMonth] = useState({});
+  const [periode, setPeriode] = useState('woche'); // 'woche' | 'monat'
 
   // Habits-Kachel
   const [habTotal, setHabTotal] = useState(0);
@@ -85,13 +117,17 @@ export default function Hub({ onOpenModule }) {
     setStatus('laedt');
     const now = new Date();
     try {
-      const { from, to } = lastNDaysRange(7);
-      const [inc, exp, recent, todayHab, weekSummary] = await Promise.all([
+      const heute = todayRange();
+      const woche = lastNDaysRange(7);
+      const monat = currentMonthRange();
+      const [inc, exp, recent, todayHab, todaySummary, weekSummary, monthSummary] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         getRecentMeasurements(session, 5),
         loadTodayHabits(),
-        getPeriodSummary(session, from, to),
+        getPeriodSummary(session, heute.from, heute.to),
+        getPeriodSummary(session, woche.from, woche.to),
+        getPeriodSummary(session, monat.from, monat.to),
       ]);
       setIncome(inc);
       setExpense(exp);
@@ -99,7 +135,9 @@ export default function Hub({ onOpenModule }) {
       setHabTotal(todayHab.total);
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
+      setToday(todaySummary);
       setWeek(weekSummary);
+      setMonth(monthSummary);
       writeCache({ income: inc, expense: exp, activity: recent });
       setStatus(recent.length > 0 || inc > 0 || exp > 0 || todayHab.total > 0 ? 'daten' : 'leer');
     } catch (e) {
@@ -247,32 +285,28 @@ export default function Hub({ onOpenModule }) {
             />
           )}
 
-          {Object.keys(week).length > 0 && (
+          {Object.keys(today).length > 0 && (
             <>
-              <div className="hub-section-label">Diese Woche</div>
-              <div className="hub-week-list">
-                {Object.entries(week).map(([moduleId, data]) => {
-                  const mod = getModule(moduleId);
-                  let netEur = null;
-                  for (const [key, m] of Object.entries(data.byMetric)) {
-                    if (m.unit === 'EUR') {
-                      const sign = key.endsWith('.expense') ? -1 : 1;
-                      netEur = (netEur ?? 0) + sign * m.sum;
-                    }
-                  }
-                  return (
-                    <div className="hub-week-row" key={moduleId}>
-                      <span className="hub-week-dot" style={{ background: mod?.color || 'var(--text-muted)' }} />
-                      <span className="hub-week-name">{mod?.name || moduleId}</span>
-                      <span className="hub-week-value">
-                        {data.count} {data.count === 1 ? 'Eintrag' : 'Einträge'}
-                        {netEur !== null && ` · ${formatEur(netEur)}`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <div className="hub-section-label">Heute</div>
+              <div className="hub-week-list">{renderPeriodRows(today)}</div>
             </>
+          )}
+
+          <div className="hub-period-header">
+            <div className="hub-section-label" style={{ marginBottom: 0 }}>
+              {periode === 'woche' ? 'Diese Woche' : 'Dieser Monat'}
+            </div>
+            <div className="mode-toggle hub-period-toggle">
+              <button className={periode === 'woche' ? 'active' : ''} onClick={() => setPeriode('woche')}>Woche</button>
+              <button className={periode === 'monat' ? 'active' : ''} onClick={() => setPeriode('monat')}>Monat</button>
+            </div>
+          </div>
+          {Object.keys(periode === 'woche' ? week : month).length > 0 ? (
+            <div className="hub-week-list">{renderPeriodRows(periode === 'woche' ? week : month)}</div>
+          ) : (
+            <div className="fin-row-empty" style={{ marginBottom: 24 }}>
+              {periode === 'woche' ? 'Noch keine Aktivität diese Woche.' : 'Noch keine Aktivität diesen Monat.'}
+            </div>
           )}
 
           <div className="hub-section-label">Aktivität</div>
