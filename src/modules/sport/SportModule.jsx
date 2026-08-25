@@ -13,7 +13,12 @@ import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
 import AuswertungView from './components/AuswertungView';
 
-registerRequirement('sport', async (session) => {
+// Körperdaten (body_profile) gehören core, nicht dem Sport-Modul — die
+// Lücke wird deshalb unter dem Key "profile" gemeldet (dort ist auch das
+// Formular), nicht unter "sport". Ernährung meldet sich mit einer eigenen
+// Spec unter demselben Key an — beide werden im Register automatisch
+// zusammengeführt (siehe core/lib/requiredDataRegistry.js).
+registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
