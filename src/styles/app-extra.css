@@ -261,6 +261,71 @@
 }
 .hub-lead-substats b { color: var(--text-primary); font-weight: 700; }
 
+/* ===== ProgressStat (core/components/ProgressStat.jsx) ===== */
+/* Wiederverwendbarer Fortschrittsbalken — Hub-Habits-Kachel und */
+/* GoalsSection nutzen dieselben Klassen, kein Doppel-Styling mehr. */
+
+.progress-stat-bar {
+  height: 8px;
+  background: var(--bg-card);
+  overflow: hidden;
+}
+.progress-stat-bar--sm { height: 5px; }
+.progress-stat-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.progress-stat-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: none;
+}
+.progress-stat-card--done { background: var(--accent-light); }
+
+.progress-stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.progress-stat-card-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.progress-stat-card-score { font-size: 15px; font-weight: 700; }
+.progress-stat-card-sep { color: var(--text-muted); margin: 0 2px; font-weight: 500; }
+.progress-stat-card-target { color: var(--text-muted); font-weight: 500; }
+.progress-stat-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+.progress-stat-inline { margin: 8px 0; }
+.progress-stat-inline-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.progress-stat-inline-count { font-weight: 600; color: var(--text-primary); }
+
+/* ===== Wochenbericht (Hub.jsx, "Diese Woche") ===== */
+
+.hub-week-list { margin-bottom: 24px; }
+.hub-week-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.hub-week-row:last-child { border-bottom: none; }
+.hub-week-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.hub-week-name { font-weight: 600; color: var(--text-primary); flex-shrink: 0; }
+.hub-week-value { color: var(--text-secondary); margin-left: auto; text-align: right; }
+
 .hub-divider {
   height: 1px;
   background: var(--border);
