@@ -326,6 +326,28 @@
 .hub-week-name { font-weight: 600; color: var(--text-primary); flex-shrink: 0; }
 .hub-week-value { color: var(--text-secondary); margin-left: auto; text-align: right; }
 
+/* ===== Pflichtfeld-Markierung (generisch, core/components/BodyProfileForm.jsx) ===== */
+/* Jedes künftige Formular kann dasselbe Muster nutzen: eine */
+/* "requiredFields"-Spec + diese beiden Klassen. */
+
+.required-mark {
+  color: var(--danger);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+}
+
+.form-group.required-empty input,
+.form-group.required-empty select {
+  border-color: var(--danger);
+}
+
+.segmented.required-empty button {
+  border-color: var(--danger);
+}
+
 .hub-period-header {
   display: flex;
   align-items: center;
