@@ -10,6 +10,7 @@ const METRIC_LABELS = {
   'finance.income':  'Einnahme',
   'finance.expense': 'Ausgabe',
   'hab.checkin':     'Gewohnheit erledigt',
+  'sport.workout':   'Training',
 };
 
 const CACHE_KEY = 'hub-cache-v1';
