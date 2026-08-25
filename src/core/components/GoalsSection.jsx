@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getGoals, saveGoal, deleteGoal, toggleMilestone } from '../lib/goalsData';
 import { IconClose } from './Icons';
+import ProgressStat from './ProgressStat';
 
 const EMPTY_FORM = { title: '', target_value: '', unit: '', target_date: '', milestones: [] };
 
@@ -94,16 +95,24 @@ export default function GoalsSection({ sourceModule }) {
             </div>
           )}
           {g.milestones?.length > 0 && (
-            <div className="goal-milestones">
-              {g.milestones.map((m, i) => (
-                <label className="goal-milestone" key={i}>
-                  <input type="checkbox" checked={!!m.done} onChange={() => flipMilestone(g, i)} />
-                  <span style={{ textDecoration: m.done ? 'line-through' : 'none', color: m.done ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-                    {m.label}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <>
+              <ProgressStat
+                variant="bar"
+                label="Meilensteine"
+                value={g.milestones.filter((m) => m.done).length}
+                target={g.milestones.length}
+              />
+              <div className="goal-milestones">
+                {g.milestones.map((m, i) => (
+                  <label className="goal-milestone" key={i}>
+                    <input type="checkbox" checked={!!m.done} onChange={() => flipMilestone(g, i)} />
+                    <span style={{ textDecoration: m.done ? 'line-through' : 'none', color: m.done ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                      {m.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>
           )}
         </div>
       ))}
