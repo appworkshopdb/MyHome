@@ -326,6 +326,18 @@
 .hub-week-name { font-weight: 600; color: var(--text-primary); flex-shrink: 0; }
 .hub-week-value { color: var(--text-secondary); margin-left: auto; text-align: right; }
 
+.hub-period-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.hub-period-toggle {
+  grid-template-columns: repeat(2, 1fr);
+  width: auto;
+}
+.hub-period-toggle button { padding: 5px 12px; font-size: 0.74rem; }
+
 .hub-divider {
   height: 1px;
   background: var(--border);
