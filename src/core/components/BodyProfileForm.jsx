@@ -1,4 +1,5 @@
 import SportsSelect from './SportsSelect';
+import { BODY_REQUIRED_FIELDS } from '../lib/bodyProfileData';
 
 export const GENDER = [{ key: 'm', label: 'Männlich' }, { key: 'w', label: 'Weiblich' }];
 export const ACTIVITY = [
@@ -23,25 +24,52 @@ const NUMBER_FIELDS = [
 
 // Körperdaten-Formular — lebt in core/, weil die Daten seit der
 // Migration in body_profile liegen und mehreren Modulen gehören
-// (aktuell Ernährung, künftig Sport). Rein präsentational: value/
-// onChange, keine eigene Datenanbindung.
-export default function BodyProfileForm({ value, onChange }) {
+// (aktuell Ernährung, Sport). Rein präsentational: value/onChange,
+// keine eigene Datenanbindung.
+//
+// PFLICHTFELD-MARKIERUNG (generisches Muster, für jedes künftige
+// Formular wiederverwendbar): requiredFields nimmt eine Spec im
+// getMissingFields-Format ([{key,label}], siehe core/lib/requiredData.js)
+// entgegen. Ist ein Feld darin gelistet UND aktuell leer, wird es rot
+// umrandet + "*Pflicht" daneben angezeigt — automatisch, ohne dass
+// jedes Feld einzeln markiert werden muss. Standard hier:
+// BODY_REQUIRED_FIELDS (Ernährungs-Sicht, ohne Trainingsfokus).
+// core/Profile.jsx übergibt eine erweiterte Spec inkl. Trainingsfokus,
+// weil das die allgemeine Seite für ALLE Module ist — core darf dafür
+// aber nicht direkt SPORT_REQUIRED_FIELDS aus modules/sport importieren
+// (Architektur-Regel), deshalb dort eine manuell synchron zu haltende
+// Kopie, siehe Kommentar in Profile.jsx.
+export default function BodyProfileForm({ value, onChange, requiredFields = BODY_REQUIRED_FIELDS }) {
   function set(key, val) {
     onChange({ ...value, [key]: val });
+  }
+
+  function isEmptyValue(key) {
+    const v = value[key];
+    return v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0);
+  }
+  function flagged(key) {
+    return requiredFields.some((f) => f.key === key) && isEmptyValue(key);
+  }
+  function mark(key) {
+    return flagged(key) ? <span className="required-mark">*Pflicht</span> : null;
   }
 
   return (
     <>
       <div className="card-title" style={{ marginTop: 4 }}>Körperdaten</div>
-      <div className="segmented cols-2" style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+        Geschlecht{mark('gender')}
+      </label>
+      <div className={`segmented cols-2 ${flagged('gender') ? 'required-empty' : ''}`} style={{ marginTop: 6, marginBottom: 12 }}>
         {GENDER.map((g) => (
           <button key={g.key} className={value.gender === g.key ? 'active' : ''} onClick={() => set('gender', g.key)}>{g.label}</button>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
         {NUMBER_FIELDS.map(([key, label, unit, min, max]) => (
-          <div className="form-group" key={key}>
-            <label>{label} ({unit})</label>
+          <div className={`form-group ${flagged(key) ? 'required-empty' : ''}`} key={key}>
+            <label>{label} ({unit}){mark(key)}</label>
             <input
               type="number" min={min} max={max} style={{ textAlign: 'center' }}
               value={value[key] || ''}
@@ -53,24 +81,24 @@ export default function BodyProfileForm({ value, onChange }) {
 
       <div className="card-title">Aktivität &amp; Ziel</div>
       <div className="form-group" style={{ marginBottom: 10 }}>
-        <label>Aktivitätslevel</label>
-        <div className="segmented cols-3">
+        <label>Aktivitätslevel{mark('activity')}</label>
+        <div className={`segmented cols-3 ${flagged('activity') ? 'required-empty' : ''}`}>
           {ACTIVITY.map((a) => (
             <button key={a.key} className={value.activity === a.key ? 'active' : ''} onClick={() => set('activity', a.key)}>{a.label}</button>
           ))}
         </div>
       </div>
       <div className="form-group" style={{ marginBottom: 10 }}>
-        <label>Ziel</label>
-        <div className="segmented cols-4">
+        <label>Ziel{mark('goal')}</label>
+        <div className={`segmented cols-4 ${flagged('goal') ? 'required-empty' : ''}`}>
           {GOAL.map((g) => (
             <button key={g.key} className={value.goal === g.key ? 'active' : ''} onClick={() => set('goal', g.key)}>{g.label}</button>
           ))}
         </div>
       </div>
       <div className="form-group" style={{ marginBottom: 10 }}>
-        <label>Trainingsfokus</label>
-        <div className="segmented cols-3">
+        <label>Trainingsfokus{mark('training_focus')}</label>
+        <div className={`segmented cols-3 ${flagged('training_focus') ? 'required-empty' : ''}`}>
           {TRAINING_FOCUS.map((f) => (
             <button key={f.key} className={value.training_focus === f.key ? 'active' : ''} onClick={() => set('training_focus', f.key)}>{f.label}</button>
           ))}
