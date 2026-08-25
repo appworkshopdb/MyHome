@@ -127,6 +127,17 @@ export default function Profile({ onOpenModule }) {
     }
   }
 
+  async function updateTiming(field, value) {
+    const next = { ...prefs, [field]: value };
+    setPrefs(next);
+    try {
+      await saveNotificationPrefs(session, next);
+    } catch (e) {
+      showToast('Konnte nicht gespeichert werden');
+      console.error(e);
+    }
+  }
+
   async function handleBodyChange(next) {
     setBodyProfile(next);
     try {
@@ -229,7 +240,43 @@ export default function Profile({ onOpenModule }) {
                 </span>
               </label>
             ))}
-            <button className="btn btn-secondary" style={{ marginTop: 8 }} disabled={pushBusy} onClick={handleDisablePush}>
+
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label>Wunschstunde</label>
+                <select value={prefs.preferred_hour} onChange={(e) => updateTiming('preferred_hour', Number(e.target.value))}>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00 Uhr</option>
+                  ))}
+                </select>
+                <p style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Zu welcher vollen Stunde du benachrichtigt werden möchtest (deutsche Zeit).
+                </p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group">
+                  <label>Ruhezeit von</label>
+                  <select value={prefs.quiet_start} onChange={(e) => updateTiming('quiet_start', Number(e.target.value))}>
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Ruhezeit bis</label>
+                  <select value={prefs.quiet_end} onChange={(e) => updateTiming('quiet_end', Number(e.target.value))}>
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p style={{ marginTop: 6, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                In diesem Zeitfenster kommt nie eine Benachrichtigung, unabhängig von der Wunschstunde.
+              </p>
+            </div>
+
+            <button className="btn btn-secondary" style={{ marginTop: 14 }} disabled={pushBusy} onClick={handleDisablePush}>
               Deaktivieren
             </button>
           </>
