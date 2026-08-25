@@ -19,7 +19,12 @@ import { DEFAULT_PROFILE } from './lib/nutrition';
 // (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
 // dieser Datei, unabhängig davon, ob der Hub oder das Modul gerade
 // angezeigt wird. Der Hub kennt dadurch "Ernährung" nicht direkt.
-registerRequirement('nutrition', async (session) => {
+// Körperdaten (body_profile) gehören core, nicht dem Ernährungs-Modul —
+// die Lücke wird deshalb unter dem Key "profile" gemeldet (dort ist auch
+// das Formular), nicht unter "nutrition". Sport meldet sich mit einer
+// eigenen Spec unter demselben Key an — beide werden im Register
+// automatisch zusammengeführt (siehe core/lib/requiredDataRegistry.js).
+registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(BODY_REQUIRED_FIELDS, body);
 });
