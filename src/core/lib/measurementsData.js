@@ -53,6 +53,18 @@ export function lastNDaysRange(days) {
   return { from: fmt(from), to: fmt(to) };
 }
 
+// Heutiges Datum als von/bis (gleicher Tag), für die "Heute"-Übersicht.
+export function todayRange() {
+  const today = new Date().toISOString().split('T')[0];
+  return { from: today, to: today };
+}
+
+// Aktueller Kalendermonat als von/bis, für den "Monat"-Filter im Hub.
+export function currentMonthRange() {
+  const now = new Date();
+  return monthRange(now.getFullYear(), now.getMonth() + 1);
+}
+
 // Aggregiert measurements über einen Zeitraum, gruppiert nach
 // source_module und darunter nach metric_key — generische Basis für
 // Wochen-/Monatsberichte. Bleibt bewusst "dumm" (keine .expense/
