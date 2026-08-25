@@ -9,6 +9,12 @@ const DEFAULT_CATEGORIES = {
   weekly_recap: true,
 };
 
+const DEFAULT_TIMING = {
+  preferred_hour: 20,
+  quiet_start: 0,
+  quiet_end: 6,
+};
+
 function ownerId(session) {
   return session.user.id;
 }
@@ -79,19 +85,39 @@ export async function unsubscribeFromPush(session) {
   }
 }
 
+// Gibt Kategorien UND Timing (Wunschstunde/Quiet Hours) zusammen zurück
+// — die UI (Profile.jsx) behandelt das als ein Einstellungs-Objekt.
 export async function getNotificationPrefs(session) {
   const { data, error } = await getSupabase()
     .from('notification_prefs')
-    .select('categories')
+    .select('categories, preferred_hour, quiet_start, quiet_end')
     .eq('owner_id', ownerId(session))
     .maybeSingle();
   if (error) throw error;
-  return { ...DEFAULT_CATEGORIES, ...(data?.categories || {}) };
+  return {
+    ...DEFAULT_CATEGORIES,
+    ...(data?.categories || {}),
+    preferred_hour: data?.preferred_hour ?? DEFAULT_TIMING.preferred_hour,
+    quiet_start: data?.quiet_start ?? DEFAULT_TIMING.quiet_start,
+    quiet_end: data?.quiet_end ?? DEFAULT_TIMING.quiet_end,
+  };
 }
 
-export async function saveNotificationPrefs(session, categories) {
-  const { error } = await getSupabase()
-    .from('notification_prefs')
-    .upsert({ owner_id: ownerId(session), categories, updated_at: new Date().toISOString() }, { onConflict: 'owner_id' });
+// prefs = komplettes Objekt aus getNotificationPrefs (Kategorien + Timing
+// gemischt) — wird hier wieder in categories-jsonb + die drei separaten
+// Spalten aufgeteilt, wie es notification_prefs erwartet.
+export async function saveNotificationPrefs(session, prefs) {
+  const { preferred_hour, quiet_start, quiet_end, ...categories } = prefs;
+  const { error } = await getSupabase().from('notification_prefs').upsert(
+    {
+      owner_id: ownerId(session),
+      categories,
+      preferred_hour,
+      quiet_start,
+      quiet_end,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'owner_id' }
+  );
   if (error) throw error;
 }
