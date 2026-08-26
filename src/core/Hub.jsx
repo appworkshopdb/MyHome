@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
-import {
-  getMonthSum, getRecentMeasurements, getPeriodSummary,
-  lastNDaysRange, todayRange, currentMonthRange,
-} from './lib/measurementsData';
+import { getMonthSum } from './lib/measurementsData';
 import { formatEur, formatRelativeDate } from './lib/format';
-import { getModule } from './modules';
 import { getSupabase } from './lib/supabaseClient';
 import ProgressStat from './components/ProgressStat';
 
-const METRIC_LABELS = {
-  'finance.income':  'Einnahme',
-  'finance.expense': 'Ausgabe',
-  'hab.checkin':     'Gewohnheit erledigt',
-  'sport.workout':   'Training',
-};
-
-const CACHE_KEY = 'hub-cache-v1';
+const CACHE_KEY = 'hub-cache-v2';
 
 function readCache() {
   try {
@@ -28,28 +17,23 @@ function writeCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, savedAt: new Date().toISOString() })); } catch { /* egal */ }
 }
 
-// Habits-Tagesdaten direkt aus hab_habits + hab_entries laden
-// (core darf nicht aus modules/ importieren — eigene Abfrage hier)
+// Habits-Tagesdaten — core darf nicht aus modules/ importieren
 async function loadTodayHabits() {
   const sb = getSupabase();
   const todayStr = new Date().toISOString().split('T')[0];
-
   const { data: habits, error: hErr } = await sb
     .from('hab_habits')
     .select('id, name, icon, active, frequency, frequency_days, target_count, created_at, deleted_at')
     .is('deleted_at', null)
     .eq('active', true);
   if (hErr) throw hErr;
-
   const { data: entries, error: eErr } = await sb
     .from('hab_entries')
     .select('habit_id, count, logged_on, deleted_at')
     .eq('logged_on', todayStr)
     .is('deleted_at', null);
   if (eErr) throw eErr;
-
-  // Welche Habits sind heute fällig?
-  const wd = (new Date().getDay() + 6) % 7; // Mo=0..So=6
+  const wd = (new Date().getDay() + 6) % 7;
   const due = (habits ?? []).filter((h) => {
     if (new Date(h.created_at).toISOString().split('T')[0] > todayStr) return false;
     if (h.frequency === 'daily') return true;
@@ -57,7 +41,6 @@ async function loadTodayHabits() {
     if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
     return true;
   });
-
   const doneIds = new Set(
     (entries ?? [])
       .filter((e) => {
@@ -66,34 +49,50 @@ async function loadTodayHabits() {
       })
       .map((e) => e.habit_id)
   );
-
   return { total: due.length, done: doneIds.size, habits: due };
 }
 
-// Eine Zeilenliste für einen aggregierten Zeitraum (Heute/Woche/Monat) —
-// gemeinsam genutzt, damit die drei Abschnitte nicht dieselbe JSX
-// dreimal duplizieren.
-function renderPeriodRows(summary) {
-  return Object.entries(summary).map(([moduleId, data]) => {
-    const mod = getModule(moduleId);
-    let netEur = null;
-    for (const [key, m] of Object.entries(data.byMetric)) {
-      if (m.unit === 'EUR') {
-        const sign = key.endsWith('.expense') ? -1 : 1;
-        netEur = (netEur ?? 0) + sign * m.sum;
-      }
-    }
-    return (
-      <div className="hub-week-row" key={moduleId}>
-        <span className="hub-week-dot" style={{ background: mod?.color || 'var(--text-muted)' }} />
-        <span className="hub-week-name">{mod?.name || moduleId}</span>
-        <span className="hub-week-value">
-          {data.count} {data.count === 1 ? 'Eintrag' : 'Einträge'}
-          {netEur !== null && ` · ${formatEur(netEur)}`}
-        </span>
-      </div>
-    );
-  });
+// Heutiges Training aus spo_workouts — core darf nicht aus modules/ importieren
+async function loadTodaySport() {
+  const sb = getSupabase();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const { data, error } = await sb
+    .from('spo_workouts')
+    .select('id, type_key, title, duration_min, status, is_rest')
+    .eq('occurred_on', todayStr)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Offene Fixkosten diesen Monat aus fin_entries — core darf nicht aus modules/ importieren
+async function loadOpenFixCosts() {
+  const sb = getSupabase();
+  const now = new Date();
+  const { data, error } = await sb
+    .from('fin_entries')
+    .select('id, name, amount, category, paid')
+    .eq('year', now.getFullYear())
+    .eq('month', now.getMonth() + 1)
+    .eq('paid', false)
+    .in('category', ['fixkosten', 'sonstige_ausgaben'])
+    .is('deleted_at', null)
+    .order('amount', { ascending: false })
+    .limit(3);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// Lesbare Trainings-Bezeichnung aus type_key — ohne Import aus modules/
+function sportLabel(w) {
+  if (w.is_rest) return 'Restday';
+  if (w.title) return w.title;
+  if (!w.type_key || w.type_key === 'sonstiges') return 'Training';
+  // type_key kann 'strength.push', 'cardio.run' oder 'sport.fussball' sein
+  const parts = w.type_key.split('.');
+  const last = parts[parts.length - 1];
+  return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
 export default function Hub({ onOpenModule }) {
@@ -101,45 +100,35 @@ export default function Hub({ onOpenModule }) {
   const [status, setStatus]     = useState('laedt');
   const [income, setIncome]     = useState(0);
   const [expense, setExpense]   = useState(0);
-  const [activity, setActivity] = useState([]);
   const [cacheZeit, setCacheZeit] = useState(null);
-  const [today, setToday] = useState({});
-  const [week, setWeek] = useState({});
-  const [month, setMonth] = useState({});
-  const [periode, setPeriode] = useState('woche'); // 'woche' | 'monat'
 
-  // Habits-Kachel
   const [habTotal, setHabTotal] = useState(0);
   const [habDone, setHabDone]   = useState(0);
   const [habHabits, setHabHabits] = useState([]);
+
+  const [todaySport, setTodaySport] = useState([]);  // [] = noch nicht geladen
+  const [openFix, setOpenFix]   = useState([]);      // offene Fixkosten
 
   const load = useCallback(async () => {
     setStatus('laedt');
     const now = new Date();
     try {
-      const heute = todayRange();
-      const woche = lastNDaysRange(7);
-      const monat = currentMonthRange();
-      const [inc, exp, recent, todayHab, todaySummary, weekSummary, monthSummary] = await Promise.all([
+      const [inc, exp, todayHab, sport, fix] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
-        getRecentMeasurements(session, 5),
         loadTodayHabits(),
-        getPeriodSummary(session, heute.from, heute.to),
-        getPeriodSummary(session, woche.from, woche.to),
-        getPeriodSummary(session, monat.from, monat.to),
+        loadTodaySport(),
+        loadOpenFixCosts(),
       ]);
       setIncome(inc);
       setExpense(exp);
-      setActivity(recent);
       setHabTotal(todayHab.total);
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
-      setToday(todaySummary);
-      setWeek(weekSummary);
-      setMonth(monthSummary);
-      writeCache({ income: inc, expense: exp, activity: recent });
-      setStatus(recent.length > 0 || inc > 0 || exp > 0 || todayHab.total > 0 ? 'daten' : 'leer');
+      setTodaySport(sport);
+      setOpenFix(fix);
+      writeCache({ income: inc, expense: exp });
+      setStatus(inc > 0 || exp > 0 || todayHab.total > 0 || sport.length > 0 ? 'daten' : 'leer');
     } catch (e) {
       console.error('[Hub] Laden fehlgeschlagen:', e);
       setStatus('fehler');
@@ -157,16 +146,20 @@ export default function Hub({ onOpenModule }) {
     if (!cached) return;
     setIncome(cached.income);
     setExpense(cached.expense);
-    setActivity(cached.activity);
     setCacheZeit(cached.savedAt);
     setStatus('veraltet');
   }
 
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
-
   const habAllDone = habTotal > 0 && habDone === habTotal;
 
+  // Sport-Auswertung für heute
+  const restToday   = todaySport.some((w) => w.is_rest);
+  const doneToday   = todaySport.filter((w) => !w.is_rest && w.status === 'done');
+  const plannedToday = todaySport.filter((w) => !w.is_rest && w.status === 'planned');
+
+  // ---- Ladestate ----
   if (status === 'laedt') {
     return (
       <div className="hub">
@@ -191,6 +184,7 @@ export default function Hub({ onOpenModule }) {
     );
   }
 
+  // ---- Fehlerstate ----
   if (status === 'fehler') {
     return (
       <div className="hub">
@@ -256,19 +250,25 @@ export default function Hub({ onOpenModule }) {
 
       {(status === 'daten' || status === 'veraltet') && (
         <>
-          {/* Finanz-Leitzahl */}
-          <div className="hub-eyebrow">Saldo diesen Monat</div>
-          <div className="hub-lead-stat" style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}>
+          {/* ── Finanz-Leitzahl ── */}
+          <div className="hub-eyebrow">Saldo {monatsname}</div>
+          <div
+            className="hub-lead-stat"
+            style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}
+          >
             {formatEur(saldo)}
           </div>
-          <div className="hub-lead-substats" style={{ color: status === 'veraltet' ? 'var(--text-muted)' : undefined }}>
+          <div
+            className="hub-lead-substats"
+            style={{ color: status === 'veraltet' ? 'var(--text-muted)' : undefined }}
+          >
             <span>Ein <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(income)}</b></span>
             <span>Aus <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(expense)}</b></span>
           </div>
 
           <div className="hub-divider" />
 
-          {/* Habits-Kachel — nur anzeigen wenn Habits vorhanden */}
+          {/* ── Gewohnheiten ── */}
           {habTotal > 0 && (
             <ProgressStat
               variant="card"
@@ -285,55 +285,52 @@ export default function Hub({ onOpenModule }) {
             />
           )}
 
-          {Object.keys(today).length > 0 && (
-            <>
-              <div className="hub-section-label">Heute</div>
-              <div className="hub-week-list">{renderPeriodRows(today)}</div>
-            </>
-          )}
+          {/* ── Sport heute ── */}
+          <button className="hub-quick-card" onClick={() => onOpenModule('sport')}>
+            <div className="hub-quick-card-label">Sport heute</div>
+            <div className="hub-quick-card-value">
+              {restToday ? (
+                <span className="hub-quick-muted">Restday</span>
+              ) : doneToday.length > 0 ? (
+                <>
+                  {doneToday.map((w, i) => (
+                    <span key={w.id}>
+                      {i > 0 && <span className="hub-quick-sep"> · </span>}
+                      {sportLabel(w)}
+                      {w.duration_min ? ` ${w.duration_min} min` : ''}
+                      <span className="hub-quick-done"> ✓</span>
+                    </span>
+                  ))}
+                </>
+              ) : plannedToday.length > 0 ? (
+                <>
+                  {plannedToday.map((w, i) => (
+                    <span key={w.id}>
+                      {i > 0 && <span className="hub-quick-sep"> · </span>}
+                      {sportLabel(w)}
+                      {w.duration_min ? ` ${w.duration_min} min` : ''}
+                      <span className="hub-quick-planned"> geplant</span>
+                    </span>
+                  ))}
+                </>
+              ) : (
+                <span className="hub-quick-muted">Restday</span>
+              )}
+            </div>
+          </button>
 
-          <div className="hub-period-header">
-            <div className="hub-section-label" style={{ marginBottom: 0 }}>
-              {periode === 'woche' ? 'Diese Woche' : 'Dieser Monat'}
-            </div>
-            <div className="mode-toggle hub-period-toggle">
-              <button className={periode === 'woche' ? 'active' : ''} onClick={() => setPeriode('woche')}>Woche</button>
-              <button className={periode === 'monat' ? 'active' : ''} onClick={() => setPeriode('monat')}>Monat</button>
-            </div>
-          </div>
-          {Object.keys(periode === 'woche' ? week : month).length > 0 ? (
-            <div className="hub-week-list">{renderPeriodRows(periode === 'woche' ? week : month)}</div>
-          ) : (
-            <div className="fin-row-empty" style={{ marginBottom: 24 }}>
-              {periode === 'woche' ? 'Noch keine Aktivität diese Woche.' : 'Noch keine Aktivität diesen Monat.'}
-            </div>
+          {/* ── Offene Fixkosten ── */}
+          {openFix.length > 0 && (
+            <button className="hub-quick-card" onClick={() => onOpenModule('finance')}>
+              <div className="hub-quick-card-label">Offen diesen Monat</div>
+              {openFix.map((f) => (
+                <div key={f.id} className="hub-fix-row">
+                  <span className="hub-fix-name">{f.name}</span>
+                  <span className="hub-fix-amount">{formatEur(f.amount)}</span>
+                </div>
+              ))}
+            </button>
           )}
-
-          <div className="hub-section-label">Aktivität</div>
-          <div className="hub-activity-list">
-            {activity
-              .filter((m) => m.metric_key !== 'hab.checkin') // Habit-Check-ins nicht in der Aktivitätsliste
-              .map((m) => {
-                const mod = getModule(m.source_module);
-                const isIncome = m.metric_key.endsWith('.income');
-                const signedValue = m.metric_key.endsWith('.expense') ? -Math.abs(m.value) : m.value;
-                return (
-                  <div className="hub-activity-row" key={m.id}>
-                    <div>
-                      <div className="hub-activity-title">{METRIC_LABELS[m.metric_key] || m.metric_key}</div>
-                      <div className="hub-activity-time">{mod?.name || m.source_module} · {formatRelativeDate(m.created_at)}</div>
-                    </div>
-                    <div className="hub-activity-value">
-                      {isIncome && <span className="hub-activity-value-dot" />}
-                      {m.unit === 'EUR' ? formatEur(signedValue) : `${signedValue} ${m.unit}`}
-                    </div>
-                  </div>
-                );
-              })}
-            {activity.filter((m) => m.metric_key !== 'hab.checkin').length === 0 && (
-              <div className="fin-row-empty">Noch keine Aktivität.</div>
-            )}
-          </div>
         </>
       )}
     </div>
