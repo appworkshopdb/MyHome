@@ -786,3 +786,157 @@
   color: var(--text-secondary);
   margin-top: 2px;
 }
+
+/* ─── Laden-Filter (Pills) ────────────────────────────────── */
+
+.sho-store-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 0 4px;
+  margin-bottom: 4px;
+}
+
+.sho-store-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s, color 0.1s;
+}
+
+.sho-store-pill.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.sho-store-pill--mgr {
+  margin-left: auto;
+  border-color: transparent;
+  color: var(--text-muted);
+  font-size: 1rem;
+  padding: 2px 6px;
+}
+
+/* ─── Laden-Manager ───────────────────────────────────────── */
+
+.sho-store-mgr {
+  background: var(--bg-card);
+  padding: 10px 12px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sho-store-mgr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-store-mgr-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.sho-store-add-hint {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-family: var(--font);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0 4px;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Store-Label auf Artikel-Zeile ──────────────────────── */
+
+.sho-item-store-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--accent);
+  padding: 1px 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── Store-Zuweiser Button + Dropdown ───────────────────── */
+
+.sho-item-store-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  opacity: 0.4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-item-row:hover .sho-item-store-btn,
+.sho-item-row:focus-within .sho-item-store-btn {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .sho-item-store-btn { opacity: 0.6; }
+}
+
+.sho-item-store-dropdown {
+  position: absolute;
+  right: 0;
+  bottom: 32px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-strong);
+  z-index: 200;
+  min-width: 140px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.sho-item-store-opt {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-item-store-opt:last-child {
+  border-bottom: none;
+}
+
+.sho-item-store-opt.active {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.sho-item-store-opt:active {
+  background: var(--bg-card);
+}
