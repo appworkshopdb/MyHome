@@ -179,6 +179,10 @@ const STORE_NAMES = [
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
   const [items,            setItems]            = useState([]);
+  const [stores,           setStores]           = useState([]);
+  const [activeStore,      setActiveStore]      = useState(null);
+  const [showStoreMgr,     setShowStoreMgr]     = useState(false);
+  const [newStore,         setNewStore]         = useState('');
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
   const [input,            setInput]            = useState('');
