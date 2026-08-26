@@ -74,12 +74,53 @@ export async function deleteWorkout(id) {
 }
 
 // ---------------------------------------------------------------------
+// Einheiten-Bibliothek (spo_units)
+// ---------------------------------------------------------------------
+// Wiederverwendbare einzelne Trainingseinheiten (z.B. "Arme", "Legday")
+// — nicht zu verwechseln mit spo_plans, das jetzt MEHRERE Einheiten zu
+// einer Mehrtages-Vorlage zusammensetzt.
+
+export async function getUnits(session) {
+  const { data, error } = await getSupabase()
+    .from('spo_units')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .is('deleted_at', null)
+    .order('title', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function saveUnit(session, unit) {
+  const payload = {
+    ...(unit.id ? { id: unit.id } : {}),
+    owner_id: ownerId(session),
+    title: unit.title,
+    type_key: unit.type_key || null,
+    duration_min: unit.duration_min ?? null,
+  };
+  const { data, error } = await getSupabase().from('spo_units').upsert(payload).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteUnit(id) {
+  const { error } = await getSupabase()
+    .from('spo_units')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------
 // Trainingsplan-Vorlagen (spo_plans + spo_plan_items)
 // ---------------------------------------------------------------------
 // Eine Vorlage ist eine Folge von TAGEN beliebiger Länge (day_index 0..n),
-// jeder Tag entweder eine Einheit oder ein Ruhetag. Die Länge ergibt
-// sich aus der Anzahl der Tage, nicht aus einer festen Wochenstruktur —
-// dadurch sind 5-, 6-, 8-Tage-Rhythmen gleichermaßen möglich.
+// jeder Tag entweder eine Einheit (referenziert per unit_id, Titel/Typ/
+// Dauer zusätzlich als Snapshot — ein späteres Bearbeiten der Einheit
+// verändert dadurch keine bereits gespeicherten Pläne) oder ein
+// Ruhetag. Die Länge ergibt sich aus der Anzahl der Tage, nicht aus
+// einer festen Wochenstruktur.
 
 export async function getPlans(session) {
   const { data, error } = await getSupabase()
@@ -131,6 +172,7 @@ export async function savePlan(session, plan, items) {
         owner_id: owner,
         plan_id: savedPlan.id,
         day_index: index,
+        unit_id: item.unit_id ?? null,
         title: item.title,
         type_key: item.type_key ?? null,
         duration_min: item.duration_min ?? null,
