@@ -11,12 +11,48 @@ import {
 
 const DEFAULT_ICONS = ['🛒', '🥦', '🏠', '🎉', '💊', '🐾', '🧹', '📦'];
 
+// Deutsche Supermärkte & Discounter — nach Bekanntheitsgrad geordnet
+const STORES = [
+  // Discounter
+  { group: 'Discounter',    name: 'Aldi Nord' },
+  { group: 'Discounter',    name: 'Aldi Süd' },
+  { group: 'Discounter',    name: 'Lidl' },
+  { group: 'Discounter',    name: 'Penny' },
+  { group: 'Discounter',    name: 'Netto Marken-Discount' },
+  { group: 'Discounter',    name: 'Netto (Edeka)' },
+  { group: 'Discounter',    name: 'Norma' },
+  // Supermärkte
+  { group: 'Supermarkt',    name: 'REWE' },
+  { group: 'Supermarkt',    name: 'Edeka' },
+  { group: 'Supermarkt',    name: 'Tegut' },
+  { group: 'Supermarkt',    name: 'Hit' },
+  // SB-Warenhäuser
+  { group: 'Warenhaus',     name: 'Kaufland' },
+  { group: 'Warenhaus',     name: 'Globus' },
+  // Bio
+  { group: 'Bio',           name: "Denn's Biomarkt" },
+  { group: 'Bio',           name: 'Alnatura' },
+  { group: 'Bio',           name: 'Basic' },
+  // Drogerie
+  { group: 'Drogerie',      name: 'dm' },
+  { group: 'Drogerie',      name: 'Rossmann' },
+  { group: 'Drogerie',      name: 'Müller' },
+  // Sonstiges
+  { group: 'Sonstiges',     name: 'Wochenmarkt' },
+  { group: 'Sonstiges',     name: 'Metzger' },
+  { group: 'Sonstiges',     name: 'Bäcker' },
+  { group: 'Sonstiges',     name: 'Asia-Shop' },
+  { group: 'Sonstiges',     name: 'Online-Lieferung' },
+];
+
 export default function ListView({ lists, onListsChange, onOpenList }) {
   const [showForm,    setShowForm]    = useState(false);  // Neue Liste
   const [name,        setName]        = useState('');
   const [icon,        setIcon]        = useState('🛒');
   const [dueDate,     setDueDate]     = useState('');
   const [dueTime,     setDueTime]     = useState('');
+  const [store,       setStore]       = useState('');       // gewählter Laden (Name oder '__custom')
+  const [storeCustom, setStoreCustom] = useState('');       // freier Text wenn eigener Laden
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
@@ -50,9 +86,18 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     if (!trimmed) return;
     setSaving(true); setError(null);
     try {
-      await saveList({ name: trimmed, icon, due_date: dueDate || null, due_time: dueTime || null });
+      const storeName = store === '__custom' ? storeCustom.trim() : store || null;
+      await saveList({
+        name:         trimmed,
+        icon,
+        due_date:     dueDate     || null,
+        due_time:     dueTime     || null,
+        store_name:   storeName   || null,
+        store_custom: store === '__custom' ? storeCustom.trim() || null : null,
+      });
       await onListsChange();
-      setName(''); setIcon('🛒'); setDueDate(''); setDueTime(''); setShowForm(false);
+      setName(''); setIcon('🛒'); setDueDate(''); setDueTime('');
+      setStore(''); setStoreCustom(''); setShowForm(false);
     } catch { setError('Speichern fehlgeschlagen.'); }
     finally { setSaving(false); }
   }
@@ -305,10 +350,47 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
             </div>
           </div>
 
+          {/* Laden-Auswahl */}
+          <div className="sho-due-field">
+            <label className="sho-due-label">Laden</label>
+            <select
+              value={store}
+              onChange={(e) => setStore(e.target.value)}
+              className="sho-unit-select"
+            >
+              <option value="">Kein Laden / Egal</option>
+              {Object.entries(
+                STORES.reduce((acc, s) => {
+                  if (!acc[s.group]) acc[s.group] = [];
+                  acc[s.group].push(s.name);
+                  return acc;
+                }, {})
+              ).map(([group, names]) => (
+                <optgroup key={group} label={group}>
+                  {names.map((n) => <option key={n} value={n}>{n}</option>)}
+                </optgroup>
+              ))}
+              <optgroup label="Eigener Laden">
+                <option value="__custom">+ Eigener Laden …</option>
+              </optgroup>
+            </select>
+            {store === '__custom' && (
+              <input
+                type="text"
+                placeholder="Name des Ladens"
+                value={storeCustom}
+                onChange={(e) => setStoreCustom(e.target.value)}
+                style={{ marginTop: 6 }}
+                maxLength={60}
+                autoFocus
+              />
+            )}
+          </div>
+
           <div className="sho-new-list-actions">
             <button
               className="btn btn-secondary"
-              onClick={() => { setShowForm(false); setName(''); setDueDate(''); setDueTime(''); setError(null); }}
+              onClick={() => { setShowForm(false); setName(''); setDueDate(''); setDueTime(''); setStore(''); setStoreCustom(''); setError(null); }}
             >
               Abbrechen
             </button>
