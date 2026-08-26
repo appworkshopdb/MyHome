@@ -419,7 +419,7 @@
   margin-bottom: 2px;
 }
 .hub-todo-toggle { flex: 1; }
-.hub-todo-toggle button { padding: 5px 14px; font-size: 0.74rem; }
+.hub-todo-toggle button { padding: 5px 0; font-size: 0.74rem; flex: 1; }
 .hub-todo-badge {
   display: inline-flex;
   align-items: center;
@@ -512,9 +512,13 @@
 }
 .hub-todo-title.important { font-weight: 700; }
 .hub-todo-prio {
-  color: var(--accent);
-  margin-right: 4px;
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 11px;
   font-weight: 700;
+  color: var(--text-secondary);
+  vertical-align: middle;
+  line-height: 1;
 }
 .hub-todo-meta {
   display: block;
