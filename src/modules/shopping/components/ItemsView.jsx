@@ -332,6 +332,37 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
+  // ─── Laden-Verwaltung ────────────────────────────────────
+  async function handleAddStore() {
+    const name = newStore.trim();
+    if (!name || newStore === '__custom') return;
+    try {
+      await saveListStore(list.id, name);
+      await fetchStores();
+      setNewStore('');
+    } catch { setError('Laden konnte nicht gespeichert werden.'); }
+  }
+
+  async function handleDeleteStore(storeId) {
+    try {
+      await deleteListStore(storeId);
+      if (activeStore === storeId) setActiveStore(null);
+      await fetchStores();
+      await fetchItems();
+    } catch { setError('Laden konnte nicht gelöscht werden.'); }
+  }
+
+  async function handleAssignStore(itemId, listStoreId) {
+    try {
+      await assignItemToStore(itemId, listStoreId || null);
+      setItems((prev) => prev.map((i) => {
+        if (i.id !== itemId) return i;
+        const store = stores.find((s) => s.id === listStoreId);
+        return { ...i, list_store_id: listStoreId || null, store_name: store?.store_name ?? null };
+      }));
+    } catch { setError('Zuweisung fehlgeschlagen.'); }
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
     if (e.key === 'Escape') { setSuggestions([]); }
@@ -667,37 +698,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, stores, onAssign }) {
   async function commitEdit() {
     setEditing(false);
     await onEdit(item.id, qty, unit);
-  }
-
-  // ─── Laden-Verwaltung ────────────────────────────────────
-  async function handleAddStore() {
-    const name = newStore.trim();
-    if (!name) return;
-    try {
-      await saveListStore(list.id, name);
-      await fetchStores();
-      setNewStore('');
-    } catch { setError('Laden konnte nicht gespeichert werden.'); }
-  }
-
-  async function handleDeleteStore(storeId) {
-    try {
-      await deleteListStore(storeId);
-      if (activeStore === storeId) setActiveStore(null);
-      await fetchStores();
-      await fetchItems(); // store_name auf Items aktualisieren
-    } catch { setError('Laden konnte nicht gelöscht werden.'); }
-  }
-
-  async function handleAssignStore(itemId, listStoreId) {
-    try {
-      await assignItemToStore(itemId, listStoreId || null);
-      setItems((prev) => prev.map((i) => {
-        if (i.id !== itemId) return i;
-        const store = stores.find((s) => s.id === listStoreId);
-        return { ...i, list_store_id: listStoreId || null, store_name: store?.store_name ?? null };
-      }));
-    } catch { setError('Zuweisung fehlgeschlagen.'); }
   }
 
   function handleKeyDown(e) {
