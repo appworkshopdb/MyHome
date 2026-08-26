@@ -65,6 +65,8 @@ export async function saveList(list) {
         name:       list.name,
         icon:       list.icon ?? null,
         sort_order: list.sort_order ?? 0,
+        due_date:   list.due_date  || null,
+        due_time:   list.due_time  || null,
       })
       .eq('id', list.id)
       .select()
@@ -80,6 +82,8 @@ export async function saveList(list) {
         name:       list.name,
         icon:       list.icon ?? null,
         sort_order: list.sort_order ?? 0,
+        due_date:   list.due_date  || null,
+        due_time:   list.due_time  || null,
       })
       .select()
       .single();
