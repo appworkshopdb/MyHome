@@ -209,9 +209,13 @@ export default function Hub({ onOpenModule }) {
     (t.due_date && t.due_date <= todayStr) ||
     (!t.due_date && t.priority)
   ));
-  const todosAlle = todos.filter((t) => !t.done);
+  const todosAlle     = todos.filter((t) => !t.done);
+  const todosWichtig  = todos.filter((t) => !t.done && t.priority);
   const todosErledigt = todos.filter((t) => t.done);
-  const visibleTodos = todoView === 'heute' ? todosHeute : todosAlle;
+  const visibleTodos =
+    todoView === 'heute'   ? todosHeute  :
+    todoView === 'wichtig' ? todosWichtig :
+    todosAlle;
 
   // Sport-Auswertung für heute
   const restToday   = todaySport.some((w) => w.is_rest);
@@ -344,6 +348,8 @@ export default function Hub({ onOpenModule }) {
             />
           )}
 
+          <div className="hub-divider" />
+
           {/* ── Sport heute ── */}
           <button className="hub-quick-card" onClick={() => onOpenModule('sport')}>
             <div className="hub-quick-card-label">Sport heute</div>
@@ -378,27 +384,37 @@ export default function Hub({ onOpenModule }) {
             </div>
           </button>
 
+          <div className="hub-divider" />
+
           {/* ── Offene Fixkosten ── */}
           {openFix.length > 0 && (
-            <button className="hub-quick-card" onClick={() => onOpenModule('finance')}>
-              <div className="hub-quick-card-label">Offen diesen Monat</div>
-              {openFix.map((f) => (
-                <div key={f.id} className="hub-fix-row">
-                  <span className="hub-fix-name">{f.name}</span>
-                  <span className="hub-fix-amount">{formatEur(f.amount)}</span>
-                </div>
-              ))}
-            </button>
+            <>
+              <button className="hub-quick-card" onClick={() => onOpenModule('finance')}>
+                <div className="hub-quick-card-label">Offen diesen Monat</div>
+                {openFix.map((f) => (
+                  <div key={f.id} className="hub-fix-row">
+                    <span className="hub-fix-name">{f.name}</span>
+                    <span className="hub-fix-amount">{formatEur(f.amount)}</span>
+                  </div>
+                ))}
+              </button>
+              <div className="hub-divider" />
+            </>
           )}
 
           {/* ── Aufgaben ── */}
+          <div className="hub-section-label" style={{ marginTop: 0 }}>Aufgaben</div>
+
           <div className="hub-todo-header">
             <div className="mode-toggle hub-todo-toggle">
               <button className={todoView === 'heute' ? 'active' : ''} onClick={() => setTodoView('heute')}>
-                Heute {todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
+                Heute{todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
+              </button>
+              <button className={todoView === 'wichtig' ? 'active' : ''} onClick={() => setTodoView('wichtig')}>
+                Wichtig{todosWichtig.length > 0 && <span className="hub-todo-badge">{todosWichtig.length}</span>}
               </button>
               <button className={todoView === 'alle' ? 'active' : ''} onClick={() => setTodoView('alle')}>
-                Alle {todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
+                Alle{todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
               </button>
             </div>
             <button className="hub-todo-add" onClick={openNewTodo} aria-label="Aufgabe hinzufügen">＋</button>
@@ -406,7 +422,9 @@ export default function Hub({ onOpenModule }) {
 
           {visibleTodos.length === 0 && (
             <div className="hub-todo-empty">
-              {todoView === 'heute' ? 'Nichts für heute — gut so.' : 'Keine offenen Aufgaben.'}
+              {todoView === 'heute'   ? 'Nichts für heute — gut so.' :
+               todoView === 'wichtig' ? 'Keine wichtigen Aufgaben.' :
+               'Keine offenen Aufgaben.'}
             </div>
           )}
 
@@ -420,8 +438,8 @@ export default function Hub({ onOpenModule }) {
                 />
                 <div className="hub-todo-content" onClick={() => openEditTodo(todo)}>
                   <span className={`hub-todo-title ${todo.priority ? 'important' : ''}`}>
-                    {todo.priority && <span className="hub-todo-prio">↑</span>}
                     {todo.title}
+                    {todo.priority && <span className="hub-todo-prio">!</span>}
                   </span>
                   {(todo.due_date || todo.note) && (
                     <span className="hub-todo-meta">
