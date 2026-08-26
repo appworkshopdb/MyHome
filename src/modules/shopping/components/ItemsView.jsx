@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
-  saveListAsTemplate,
+  saveListAsTemplate, loadListStores, saveListStore, deleteListStore, assignItemToStore,
 } from '../lib/shoData.js';
 
 // ─── Kategorie-Zuordnung (statisch, kein DB-Overhead) ─────────────────
@@ -167,6 +167,15 @@ function groupByCategory(items) {
   return ordered;
 }
 
+// Bekannte Laden-Namen für den Store-Manager (gleiche Liste wie in ListView)
+const STORE_NAMES = [
+  'Aldi Nord','Aldi Süd','Lidl','Penny','Netto Marken-Discount','Netto (Edeka)','Norma',
+  'REWE','Edeka','Tegut','Hit','Kaufland','Globus',
+  "Denn's Biomarkt",'Alnatura','Basic',
+  'dm','Rossmann','Müller',
+  'Wochenmarkt','Metzger','Bäcker','Asia-Shop','Online-Lieferung',
+];
+
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
   const [items,            setItems]            = useState([]);
@@ -195,9 +204,16 @@ export default function ItemsView({ list, onBack }) {
     }
   }, [list.id]);
 
+  const fetchStores = useCallback(async () => {
+    try {
+      const data = await loadListStores(list.id);
+      setStores(data);
+    } catch (e) { /* non-fatal */ }
+  }, [list.id]);
+
   useEffect(() => {
-    fetchItems().finally(() => setLoading(false));
-  }, [fetchItems]);
+    Promise.all([fetchItems(), fetchStores()]).finally(() => setLoading(false));
+  }, [fetchItems, fetchStores]);
 
   // Autocomplete
   function handleInputChange(val) {
@@ -225,11 +241,12 @@ export default function ItemsView({ list, onBack }) {
     setError(null);
     try {
       await saveItem({
-        list_id:  list.id,
-        name:     trimmed,
-        category: getCategory(trimmed),
-        quantity: quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
-        unit:     unit.trim() || null,
+        list_id:       list.id,
+        name:          trimmed,
+        category:      getCategory(trimmed),
+        quantity:      quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
+        unit:          unit.trim() || null,
+        list_store_id: activeStore ?? null,
       });
       await fetchItems();
       setInput('');
@@ -343,6 +360,100 @@ export default function ItemsView({ list, onBack }) {
         <div className="sho-msg-success">✓ Vorlage gespeichert</div>
       )}
 
+      {/* ── Laden-Filter (nur wenn Läden vorhanden) ── */}
+      {stores.length > 0 && (
+        <div className="sho-store-filter">
+          <button
+            className={`sho-store-pill ${activeStore === null ? 'active' : ''}`}
+            onClick={() => setActiveStore(null)}
+          >
+            Alle
+          </button>
+          {stores.map((s) => (
+            <button
+              key={s.id}
+              className={`sho-store-pill ${activeStore === s.id ? 'active' : ''}`}
+              onClick={() => setActiveStore(activeStore === s.id ? null : s.id)}
+            >
+              {s.store_name}
+            </button>
+          ))}
+          <button
+            className="sho-store-pill sho-store-pill--mgr"
+            onClick={() => setShowStoreMgr((v) => !v)}
+            title="Läden verwalten"
+          >
+            ⚙️
+          </button>
+        </div>
+      )}
+
+      {/* Laden-Manager */}
+      {showStoreMgr && (
+        <div className="sho-store-mgr">
+          <div className="sho-category-label" style={{ paddingTop: 8 }}>Läden verwalten</div>
+          {stores.map((s) => (
+            <div key={s.id} className="sho-store-mgr-row">
+              <span>{s.store_name}</span>
+              <button className="btn-icon" onClick={() => handleDeleteStore(s.id)} aria-label="Laden entfernen">
+                <IconTrash size={14} />
+              </button>
+            </div>
+          ))}
+          <div className="sho-store-mgr-add">
+            <select
+              value={newStore}
+              onChange={(e) => setNewStore(e.target.value)}
+              className="sho-unit-select"
+              style={{ flex: 1 }}
+            >
+              <option value="">Laden wählen …</option>
+              {STORE_NAMES.filter((n) => !stores.find((s) => s.store_name === n)).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+              <option value="__custom">+ Eigener Laden</option>
+            </select>
+            <button
+              className="btn btn-primary"
+              onClick={handleAddStore}
+              disabled={!newStore}
+              style={{ minHeight: 36, padding: '4px 12px', flexShrink: 0 }}
+            >
+              <span style={{ display: 'flex', width: 16, height: 16 }}><IconPlus /></span>
+            </button>
+          </div>
+          {newStore === '__custom' && (
+            <input
+              type="text"
+              placeholder="Name des Ladens"
+              value={newStore === '__custom' ? '' : newStore}
+              onChange={(e) => setNewStore(e.target.value)}
+              style={{ marginTop: 6 }}
+              autoFocus
+            />
+          )}
+          {stores.length === 0 && (
+            <button
+              className="sho-add-btn"
+              style={{ fontSize: '0.85rem', paddingTop: 8, borderTop: 'none' }}
+              onClick={() => setShowStoreMgr(true)}
+            >
+              Ersten Laden hinzufügen
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Laden hinzufügen wenn noch keine vorhanden */}
+      {stores.length === 0 && !showStoreMgr && (
+        <button
+          className="sho-store-add-hint"
+          onClick={() => setShowStoreMgr(true)}
+        >
+          + Läden zu dieser Liste hinzufügen
+        </button>
+      )}
+
       {/* Aktions-Leiste oben */}
       {items.length > 0 && (
         <div className="sho-action-row">
@@ -419,6 +530,8 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
+                stores={stores}
+                onAssign={handleAssignStore}
               />
             ))}
           </div>
@@ -441,6 +554,8 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
+                stores={stores}
+                onAssign={handleAssignStore}
               />
             ))}
           </div>
@@ -535,10 +650,11 @@ export default function ItemsView({ list, onBack }) {
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
 // Tap auf Checkbox → abhaken
 // Tap auf Artikelname/Menge → Edit-Modus (Menge + Einheit ändern)
-function ItemRow({ item, onToggle, onDelete, onEdit }) {
+function ItemRow({ item, onToggle, onDelete, onEdit, stores, onAssign }) {
   const [editing,  setEditing]  = useState(false);
   const [qty,      setQty]      = useState(item.quantity != null ? String(item.quantity) : '');
   const [unit,     setUnit]     = useState(item.unit || '');
+  const [showStore,setShowStore]= useState(false);
   const qtyRef = useRef(null);
 
   function openEdit() {
@@ -551,6 +667,37 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
   async function commitEdit() {
     setEditing(false);
     await onEdit(item.id, qty, unit);
+  }
+
+  // ─── Laden-Verwaltung ────────────────────────────────────
+  async function handleAddStore() {
+    const name = newStore.trim();
+    if (!name) return;
+    try {
+      await saveListStore(list.id, name);
+      await fetchStores();
+      setNewStore('');
+    } catch { setError('Laden konnte nicht gespeichert werden.'); }
+  }
+
+  async function handleDeleteStore(storeId) {
+    try {
+      await deleteListStore(storeId);
+      if (activeStore === storeId) setActiveStore(null);
+      await fetchStores();
+      await fetchItems(); // store_name auf Items aktualisieren
+    } catch { setError('Laden konnte nicht gelöscht werden.'); }
+  }
+
+  async function handleAssignStore(itemId, listStoreId) {
+    try {
+      await assignItemToStore(itemId, listStoreId || null);
+      setItems((prev) => prev.map((i) => {
+        if (i.id !== itemId) return i;
+        const store = stores.find((s) => s.id === listStoreId);
+        return { ...i, list_store_id: listStoreId || null, store_name: store?.store_name ?? null };
+      }));
+    } catch { setError('Zuweisung fehlgeschlagen.'); }
   }
 
   function handleKeyDown(e) {
@@ -629,15 +776,49 @@ function ItemRow({ item, onToggle, onDelete, onEdit }) {
           <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
             {item.name}
           </span>
-          {metaLabel && (
-            <span className="sho-item-meta sho-item-meta--qty">
-              {metaLabel}
-            </span>
-          )}
-          {!metaLabel && (
-            <span className="sho-item-meta sho-item-meta--hint">
-              Menge tippen …
-            </span>
+          <span className="sho-item-meta" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {metaLabel && (
+              <span className="sho-item-meta--qty">{metaLabel}</span>
+            )}
+            {!metaLabel && (
+              <span className="sho-item-meta--hint">Menge tippen …</span>
+            )}
+            {/* Store-Label */}
+            {stores?.length > 0 && item.store_name && (
+              <span className="sho-item-store-label">{item.store_name}</span>
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* Store-Zuweiser */}
+      {!editing && stores?.length > 0 && (
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            className="sho-item-store-btn"
+            onClick={(e) => { e.stopPropagation(); setShowStore((v) => !v); }}
+            title="Laden zuweisen"
+          >
+            🏪
+          </button>
+          {showStore && (
+            <div className="sho-item-store-dropdown">
+              <button
+                className={`sho-item-store-opt ${!item.list_store_id ? 'active' : ''}`}
+                onClick={() => { onAssign(item.id, null); setShowStore(false); }}
+              >
+                Kein Laden
+              </button>
+              {stores.map((s) => (
+                <button
+                  key={s.id}
+                  className={`sho-item-store-opt ${item.list_store_id === s.id ? 'active' : ''}`}
+                  onClick={() => { onAssign(item.id, s.id); setShowStore(false); }}
+                >
+                  {s.store_name}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
