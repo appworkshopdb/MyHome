@@ -107,14 +107,19 @@ export async function loadItems(listId) {
   const sb = getSupabase();
   const { data, error } = await sb
     .from('sho_items')
-    .select('*')
+    .select('*, sho_list_stores(id, store_name)')
     .eq('list_id', listId)
     .is('deleted_at', null)
-    .order('done', { ascending: true })      // offene Artikel zuerst
+    .order('done', { ascending: true })
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  // store_name aus Join flachklopfen
+  return (data ?? []).map((i) => ({
+    ...i,
+    store_name: i.sho_list_stores?.store_name ?? null,
+    sho_list_stores: undefined,
+  }));
 }
 
 export async function saveItem(item) {
@@ -123,11 +128,12 @@ export async function saveItem(item) {
     const { data, error } = await sb
       .from('sho_items')
       .update({
-        name:       item.name,
-        category:   item.category ?? null,
-        quantity:   item.quantity ?? null,
-        unit:       item.unit ?? null,
-        note:       item.note ?? null,
+        name:          item.name,
+        category:      item.category      ?? null,
+        quantity:      item.quantity      ?? null,
+        unit:          item.unit          ?? null,
+        note:          item.note          ?? null,
+        list_store_id: item.list_store_id ?? null,
         sort_order: item.sort_order ?? 0,
       })
       .eq('id', item.id)
@@ -337,4 +343,49 @@ export async function loadFrequentItems(limit = 20) {
   // Unter 2 verschiedenen Artikel-Typen: alle anzeigen (noch wenig Daten)
   // Ab 2+: nach Häufigkeit sortiert zurückgeben
   return all.slice(0, limit);
+}
+
+// ─── Läden pro Liste ──────────────────────────────────────────
+
+export async function loadListStores(listId) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('sho_list_stores')
+    .select('*')
+    .eq('list_id', listId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function saveListStore(listId, storeName) {
+  const sb = getSupabase();
+  const owner_id = getOwnerIdFromToken();
+  const { data, error } = await sb
+    .from('sho_list_stores')
+    .insert({ owner_id, list_id: listId, store_name: storeName })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteListStore(storeId) {
+  // Löscht den Laden — sho_items.list_store_id wird automatisch auf null gesetzt (ON DELETE SET NULL)
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_list_stores')
+    .delete()
+    .eq('id', storeId);
+  if (error) throw error;
+}
+
+export async function assignItemToStore(itemId, listStoreId) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_items')
+    .update({ list_store_id: listStoreId })
+    .eq('id', itemId);
+  if (error) throw error;
 }
