@@ -366,6 +366,50 @@
   margin: 20px 0;
 }
 
+/* ── Hub-Schnellkarten (Sport, Fixkosten) ── */
+.hub-quick-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  min-height: var(--touch-target);
+}
+.hub-quick-card:active { opacity: 0.75; }
+.hub-quick-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.hub-quick-card-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.hub-quick-muted { color: var(--text-muted); font-weight: 500; }
+.hub-quick-done  { color: var(--success); font-weight: 700; }
+.hub-quick-planned { color: var(--text-muted); font-weight: 500; }
+.hub-quick-sep   { color: var(--text-muted); }
+
+.hub-fix-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+}
+.hub-fix-row + .hub-fix-row { border-top: 1px solid var(--border); margin-top: 2px; padding-top: 6px; }
+.hub-fix-name   { font-weight: 500; color: var(--text-primary); }
+.hub-fix-amount { font-weight: 700; color: var(--danger); }
+
 .hub-module-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
