@@ -3,7 +3,7 @@ import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import Login from './core/components/Login';
-import AppHeader from './core/AppHeader';
+import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
@@ -25,7 +25,6 @@ const MODULE_COMPONENTS = {
   nutrition: NutritionModule,
   sport:     SportModule,
   habits:    HabitsModule,
-  everyday:  StubModule,
   shopping:  ShoppingModule,
 };
 export default function App() {
@@ -49,8 +48,12 @@ export default function App() {
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
   return (
     <EntrySheetProvider>
+      {/* Hub und Profil-Seite rendern ihre eigene ModuleTopBar hier, weil
+          sie keine eigene *Module.jsx haben, die das übernähme. Module
+          (FinanceModule, SportModule usw.) rendern ModuleTopBar jeweils
+          selbst — so war es schon vor dieser Änderung. */}
       {activeModule === null && (
-        <AppHeader activeModule={activeModule} onNavigate={navigate} hasWarnings={warnings.length > 0} />
+        <ModuleTopBar title="Zuhause" hasWarnings={warnings.length > 0} />
       )}
       <main className="main-content">
         {activeModule === null && <Hub onOpenModule={navigate} />}
