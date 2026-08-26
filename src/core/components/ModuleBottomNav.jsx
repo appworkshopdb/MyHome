@@ -1,29 +1,34 @@
-// Die feste "leere" Leiste, die jedes Modul bekommt. Layout/Optik kommt
-// komplett aus den globalen .bottom-nav/.nav-item-Klassen (siehe
-// styles/layout.css) — ein Modul entscheidet nur noch, welche
-// Menüpunkte (items) es bekommt, siehe z.B.
-// modules/finance/components/BottomNav.jsx als Vorlage für neue Module.
+// Globale Bottom-Nav — 5 Module + 1 Start-Button (zurück zum Hub).
+// Der Start-Button ersetzt den gestrichenen "Alltag"-Slot an erster
+// Stelle. Er ist aktiv (hervorgehoben), wenn man sich auf dem Hub
+// befindet (active === null / active === '').
+// Reihenfolge und Kurznamen: bewusste Nutzer-Entscheidung, nicht
+// identisch mit den vollen Namen in core/modules.js.
 import { IconHome, IconBrain, IconEuro, IconDumbbell, IconUtensils, IconCart } from './Icons';
 
-// Globale Bottom-Nav — zeigt jetzt alle 6 Module direkt (kein Start/
-// Profil mehr hier, die sitzen seit ModuleTopBar.jsx oben links/rechts
-// auf jedem Screen). Reihenfolge und Kurznamen sind eine bewusste
-// Nutzer-Entscheidung, nicht identisch mit den vollen Modulnamen aus
-// core/modules.js (dort z.B. "Sport", hier "Sport" für "Training" –
-// aber "Gewohnheiten"→"Habbits", "Finanzen"→"Geld", "Ernährung"→"Essen").
-const ITEMS = [
-  { key: 'everyday', label: 'Alltag', Icon: IconHome },
-  { key: 'habits', label: 'Habbits', Icon: IconBrain },
-  { key: 'finance', label: 'Geld', Icon: IconEuro },
-  { key: 'sport', label: 'Sport', Icon: IconDumbbell },
-  { key: 'nutrition', label: 'Essen', Icon: IconUtensils },
-  { key: 'shopping', label: 'Einkauf', Icon: IconCart },
+const MODULE_ITEMS = [
+  { key: 'habits',    label: 'Habbits', Icon: IconBrain },
+  { key: 'finance',   label: 'Geld',    Icon: IconEuro },
+  { key: 'sport',     label: 'Sport',   Icon: IconDumbbell },
+  { key: 'nutrition', label: 'Essen',   Icon: IconUtensils },
+  { key: 'shopping',  label: 'Einkauf', Icon: IconCart },
 ];
 
 export default function ModuleBottomNav({ active, onChange }) {
+  const isHub = !active || active === '';
   return (
     <nav className="bottom-nav">
-      {ITEMS.map(({ key, label, Icon }) => (
+      {/* Start-Button — immer an erster Stelle, navigiert zum Hub */}
+      <button
+        className={`nav-item ${isHub ? 'active' : ''}`}
+        onClick={() => onChange('')}
+        aria-label="Zum Start"
+      >
+        <IconHome />
+        <span>Start</span>
+      </button>
+
+      {MODULE_ITEMS.map(({ key, label, Icon }) => (
         <button
           key={key}
           className={`nav-item ${active === key ? 'active' : ''}`}
