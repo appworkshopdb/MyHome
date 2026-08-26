@@ -15,6 +15,8 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [showForm,    setShowForm]    = useState(false);  // Neue Liste
   const [name,        setName]        = useState('');
   const [icon,        setIcon]        = useState('🛒');
+  const [dueDate,     setDueDate]     = useState('');
+  const [dueTime,     setDueTime]     = useState('');
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
@@ -48,9 +50,9 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     if (!trimmed) return;
     setSaving(true); setError(null);
     try {
-      await saveList({ name: trimmed, icon });
+      await saveList({ name: trimmed, icon, due_date: dueDate || null, due_time: dueTime || null });
       await onListsChange();
-      setName(''); setIcon('🛒'); setShowForm(false);
+      setName(''); setIcon('🛒'); setDueDate(''); setDueTime(''); setShowForm(false);
     } catch { setError('Speichern fehlgeschlagen.'); }
     finally { setSaving(false); }
   }
@@ -211,6 +213,9 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                   <div className="sho-list-icon">{list.icon || '🛒'}</div>
                   <div className="sho-list-info">
                     <div className="sho-list-name">{list.name}</div>
+                  {(list.due_date) && (
+                    <DueBadge date={list.due_date} time={list.due_time} />
+                  )}
                     <StatusBadge
                       list={list}
                       busy={statusBusy === list.id}
@@ -272,10 +277,38 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
             onKeyDown={handleKeyDown}
             maxLength={60}
           />
+
+          {/* Fälligkeit */}
+          <div className="sho-due-row">
+            <div className="sho-due-field">
+              <label className="sho-due-label">Fällig am</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="sho-due-input"
+              />
+            </div>
+            <div className="sho-due-field">
+              <label className="sho-due-label">Tageszeit</label>
+              <select
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="sho-unit-select"
+              >
+                <option value="">Optional</option>
+                <option value="morgens">🌅 Morgens</option>
+                <option value="mittags">☀️ Mittags</option>
+                <option value="nachmittags">🌤️ Nachmittags</option>
+                <option value="abends">🌙 Abends</option>
+              </select>
+            </div>
+          </div>
+
           <div className="sho-new-list-actions">
             <button
               className="btn btn-secondary"
-              onClick={() => { setShowForm(false); setName(''); setError(null); }}
+              onClick={() => { setShowForm(false); setName(''); setDueDate(''); setDueTime(''); setError(null); }}
             >
               Abbrechen
             </button>
@@ -397,6 +430,37 @@ function StatusBadge({ list, busy, onCycle }) {
       {showHint && (
         <span className="sho-status-hint">{openLeft} offen</span>
       )}
+    </span>
+  );
+}
+
+// ─── Fälligkeits-Badge ────────────────────────────────────────────────
+const TIME_ICONS = {
+  morgens:      '🌅',
+  mittags:      '☀️',
+  nachmittags:  '🌤️',
+  abends:       '🌙',
+};
+
+function DueBadge({ date, time }) {
+  const today    = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  let label;
+  if (date === today)    label = 'Heute';
+  else if (date === tomorrow) label = 'Morgen';
+  else {
+    // Deutsches Datum: TT.MM.
+    const [y, m, d] = date.split('-');
+    label = `${d}.${m}.${y.slice(2)}`;
+  }
+
+  const overdue = date < today;
+  const icon    = time ? TIME_ICONS[time] : '📅';
+
+  return (
+    <span className={`sho-due-badge ${overdue ? 'sho-due-overdue' : ''}`}>
+      {icon} {label}{time ? ` · ${time}` : ''}
     </span>
   );
 }
