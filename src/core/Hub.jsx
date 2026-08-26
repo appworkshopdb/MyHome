@@ -194,11 +194,15 @@ export default function Hub({ onOpenModule }) {
       const exists = prev.find((t) => t.id === saved.id);
       if (exists) return prev.map((t) => t.id === saved.id ? saved : t);
       return [...prev, saved].sort((a, b) => {
-        if (b.priority !== a.priority) return b.priority - a.priority;
-        if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
-        if (a.due_date) return -1;
-        if (b.due_date) return 1;
-        return 0;
+        // Ohne Datum ans Ende
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        // Datum aufsteigend
+        const dateDiff = a.due_date.localeCompare(b.due_date);
+        if (dateDiff !== 0) return dateDiff;
+        // Gleiches Datum: wichtige zuerst
+        return b.priority - a.priority;
       });
     });
   }
