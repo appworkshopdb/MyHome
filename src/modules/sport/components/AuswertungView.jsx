@@ -4,6 +4,7 @@ import { weekRange, monthRange, yearRange, customRange, filterWorkoutsByRange } 
 import BadgesCard from './BadgesCard';
 import ActivityHeatmap from './ActivityHeatmap';
 import FilterBar from './FilterBar';
+import WeightTimeline from './WeightTimeline';
 
 function Stat({ label, value }) {
   return (
@@ -46,6 +47,7 @@ export default function AuswertungView({ workouts, loading }) {
   if (statsAll.allCount === 0 && statsAll.restCount === 0) {
     return (
       <div className="page">
+        <WeightTimeline />
         <div className="card">
           <div className="card-title">Auswertung</div>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
@@ -79,6 +81,8 @@ export default function AuswertungView({ workouts, loading }) {
 
   return (
     <div className="page">
+      <WeightTimeline />
+
       <ActivityHeatmap workouts={workouts} year={heatmapYear} />
 
       <FilterBar
