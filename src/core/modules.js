@@ -7,9 +7,11 @@
 // keinen fertigen Bildschirm hat — das ist der einzige Schalter, den
 // es dafür braucht (siehe App.jsx: MODULE_COMPONENTS wird ignoriert,
 // wenn built: false).
+//
+// HINWEIS: Das "Alltag"-Modul wurde gestrichen. Sein ehemaliger
+// Bottom-Nav-Slot ist jetzt der Start-Button (→ Hub).
 
 export const MODULES = [
-  { id: 'everyday', name: 'Alltag', tier: 'frei', color: '#3F6BA8', built: true },
   { id: 'shopping', name: 'Einkauf', tier: 'frei', color: '#4E8A56', built: true },
   { id: 'nutrition', name: 'Ernährung', tier: 'paid', price: '4,99 €', color: '#A8792A', built: true },
   { id: 'finance', name: 'Finanzen', tier: 'paid', price: '4,99 €', color: '#7A57A8', built: true },
