@@ -196,6 +196,7 @@ export default function SportModule({ view, onNavigateView }) {
       <VerlaufView
         workouts={workouts}
         plans={plans}
+        units={units}
         loading={loading}
         onToggleDone={handleToggleDone}
         onEdit={handleEdit}
