@@ -30,9 +30,8 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
         dayWorkouts.map((w) => {
           // Ruhetag: eigene, bewusst ruhigere Darstellung — kein
           // Abhaken (es gibt nichts zu erledigen) und kein Bearbeiten
-          // (WorkoutForm kennt is_rest nicht, würde es beim Speichern
-          // verlieren). Löschen bleibt möglich, falls der Tag doch
-          // Training bekommen soll.
+          // (WorkoutForm unterstützt seit der Ruhetag-Option im
+          // Einzeleintragen auch is_rest korrekt, siehe WorkoutForm.jsx).
           if (w.is_rest) {
             return (
               <div
@@ -53,6 +52,7 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
                     <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>{planProgress(w)}</div>
                   )}
                 </div>
+                <button className="btn btn-secondary" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
                 <button className="btn btn-secondary" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
               </div>
             );
