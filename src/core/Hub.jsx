@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum } from './lib/measurementsData';
-import { formatEur, formatRelativeDate } from './lib/format';
+import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
+import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
+import TodoSheet from './components/TodoSheet';
 
 const CACHE_KEY = 'hub-cache-v2';
+
+// Fälligkeitsdatum lesbar machen — "Heute", "Morgen", "Mo 3. Jun", "überfällig"
+function formatDueDate(dueDateStr, todayStr) {
+  if (!dueDateStr) return null;
+  const diff = Math.round((new Date(dueDateStr) - new Date(todayStr)) / 86400000);
+  if (diff < 0)  return '⚠ überfällig';
+  if (diff === 0) return 'Heute';
+  if (diff === 1) return 'Morgen';
+  return new Date(dueDateStr).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 function readCache() {
   try {
@@ -106,19 +118,24 @@ export default function Hub({ onOpenModule }) {
   const [habDone, setHabDone]   = useState(0);
   const [habHabits, setHabHabits] = useState([]);
 
-  const [todaySport, setTodaySport] = useState([]);  // [] = noch nicht geladen
-  const [openFix, setOpenFix]   = useState([]);      // offene Fixkosten
+  const [todaySport, setTodaySport] = useState([]);
+  const [openFix, setOpenFix]       = useState([]);
+  const [todos, setTodos]           = useState([]);
+  const [todoSheet, setTodoSheet]   = useState(false);   // Sheet offen?
+  const [editTodo, setEditTodo]     = useState(null);    // null = neu
+  const [todoView, setTodoView]     = useState('heute'); // 'heute' | 'alle'
 
   const load = useCallback(async () => {
     setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, todayHab, sport, fix] = await Promise.all([
+      const [inc, exp, todayHab, sport, fix, todoList] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         loadTodayHabits(),
         loadTodaySport(),
         loadOpenFixCosts(),
+        getTodos(session),
       ]);
       setIncome(inc);
       setExpense(exp);
@@ -127,8 +144,9 @@ export default function Hub({ onOpenModule }) {
       setHabHabits(todayHab.habits);
       setTodaySport(sport);
       setOpenFix(fix);
+      setTodos(todoList);
       writeCache({ income: inc, expense: exp });
-      setStatus(inc > 0 || exp > 0 || todayHab.total > 0 || sport.length > 0 ? 'daten' : 'leer');
+      setStatus(inc > 0 || exp > 0 || todayHab.total > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
     } catch (e) {
       console.error('[Hub] Laden fehlgeschlagen:', e);
       setStatus('fehler');
@@ -153,6 +171,47 @@ export default function Hub({ onOpenModule }) {
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
   const habAllDone = habTotal > 0 && habDone === habTotal;
+
+  // ── Todo-Handler ──
+  async function handleToggleTodo(id, currentDone) {
+    const next = !currentDone;
+    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
+    try { await toggleTodo(id, next); }
+    catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
+  }
+
+  async function handleDeleteTodo(id) {
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+    try { await deleteTodo(id); }
+    catch { const all = await getTodos(session); setTodos(all); }
+  }
+
+  function openNewTodo() { setEditTodo(null); setTodoSheet(true); }
+  function openEditTodo(todo) { setEditTodo(todo); setTodoSheet(true); }
+
+  function handleTodoSaved(saved) {
+    setTodos((prev) => {
+      const exists = prev.find((t) => t.id === saved.id);
+      if (exists) return prev.map((t) => t.id === saved.id ? saved : t);
+      return [...prev, saved].sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+        if (a.due_date) return -1;
+        if (b.due_date) return 1;
+        return 0;
+      });
+    });
+  }
+
+  // Filterlogik: "Heute" = fällig heute oder früher (überfällig) + wichtige ohne Datum
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todosHeute = todos.filter((t) => !t.done && (
+    (t.due_date && t.due_date <= todayStr) ||
+    (!t.due_date && t.priority)
+  ));
+  const todosAlle = todos.filter((t) => !t.done);
+  const todosErledigt = todos.filter((t) => t.done);
+  const visibleTodos = todoView === 'heute' ? todosHeute : todosAlle;
 
   // Sport-Auswertung für heute
   const restToday   = todaySport.some((w) => w.is_rest);
@@ -331,7 +390,88 @@ export default function Hub({ onOpenModule }) {
               ))}
             </button>
           )}
+
+          {/* ── Aufgaben ── */}
+          <div className="hub-todo-header">
+            <div className="mode-toggle hub-todo-toggle">
+              <button className={todoView === 'heute' ? 'active' : ''} onClick={() => setTodoView('heute')}>
+                Heute {todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
+              </button>
+              <button className={todoView === 'alle' ? 'active' : ''} onClick={() => setTodoView('alle')}>
+                Alle {todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
+              </button>
+            </div>
+            <button className="hub-todo-add" onClick={openNewTodo} aria-label="Aufgabe hinzufügen">＋</button>
+          </div>
+
+          {visibleTodos.length === 0 && (
+            <div className="hub-todo-empty">
+              {todoView === 'heute' ? 'Nichts für heute — gut so.' : 'Keine offenen Aufgaben.'}
+            </div>
+          )}
+
+          <div className="hub-todo-list">
+            {visibleTodos.map((todo) => (
+              <div key={todo.id} className="hub-todo-row">
+                <button
+                  className={`hub-todo-check ${todo.done ? 'checked' : ''}`}
+                  onClick={() => handleToggleTodo(todo.id, todo.done)}
+                  aria-label="Erledigt"
+                />
+                <div className="hub-todo-content" onClick={() => openEditTodo(todo)}>
+                  <span className={`hub-todo-title ${todo.priority ? 'important' : ''}`}>
+                    {todo.priority && <span className="hub-todo-prio">↑</span>}
+                    {todo.title}
+                  </span>
+                  {(todo.due_date || todo.note) && (
+                    <span className="hub-todo-meta">
+                      {todo.due_date && formatDueDate(todo.due_date, todayStr)}
+                      {todo.due_date && todo.note && ' · '}
+                      {todo.note}
+                    </span>
+                  )}
+                </div>
+                <button
+                  className="hub-todo-delete"
+                  onClick={() => handleDeleteTodo(todo.id)}
+                  aria-label="Löschen"
+                >×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* Erledigte — kompakt einklappbar */}
+          {todosErledigt.length > 0 && (
+            <details className="hub-todo-done-section">
+              <summary className="hub-todo-done-label">
+                {todosErledigt.length} erledigt
+              </summary>
+              {todosErledigt.map((todo) => (
+                <div key={todo.id} className="hub-todo-row done">
+                  <button
+                    className="hub-todo-check checked"
+                    onClick={() => handleToggleTodo(todo.id, todo.done)}
+                    aria-label="Wiederherstellen"
+                  />
+                  <span className="hub-todo-title done">{todo.title}</span>
+                  <button
+                    className="hub-todo-delete"
+                    onClick={() => handleDeleteTodo(todo.id)}
+                    aria-label="Löschen"
+                  >×</button>
+                </div>
+              ))}
+            </details>
+          )}
         </>
+      )}
+
+      {todoSheet && (
+        <TodoSheet
+          onClose={() => setTodoSheet(false)}
+          onSaved={handleTodoSaved}
+          editTodo={editTodo}
+        />
       )}
     </div>
   );
