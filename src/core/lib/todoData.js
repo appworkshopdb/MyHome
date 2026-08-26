@@ -10,8 +10,8 @@ export async function getTodos(session) {
     .select('*')
     .eq('owner_id', session.user.id)
     .is('deleted_at', null)
-    .order('priority', { ascending: false })
-    .order('due_date',  { ascending: true,  nullsFirst: false })
+    .order('due_date',  { ascending: true, nullsFirst: false })
+    .order('priority',  { ascending: false })
     .order('created_at', { ascending: true });
   if (error) throw error;
   return data ?? [];
