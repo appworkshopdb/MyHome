@@ -8,60 +8,69 @@ import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
 import ModuleTabs from '../../core/components/ModuleTabs';
-import TrainingView from './components/TrainingView';
+import EinheitenView from './components/EinheitenView';
 import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
 import AuswertungView from './components/AuswertungView';
 
-// Körperdaten (body_profile) gehören core, nicht dem Sport-Modul — die
-// Lücke wird deshalb unter dem Key "profile" gemeldet (dort ist auch das
-// Formular), nicht unter "sport". Ernährung meldet sich mit einer eigenen
-// Spec unter demselben Key an — beide werden im Register automatisch
-// zusammengeführt (siehe core/lib/requiredDataRegistry.js).
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-const DEFAULT_VIEW = 'training';
+// KONZEPT-KORREKTUR (vorheriger Stand: Training/Kalender/Pläne/
+// Auswertung, "Training" war ein leerer Direkt-Eintragen-Screen):
+// einzelne Trainingseinheiten (z.B. "Arme", "Legday") sind jetzt eine
+// eigene, wiederverwendbare Bibliothek (Tab "Einheiten") — ein
+// Trainingsplan setzt sich aus mehreren Einheiten zusammen, statt dass
+// jede Einheit als eigener 1-Tage-"Plan" angelegt werden musste.
+const DEFAULT_VIEW = 'verlauf';
 const TABS = [
-  { key: 'training', label: 'Training' },
   { key: 'verlauf', label: 'Kalender' },
+  { key: 'einheiten', label: 'Einheiten' },
   { key: 'plaene', label: 'Pläne' },
   { key: 'auswertung', label: 'Auswertung' },
 ];
 
-// Hält den gesamten Modul-Zustand: Einheiten, Plan-Vorlagen und die im
-// Profil gewählten Sportarten. Alles wird EINMAL geladen und an die
-// Views durchgereicht — dadurch arbeiten Kalender, Auswertung und
-// Plan-Anwendung garantiert auf demselben Stand.
+// Hält den gesamten Modul-Zustand: Einheiten (Workouts im Kalender),
+// die Einheiten-Bibliothek, Plan-Vorlagen und die im Profil gewählten
+// Sportarten. Alles wird EINMAL geladen und an die Views durchgereicht
+// — dadurch arbeiten Kalender, Pläne und Auswertung garantiert auf
+// demselben Stand.
 // view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
 // useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
 export default function SportModule({ view, onNavigateView }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
-  const activeView = ['training', 'verlauf', 'plaene', 'auswertung'].includes(view) ? view : DEFAULT_VIEW;
+  const activeView = ['verlauf', 'einheiten', 'plaene', 'auswertung'].includes(view) ? view : DEFAULT_VIEW;
   const [workouts, setWorkouts] = useState([]);
+  const [units, setUnits] = useState([]);
   const [plans, setPlans] = useState([]);
   const [userSports, setUserSports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [formInitial, setFormInitial] = useState(false); // Workout-Formular
-  const [editingPlan, setEditingPlan] = useState(null);  // Plan-Editor
+  // formInitial steuert jetzt das Formular INNERHALB des Kalender-Tabs
+  // (VerlaufView) statt eines eigenen "Training"-Tabs — der ist mit der
+  // Einheiten-Bibliothek weggefallen. "Bearbeiten"/"+ Einzelne Einheit"
+  // im Kalender sowie "Starten" bei einem Vorschlag springen deshalb
+  // alle auf 'verlauf'.
+  const [formInitial, setFormInitial] = useState(false);
+  const [editingUnit, setEditingUnit] = useState(null);   // Einheiten-Editor
+  const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
   const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Parallel, weil die drei Quellen unabhängig sind — sequenziell
-      // würde das Öffnen des Moduls unnötig dreimal so lange dauern.
-      const [ws, ps, profile] = await Promise.all([
+      const [ws, us, ps, profile] = await Promise.all([
         db.getWorkouts(session),
+        db.getUnits(session),
         db.getPlans(session),
         getBodyProfile(session),
       ]);
       setWorkouts(ws);
+      setUnits(us);
       setPlans(ps);
       setUserSports(profile.sports ?? []);
     } catch (e) {
@@ -96,9 +105,6 @@ export default function SportModule({ view, onNavigateView }) {
     }
   }
 
-  // Abhaken im Kalender: nur der Statuswechsel. Der DB-Trigger schreibt
-  // bzw. entfernt daraufhin die measurements-Zeilen, wodurch die Einheit
-  // in Auswertung und Hub auftaucht.
   async function handleToggleDone(workout) {
     try {
       await db.setWorkoutStatus(workout.id, workout.status !== 'done');
@@ -111,17 +117,41 @@ export default function SportModule({ view, onNavigateView }) {
 
   function handleEdit(workout) {
     setFormInitial(workout);
-    onNavigateView('training');
+    onNavigateView('verlauf');
   }
 
   function handlePlanNew(date) {
     setFormInitial({ occurred_on: date, status: 'planned' });
-    onNavigateView('training');
+    onNavigateView('verlauf');
   }
 
   function startFromPlan(preset) {
     setFormInitial({ type_key: preset.type_key, title: preset.title });
-    onNavigateView('training');
+    onNavigateView('verlauf');
+  }
+
+  // --- Einheiten-Bibliothek --------------------------------------------
+
+  async function handleSaveUnit(unit) {
+    try {
+      await db.saveUnit(session, unit);
+      setEditingUnit(null);
+      showToast('Einheit gespeichert');
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Einheit konnte nicht gespeichert werden');
+    }
+  }
+
+  async function handleDeleteUnit(id) {
+    try {
+      await db.deleteUnit(id);
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Einheit konnte nicht gelöscht werden');
+    }
   }
 
   // --- Plan-Vorlagen -------------------------------------------------
@@ -148,8 +178,6 @@ export default function SportModule({ view, onNavigateView }) {
     }
   }
 
-  // Nach dem Eintragen direkt in den Kalender wechseln — dort sieht man
-  // sofort, was angelegt wurde, statt auf eine Erfolgsmeldung zu starren.
   async function handleApplyPlan(plan, startDate) {
     try {
       const count = await db.applyPlan(session, plan, startDate);
@@ -164,16 +192,6 @@ export default function SportModule({ view, onNavigateView }) {
   }
 
   const VIEWS = {
-    training: (
-      <TrainingView
-        formInitial={formInitial}
-        onOpenForm={setFormInitial}
-        onCancelForm={() => setFormInitial(false)}
-        onSave={handleSave}
-        showToast={showToast}
-        userSports={userSports}
-      />
-    ),
     verlauf: (
       <VerlaufView
         workouts={workouts}
@@ -184,12 +202,33 @@ export default function SportModule({ view, onNavigateView }) {
         onDelete={handleDelete}
         onPlanNew={handlePlanNew}
         onApplyPlan={handleApplyPlan}
+        formInitial={formInitial}
+        onOpenForm={setFormInitial}
+        onCancelForm={() => setFormInitial(false)}
+        onSaveForm={handleSave}
+        userSports={userSports}
+        showToast={showToast}
+      />
+    ),
+    einheiten: (
+      <EinheitenView
+        units={units}
+        loading={loading}
+        userSports={userSports}
+        editing={editingUnit}
+        onNewUnit={() => setEditingUnit({})}
+        onEditUnit={setEditingUnit}
+        onDeleteUnit={handleDeleteUnit}
+        onSaveUnit={handleSaveUnit}
+        onCancelEdit={() => setEditingUnit(null)}
+        showToast={showToast}
       />
     ),
     plaene: (
       <PlaeneView
         session={session}
         plans={plans}
+        units={units}
         loading={loading}
         userSports={userSports}
         editing={editingPlan}
