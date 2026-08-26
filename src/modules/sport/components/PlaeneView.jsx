@@ -6,7 +6,7 @@ import ApplyPlanDialog from './ApplyPlanDialog';
 // bearbeiten), Anwenden-Dialog. Der jeweilige Zustand kommt von
 // SportModule, weil das Anwenden anschließend in den Kalender wechselt.
 export default function PlaeneView({
-  session, plans, loading, userSports,
+  session, plans, units, loading, userSports,
   editing, applying,
   onNewPlan, onEditPlan, onDeletePlan, onSavePlan, onCancelEdit,
   onOpenApply, onApplyPlan, onCancelApply,
@@ -17,7 +17,7 @@ export default function PlaeneView({
       <div className="page">
         <PlanEditor
           initialPlan={editing.id ? editing : null}
-          userSports={userSports}
+          units={units}
           onSave={onSavePlan}
           onCancel={onCancelEdit}
           showToast={showToast}

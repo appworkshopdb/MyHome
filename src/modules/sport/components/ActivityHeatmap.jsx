@@ -3,9 +3,21 @@ import { computeWeeklyActivity, formatWeekRange } from '../lib/stats';
 
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
-// Transparenzstufen des einen Akzents statt mehrerer Farbtöne — passt
-// zur Design-Regel "ein Akzent pro Ansicht, sonst nichts Buntes".
-const LEVEL_COLORS = ['var(--border)', 'rgba(214,255,61,0.3)', 'rgba(214,255,61,0.6)', 'rgba(214,255,61,0.9)'];
+// Transparenzstufen des tatsächlichen Akzents (--accent, Elektroblau
+// laut Design-System) statt mehrerer Farbtöne — passt zur Design-Regel
+// "ein Akzent pro Ansicht, sonst nichts Buntes". color-mix() leitet die
+// Transparenz direkt aus der CSS-Variable ab, dadurch automatisch
+// korrekt in Hell- und Dunkelmodus, ohne einen Hex-Wert zu verdoppeln.
+//
+// BUGFIX: hier stand zuvor eine hartcodierte Limette (rgba(214,255,61,…))
+// aus dem alten, längst abgelösten Lime-Design — sichtbar z.B. in der
+// Legende "Weniger…Mehr", die dadurch gelb-grün statt blau wirkte.
+const LEVEL_COLORS = [
+  'var(--border)',
+  'color-mix(in srgb, var(--accent) 30%, transparent)',
+  'color-mix(in srgb, var(--accent) 60%, transparent)',
+  'color-mix(in srgb, var(--accent) 90%, transparent)',
+];
 
 // Eine Zeile pro Monat statt eines starren Rasters — ein Monat hat nie
 // exakt 4 Wochen, eine Zeile pro Monat macht den Monatsdurchschnitt

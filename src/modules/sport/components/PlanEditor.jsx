@@ -1,39 +1,44 @@
 import { useState } from 'react';
-import { TRAINING_TYPES, TRAINING_TYPE_GROUPS, trainingTypesByGroup } from '../lib/data/trainingTypes';
-import { getSport, sportTypeKey, sportFromTypeKey } from '../../../core/lib/sportsData';
+import { resolveTypeLabel } from '../lib/typeLabel';
 
-// Baukasten für eine Mehrtages-Vorlage. Die Länge ergibt sich aus der
-// Anzahl der Tage — 5, 7, 8 Tage sind gleichermaßen möglich, es gibt
-// keine feste Wochenstruktur. Ruhetage sind eigene Tage, weil sie die
-// Folgetage verschieben (ein 5-Tage-Plan mit Ruhetag in der Mitte
-// erstreckt sich über 5 Kalendertage).
-export default function PlanEditor({ initialPlan, userSports = [], onSave, onCancel, showToast }) {
+// Baukasten für eine Mehrtages-Vorlage. KONZEPT-ÄNDERUNG: ein Tag wählt
+// jetzt eine bestehende Einheit aus der Bibliothek (spo_units) statt
+// Titel/Typ frei einzutippen — "ein Trainingsplan besteht aus mehreren
+// Trainingseinheiten". Titel/Typ werden beim Auswählen als Snapshot auf
+// den Tag übernommen, damit ein späteres Bearbeiten der Einheit
+// bestehende Pläne nicht rückwirkend verändert. Die Dauer bleibt pro
+// Tag überschreibbar (dieselbe Einheit kann an verschiedenen Tagen
+// unterschiedlich lang dauern). Ruhetage bleiben wie bisher eigene Tage
+// ohne Einheit — sie verschieben nur die Folgetage.
+export default function PlanEditor({ initialPlan, units = [], onSave, onCancel, showToast }) {
   const [title, setTitle] = useState(initialPlan?.title ?? '');
   const [notes, setNotes] = useState(initialPlan?.notes ?? '');
   const [days, setDays] = useState(
     initialPlan?.items?.length
       ? initialPlan.items.map((i) => ({
-          title: i.title ?? '', type_key: i.type_key ?? '',
+          unit_id: i.unit_id ?? '', title: i.title ?? '', type_key: i.type_key ?? '',
           duration_min: i.duration_min != null ? String(i.duration_min) : '',
           is_rest: i.is_rest,
         }))
-      : [{ title: '', type_key: '', duration_min: '', is_rest: false }]
+      : [{ unit_id: '', title: '', type_key: '', duration_min: '', is_rest: false }]
   );
 
   function updateDay(index, patch) {
     setDays(days.map((d, i) => (i === index ? { ...d, ...patch } : d)));
   }
 
-  function handleTypeChange(index, key) {
-    const label = TRAINING_TYPES.find((t) => t.key === key)?.label ?? sportFromTypeKey(key)?.label;
-    // Titel mitziehen, solange der Nutzer keinen eigenen gesetzt hat.
-    const patch = { type_key: key };
-    if (!days[index].title && label) patch.title = label;
-    updateDay(index, patch);
+  function handleUnitChange(index, unitId) {
+    const unit = units.find((u) => u.id === unitId);
+    updateDay(index, {
+      unit_id: unitId,
+      title: unit?.title ?? '',
+      type_key: unit?.type_key ?? '',
+      duration_min: unit?.duration_min != null ? String(unit.duration_min) : '',
+    });
   }
 
   function addDay(isRest) {
-    setDays([...days, { title: isRest ? 'Ruhetag' : '', type_key: '', duration_min: '', is_rest: isRest }]);
+    setDays([...days, { unit_id: '', title: isRest ? 'Ruhetag' : '', type_key: '', duration_min: '', is_rest: isRest }]);
   }
 
   function removeDay(index) {
@@ -52,13 +57,14 @@ export default function PlanEditor({ initialPlan, userSports = [], onSave, onCan
     if (!title.trim()) return showToast('Bitte einen Namen für den Plan eingeben');
     if (days.length === 0) return showToast('Der Plan braucht mindestens einen Tag');
 
-    const missing = days.some((d) => !d.is_rest && !d.title.trim());
-    if (missing) return showToast('Bitte jedem Trainingstag eine Bezeichnung geben');
+    const missing = days.some((d) => !d.is_rest && !d.unit_id);
+    if (missing) return showToast('Bitte jedem Trainingstag eine Einheit zuweisen');
 
     onSave(
       { ...(initialPlan?.id ? { id: initialPlan.id } : {}), title: title.trim(), notes: notes.trim() || null },
       days.map((d) => ({
-        title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title.trim(),
+        unit_id: d.is_rest ? null : d.unit_id,
+        title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title,
         type_key: d.is_rest ? null : (d.type_key || null),
         duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
         is_rest: d.is_rest,
@@ -81,6 +87,13 @@ export default function PlanEditor({ initialPlan, userSports = [], onSave, onCan
         <label>Notiz (optional)</label>
         <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="z.B. für Einsteiger, 3× pro Woche" />
       </div>
+
+      {units.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+          Noch keine Einheiten angelegt — im Einheiten-Tab lassen sich welche erstellen,
+          bevor hier Trainingstage damit befüllt werden können.
+        </p>
+      )}
 
       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '12px 0 8px' }}>
         {days.length} Tage · {trainingDays} Trainingseinheiten · {days.length - trainingDays} Ruhetage
@@ -107,40 +120,24 @@ export default function PlanEditor({ initialPlan, userSports = [], onSave, onCan
           {!day.is_rest && (
             <>
               <select
-                value={day.type_key}
-                onChange={(e) => handleTypeChange(index, e.target.value)}
+                value={day.unit_id}
+                onChange={(e) => handleUnitChange(index, e.target.value)}
                 style={{ marginBottom: 6 }}
               >
-                <option value="">Frei / kein Typ</option>
-                {TRAINING_TYPE_GROUPS.map((group) => (
-                  <optgroup key={group} label={group}>
-                    {trainingTypesByGroup(group).map((t) => (
-                      <option key={t.key} value={t.key}>{t.label}</option>
-                    ))}
-                  </optgroup>
+                <option value="">Einheit wählen…</option>
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.title}{resolveTypeLabel(u.type_key) ? ` (${resolveTypeLabel(u.type_key)})` : ''}
+                  </option>
                 ))}
-                {userSports.length > 0 && (
-                  <optgroup label="Deine Sportarten">
-                    {userSports.map((key) => {
-                      const sport = getSport(key);
-                      if (!sport) return null;
-                      return <option key={key} value={sportTypeKey(key)}>{sport.label}</option>;
-                    })}
-                  </optgroup>
-                )}
               </select>
-              <div style={{ display: 'flex', gap: 6 }}>
+              {day.unit_id && (
                 <input
-                  type="text" value={day.title} style={{ flex: 2 }}
-                  onChange={(e) => updateDay(index, { title: e.target.value })}
-                  placeholder="Bezeichnung, z.B. Push"
-                />
-                <input
-                  type="number" value={day.duration_min} style={{ flex: 1 }} min="0" max="1440"
+                  type="number" value={day.duration_min} min="0" max="1440"
                   onChange={(e) => updateDay(index, { duration_min: e.target.value })}
-                  placeholder="Min."
+                  placeholder="Dauer an diesem Tag (Min.)"
                 />
-              </div>
+              )}
             </>
           )}
         </div>

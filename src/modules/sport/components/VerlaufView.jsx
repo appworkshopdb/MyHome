@@ -7,6 +7,7 @@ import CalendarLegend from './CalendarLegend';
 import DayDetail from './DayDetail';
 import PlanPicker from './PlanPicker';
 import ApplyPlanDialog from './ApplyPlanDialog';
+import WorkoutForm from './WorkoutForm';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
@@ -17,11 +18,19 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 // diese Komponente, weil das eigentliche Anlegen der Einheiten in
 // SportModule passiert (dort liegen auch workouts/plans).
 //
+// formInitial/onOpenForm/onCancelForm/onSaveForm kommen von SportModule:
+// seit der Einheiten-Bibliothek gibt es keinen eigenen "Training"-Tab
+// mehr, der das Formular zeigt — Bearbeiten/Neu-Anlegen/Vorschlag-
+// Starten öffnen es jetzt direkt hier, ohne Tab-Wechsel.
+//
 // referenceDate ersetzt das frühere "month": in der Monatsansicht zeigt
 // es (immer auf Tag 1 normiert) den sichtbaren Monat, in der
 // Wochenansicht irgendein Tag der sichtbaren Woche — CalendarHeader
 // rechnet je nach viewMode unterschiedlich damit weiter.
-export default function VerlaufView({ workouts, plans, loading, onToggleDone, onEdit, onDelete, onPlanNew, onApplyPlan }) {
+export default function VerlaufView({
+  workouts, plans, loading, onToggleDone, onEdit, onDelete, onPlanNew, onApplyPlan,
+  formInitial, onOpenForm, onCancelForm, onSaveForm, userSports, showToast,
+}) {
   const [viewMode, setViewMode] = useState('month');
   const [referenceDate, setReferenceDate] = useState(() => {
     const d = new Date();
@@ -33,6 +42,14 @@ export default function VerlaufView({ workouts, plans, loading, onToggleDone, on
 
   if (loading) {
     return <div className="page"><div className="card">Lädt…</div></div>;
+  }
+
+  if (formInitial !== false) {
+    return (
+      <div className="page">
+        <WorkoutForm onSave={onSaveForm} onCancel={onCancelForm} showToast={showToast} initialValues={formInitial} userSports={userSports} />
+      </div>
+    );
   }
 
   function handleViewModeChange(mode) {
