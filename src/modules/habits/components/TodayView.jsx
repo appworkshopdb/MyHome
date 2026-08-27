@@ -2,13 +2,12 @@
 // Heute-Ansicht + Wochenübersicht + Streak-Schutz-Anzeige
 
 import { useState, useMemo } from 'react';
-import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } from '../lib/habUtils.js';
+import { today, isDueOn, isDone, getEntry, calcStreak, toDateStr } from '../lib/habUtils.js';
 import { toggleEntry, setEntryCount } from '../lib/habData.js';
 import { fb } from '../../../core/lib/feedback';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-// Gibt die 7 Tage der aktuellen Woche zurück (Mo–So)
 function getCurrentWeekDays() {
   const now = new Date();
   const mon = new Date(now);
@@ -20,7 +19,6 @@ function getCurrentWeekDays() {
   });
 }
 
-// Streak-Schutz: war gestern ein Fehltag, aber vorgestern erledigt?
 function isStreakProtected(habit, entries) {
   const todayStr = today();
   const yesterday = new Date(todayStr);
@@ -35,7 +33,7 @@ function isStreakProtected(habit, entries) {
   if (!missedYesterday) return false;
   const doneBeforeYesterday = isDone(entries, habit.id, dayBeforeStr, habit.target_count);
   const doneToday = isDone(entries, habit.id, todayStr, habit.target_count);
-  return doneBeforeYesterday || doneToday; // Streak noch aktiv via never-miss-twice
+  return doneBeforeYesterday || doneToday;
 }
 
 export default function TodayView({ habits, entries, onEntriesChange, onNavigateToHabits }) {
@@ -43,8 +41,8 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
   const [error, setError]       = useState(null);
   const [showWeek, setShowWeek] = useState(false);
 
-  const todayStr  = today();
-  const weekDays  = useMemo(() => getCurrentWeekDays(), []);
+  const todayStr = today();
+  const weekDays = useMemo(() => getCurrentWeekDays(), []);
 
   const dueHabits = useMemo(
     () => habits.filter((h) => h.active && !h.deleted_at && isDueOn(h, todayStr)),
@@ -61,10 +59,10 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
     setError(null);
     setLoading(habit.id);
 
-    // Zustand VOR dem Toggle merken — für Feedback-Entscheidung nach dem Laden
-    const wasAllDone = totalDue > 0 && totalDone === totalDue;
-    const entry = getEntry(entries, habit.id, todayStr);
+    // Zustand VOR dem Toggle merken — für Feedback-Entscheidung
+    const entry   = getEntry(entries, habit.id, todayStr);
     const wasDone = entry && !entry.deleted_at && entry.count >= habit.target_count;
+    const wasAllDone = totalDue > 0 && totalDone === totalDue;
 
     try {
       if (wasDone) {
@@ -76,9 +74,8 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
       }
       await onEntriesChange();
 
-      // Feedback — nur beim Abhaken (nicht beim Rückgängig)
+      // Feedback nur beim Abhaken, nicht beim Rückgängig
       if (!wasDone) {
-        // Prüfen ob jetzt alle erledigt sind: totalDone + 1 (dieser Habit)
         const nowAllDone = !wasAllDone && (totalDone + 1 === totalDue);
         if (nowAllDone) {
           fb.habitAllDone(); // Dreiklang + Doppel-Puls
@@ -132,7 +129,6 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
       {/* Wochenübersicht */}
       {showWeek && habits.filter((h) => h.active && !h.deleted_at).length > 0 && (
         <div className="hab-week-overview">
-          {/* Wochentag-Header */}
           <div className="hab-week-grid-header">
             <div className="hab-week-grid-name-col" />
             {weekDays.map((d, i) => (
@@ -144,7 +140,6 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
               </div>
             ))}
           </div>
-          {/* Habit-Zeilen */}
           {habits.filter((h) => h.active && !h.deleted_at).map((habit) => (
             <div key={habit.id} className="hab-week-grid-row">
               <div className="hab-week-grid-name">
@@ -200,11 +195,11 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
       {totalDue > 0 && (
         <div className="hab-list">
           {dueHabits.map((habit) => {
-            const entry     = getEntry(entries, habit.id, todayStr);
-            const done      = entry && !entry.deleted_at && entry.count >= habit.target_count;
-            const streak    = calcStreak(habit, entries);
+            const entry      = getEntry(entries, habit.id, todayStr);
+            const done       = entry && !entry.deleted_at && entry.count >= habit.target_count;
+            const streak     = calcStreak(habit, entries);
             const protected_ = isStreakProtected(habit, entries);
-            const busy      = loading === habit.id;
+            const busy       = loading === habit.id;
 
             return (
               <div
