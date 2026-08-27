@@ -7,6 +7,7 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
+import { fb } from './lib/feedback'; // NEU
 
 const CACHE_KEY = 'hub-cache-v2';
 
@@ -220,6 +221,7 @@ export default function Hub({ onOpenModule }) {
   async function handleToggleTodo(id, currentDone) {
     const next = !currentDone;
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
+    if (!currentDone) fb.todoCheck(); // NEU: Feedback nur beim Abhaken, nicht beim Wiederherstellen
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
