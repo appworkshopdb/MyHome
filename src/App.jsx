@@ -2,6 +2,7 @@ import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
+import { useRef } from 'react';
 import Login from './core/components/Login';
 import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
@@ -27,35 +28,69 @@ const MODULE_COMPONENTS = {
   habits:    HabitsModule,
   shopping:  ShoppingModule,
 };
+// Reihenfolge der Screens für Swipe-Navigation — muss mit Bottom-Nav übereinstimmen.
+// null = Hub, dann die 5 Module in der Reihenfolge der Nav-Buttons.
+const SWIPE_ORDER = [null, 'habits', 'finance', 'sport', 'nutrition', 'shopping'];
+
+// Mindest-Swipe-Distanz (px) und maximale vertikale Abweichung
+const SWIPE_MIN_X = 60;
+const SWIPE_MAX_Y = 80; // verhindert Auslösung bei diagonalem Scrollen
+
 export default function App() {
   const { session, ladeVorgang } = useAuth();
-  // module: null = Hub (Landingpage), 'profile' = Profil-Seite, sonst
-  // Modul-Id. view: Unteransicht innerhalb eines Moduls. Kommt komplett
-  // aus der URL (core/lib/useRoute.js) — dadurch übersteht der aktuelle
-  // Bildschirm einen Reload, statt immer zurück zum Hub zu springen, und
-  // jede Ansicht hat automatisch einen eigenen, teilbaren Link.
   const { module: activeModule, view, navigate } = useRoute();
-  // App-weit geladen (nicht nur im Hub), damit Popup + Menü-Warnpunkt
-  // auf jedem Screen aktuell sind — siehe useRequiredDataStatus.js.
   const { warnings } = useRequiredDataStatus(session);
+
+  // Touch-Start-Koordinaten merken
+  const touchStart = useRef(null);
+
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStart.current.x;
+    const dy = Math.abs(t.clientY - touchStart.current.y);
+    touchStart.current = null;
+
+    // Zu kurz, zu diagonal, oder Profil-Screen → ignorieren
+    if (Math.abs(dx) < SWIPE_MIN_X || dy > SWIPE_MAX_Y) return;
+    if (activeModule === 'profile') return;
+
+    const currentIndex = SWIPE_ORDER.indexOf(activeModule);
+    if (currentIndex === -1) return;
+
+    if (dx < 0) {
+      // Swipe links → nächstes Modul
+      const next = SWIPE_ORDER[currentIndex + 1];
+      if (next !== undefined) navigate(next ?? '');
+    } else {
+      // Swipe rechts → vorheriges Modul
+      const prev = SWIPE_ORDER[currentIndex - 1];
+      if (prev !== undefined) navigate(prev ?? '');
+    }
+  }
+
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
+
   const isModule = activeModule && activeModule !== 'profile';
   const mod = isModule ? getModule(activeModule) : null;
-  // built ist der EINE Schalter: false → immer LockedModule, egal ob
-  // zufällig eine Komponente registriert ist. So lässt sich vor dem
-  // echten Launch alles mit einer Zeile in modules.js wieder sperren.
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
+
   return (
     <EntrySheetProvider>
-      {/* Hub und Profil-Seite rendern ihre eigene ModuleTopBar hier, weil
-          sie keine eigene *Module.jsx haben, die das übernähme. Module
-          (FinanceModule, SportModule usw.) rendern ModuleTopBar jeweils
-          selbst — so war es schon vor dieser Änderung. */}
       {activeModule === null && (
         <ModuleTopBar title="Zuhause" hasWarnings={warnings.length > 0} />
       )}
-      <main className="main-content">
+      <main
+        className="main-content"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {activeModule === null && <Hub onOpenModule={navigate} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
         {mod && (ModuleComponent ? (
