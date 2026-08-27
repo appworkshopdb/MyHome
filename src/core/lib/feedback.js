@@ -100,13 +100,22 @@ function playTone({ freq = 440, type = 'sine', duration = 0.12, gain = 0.12, sta
 
 const SOUND = {
   /**
-   * ToDo / Gewohnheit abhaken.
-   * Helles, kurzes "Ding" — klar und befriedigend, nicht aufdringlich.
+   * Einzelnes Abhaken (ToDo / Gewohnheit).
    * Zwei aufsteigende Töne dicht hintereinander → kleines "Tock-Ting".
    */
-  todoCheck: () => {
-    playTone({ freq: 698, type: 'sine', duration: 0.09, gain: 0.10 });                 // F5
+  check: () => {
+    playTone({ freq: 698, type: 'sine', duration: 0.09, gain: 0.10 });                  // F5
     playTone({ freq: 880, type: 'sine', duration: 0.13, gain: 0.12, startDelay: 0.06 }); // A5
+  },
+
+  /**
+   * Alle Gewohnheiten des Tages erledigt — aufsteigender Dreiklang.
+   * C5 → E5 → G5, leicht zeitversetzt → Mini-Fanfare.
+   */
+  allDone: () => {
+    playTone({ freq: 523, type: 'sine', duration: 0.12, gain: 0.11 });                  // C5
+    playTone({ freq: 659, type: 'sine', duration: 0.12, gain: 0.12, startDelay: 0.10 }); // E5
+    playTone({ freq: 784, type: 'sine', duration: 0.20, gain: 0.13, startDelay: 0.20 }); // G5
   },
 };
 
@@ -115,6 +124,9 @@ const SOUND = {
 const HAPTIC = {
   /** Weiches, kurzes Tippen — für einfache Bestätigungen */
   check: () => haptic(40),
+
+  /** Doppel-Puls — für besondere Momente (alle erledigt, Workout fertig) */
+  success: () => haptic([50, 80, 50]),
 };
 
 // ── Öffentliche API (kombinierte Helfer) ──────────────────────────────────────
@@ -123,10 +135,26 @@ const HAPTIC = {
 export const fb = {
   /**
    * ToDo-Task abhaken.
-   * Aufsteigende zwei-Ton-Sequenz + kurzes Haptik-Pulse.
    */
   todoCheck: () => {
     HAPTIC.check();
-    SOUND.todoCheck();
+    SOUND.check();
+  },
+
+  /**
+   * Einzelne Gewohnheit abhaken — gleicher Sound wie ToDo.
+   */
+  habitCheck: () => {
+    HAPTIC.check();
+    SOUND.check();
+  },
+
+  /**
+   * Alle Gewohnheiten des Tages erledigt.
+   * Dreiklang + Doppel-Puls — bewusst etwas besonderes.
+   */
+  habitAllDone: () => {
+    HAPTIC.success();
+    SOUND.allDone();
   },
 };
