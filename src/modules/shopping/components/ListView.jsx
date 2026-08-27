@@ -57,6 +57,10 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
   const [statusBusy,  setStatusBusy]  = useState(null); // id der Liste deren Status gerade gesetzt wird
+  const [dateEditId,  setDateEditId]  = useState(null); // id der Liste im Datum-Edit-Modus
+  const [editDate,    setEditDate]    = useState('');
+  const [editTime,    setEditTime]    = useState('');
+  const [dateSaving,  setDateSaving]  = useState(false);
 
   // Umbenennen
   const [editId,      setEditId]      = useState(null);
@@ -131,6 +135,32 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       setEditId(null);
     } catch { setError('Umbenennen fehlgeschlagen.'); }
     finally { setEditSaving(false); }
+  }
+
+  // ─── Datum bearbeiten ────────────────────────────────────────
+  function startDateEdit(e, list) {
+    e.stopPropagation();
+    setDateEditId(list.id);
+    setEditDate(list.due_date || '');
+    setEditTime(list.due_time || '');
+  }
+
+  async function handleSaveDate(listId) {
+    setDateSaving(true);
+    try {
+      await saveList({ id: listId, name: lists.find((l) => l.id === listId)?.name || '', due_date: editDate || null, due_time: editTime || null });
+      await onListsChange();
+      setDateEditId(null);
+    } catch { setError('Datum konnte nicht gespeichert werden.'); }
+    finally { setDateSaving(false); }
+  }
+
+  async function handleRemoveDate(e, list) {
+    e.stopPropagation();
+    try {
+      await saveList({ id: list.id, name: list.name, due_date: null, due_time: null });
+      await onListsChange();
+    } catch { setError('Datum konnte nicht entfernt werden.'); }
   }
 
   // ─── Status manuell setzen ──────────────────────────────────
@@ -258,9 +288,55 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                   <div className="sho-list-icon">{list.icon || '🛒'}</div>
                   <div className="sho-list-info">
                     <div className="sho-list-name">{list.name}</div>
-                  {(list.due_date) && (
-                    <DueBadge date={list.due_date} time={list.due_time} />
-                  )}
+                    {dateEditId === list.id ? (
+                      <div className="sho-date-inline" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="sho-due-input"
+                          style={{ flex: 1, minHeight: 32, fontSize: '0.85rem' }}
+                        />
+                        <select
+                          value={editTime}
+                          onChange={(e) => setEditTime(e.target.value)}
+                          className="sho-unit-select"
+                          style={{ minHeight: 32, fontSize: '0.85rem' }}
+                        >
+                          <option value="">Tageszeit</option>
+                          <option value="morgens">🌅 Morgens</option>
+                          <option value="mittags">☀️ Mittags</option>
+                          <option value="nachmittags">🌤️ Nachmittags</option>
+                          <option value="abends">🌙 Abends</option>
+                        </select>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleSaveDate(list.id)}
+                          disabled={dateSaving}
+                          style={{ minHeight: 32, padding: '4px 10px', fontSize: '0.8rem', flexShrink: 0 }}
+                        >
+                          {dateSaving ? '…' : 'OK'}
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setDateEditId(null)}
+                          style={{ minHeight: 32, padding: '4px 8px', fontSize: '0.8rem', flexShrink: 0 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : list.due_date ? (
+                      <span className="sho-date-edit-row">
+                        <button className="sho-due-badge-btn" onClick={(e) => startDateEdit(e, list)} title="Datum ändern">
+                          <DueBadge date={list.due_date} time={list.due_time} />
+                        </button>
+                        <button className="sho-date-remove" onClick={(e) => handleRemoveDate(e, list)} title="Datum entfernen">✕</button>
+                      </span>
+                    ) : (
+                      <button className="sho-date-add" onClick={(e) => startDateEdit(e, list)}>
+                        + Datum
+                      </button>
+                    )}
                     <StatusBadge
                       list={list}
                       busy={statusBusy === list.id}
