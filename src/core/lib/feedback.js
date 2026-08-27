@@ -51,10 +51,13 @@ const SOUND_FILES = {
 // Cache: name → Audio-Objekt (vorgeladen)
 const _audioCache = {};
 
+const VOLUME = 0.5; // Globale Lautstärke 0.0–1.0 — hier zentral anpassen
+
 function preload() {
   for (const [name, path] of Object.entries(SOUND_FILES)) {
     const a = new Audio(path);
     a.preload = 'auto';
+    a.volume = VOLUME;
     _audioCache[name] = a;
   }
 }
@@ -67,13 +70,13 @@ try { preload(); } catch { /* SSR oder kein Audio-Support */ }
  * Nutzt cloneNode damit derselbe Sound parallel mehrfach abgespielt werden kann
  * (z.B. schnelles Abhaken mehrerer Artikel).
  */
-function playSound(name, volume = 0.3) {
+function playSound(name) {
   if (!isSoundEnabled()) return;
   const base = _audioCache[name];
   if (!base) return;
   try {
     const clone = base.cloneNode();
-    clone.volume = Math.max(0, Math.min(1, volume));
+    clone.volume = VOLUME;
     clone.play().catch(() => {
       // Autoplay-Policy: Browser blockiert Play ohne User-Geste.
       // Da alle fb.*-Aufrufe in onClick-Handlern stehen, sollte das nie passieren.
@@ -173,7 +176,7 @@ export const fb = {
 
   listStatusCycle: () => {
     HAPTIC.neutral();
-    playSound('swoosh', 0.5);
+    playSound('swoosh');
   },
 
   // ── Sport ─────────────────────────────────────────────────────────
@@ -184,7 +187,7 @@ export const fb = {
 
   restDay: () => {
     HAPTIC.neutral();
-    playSound('swoosh', 0.5);
+    playSound('swoosh');
   },
 
   planDayCheck: () => {
