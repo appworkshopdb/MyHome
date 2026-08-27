@@ -7,7 +7,6 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
-import { fb } from './lib/feedback'; // NEU
 
 const CACHE_KEY = 'hub-cache-v2';
 
@@ -184,36 +183,55 @@ export default function Hub({ onOpenModule }) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    const wasDone  = existing && existing.count >= habit.target_count;
+    const wasDone  = !!(existing && existing.count >= habit.target_count);
 
-    // Optimistisch updaten
-    const nextMap  = { ...habEntryMap };
-    const nextDone = wasDone ? habDone - 1 : habDone + 1;
-    setHabDone(nextDone);
+    // Optimistisch sofort updaten — Map UND Counter zusammen,
+    // damit schnelle Taps den korrekten State sehen
+    const nextMap = { ...habEntryMap };
+    if (wasDone) {
+      delete nextMap[habit.id];
+    } else {
+      // Platzhalter damit nächster Tap 'existing' findet
+      nextMap[habit.id] = existing
+        ? { ...existing, count: habit.target_count }
+        : { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr };
+    }
+    setHabEntryMap(nextMap);
+    setHabDone(wasDone ? habDone - 1 : habDone + 1);
 
     try {
-      if (existing) {
-        // Eintrag vorhanden → löschen (un-check) oder reaktivieren
+      if (existing?.id) {
+        // Eintrag existiert in DB — toggle via update
         if (wasDone) {
-          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
-          delete nextMap[habit.id];
+          await sb.from('hab_entries')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', existing.id);
         } else {
-          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
-          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
+          await sb.from('hab_entries')
+            .update({ deleted_at: null, count: habit.target_count })
+            .eq('id', existing.id);
         }
       } else {
-        // Kein Eintrag → neu anlegen
-        const { data } = await sb.from('hab_entries')
-          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
-          .select().single();
-        if (data) nextMap[habit.id] = data;
+        // Kein Eintrag in DB → neu anlegen, echte ID zurückschreiben
+        const { data, error } = await sb.from('hab_entries')
+          .insert({
+            habit_id:  habit.id,
+            logged_on: todayStr,
+            count:     habit.target_count,
+            owner_id:  session.user.id,
+          })
+          .select('id, habit_id, count, logged_on, deleted_at')
+          .single();
+        if (error) throw error;
+        if (data) {
+          setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
+        }
       }
-      setHabEntryMap(nextMap);
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      // Rollback
-      setHabDone(habDone);
+      // Rollback auf vorherigen State
       setHabEntryMap(habEntryMap);
+      setHabDone(habDone);
     }
   }
 
@@ -221,7 +239,6 @@ export default function Hub({ onOpenModule }) {
   async function handleToggleTodo(id, currentDone) {
     const next = !currentDone;
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
-    if (!currentDone) fb.todoCheck(); // NEU: Feedback nur beim Abhaken, nicht beim Wiederherstellen
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
