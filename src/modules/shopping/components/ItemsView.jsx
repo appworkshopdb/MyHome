@@ -233,10 +233,18 @@ export default function ItemsView({ list, onBack }) {
   async function handleToggle(item) {
     try {
       await toggleItemDone(item.id, !item.done);
-      setItems((prev) =>
-        prev.map((i) => i.id === item.id ? { ...i, done: !item.done } : i)
-      );
-      if (!item.done) fb.itemCheck(); // NEU: Tick beim Abhaken (nur beim Erledigen)
+      const updatedItems = items.map((i) => i.id === item.id ? { ...i, done: !item.done } : i);
+      setItems(updatedItems);
+
+      if (!item.done) {
+        // Prüfen ob nach diesem Toggle alle Artikel erledigt sind
+        const offeneNachToggle = updatedItems.filter((i) => !i.done);
+        if (offeneNachToggle.length === 0) {
+          fb.itemAllDone(); // ziel_erreicht2.wav — alle abgehakt
+        } else {
+          fb.itemCheck();   // click2.wav — einzelner Artikel
+        }
+      }
     } catch (e) {
       setError('Konnte nicht aktualisiert werden.');
       await fetchItems();

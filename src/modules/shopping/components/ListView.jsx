@@ -174,6 +174,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     try {
       await updateListStatus(list.id, next);
       await onListsChange();
+      fb.listStatusCycle(); // swoosh.wav
     } catch { setError('Status konnte nicht gesetzt werden.'); }
     finally  { setStatusBusy(null); }
   }
