@@ -1233,3 +1233,129 @@
   text-underline-offset: 3px;
   flex-shrink: 0;
 }
+
+/* ── Hub Wochen-Kalender ── */
+.hub-cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin: 10px 0 4px;
+}
+
+.hub-cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  min-height: var(--touch-target);
+  position: relative;
+}
+.hub-cal-day:active { opacity: 0.6; }
+
+.hub-cal-wd {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hub-cal-dd {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-cal-day.today .hub-cal-dd {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-weight: 700;
+}
+
+.hub-cal-dots {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-cal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hub-cal-dot--sport    { background: var(--accent); }
+.hub-cal-dot--shopping { background: var(--success); }
+.hub-cal-dot--todo     { background: var(--text-muted); }
+.hub-cal-dot--finance  { background: var(--warning); }
+
+.hub-cal-dot-skeleton {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+/* ── DaySheet ── */
+.hub-cal-sheet-body {
+  padding: 12px 20px 8px;
+}
+.hub-cal-sheet-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 12px 0;
+}
+.hub-cal-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  min-height: var(--touch-target);
+}
+.hub-cal-sheet-row:last-child { border-bottom: none; }
+.hub-cal-sheet-row.done { opacity: 0.45; }
+
+.hub-cal-sheet-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.hub-cal-sheet-content {
+  flex: 1;
+  min-width: 0;
+}
+.hub-cal-sheet-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.hub-cal-sheet-row.done .hub-cal-sheet-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.hub-cal-sheet-time {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.hub-cal-sheet-done {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
