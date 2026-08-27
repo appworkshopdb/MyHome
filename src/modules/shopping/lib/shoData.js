@@ -107,19 +107,14 @@ export async function loadItems(listId) {
   const sb = getSupabase();
   const { data, error } = await sb
     .from('sho_items')
-    .select('*, sho_list_stores(id, store_name)')
+    .select('*')
     .eq('list_id', listId)
     .is('deleted_at', null)
     .order('done', { ascending: true })
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
-  // store_name aus Join flachklopfen
-  return (data ?? []).map((i) => ({
-    ...i,
-    store_name: i.sho_list_stores?.store_name ?? null,
-    sho_list_stores: undefined,
-  }));
+  return data ?? [];
 }
 
 export async function saveItem(item) {
@@ -128,12 +123,12 @@ export async function saveItem(item) {
     const { data, error } = await sb
       .from('sho_items')
       .update({
-        name:          item.name,
-        category:      item.category      ?? null,
-        quantity:      item.quantity      ?? null,
-        unit:          item.unit          ?? null,
-        note:          item.note          ?? null,
-        list_store_id: item.list_store_id ?? null,
+        name:            item.name,
+        category:        item.category        ?? null,
+        quantity:        item.quantity        ?? null,
+        unit:            item.unit            ?? null,
+        note:            item.note            ?? null,
+        item_store_name: item.item_store_name ?? null,
         sort_order: item.sort_order ?? 0,
       })
       .eq('id', item.id)
@@ -147,14 +142,15 @@ export async function saveItem(item) {
       .from('sho_items')
       .insert({
         owner_id,
-        list_id:    item.list_id,
-        name:       item.name,
-        category:   item.category ?? null,
-        quantity:   item.quantity ?? null,
-        unit:       item.unit ?? null,
-        note:       item.note ?? null,
-        done:       false,
-        sort_order: item.sort_order ?? 0,
+        list_id:         item.list_id,
+        name:            item.name,
+        category:        item.category        ?? null,
+        quantity:        item.quantity        ?? null,
+        unit:            item.unit            ?? null,
+        note:            item.note            ?? null,
+        item_store_name: item.item_store_name ?? null,
+        done:            false,
+        sort_order:      item.sort_order      ?? 0,
       })
       .select()
       .single();
