@@ -940,3 +940,62 @@
 .sho-item-store-opt:active {
   background: var(--bg-card);
 }
+
+/* ─── Datum inline bearbeiten ─────────────────────────────── */
+
+.sho-date-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding: 4px 0;
+}
+
+.sho-date-edit-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.sho-due-badge-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-due-badge-btn:hover .sho-due-badge {
+  text-decoration: underline;
+}
+
+.sho-date-remove {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1px 3px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho-date-remove:hover {
+  color: var(--danger);
+}
+
+.sho-date-add {
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  font-family: var(--font);
+  margin-top: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
