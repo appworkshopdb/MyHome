@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
-  saveListAsTemplate, loadListStores, saveListStore, deleteListStore, assignItemToStore,
+  saveListAsTemplate,
 } from '../lib/shoData.js';
 
 // ─── Kategorie-Zuordnung (statisch, kein DB-Overhead) ─────────────────
@@ -179,10 +179,8 @@ const STORE_NAMES = [
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
   const [items,            setItems]            = useState([]);
-  const [stores,           setStores]           = useState([]);
-  const [activeStore,      setActiveStore]      = useState(null);
-  const [showStoreMgr,     setShowStoreMgr]     = useState(false);
-  const [newStore,         setNewStore]         = useState('');
+  const [activeStore,      setActiveStore]      = useState(''); // Filter: '' = Alle
+  const [selectedStore,    setSelectedStore]    = useState(''); // Eingabe: gewählter Laden
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
   const [input,            setInput]            = useState('');
@@ -208,16 +206,9 @@ export default function ItemsView({ list, onBack }) {
     }
   }, [list.id]);
 
-  const fetchStores = useCallback(async () => {
-    try {
-      const data = await loadListStores(list.id);
-      setStores(data);
-    } catch (e) { /* non-fatal */ }
-  }, [list.id]);
-
   useEffect(() => {
-    Promise.all([fetchItems(), fetchStores()]).finally(() => setLoading(false));
-  }, [fetchItems, fetchStores]);
+    fetchItems().finally(() => setLoading(false));
+  }, [fetchItems]);
 
   // Autocomplete
   function handleInputChange(val) {
@@ -245,12 +236,12 @@ export default function ItemsView({ list, onBack }) {
     setError(null);
     try {
       await saveItem({
-        list_id:       list.id,
-        name:          trimmed,
-        category:      getCategory(trimmed),
-        quantity:      quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
-        unit:          unit.trim() || null,
-        list_store_id: activeStore ?? null,
+        list_id:    list.id,
+        name:       trimmed,
+        category:   getCategory(trimmed),
+        quantity:   quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
+        unit:       unit.trim() || null,
+        store_name: selectedStore || null,
       });
       await fetchItems();
       setInput('');
@@ -336,37 +327,6 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
-  // ─── Laden-Verwaltung ────────────────────────────────────
-  async function handleAddStore() {
-    const name = newStore.trim();
-    if (!name || newStore === '__custom') return;
-    try {
-      await saveListStore(list.id, name);
-      await fetchStores();
-      setNewStore('');
-    } catch { setError('Laden konnte nicht gespeichert werden.'); }
-  }
-
-  async function handleDeleteStore(storeId) {
-    try {
-      await deleteListStore(storeId);
-      if (activeStore === storeId) setActiveStore(null);
-      await fetchStores();
-      await fetchItems();
-    } catch { setError('Laden konnte nicht gelöscht werden.'); }
-  }
-
-  async function handleAssignStore(itemId, listStoreId) {
-    try {
-      await assignItemToStore(itemId, listStoreId || null);
-      setItems((prev) => prev.map((i) => {
-        if (i.id !== itemId) return i;
-        const store = stores.find((s) => s.id === listStoreId);
-        return { ...i, list_store_id: listStoreId || null, store_name: store?.store_name ?? null };
-      }));
-    } catch { setError('Zuweisung fehlgeschlagen.'); }
-  }
-
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
     if (e.key === 'Escape') { setSuggestions([]); }
@@ -380,8 +340,15 @@ export default function ItemsView({ list, onBack }) {
     return <div className="page-loading">Wird geladen …</div>;
   }
 
-  const openItems = items.filter((i) => !i.done);
-  const doneItems = items.filter((i) => i.done);
+  // Läden dynamisch aus Items berechnen
+  const storeNames = [...new Set(items.map((i) => i.store_name).filter(Boolean))].sort();
+
+  // Filter anwenden
+  const visibleItems = activeStore
+    ? items.filter((i) => i.store_name === activeStore)
+    : items;
+  const openItems  = visibleItems.filter((i) => !i.done);
+  const doneItems  = visibleItems.filter((i) => i.done);
   const openGroups = groupByCategory(openItems);
 
   return (
@@ -395,98 +362,25 @@ export default function ItemsView({ list, onBack }) {
         <div className="sho-msg-success">✓ Vorlage gespeichert</div>
       )}
 
-      {/* ── Laden-Filter (nur wenn Läden vorhanden) ── */}
-      {stores.length > 0 && (
+      {/* ── Laden-Filter (nur wenn Artikel mit Laden-Tag vorhanden) ── */}
+      {storeNames.length > 0 && (
         <div className="sho-store-filter">
           <button
-            className={`sho-store-pill ${activeStore === null ? 'active' : ''}`}
-            onClick={() => setActiveStore(null)}
+            className={`sho-store-pill ${activeStore === '' ? 'active' : ''}`}
+            onClick={() => setActiveStore('')}
           >
             Alle
           </button>
-          {stores.map((s) => (
+          {storeNames.map((name) => (
             <button
-              key={s.id}
-              className={`sho-store-pill ${activeStore === s.id ? 'active' : ''}`}
-              onClick={() => setActiveStore(activeStore === s.id ? null : s.id)}
+              key={name}
+              className={`sho-store-pill ${activeStore === name ? 'active' : ''}`}
+              onClick={() => setActiveStore(activeStore === name ? '' : name)}
             >
-              {s.store_name}
+              {name}
             </button>
           ))}
-          <button
-            className="sho-store-pill sho-store-pill--mgr"
-            onClick={() => setShowStoreMgr((v) => !v)}
-            title="Läden verwalten"
-          >
-            ⚙️
-          </button>
         </div>
-      )}
-
-      {/* Laden-Manager */}
-      {showStoreMgr && (
-        <div className="sho-store-mgr">
-          <div className="sho-category-label" style={{ paddingTop: 8 }}>Läden verwalten</div>
-          {stores.map((s) => (
-            <div key={s.id} className="sho-store-mgr-row">
-              <span>{s.store_name}</span>
-              <button className="btn-icon" onClick={() => handleDeleteStore(s.id)} aria-label="Laden entfernen">
-                <IconTrash size={14} />
-              </button>
-            </div>
-          ))}
-          <div className="sho-store-mgr-add">
-            <select
-              value={newStore}
-              onChange={(e) => setNewStore(e.target.value)}
-              className="sho-unit-select"
-              style={{ flex: 1 }}
-            >
-              <option value="">Laden wählen …</option>
-              {STORE_NAMES.filter((n) => !stores.find((s) => s.store_name === n)).map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-              <option value="__custom">+ Eigener Laden</option>
-            </select>
-            <button
-              className="btn btn-primary"
-              onClick={handleAddStore}
-              disabled={!newStore}
-              style={{ minHeight: 36, padding: '4px 12px', flexShrink: 0 }}
-            >
-              <span style={{ display: 'flex', width: 16, height: 16 }}><IconPlus /></span>
-            </button>
-          </div>
-          {newStore === '__custom' && (
-            <input
-              type="text"
-              placeholder="Name des Ladens"
-              value={newStore === '__custom' ? '' : newStore}
-              onChange={(e) => setNewStore(e.target.value)}
-              style={{ marginTop: 6 }}
-              autoFocus
-            />
-          )}
-          {stores.length === 0 && (
-            <button
-              className="sho-add-btn"
-              style={{ fontSize: '0.85rem', paddingTop: 8, borderTop: 'none' }}
-              onClick={() => setShowStoreMgr(true)}
-            >
-              Ersten Laden hinzufügen
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Laden hinzufügen wenn noch keine vorhanden */}
-      {stores.length === 0 && !showStoreMgr && (
-        <button
-          className="sho-store-add-hint"
-          onClick={() => setShowStoreMgr(true)}
-        >
-          + Läden zu dieser Liste hinzufügen
-        </button>
       )}
 
       {/* Aktions-Leiste oben */}
@@ -566,7 +460,6 @@ export default function ItemsView({ list, onBack }) {
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
                 stores={stores}
-                onAssign={handleAssignStore}
               />
             ))}
           </div>
@@ -590,7 +483,6 @@ export default function ItemsView({ list, onBack }) {
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
                 stores={stores}
-                onAssign={handleAssignStore}
               />
             ))}
           </div>
@@ -619,7 +511,7 @@ export default function ItemsView({ list, onBack }) {
       {/* Eingabe-Leiste (sticky über Bottom-Nav) */}
       <div className="sho-input-bar">
 
-        {/* Zeile 1: Menge + Einheit — immer sichtbar */}
+        {/* Zeile 1: Menge + Einheit + Laden */}
         <div className="sho-qty-row">
           <input
             ref={quantityRef}
@@ -636,9 +528,9 @@ export default function ItemsView({ list, onBack }) {
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
-            className="sho-unit-select"
+            className="sho-unit-select sho-unit-select--sm"
           >
-            <option value="">Einheit (optional)</option>
+            <option value="">Einheit</option>
             <option value="Stück">Stück</option>
             <option value="g">g</option>
             <option value="kg">kg</option>
@@ -651,6 +543,16 @@ export default function ItemsView({ list, onBack }) {
             <option value="Bund">Bund</option>
             <option value="EL">EL</option>
             <option value="TL">TL</option>
+          </select>
+          <select
+            value={selectedStore}
+            onChange={(e) => setSelectedStore(e.target.value)}
+            className="sho-unit-select sho-store-select"
+          >
+            <option value="">Laden (optional)</option>
+            {STORE_NAMES.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
           </select>
         </div>
 
@@ -685,7 +587,7 @@ export default function ItemsView({ list, onBack }) {
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
 // Tap auf Checkbox → abhaken
 // Tap auf Artikelname/Menge → Edit-Modus (Menge + Einheit ändern)
-function ItemRow({ item, onToggle, onDelete, onEdit, stores, onAssign }) {
+function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
   const [editing,  setEditing]  = useState(false);
   const [qty,      setQty]      = useState(item.quantity != null ? String(item.quantity) : '');
   const [unit,     setUnit]     = useState(item.unit || '');
@@ -788,15 +690,15 @@ function ItemRow({ item, onToggle, onDelete, onEdit, stores, onAssign }) {
               <span className="sho-item-meta--hint">Menge tippen …</span>
             )}
             {/* Store-Label */}
-            {stores?.length > 0 && item.store_name && (
-              <span className="sho-item-store-label">{item.store_name}</span>
+            {item.item_store_name && (
+              <span className="sho-item-store-label">{item.item_store_name}</span>
             )}
           </span>
         </div>
       )}
 
-      {/* Store-Zuweiser */}
-      {!editing && stores?.length > 0 && (
+      {/* Store-Zuweiser — Laden ändern */}
+      {!editing && (
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
             className="sho-item-store-btn"
@@ -808,18 +710,29 @@ function ItemRow({ item, onToggle, onDelete, onEdit, stores, onAssign }) {
           {showStore && (
             <div className="sho-item-store-dropdown">
               <button
-                className={`sho-item-store-opt ${!item.list_store_id ? 'active' : ''}`}
+                className={`sho-item-store-opt ${!item.item_store_name ? 'active' : ''}`}
                 onClick={() => { onAssign(item.id, null); setShowStore(false); }}
               >
                 Kein Laden
               </button>
-              {stores.map((s) => (
+              {/* Alle bekannten Store-Namen aus den Props */}
+              {allStores.map((name) => (
                 <button
-                  key={s.id}
-                  className={`sho-item-store-opt ${item.list_store_id === s.id ? 'active' : ''}`}
-                  onClick={() => { onAssign(item.id, s.id); setShowStore(false); }}
+                  key={name}
+                  className={`sho-item-store-opt ${item.item_store_name === name ? 'active' : ''}`}
+                  onClick={() => { onAssign(item.id, name); setShowStore(false); }}
                 >
-                  {s.store_name}
+                  {name}
+                </button>
+              ))}
+              {/* Neue Läden direkt eintippen */}
+              {STORE_NAMES.filter((n) => !allStores.includes(n)).slice(0, 8).map((name) => (
+                <button
+                  key={name}
+                  className="sho-item-store-opt"
+                  onClick={() => { onAssign(item.id, name); setShowStore(false); }}
+                >
+                  {name}
                 </button>
               ))}
             </div>
