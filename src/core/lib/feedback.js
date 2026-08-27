@@ -67,7 +67,7 @@ try { preload(); } catch { /* SSR oder kein Audio-Support */ }
  * Nutzt cloneNode damit derselbe Sound parallel mehrfach abgespielt werden kann
  * (z.B. schnelles Abhaken mehrerer Artikel).
  */
-function playSound(name, volume = 0.5) {
+function playSound(name, volume = 0.3) {
   if (!isSoundEnabled()) return;
   const base = _audioCache[name];
   if (!base) return;
