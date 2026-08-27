@@ -42,7 +42,7 @@ async function loadTodayHabits() {
   if (hErr) throw hErr;
   const { data: entries, error: eErr } = await sb
     .from('hab_entries')
-    .select('habit_id, count, logged_on, deleted_at')
+    .select('id, habit_id, count, logged_on, deleted_at')
     .eq('logged_on', todayStr)
     .is('deleted_at', null);
   if (eErr) throw eErr;
@@ -54,15 +54,16 @@ async function loadTodayHabits() {
     if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
     return true;
   });
+  // Map habit_id → entry (für optimistisches Toggle im Hub)
+  const entryMap = {};
+  for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
+
   const doneIds = new Set(
-    (entries ?? [])
-      .filter((e) => {
-        const habit = due.find((h) => h.id === e.habit_id);
-        return habit && e.count >= habit.target_count;
-      })
-      .map((e) => e.habit_id)
+    due
+      .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
+      .map((h) => h.id)
   );
-  return { total: due.length, done: doneIds.size, habits: due };
+  return { total: due.length, done: doneIds.size, habits: due, entryMap };
 }
 
 // Heutiges Training aus spo_workouts — core darf nicht aus modules/ importieren
@@ -115,9 +116,10 @@ export default function Hub({ onOpenModule }) {
   const [expense, setExpense]   = useState(0);
   const [cacheZeit, setCacheZeit] = useState(null);
 
-  const [habTotal, setHabTotal] = useState(0);
-  const [habDone, setHabDone]   = useState(0);
+  const [habTotal, setHabTotal]   = useState(0);
+  const [habDone, setHabDone]     = useState(0);
   const [habHabits, setHabHabits] = useState([]);
+  const [habEntryMap, setHabEntryMap] = useState({}); // habit_id → entry
 
   const [todaySport, setTodaySport] = useState([]);
   const [openFix, setOpenFix]       = useState([]);
@@ -143,6 +145,8 @@ export default function Hub({ onOpenModule }) {
       setHabTotal(todayHab.total);
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
+      setHabEntryMap(todayHab.entryMap ?? {});
+      setHabEntryMap(todayHab.entryMap);
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
@@ -172,6 +176,45 @@ export default function Hub({ onOpenModule }) {
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
   const habAllDone = habTotal > 0 && habDone === habTotal;
+
+  // ── Habit-Toggle direkt im Hub ──
+  // core darf nicht aus modules/ importieren — Logik analog zu habData.toggleEntry
+  async function handleToggleHabit(habit) {
+    const sb       = getSupabase();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const existing = habEntryMap[habit.id];
+    const wasDone  = existing && existing.count >= habit.target_count;
+
+    // Optimistisch updaten
+    const nextMap  = { ...habEntryMap };
+    const nextDone = wasDone ? habDone - 1 : habDone + 1;
+    setHabDone(nextDone);
+
+    try {
+      if (existing) {
+        // Eintrag vorhanden → löschen (un-check) oder reaktivieren
+        if (wasDone) {
+          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
+          delete nextMap[habit.id];
+        } else {
+          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
+          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
+        }
+      } else {
+        // Kein Eintrag → neu anlegen
+        const { data } = await sb.from('hab_entries')
+          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
+          .select().single();
+        if (data) nextMap[habit.id] = data;
+      }
+      setHabEntryMap(nextMap);
+    } catch (e) {
+      console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
+      // Rollback
+      setHabDone(habDone);
+      setHabEntryMap(habEntryMap);
+    }
+  }
 
   // ── Todo-Handler ──
   async function handleToggleTodo(id, currentDone) {
@@ -344,19 +387,37 @@ export default function Hub({ onOpenModule }) {
 
           {/* ── Gewohnheiten ── */}
           {habTotal > 0 && (
-            <ProgressStat
-              variant="card"
-              celebrate={habAllDone}
-              label={habAllDone ? '🏆 Alle Gewohnheiten erledigt!' : 'Gewohnheiten heute'}
-              value={habDone}
-              target={habTotal}
-              onClick={() => onOpenModule('habits')}
-              sublabel={
-                habHabits.length > 0
-                  ? habHabits.slice(0, 6).map((h) => h.icon).join('  ') + (habHabits.length > 6 ? `  +${habHabits.length - 6}` : '')
-                  : undefined
-              }
-            />
+            <div className="hub-hab-block">
+              <div className="hub-hab-header">
+                <span className="hub-quick-card-label">Gewohnheiten heute</span>
+                <span className="hub-hab-count">{habDone} / {habTotal}</span>
+              </div>
+              <div className="hub-hab-progress">
+                <div
+                  className="hub-hab-bar"
+                  style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
+                />
+              </div>
+              <div className="hub-hab-list">
+                {habHabits.map((h) => {
+                  const entry  = habEntryMap[h.id];
+                  const isDone = entry && entry.count >= h.target_count;
+                  return (
+                    <button
+                      key={h.id}
+                      className={`hub-hab-row ${isDone ? 'done' : ''}`}
+                      onClick={() => handleToggleHabit(h)}
+                    >
+                      <span className={`hub-hab-check ${isDone ? 'checked' : ''}`}>
+                        {isDone && '✓'}
+                      </span>
+                      <span className="hub-hab-icon">{h.icon}</span>
+                      <span className="hub-hab-name">{h.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           <div className="hub-divider" />
