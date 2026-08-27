@@ -178,12 +178,14 @@ export default function Hub({ onOpenModule }) {
     const existing = habEntryMap[habit.id];
     const wasDone  = !!(existing && existing.count >= habit.target_count);
 
-    // Optimistisch sofort updaten — Map UND Counter zusammen
+    // Optimistisch sofort updaten
     const nextMap = { ...habEntryMap };
     if (wasDone) {
-      delete nextMap[habit.id];
+      // Rückgängig: count auf 0 setzen, Eintrag aber IN der Map behalten
+      // damit nächster Tap die id kennt und kein neues Insert versucht
+      nextMap[habit.id] = { ...existing, count: 0 };
     } else {
-      // Platzhalter damit nächster Tap 'existing' findet, bevor DB antwortet
+      // Abhaken: Platzhalter mit Zielcount setzen
       nextMap[habit.id] = existing
         ? { ...existing, count: habit.target_count }
         : { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr };
@@ -193,18 +195,15 @@ export default function Hub({ onOpenModule }) {
 
     try {
       if (existing?.id) {
-        // Eintrag existiert in DB
-        if (wasDone) {
-          await sb.from('hab_entries')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', existing.id);
-        } else {
-          await sb.from('hab_entries')
-            .update({ deleted_at: null, count: habit.target_count })
-            .eq('id', existing.id);
-        }
+        // Eintrag existiert in DB — immer Update, nie Delete
+        await sb.from('hab_entries')
+          .update({
+            count:      wasDone ? 0 : habit.target_count,
+            deleted_at: null,
+          })
+          .eq('id', existing.id);
       } else {
-        // Neu anlegen, echte ID zurückschreiben
+        // Kein Eintrag in DB → neu anlegen
         const { data, error } = await sb.from('hab_entries')
           .insert({
             habit_id:  habit.id,
@@ -215,20 +214,17 @@ export default function Hub({ onOpenModule }) {
           .select('id, habit_id, count, logged_on, deleted_at')
           .single();
         if (error) throw error;
-        if (data) {
-          setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
-        }
+        if (data) setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
       }
 
-      // Feedback — nur beim Abhaken, nicht beim Rückgängig
+      // Feedback — nur beim Abhaken
       if (!wasDone) {
-        const allDone = (wasDone ? habDone - 1 : habDone + 1) === habTotal;
-        if (allDone) fb.habitAllDone();
-        else         fb.habitCheck();
+        const newDone = habDone + 1;
+        if (newDone === habTotal) fb.habitAllDone();
+        else                      fb.habitCheck();
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      // Rollback
       setHabEntryMap(habEntryMap);
       setHabDone(habDone);
     }
