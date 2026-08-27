@@ -341,11 +341,11 @@ export default function ItemsView({ list, onBack }) {
   }
 
   // Läden dynamisch aus Items berechnen
-  const storeNames = [...new Set(items.map((i) => i.store_name).filter(Boolean))].sort();
+  const storeNames = [...new Set(items.map((i) => i.item_store_name).filter(Boolean))].sort();
 
   // Filter anwenden
   const visibleItems = activeStore
-    ? items.filter((i) => i.store_name === activeStore)
+    ? items.filter((i) => i.item_store_name === activeStore)
     : items;
   const openItems  = visibleItems.filter((i) => !i.done);
   const doneItems  = visibleItems.filter((i) => i.done);
@@ -459,7 +459,7 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
-                allStores={usedStores}
+                allStores={storeNames}
               />
             ))}
           </div>
@@ -482,7 +482,7 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
-                allStores={usedStores}
+                allStores={storeNames}
               />
             ))}
           </div>
