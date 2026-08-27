@@ -278,13 +278,14 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
-  async function handleEditItem(itemId, quantity, unit) {
+  async function handleEditItem(itemId, quantity, unit, storeName) {
     try {
       const qty = quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null;
-      const u = unit.trim() || null;
-      await saveItem({ id: itemId, quantity: qty, unit: u });
+      const u   = unit.trim() || null;
+      const sn  = (storeName !== undefined ? storeName.trim() : null) || null;
+      await saveItem({ id: itemId, quantity: qty, unit: u, item_store_name: sn });
       setItems((prev) => prev.map((i) =>
-        i.id === itemId ? { ...i, quantity: qty, unit: u } : i
+        i.id === itemId ? { ...i, quantity: qty, unit: u, item_store_name: sn } : i
       ));
     } catch (e) {
       setError('Speichern fehlgeschlagen.');
@@ -341,11 +342,12 @@ export default function ItemsView({ list, onBack }) {
   }
 
   // Läden dynamisch aus Items berechnen
-  const storeNames = [...new Set(items.map((i) => i.item_store_name).filter(Boolean))].sort();
+  // Läden aus item_store_name (neu) und store_name (alt, Rückwärtskompatibilität)
+  const storeNames = [...new Set(items.map((i) => i.item_store_name || i.store_name).filter(Boolean))].sort();
 
   // Filter anwenden
   const visibleItems = activeStore
-    ? items.filter((i) => i.item_store_name === activeStore)
+    ? items.filter((i) => (i.item_store_name || i.store_name) === activeStore)
     : items;
   const openItems  = visibleItems.filter((i) => !i.done);
   const doneItems  = visibleItems.filter((i) => i.done);
@@ -537,6 +539,9 @@ export default function ItemsView({ list, onBack }) {
             <option value="ml">ml</option>
             <option value="L">Liter</option>
             <option value="Packung">Packung</option>
+            <option value="Pack">Pack</option>
+            <option value="Karton">Karton</option>
+            <option value="Kasten">Kasten</option>
             <option value="Flasche">Flasche</option>
             <option value="Dose">Dose</option>
             <option value="Becher">Becher</option>
@@ -550,7 +555,9 @@ export default function ItemsView({ list, onBack }) {
             className="sho-unit-select sho-store-select"
           >
             <option value="">Laden (optional)</option>
-            {STORE_NAMES.map((n) => (
+            {storeNames.map((n) => <option key={n} value={n}>{n}</option>)}
+            {storeNames.length > 0 && <option disabled>──────</option>}
+            {STORE_NAMES.filter((n) => !storeNames.includes(n)).map((n) => (
               <option key={n} value={n}>{n}</option>
             ))}
           </select>
@@ -588,22 +595,24 @@ export default function ItemsView({ list, onBack }) {
 // Tap auf Checkbox → abhaken
 // Tap auf Artikelname/Menge → Edit-Modus (Menge + Einheit ändern)
 function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
-  const [editing,  setEditing]  = useState(false);
-  const [qty,      setQty]      = useState(item.quantity != null ? String(item.quantity) : '');
-  const [unit,     setUnit]     = useState(item.unit || '');
-  const [showStore,setShowStore]= useState(false);
+  const [editing,   setEditing]   = useState(false);
+  const [qty,       setQty]       = useState(item.quantity != null ? String(item.quantity) : '');
+  const [unit,      setUnit]      = useState(item.unit || '');
+  const [editStore, setEditStore] = useState(item.item_store_name || '');
+  const [showStore, setShowStore] = useState(false);
   const qtyRef = useRef(null);
 
   function openEdit() {
     setQty(item.quantity != null ? String(item.quantity) : '');
     setUnit(item.unit || '');
+    setEditStore(item.item_store_name || item.store_name || '');
     setEditing(true);
     setTimeout(() => qtyRef.current?.focus(), 50);
   }
 
   async function commitEdit() {
     setEditing(false);
-    await onEdit(item.id, qty, unit);
+    await onEdit(item.id, qty, unit, editStore);
   }
 
   function handleKeyDown(e) {
@@ -660,12 +669,27 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
               <option value="ml">ml</option>
               <option value="L">Liter</option>
               <option value="Packung">Packung</option>
+              <option value="Pack">Pack</option>
+              <option value="Karton">Karton</option>
+              <option value="Kasten">Kasten</option>
               <option value="Flasche">Flasche</option>
               <option value="Dose">Dose</option>
               <option value="Becher">Becher</option>
               <option value="Bund">Bund</option>
               <option value="EL">EL</option>
               <option value="TL">TL</option>
+            </select>
+            <select
+              value={editStore}
+              onChange={(e) => setEditStore(e.target.value)}
+              className="sho-unit-select sho-unit-select--sm"
+              style={{ flex: 1 }}
+            >
+              <option value="">Kein Laden</option>
+              {allStores.map((n) => <option key={n} value={n}>{n}</option>)}
+              {STORE_NAMES.filter((n) => !allStores.includes(n)).slice(0, 10).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
             </select>
             <button
               className="btn btn-primary"
@@ -690,8 +714,8 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
               <span className="sho-item-meta--hint">Menge tippen …</span>
             )}
             {/* Store-Label */}
-            {item.item_store_name && (
-              <span className="sho-item-store-label">{item.item_store_name}</span>
+            {(item.item_store_name || item.store_name) && (
+              <span className="sho-item-store-label">{item.item_store_name || item.store_name}</span>
             )}
           </span>
         </div>
@@ -710,7 +734,7 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
           {showStore && (
             <div className="sho-item-store-dropdown">
               <button
-                className={`sho-item-store-opt ${!item.item_store_name ? 'active' : ''}`}
+                className={`sho-item-store-opt ${!(item.item_store_name || item.store_name) ? 'active' : ''}`}
                 onClick={() => { onAssign(item.id, null); setShowStore(false); }}
               >
                 Kein Laden
@@ -719,7 +743,7 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
               {allStores.map((name) => (
                 <button
                   key={name}
-                  className={`sho-item-store-opt ${item.item_store_name === name ? 'active' : ''}`}
+                  className={`sho-item-store-opt ${(item.item_store_name || item.store_name) === name ? 'active' : ''}`}
                   onClick={() => { onAssign(item.id, name); setShowStore(false); }}
                 >
                   {name}
