@@ -67,7 +67,7 @@ try { preload(); } catch { /* SSR oder kein Audio-Support */ }
  * Nutzt cloneNode damit derselbe Sound parallel mehrfach abgespielt werden kann
  * (z.B. schnelles Abhaken mehrerer Artikel).
  */
-function playSound(name, volume = 1.0) {
+function playSound(name, volume = 0.5) {
   if (!isSoundEnabled()) return;
   const base = _audioCache[name];
   if (!base) return;
@@ -173,7 +173,7 @@ export const fb = {
 
   listStatusCycle: () => {
     HAPTIC.neutral();
-    playSound('swoosh', 0.7);
+    playSound('swoosh', 0.5);
   },
 
   // ── Sport ─────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ export const fb = {
 
   restDay: () => {
     HAPTIC.neutral();
-    playSound('swoosh', 0.7);
+    playSound('swoosh', 0.5);
   },
 
   planDayCheck: () => {
