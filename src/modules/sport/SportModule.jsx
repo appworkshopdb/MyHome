@@ -1,3 +1,4 @@
+// src/modules/sport/SportModule.jsx
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
@@ -12,53 +13,35 @@ import EinheitenView from './components/EinheitenView';
 import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
 import AuswertungView from './components/AuswertungView';
+import { fb } from '../../core/lib/feedback';
 
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-// KONZEPT-KORREKTUR (vorheriger Stand: Training/Kalender/Pläne/
-// Auswertung, "Training" war ein leerer Direkt-Eintragen-Screen):
-// einzelne Trainingseinheiten (z.B. "Arme", "Legday") sind jetzt eine
-// eigene, wiederverwendbare Bibliothek (Tab "Einheiten") — ein
-// Trainingsplan setzt sich aus mehreren Einheiten zusammen, statt dass
-// jede Einheit als eigener 1-Tage-"Plan" angelegt werden musste.
 const DEFAULT_VIEW = 'verlauf';
 const TABS = [
-  { key: 'verlauf', label: 'Kalender' },
-  { key: 'einheiten', label: 'Einheiten' },
-  { key: 'plaene', label: 'Pläne' },
+  { key: 'verlauf',    label: 'Kalender' },
+  { key: 'einheiten',  label: 'Einheiten' },
+  { key: 'plaene',     label: 'Pläne' },
   { key: 'auswertung', label: 'Auswertung' },
 ];
 
-// Hält den gesamten Modul-Zustand: Einheiten (Workouts im Kalender),
-// die Einheiten-Bibliothek, Plan-Vorlagen und die im Profil gewählten
-// Sportarten. Alles wird EINMAL geladen und an die Views durchgereicht
-// — dadurch arbeiten Kalender, Pläne und Auswertung garantiert auf
-// demselben Stand.
-// view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
-// useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
 export default function SportModule({ view, onNavigateView }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
   const activeView = ['verlauf', 'einheiten', 'plaene', 'auswertung'].includes(view) ? view : DEFAULT_VIEW;
-  const [workouts, setWorkouts] = useState([]);
-  const [units, setUnits] = useState([]);
-  const [plans, setPlans] = useState([]);
-  const [userSports, setUserSports] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // formInitial steuert jetzt das Formular INNERHALB des Kalender-Tabs
-  // (VerlaufView) statt eines eigenen "Training"-Tabs — der ist mit der
-  // Einheiten-Bibliothek weggefallen. "Bearbeiten"/"+ Einzelne Einheit"
-  // im Kalender sowie "Starten" bei einem Vorschlag springen deshalb
-  // alle auf 'verlauf'.
-  const [formInitial, setFormInitial] = useState(false);
-  const [editingUnit, setEditingUnit] = useState(null);   // Einheiten-Editor
-  const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
-  const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
+  const [workouts,     setWorkouts]     = useState([]);
+  const [units,        setUnits]        = useState([]);
+  const [plans,        setPlans]        = useState([]);
+  const [userSports,   setUserSports]   = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [formInitial,  setFormInitial]  = useState(false);
+  const [editingUnit,  setEditingUnit]  = useState(null);
+  const [editingPlan,  setEditingPlan]  = useState(null);
+  const [applyingPlan, setApplyingPlan] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,10 +71,15 @@ export default function SportModule({ view, onNavigateView }) {
       await db.saveWorkout(session, workout);
       setFormInitial(false);
       showToast(workout.status === 'planned' ? 'Training geplant' : 'Training gespeichert');
+      // Ruhetag-Feedback beim Speichern
+      if (workout.is_rest) {
+        fb.restDay();
+      }
       await load();
     } catch (e) {
       console.error(e);
       showToast('Speichern fehlgeschlagen');
+      fb.error();
     }
   }
 
@@ -107,11 +95,17 @@ export default function SportModule({ view, onNavigateView }) {
 
   async function handleToggleDone(workout) {
     try {
-      await db.setWorkoutStatus(workout.id, workout.status !== 'done');
+      const wirdErledigt = workout.status !== 'done';
+      await db.setWorkoutStatus(workout.id, wirdErledigt);
+      // Feedback nur beim Erledigen, nicht beim Rückgängig
+      if (wirdErledigt) {
+        fb.workoutDone(); // ziel_erreicht2.wav
+      }
       await load();
     } catch (e) {
       console.error(e);
       showToast('Status konnte nicht geändert werden');
+      fb.error();
     }
   }
 
@@ -154,7 +148,7 @@ export default function SportModule({ view, onNavigateView }) {
     }
   }
 
-  // --- Plan-Vorlagen -------------------------------------------------
+  // --- Plan-Vorlagen ---------------------------------------------------
 
   async function handleSavePlan(plan, items) {
     try {
