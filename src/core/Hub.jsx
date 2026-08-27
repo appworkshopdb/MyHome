@@ -7,10 +7,10 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
+import { fb } from './lib/feedback'; // NEU
 
 const CACHE_KEY = 'hub-cache-v2';
 
-// Fälligkeitsdatum lesbar machen — "Heute", "Morgen", "Mo 3. Jun", "überfällig"
 function formatDueDate(dueDateStr, todayStr) {
   if (!dueDateStr) return null;
   const diff = Math.round((new Date(dueDateStr) - new Date(todayStr)) / 86400000);
@@ -30,7 +30,6 @@ function writeCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, savedAt: new Date().toISOString() })); } catch { /* egal */ }
 }
 
-// Habits-Tagesdaten — core darf nicht aus modules/ importieren
 async function loadTodayHabits() {
   const sb = getSupabase();
   const todayStr = new Date().toISOString().split('T')[0];
@@ -54,10 +53,8 @@ async function loadTodayHabits() {
     if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
     return true;
   });
-  // Map habit_id → entry (für optimistisches Toggle im Hub)
   const entryMap = {};
   for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
-
   const doneIds = new Set(
     due
       .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
@@ -66,7 +63,6 @@ async function loadTodayHabits() {
   return { total: due.length, done: doneIds.size, habits: due, entryMap };
 }
 
-// Heutiges Training aus spo_workouts — core darf nicht aus modules/ importieren
 async function loadTodaySport() {
   const sb = getSupabase();
   const todayStr = new Date().toISOString().split('T')[0];
@@ -80,7 +76,6 @@ async function loadTodaySport() {
   return data ?? [];
 }
 
-// Offene Fixkosten diesen Monat aus fin_entries — core darf nicht aus modules/ importieren
 async function loadOpenFixCosts() {
   const sb = getSupabase();
   const now = new Date();
@@ -98,12 +93,10 @@ async function loadOpenFixCosts() {
   return data ?? [];
 }
 
-// Lesbare Trainings-Bezeichnung aus type_key — ohne Import aus modules/
 function sportLabel(w) {
   if (w.is_rest) return 'Restday';
   if (w.title) return w.title;
   if (!w.type_key || w.type_key === 'sonstiges') return 'Training';
-  // type_key kann 'strength.push', 'cardio.run' oder 'sport.fussball' sein
   const parts = w.type_key.split('.');
   const last = parts[parts.length - 1];
   return last.charAt(0).toUpperCase() + last.slice(1);
@@ -116,17 +109,17 @@ export default function Hub({ onOpenModule }) {
   const [expense, setExpense]   = useState(0);
   const [cacheZeit, setCacheZeit] = useState(null);
 
-  const [habTotal, setHabTotal]   = useState(0);
-  const [habDone, setHabDone]     = useState(0);
-  const [habHabits, setHabHabits] = useState([]);
-  const [habEntryMap, setHabEntryMap] = useState({}); // habit_id → entry
+  const [habTotal, setHabTotal]       = useState(0);
+  const [habDone, setHabDone]         = useState(0);
+  const [habHabits, setHabHabits]     = useState([]);
+  const [habEntryMap, setHabEntryMap] = useState({});
 
   const [todaySport, setTodaySport] = useState([]);
   const [openFix, setOpenFix]       = useState([]);
   const [todos, setTodos]           = useState([]);
-  const [todoSheet, setTodoSheet]   = useState(false);   // Sheet offen?
-  const [editTodo, setEditTodo]     = useState(null);    // null = neu
-  const [todoView, setTodoView]     = useState('alle');  // 'alle' | 'heute' | 'wichtig' | 'erledigt'
+  const [todoSheet, setTodoSheet]   = useState(false);
+  const [editTodo, setEditTodo]     = useState(null);
+  const [todoView, setTodoView]     = useState('alle');
 
   const load = useCallback(async () => {
     setStatus('laedt');
@@ -178,60 +171,47 @@ export default function Hub({ onOpenModule }) {
   const habAllDone = habTotal > 0 && habDone === habTotal;
 
   // ── Habit-Toggle direkt im Hub ──
-  // core darf nicht aus modules/ importieren — Logik analog zu habData.toggleEntry
   async function handleToggleHabit(habit) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    const wasDone  = !!(existing && existing.count >= habit.target_count);
+    const wasDone  = existing && existing.count >= habit.target_count;
 
-    // Optimistisch sofort updaten — Map UND Counter zusammen,
-    // damit schnelle Taps den korrekten State sehen
-    const nextMap = { ...habEntryMap };
-    if (wasDone) {
-      delete nextMap[habit.id];
-    } else {
-      // Platzhalter damit nächster Tap 'existing' findet
-      nextMap[habit.id] = existing
-        ? { ...existing, count: habit.target_count }
-        : { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr };
-    }
-    setHabEntryMap(nextMap);
-    setHabDone(wasDone ? habDone - 1 : habDone + 1);
+    // Optimistisch updaten
+    const nextMap  = { ...habEntryMap };
+    const nextDone = wasDone ? habDone - 1 : habDone + 1;
+    setHabDone(nextDone);
 
     try {
-      if (existing?.id) {
-        // Eintrag existiert in DB — toggle via update
+      if (existing) {
         if (wasDone) {
-          await sb.from('hab_entries')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', existing.id);
+          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
+          delete nextMap[habit.id];
         } else {
-          await sb.from('hab_entries')
-            .update({ deleted_at: null, count: habit.target_count })
-            .eq('id', existing.id);
+          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
+          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
         }
       } else {
-        // Kein Eintrag in DB → neu anlegen, echte ID zurückschreiben
-        const { data, error } = await sb.from('hab_entries')
-          .insert({
-            habit_id:  habit.id,
-            logged_on: todayStr,
-            count:     habit.target_count,
-            owner_id:  session.user.id,
-          })
-          .select('id, habit_id, count, logged_on, deleted_at')
-          .single();
-        if (error) throw error;
-        if (data) {
-          setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
+        const { data } = await sb.from('hab_entries')
+          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
+          .select().single();
+        if (data) nextMap[habit.id] = data;
+      }
+      setHabEntryMap(nextMap);
+
+      // Feedback — nur beim Abhaken, nicht beim Rückgängig
+      if (!wasDone) {
+        const nowAllDone = nextDone === habTotal;
+        if (nowAllDone) {
+          fb.habitAllDone(); // Dreiklang + Doppel-Puls
+        } else {
+          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
         }
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      // Rollback auf vorherigen State
-      setHabEntryMap(habEntryMap);
       setHabDone(habDone);
+      setHabEntryMap(habEntryMap);
     }
   }
 
@@ -239,6 +219,7 @@ export default function Hub({ onOpenModule }) {
   async function handleToggleTodo(id, currentDone) {
     const next = !currentDone;
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
+    if (!currentDone) fb.todoCheck(); // Feedback nur beim Abhaken
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
@@ -257,20 +238,16 @@ export default function Hub({ onOpenModule }) {
       const exists = prev.find((t) => t.id === saved.id);
       if (exists) return prev.map((t) => t.id === saved.id ? saved : t);
       return [...prev, saved].sort((a, b) => {
-        // Ohne Datum ans Ende
         if (!a.due_date && !b.due_date) return 0;
         if (!a.due_date) return 1;
         if (!b.due_date) return -1;
-        // Datum aufsteigend
         const dateDiff = a.due_date.localeCompare(b.due_date);
         if (dateDiff !== 0) return dateDiff;
-        // Gleiches Datum: wichtige zuerst
         return b.priority - a.priority;
       });
     });
   }
 
-  // Filterlogik: "Heute" = fällig heute oder früher (überfällig) + wichtige ohne Datum
   const todayStr = new Date().toISOString().split('T')[0];
   const todosHeute = todos.filter((t) => !t.done && (
     (t.due_date && t.due_date <= todayStr) ||
@@ -285,9 +262,8 @@ export default function Hub({ onOpenModule }) {
     todoView === 'erledigt' ? todosErledigt :
     todosAlle;
 
-  // Sport-Auswertung für heute
-  const restToday   = todaySport.some((w) => w.is_rest);
-  const doneToday   = todaySport.filter((w) => !w.is_rest && w.status === 'done');
+  const restToday    = todaySport.some((w) => w.is_rest);
+  const doneToday    = todaySport.filter((w) => !w.is_rest && w.status === 'done');
   const plannedToday = todaySport.filter((w) => !w.is_rest && w.status === 'planned');
 
   // ---- Ladestate ----
@@ -399,7 +375,7 @@ export default function Hub({ onOpenModule }) {
 
           <div className="hub-divider" />
 
-          {/* ── Kalender (aktuelle Woche) ── */}
+          {/* ── Kalender ── */}
           <div className="hub-section-label" style={{ marginTop: 0 }}>Diese Woche</div>
           <HubCalendar />
 
@@ -497,7 +473,6 @@ export default function Hub({ onOpenModule }) {
           {/* ── Aufgaben ── */}
           <div className="hub-section-label" style={{ marginTop: 0 }}>Aufgaben</div>
 
-          {/* Tabs */}
           <div className="mode-toggle hub-todo-toggle">
             <button className={todoView === 'alle'     ? 'active' : ''} onClick={() => setTodoView('alle')}>
               Alle{todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
@@ -513,13 +488,11 @@ export default function Hub({ onOpenModule }) {
             </button>
           </div>
 
-          {/* + Neue Aufgabe — Leiste unter den Tabs */}
           <button className="hub-todo-add-bar" onClick={openNewTodo}>
             <span className="hub-todo-add-plus">+</span>
             <span>Neue Aufgabe</span>
           </button>
 
-          {/* Task-Liste */}
           {todoView !== 'erledigt' && visibleTodos.length === 0 && (
             <div className="hub-todo-empty">
               {todoView === 'heute'   ? 'Nichts für heute — gut so.' :
@@ -560,7 +533,6 @@ export default function Hub({ onOpenModule }) {
             </div>
           )}
 
-          {/* Erledigt-Tab */}
           {todoView === 'erledigt' && (
             <div className="hub-todo-list">
               {todosErledigt.length === 0 ? (
