@@ -1,14 +1,9 @@
+// src/core/components/TodoSheet.jsx
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { saveTodo } from '../lib/todoData';
-
-// Schlankes Bottom-Sheet zum Anlegen eines neuen ToDos.
-// Geöffnet über den "+ Aufgabe"-Button im Hub.
-// Props:
-//   onClose()       — Sheet schließen
-//   onSaved(todo)   — neues Todo wurde gespeichert, Hub aktualisieren
-//   editTodo        — optional: bestehendes Todo zum Bearbeiten
+import { fb } from '../lib/feedback';
 
 export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
   const { session } = useAuth();
@@ -32,11 +27,16 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
         priority,
         done:     editTodo?.done ?? false,
       });
+      // Feedback: nur beim Neu-Anlegen, nicht beim Bearbeiten
+      if (!editTodo?.id) {
+        fb.todoCreate();
+      }
       onSaved(saved);
       onClose();
     } catch (e) {
       console.error('[TodoSheet]', e);
       showToast('Konnte nicht gespeichert werden');
+      fb.error();
     } finally {
       setSaving(false);
     }
