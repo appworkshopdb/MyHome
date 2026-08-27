@@ -1,4 +1,4 @@
-// modules/shopping/components/ListView.jsx
+// src/modules/shopping/components/ListView.jsx
 // Punkte 9 (Liste leeren ist in ItemsView), 10 (Umbenennen), 11 (Vorlagen).
 // Zeigt normale Listen + Vorlagen getrennt.
 // Tap auf Liste → öffnet ItemsView (via onOpenList).
@@ -8,12 +8,11 @@ import { IconPlus, IconTrash, IconChevronRight, IconEdit } from '../../../core/c
 import {
   saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
 } from '../lib/shoData.js';
+import { fb } from '../../../core/lib/feedback';
 
 const DEFAULT_ICONS = ['🛒', '🥦', '🏠', '🎉', '💊', '🐾', '🧹', '📦'];
 
-// Deutsche Supermärkte & Discounter — nach Bekanntheitsgrad geordnet
 const STORES = [
-  // Discounter
   { group: 'Discounter',    name: 'Aldi Nord' },
   { group: 'Discounter',    name: 'Aldi Süd' },
   { group: 'Discounter',    name: 'Lidl' },
@@ -21,23 +20,18 @@ const STORES = [
   { group: 'Discounter',    name: 'Netto Marken-Discount' },
   { group: 'Discounter',    name: 'Netto (Edeka)' },
   { group: 'Discounter',    name: 'Norma' },
-  // Supermärkte
   { group: 'Supermarkt',    name: 'REWE' },
   { group: 'Supermarkt',    name: 'Edeka' },
   { group: 'Supermarkt',    name: 'Tegut' },
   { group: 'Supermarkt',    name: 'Hit' },
-  // SB-Warenhäuser
   { group: 'Warenhaus',     name: 'Kaufland' },
   { group: 'Warenhaus',     name: 'Globus' },
-  // Bio
   { group: 'Bio',           name: "Denn's Biomarkt" },
   { group: 'Bio',           name: 'Alnatura' },
   { group: 'Bio',           name: 'Basic' },
-  // Drogerie
   { group: 'Drogerie',      name: 'dm' },
   { group: 'Drogerie',      name: 'Rossmann' },
   { group: 'Drogerie',      name: 'Müller' },
-  // Sonstiges
   { group: 'Sonstiges',     name: 'Wochenmarkt' },
   { group: 'Sonstiges',     name: 'Metzger' },
   { group: 'Sonstiges',     name: 'Bäcker' },
@@ -46,35 +40,33 @@ const STORES = [
 ];
 
 export default function ListView({ lists, onListsChange, onOpenList }) {
-  const [showForm,    setShowForm]    = useState(false);  // Neue Liste
+  const [showForm,    setShowForm]    = useState(false);
   const [name,        setName]        = useState('');
   const [icon,        setIcon]        = useState('🛒');
   const [dueDate,     setDueDate]     = useState('');
   const [dueTime,     setDueTime]     = useState('');
-  const [store,       setStore]       = useState('');       // gewählter Laden (Name oder '__custom')
-  const [storeCustom, setStoreCustom] = useState('');       // freier Text wenn eigener Laden
+  const [store,       setStore]       = useState('');
+  const [storeCustom, setStoreCustom] = useState('');
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
-  const [statusBusy,  setStatusBusy]  = useState(null); // id der Liste deren Status gerade gesetzt wird
-  const [dateEditId,  setDateEditId]  = useState(null); // id der Liste im Datum-Edit-Modus
+  const [statusBusy,  setStatusBusy]  = useState(null);
+  const [dateEditId,  setDateEditId]  = useState(null);
   const [editDate,    setEditDate]    = useState('');
   const [editTime,    setEditTime]    = useState('');
   const [dateSaving,  setDateSaving]  = useState(false);
 
-  // Umbenennen
   const [editId,      setEditId]      = useState(null);
   const [editName,    setEditName]    = useState('');
   const [editSaving,  setEditSaving]  = useState(false);
 
-  // Vorlagen
   const [templates,   setTemplates]   = useState([]);
   const [showTmpl,    setShowTmpl]    = useState(false);
   const [tmplLoading, setTmplLoading] = useState(false);
-  const [loadingTmpl, setLoadingTmpl] = useState(null); // id der Vorlage die geladen wird
+  const [loadingTmpl, setLoadingTmpl] = useState(null);
 
-  const inputRef   = useRef(null);
-  const editRef    = useRef(null);
+  const inputRef = useRef(null);
+  const editRef  = useRef(null);
 
   useEffect(() => {
     if (showForm) inputRef.current?.focus();
@@ -102,6 +94,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       await onListsChange();
       setName(''); setIcon('🛒'); setDueDate(''); setDueTime('');
       setStore(''); setStoreCustom(''); setShowForm(false);
+      fb.listCreate(); // NEU: Swoosh beim Anlegen einer Liste
     } catch { setError('Speichern fehlgeschlagen.'); }
     finally { setSaving(false); }
   }
@@ -166,7 +159,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   // ─── Status manuell setzen ──────────────────────────────────
   async function handleStatusCycle(e, list) {
     e.stopPropagation();
-    // Effektiven aktuellen Status berechnen (wie in StatusBadge)
     const total  = list._total ?? 0;
     const done   = list._done  ?? 0;
     let auto;
@@ -176,7 +168,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     else                     auto = 'offen';
     const manual    = list.status || 'offen';
     const effective = manual !== 'offen' ? manual : auto;
-    // Cycle: offen → im_einkauf → erledigt → offen
     const cycle = { offen: 'im_einkauf', im_einkauf: 'erledigt', erledigt: 'offen' };
     const next  = cycle[effective];
     setStatusBusy(list.id);
@@ -205,6 +196,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       const newList = await loadFromTemplate(tmpl.id, newName, tmpl.icon || '🛒');
       await onListsChange();
       setShowTmpl(false);
+      fb.listCreate(); // NEU: Swoosh auch beim Laden einer Vorlage
       onOpenList(newList);
     } catch { setError('Vorlage laden fehlgeschlagen.'); }
     finally { setLoadingTmpl(null); }
@@ -232,7 +224,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     if (e.key === 'Escape') setEditId(null);
   }
 
-  // Normale Listen (keine Vorlagen)
   const normalLists = lists.filter((l) => !l.is_template);
 
   return (
@@ -259,7 +250,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         <div className="sho-lists">
           {normalLists.map((list) => (
             <div key={list.id} className="sho-list-item-wrap">
-              {/* Umbenennen-Modus */}
               {editId === list.id ? (
                 <div className="sho-inline-edit">
                   <input
@@ -343,7 +333,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                       onCycle={(e) => handleStatusCycle(e, list)}
                     />
                   </div>
-                  {/* Umbenennen */}
                   <button
                     className="btn-icon"
                     onClick={(e) => startEdit(e, list)}
@@ -352,7 +341,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                   >
                     <IconEdit size={15} />
                   </button>
-                  {/* Löschen */}
                   <button
                     className="btn-icon"
                     onClick={(e) => handleDelete(e, list.id)}
@@ -399,7 +387,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
             maxLength={60}
           />
 
-          {/* Fälligkeit */}
           <div className="sho-due-row">
             <div className="sho-due-field">
               <label className="sho-due-label">Fällig am</label>
@@ -426,7 +413,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
             </div>
           </div>
 
-          {/* Laden-Auswahl */}
           <div className="sho-due-field">
             <label className="sho-due-label">Laden</label>
             <select
@@ -545,24 +531,17 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
 }
 
 // ─── Status-Badge ─────────────────────────────────────────────────────
-// Berechnet den effektiven Status:
-//   - Manuell gesetzter Status hat Vorrang
-//   - Automatik: offen / im_einkauf / erledigt aus _done/_total
-// Tap → Status manuell weiterschalten (Cycle)
 function StatusBadge({ list, busy, onCycle }) {
   const total  = list._total ?? 0;
   const done   = list._done  ?? 0;
   const openLeft = total - done;
 
-  // Automatischer Status aus Item-Counts (nur Startwert wenn noch kein manueller gesetzt)
   let auto;
   if (total === 0)         auto = 'offen';
   else if (done === total) auto = 'erledigt';
   else if (done > 0)       auto = 'im_einkauf';
   else                     auto = 'offen';
 
-  // Manueller Status gewinnt IMMER — auto nur wenn status noch 'offen' (DB-Default)
-  // und auto etwas anderes sagt (z.B. alle abgehakt → erledigt)
   const manual    = list.status || 'offen';
   const effective = manual !== 'offen' ? manual : auto;
 
@@ -572,7 +551,6 @@ function StatusBadge({ list, busy, onCycle }) {
     erledigt:   'Erledigt',
   };
 
-  // Artikel-offen-Hinweis in allen Stati anzeigen (außer wenn 0 offen)
   const showHint = openLeft > 0 && total > 0;
 
   return (
@@ -594,10 +572,10 @@ function StatusBadge({ list, busy, onCycle }) {
 
 // ─── Fälligkeits-Badge ────────────────────────────────────────────────
 const TIME_ICONS = {
-  morgens:      '🌅',
-  mittags:      '☀️',
-  nachmittags:  '🌤️',
-  abends:       '🌙',
+  morgens:     '🌅',
+  mittags:     '☀️',
+  nachmittags: '🌤️',
+  abends:      '🌙',
 };
 
 function DueBadge({ date, time }) {
@@ -605,10 +583,9 @@ function DueBadge({ date, time }) {
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
   let label;
-  if (date === today)    label = 'Heute';
+  if (date === today)         label = 'Heute';
   else if (date === tomorrow) label = 'Morgen';
   else {
-    // Deutsches Datum: TT.MM.
     const [y, m, d] = date.split('-');
     label = `${d}.${m}.${y.slice(2)}`;
   }

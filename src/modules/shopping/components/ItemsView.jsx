@@ -1,6 +1,5 @@
-// modules/shopping/components/ItemsView.jsx
+// src/modules/shopping/components/ItemsView.jsx
 // Artikel einer Einkaufsliste: hinzufügen, abhaken, löschen.
-// Punkte 5 (Kern) + 6 (Kategorien) + 8 (Mengen) der Prio-Liste.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
@@ -8,11 +7,10 @@ import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
   saveListAsTemplate,
 } from '../lib/shoData.js';
+import { fb } from '../../../core/lib/feedback';
 
-// ─── Kategorie-Zuordnung (statisch, kein DB-Overhead) ─────────────────
-// Deutsche Produktnamen → Kategorie. Wird für Autocomplete + Gruppierung genutzt.
+// ─── Kategorie-Zuordnung ──────────────────────────────────────────────
 const CATEGORY_MAP = {
-  // Obst & Gemüse
   'Äpfel': 'Obst & Gemüse', 'Apfel': 'Obst & Gemüse', 'Bananen': 'Obst & Gemüse',
   'Banane': 'Obst & Gemüse', 'Orangen': 'Obst & Gemüse', 'Orange': 'Obst & Gemüse',
   'Zitronen': 'Obst & Gemüse', 'Zitrone': 'Obst & Gemüse', 'Erdbeeren': 'Obst & Gemüse',
@@ -34,8 +32,6 @@ const CATEGORY_MAP = {
   'Ananas': 'Obst & Gemüse', 'Melone': 'Obst & Gemüse', 'Wassermelone': 'Obst & Gemüse',
   'Kirschen': 'Obst & Gemüse', 'Pfirsich': 'Obst & Gemüse', 'Nektarine': 'Obst & Gemüse',
   'Pflaumen': 'Obst & Gemüse', 'Birnen': 'Obst & Gemüse', 'Birne': 'Obst & Gemüse',
-
-  // Milchprodukte & Eier
   'Milch': 'Milch & Eier', 'Butter': 'Milch & Eier', 'Margarine': 'Milch & Eier',
   'Käse': 'Milch & Eier', 'Gouda': 'Milch & Eier', 'Edamer': 'Milch & Eier',
   'Emmentaler': 'Milch & Eier', 'Mozzarella': 'Milch & Eier', 'Feta': 'Milch & Eier',
@@ -45,8 +41,6 @@ const CATEGORY_MAP = {
   'Ei': 'Milch & Eier', 'Hüttenkäse': 'Milch & Eier', 'Skyr': 'Milch & Eier',
   'Kefir': 'Milch & Eier', 'Buttermilch': 'Milch & Eier', 'Kaffeesahne': 'Milch & Eier',
   'Kondensmilch': 'Milch & Eier', 'Parmesan': 'Milch & Eier',
-
-  // Fleisch & Fisch
   'Hackfleisch': 'Fleisch & Fisch', 'Hähnchen': 'Fleisch & Fisch',
   'Hähnchenbrustfilet': 'Fleisch & Fisch', 'Hähnchenbrust': 'Fleisch & Fisch',
   'Rindfleisch': 'Fleisch & Fisch', 'Schweinefleisch': 'Fleisch & Fisch',
@@ -58,8 +52,6 @@ const CATEGORY_MAP = {
   'Thunfisch': 'Fleisch & Fisch', 'Garnelen': 'Fleisch & Fisch',
   'Fischstäbchen': 'Fleisch & Fisch', 'Speck': 'Fleisch & Fisch',
   'Bacon': 'Fleisch & Fisch', 'Putenbrust': 'Fleisch & Fisch',
-
-  // Brot & Backwaren
   'Brot': 'Brot & Backwaren', 'Brötchen': 'Brot & Backwaren',
   'Vollkornbrot': 'Brot & Backwaren', 'Toastbrot': 'Brot & Backwaren',
   'Toast': 'Brot & Backwaren', 'Croissant': 'Brot & Backwaren',
@@ -67,14 +59,10 @@ const CATEGORY_MAP = {
   'Baguette': 'Brot & Backwaren', 'Ciabatta': 'Brot & Backwaren',
   'Mehl': 'Brot & Backwaren', 'Hefe': 'Brot & Backwaren',
   'Backpulver': 'Brot & Backwaren', 'Kuchen': 'Brot & Backwaren',
-
-  // Tiefkühl
   'Tiefkühlpizza': 'Tiefkühl', 'Pizza': 'Tiefkühl', 'Pommes': 'Tiefkühl',
   'Tiefkühlgemüse': 'Tiefkühl', 'Tiefkühlerbsen': 'Tiefkühl',
   'Gefrorenes': 'Tiefkühl', 'Eis': 'Tiefkühl', 'Eiswürfel': 'Tiefkühl',
   'Fischfilet': 'Tiefkühl',
-
-  // Getränke
   'Wasser': 'Getränke', 'Mineralwasser': 'Getränke', 'Sprudel': 'Getränke',
   'Saft': 'Getränke', 'Orangensaft': 'Getränke', 'Apfelsaft': 'Getränke',
   'Cola': 'Getränke', 'Limonade': 'Getränke', 'Limo': 'Getränke',
@@ -82,16 +70,12 @@ const CATEGORY_MAP = {
   'Weißwein': 'Getränke', 'Sekt': 'Getränke', 'Kaffee': 'Getränke',
   'Tee': 'Getränke', 'Kakao': 'Getränke', 'Eistee': 'Getränke',
   'Energydrink': 'Getränke', 'Smoothie': 'Getränke',
-
-  // Nudeln, Reis & Körner
   'Nudeln': 'Nudeln & Reis', 'Spaghetti': 'Nudeln & Reis', 'Penne': 'Nudeln & Reis',
   'Rigatoni': 'Nudeln & Reis', 'Fusilli': 'Nudeln & Reis', 'Reis': 'Nudeln & Reis',
   'Basmati': 'Nudeln & Reis', 'Jasminreis': 'Nudeln & Reis', 'Quinoa': 'Nudeln & Reis',
   'Couscous': 'Nudeln & Reis', 'Bulgur': 'Nudeln & Reis', 'Linsen': 'Nudeln & Reis',
   'Kichererbsen': 'Nudeln & Reis', 'Haferflocken': 'Nudeln & Reis',
   'Müsli': 'Nudeln & Reis', 'Grieß': 'Nudeln & Reis',
-
-  // Konserven & Vorrat
   'Tomaten (Dose)': 'Vorrat', 'Dosentomaten': 'Vorrat', 'Tomatensauce': 'Vorrat',
   'Passata': 'Vorrat', 'Tomatenmark': 'Vorrat', 'Brühe': 'Vorrat',
   'Gemüsebrühe': 'Vorrat', 'Hühnerbrühe': 'Vorrat', 'Rinderbrühe': 'Vorrat',
@@ -105,8 +89,6 @@ const CATEGORY_MAP = {
   'Sojasauce': 'Vorrat', 'Currypaste': 'Vorrat', 'Kokosmilch': 'Vorrat',
   'Gewürze': 'Vorrat', 'Zimt': 'Vorrat', 'Paprikapulver': 'Vorrat',
   'Oregano': 'Vorrat', 'Thymian': 'Vorrat', 'Rosmarin': 'Vorrat',
-
-  // Snacks & Süßes
   'Schokolade': 'Snacks & Süßes', 'Chips': 'Snacks & Süßes',
   'Kekse': 'Snacks & Süßes', 'Gummibärchen': 'Snacks & Süßes',
   'Nüsse': 'Snacks & Süßes', 'Mandeln': 'Snacks & Süßes',
@@ -114,8 +96,6 @@ const CATEGORY_MAP = {
   'Popcorn': 'Snacks & Süßes', 'Müsliriegel': 'Snacks & Süßes',
   'Cracker': 'Snacks & Süßes', 'Salzstangen': 'Snacks & Süßes',
   'Bonbons': 'Snacks & Süßes', 'Fruchtgummi': 'Snacks & Süßes',
-
-  // Drogerie & Haushalt
   'Shampoo': 'Drogerie', 'Duschgel': 'Drogerie', 'Seife': 'Drogerie',
   'Zahnpasta': 'Drogerie', 'Zahnbürste': 'Drogerie', 'Deodorant': 'Drogerie',
   'Rasierer': 'Drogerie', 'Rasierschaum': 'Drogerie', 'Wattepads': 'Drogerie',
@@ -128,10 +108,8 @@ const CATEGORY_MAP = {
   'Sonnencreme': 'Drogerie', 'Körperlotion': 'Drogerie', 'Feuchttücher': 'Drogerie',
 };
 
-// Alle bekannten Produktnamen als Autocomplete-Liste
 const ALL_SUGGESTIONS = Object.keys(CATEGORY_MAP).sort((a, b) => a.localeCompare(b, 'de'));
 
-// Kategorie-Reihenfolge im Laden
 const CATEGORY_ORDER = [
   'Obst & Gemüse', 'Brot & Backwaren', 'Milch & Eier',
   'Fleisch & Fisch', 'Tiefkühl', 'Nudeln & Reis',
@@ -142,13 +120,11 @@ function getCategory(name) {
   if (!name) return 'Sonstiges';
   const exact = CATEGORY_MAP[name.trim()];
   if (exact) return exact;
-  // Teilstring-Suche (case-insensitiv)
   const lower = name.toLowerCase();
   const found = Object.entries(CATEGORY_MAP).find(([k]) => k.toLowerCase() === lower);
   return found ? found[1] : 'Sonstiges';
 }
 
-// Artikel nach Kategorie gruppieren, Reihenfolge nach CATEGORY_ORDER
 function groupByCategory(items) {
   const groups = {};
   for (const item of items) {
@@ -160,14 +136,12 @@ function groupByCategory(items) {
   for (const cat of CATEGORY_ORDER) {
     if (groups[cat]) ordered.push({ cat, items: groups[cat] });
   }
-  // Kategorien die nicht in CATEGORY_ORDER sind, ans Ende
   for (const cat of Object.keys(groups)) {
     if (!CATEGORY_ORDER.includes(cat)) ordered.push({ cat, items: groups[cat] });
   }
   return ordered;
 }
 
-// Bekannte Laden-Namen für den Store-Manager (gleiche Liste wie in ListView)
 const STORE_NAMES = [
   'Aldi Nord','Aldi Süd','Lidl','Penny','Netto Marken-Discount','Netto (Edeka)','Norma',
   'REWE','Edeka','Tegut','Hit','Kaufland','Globus',
@@ -179,8 +153,8 @@ const STORE_NAMES = [
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
   const [items,            setItems]            = useState([]);
-  const [activeStore,      setActiveStore]      = useState(''); // Filter: '' = Alle
-  const [selectedStore,    setSelectedStore]    = useState(''); // Eingabe: gewählter Laden
+  const [activeStore,      setActiveStore]      = useState('');
+  const [selectedStore,    setSelectedStore]    = useState('');
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
   const [input,            setInput]            = useState('');
@@ -195,7 +169,7 @@ export default function ItemsView({ list, onBack }) {
   const inputRef    = useRef(null);
   const quantityRef = useRef(null);
   const addBtnRef   = useRef(null);
-  const [flyAnim,   setFlyAnim]   = useState(null); // { x, y } Startposition
+  const [flyAnim,   setFlyAnim] = useState(null);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -210,7 +184,6 @@ export default function ItemsView({ list, onBack }) {
     fetchItems().finally(() => setLoading(false));
   }, [fetchItems]);
 
-  // Autocomplete
   function handleInputChange(val) {
     setInput(val);
     if (val.trim().length < 1) { setSuggestions([]); return; }
@@ -225,7 +198,7 @@ export default function ItemsView({ list, onBack }) {
     const trimmed = (name || input).trim();
     if (!trimmed) return;
 
-    // Animation starten — Startpunkt = Plus-Button
+    // Flug-Animation
     if (addBtnRef.current) {
       const rect = addBtnRef.current.getBoundingClientRect();
       setFlyAnim({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
@@ -249,6 +222,7 @@ export default function ItemsView({ list, onBack }) {
       setUnit('');
       setSuggestions([]);
       inputRef.current?.focus();
+      fb.itemAdd(); // NEU: Pop beim Hinzufügen
     } catch (e) {
       setError('Hinzufügen fehlgeschlagen.');
     } finally {
@@ -259,10 +233,10 @@ export default function ItemsView({ list, onBack }) {
   async function handleToggle(item) {
     try {
       await toggleItemDone(item.id, !item.done);
-      // Optimistisch lokal updaten — schneller als fetch
       setItems((prev) =>
         prev.map((i) => i.id === item.id ? { ...i, done: !item.done } : i)
       );
+      if (!item.done) fb.itemCheck(); // NEU: Tick beim Abhaken (nur beim Erledigen)
     } catch (e) {
       setError('Konnte nicht aktualisiert werden.');
       await fetchItems();
@@ -341,11 +315,8 @@ export default function ItemsView({ list, onBack }) {
     return <div className="page-loading">Wird geladen …</div>;
   }
 
-  // Läden dynamisch aus Items berechnen
-  // Läden aus item_store_name (neu) und store_name (alt, Rückwärtskompatibilität)
   const storeNames = [...new Set(items.map((i) => i.item_store_name || i.store_name).filter(Boolean))].sort();
 
-  // Filter anwenden
   const visibleItems = activeStore
     ? items.filter((i) => (i.item_store_name || i.store_name) === activeStore)
     : items;
@@ -359,12 +330,11 @@ export default function ItemsView({ list, onBack }) {
         <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
       )}
 
-      {/* Erfolgs-Meldung Vorlage */}
       {templateSaved && (
         <div className="sho-msg-success">✓ Vorlage gespeichert</div>
       )}
 
-      {/* ── Laden-Filter (nur wenn Artikel mit Laden-Tag vorhanden) ── */}
+      {/* Laden-Filter */}
       {storeNames.length > 0 && (
         <div className="sho-store-filter">
           <button
@@ -385,7 +355,7 @@ export default function ItemsView({ list, onBack }) {
         </div>
       )}
 
-      {/* Aktions-Leiste oben */}
+      {/* Aktions-Leiste */}
       {items.length > 0 && (
         <div className="sho-action-row">
           {doneItems.length > 0 && (
@@ -398,7 +368,6 @@ export default function ItemsView({ list, onBack }) {
               Alle zurücksetzen
             </button>
           )}
-          {/* Als Vorlage speichern */}
           {!showTemplateForm && (
             <button
               className="btn btn-secondary sho-action-btn"
@@ -447,7 +416,7 @@ export default function ItemsView({ list, onBack }) {
         </div>
       )}
 
-      {/* Offene Artikel — nach Kategorie gruppiert */}
+      {/* Offene Artikel — nach Kategorie */}
       {openGroups.map(({ cat, items: catItems }) => (
         <div key={cat} className="sho-category-group">
           {openGroups.length > 1 && (
@@ -468,7 +437,7 @@ export default function ItemsView({ list, onBack }) {
         </div>
       ))}
 
-      {/* Erledigte Artikel — ohne Kategorie-Gruppierung, gedimmt */}
+      {/* Erledigte Artikel */}
       {doneItems.length > 0 && (
         <div className="sho-done-section">
           {openItems.length > 0 && (
@@ -491,7 +460,7 @@ export default function ItemsView({ list, onBack }) {
         </div>
       )}
 
-      {/* Autocomplete-Vorschläge */}
+      {/* Autocomplete */}
       {suggestions.length > 0 && (
         <div className="sho-suggestions">
           {suggestions.map((s) => (
@@ -507,13 +476,11 @@ export default function ItemsView({ list, onBack }) {
         </div>
       )}
 
-      {/* Flug-Animation beim Hinzufügen */}
+      {/* Flug-Animation */}
       {flyAnim && <FlyParticle startX={flyAnim.x} startY={flyAnim.y} />}
 
-      {/* Eingabe-Leiste (sticky über Bottom-Nav) */}
+      {/* Eingabe-Leiste */}
       <div className="sho-input-bar">
-
-        {/* Zeile 1: Menge + Einheit + Laden */}
         <div className="sho-qty-row">
           <input
             ref={quantityRef}
@@ -563,7 +530,6 @@ export default function ItemsView({ list, onBack }) {
           </select>
         </div>
 
-        {/* Zeile 2: Artikelname + Hinzufügen */}
         <div className="sho-input-row">
           <input
             ref={inputRef}
@@ -592,8 +558,6 @@ export default function ItemsView({ list, onBack }) {
 }
 
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
-// Tap auf Checkbox → abhaken
-// Tap auf Artikelname/Menge → Edit-Modus (Menge + Einheit ändern)
 function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
   const [editing,   setEditing]   = useState(false);
   const [qty,       setQty]       = useState(item.quantity != null ? String(item.quantity) : '');
@@ -628,7 +592,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
 
   return (
     <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}`}>
-      {/* Checkbox — immer Abhaken */}
       <button
         className={`sho-item-check ${item.done ? 'done' : ''}`}
         onClick={() => { setEditing(false); onToggle(item); }}
@@ -640,7 +603,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
       </button>
 
       {editing ? (
-        /* Edit-Modus: Menge + Einheit inline */
         <div className="sho-item-edit">
           <span className="sho-item-edit-name">{item.name}</span>
           <div className="sho-item-edit-fields">
@@ -701,7 +663,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
           </div>
         </div>
       ) : (
-        /* Normal-Modus: Tap öffnet Edit */
         <div className="sho-item-body" onClick={openEdit}>
           <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
             {item.name}
@@ -713,7 +674,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
             {!metaLabel && (
               <span className="sho-item-meta--hint">Menge tippen …</span>
             )}
-            {/* Store-Label */}
             {(item.item_store_name || item.store_name) && (
               <span className="sho-item-store-label">{item.item_store_name || item.store_name}</span>
             )}
@@ -721,7 +681,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
         </div>
       )}
 
-      {/* Store-Zuweiser — Laden ändern */}
       {!editing && (
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
@@ -739,7 +698,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
               >
                 Kein Laden
               </button>
-              {/* Alle bekannten Store-Namen aus den Props */}
               {allStores.map((name) => (
                 <button
                   key={name}
@@ -749,7 +707,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
                   {name}
                 </button>
               ))}
-              {/* Neue Läden direkt eintippen */}
               {STORE_NAMES.filter((n) => !allStores.includes(n)).slice(0, 8).map((name) => (
                 <button
                   key={name}
@@ -764,7 +721,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
         </div>
       )}
 
-      {/* Löschen — immer sichtbar */}
       {!editing && (
         <button
           className="btn-icon sho-item-delete"
@@ -779,14 +735,9 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
 }
 
 // ─── Flug-Partikel Animation ──────────────────────────────────────────
-// Ein kleiner Punkt fliegt vom Plus-Button zum Warenkorb in der Bottom-Nav.
-// Rein CSS-getrieben, kein externes Package.
 function FlyParticle({ startX, startY }) {
-  // Ziel: Mitte des Einkauf-Icons in der Bottom-Nav (letztes Item, rechts)
-  // Wir nutzen window.innerWidth/Height als Annäherung
-  const targetX = window.innerWidth - 40;   // ca. Position des Einkauf-Icons
-  const targetY = window.innerHeight - 36;  // ca. Mitte der Bottom-Nav
-
+  const targetX = window.innerWidth - 40;
+  const targetY = window.innerHeight - 36;
   const dx = targetX - startX;
   const dy = targetY - startY;
 
