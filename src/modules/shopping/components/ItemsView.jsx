@@ -459,7 +459,7 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
-                stores={stores}
+                allStores={usedStores}
               />
             ))}
           </div>
@@ -482,7 +482,7 @@ export default function ItemsView({ list, onBack }) {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
-                stores={stores}
+                allStores={usedStores}
               />
             ))}
           </div>
