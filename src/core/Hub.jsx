@@ -126,7 +126,7 @@ export default function Hub({ onOpenModule }) {
   const [todos, setTodos]           = useState([]);
   const [todoSheet, setTodoSheet]   = useState(false);   // Sheet offen?
   const [editTodo, setEditTodo]     = useState(null);    // null = neu
-  const [todoView, setTodoView]     = useState('heute'); // 'heute' | 'alle'
+  const [todoView, setTodoView]     = useState('alle');  // 'alle' | 'heute' | 'wichtig' | 'erledigt'
 
   const load = useCallback(async () => {
     setStatus('laedt');
@@ -261,8 +261,9 @@ export default function Hub({ onOpenModule }) {
   const todosWichtig  = todos.filter((t) => !t.done && t.priority);
   const todosErledigt = todos.filter((t) => t.done);
   const visibleTodos =
-    todoView === 'heute'   ? todosHeute  :
-    todoView === 'wichtig' ? todosWichtig :
+    todoView === 'heute'    ? todosHeute   :
+    todoView === 'wichtig'  ? todosWichtig :
+    todoView === 'erledigt' ? todosErledigt :
     todosAlle;
 
   // Sport-Auswertung für heute
@@ -477,22 +478,30 @@ export default function Hub({ onOpenModule }) {
           {/* ── Aufgaben ── */}
           <div className="hub-section-label" style={{ marginTop: 0 }}>Aufgaben</div>
 
-          <div className="hub-todo-header">
-            <div className="mode-toggle hub-todo-toggle">
-              <button className={todoView === 'heute' ? 'active' : ''} onClick={() => setTodoView('heute')}>
-                Heute{todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
-              </button>
-              <button className={todoView === 'wichtig' ? 'active' : ''} onClick={() => setTodoView('wichtig')}>
-                Wichtig{todosWichtig.length > 0 && <span className="hub-todo-badge">{todosWichtig.length}</span>}
-              </button>
-              <button className={todoView === 'alle' ? 'active' : ''} onClick={() => setTodoView('alle')}>
-                Alle{todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
-              </button>
-            </div>
-            <button className="hub-todo-add" onClick={openNewTodo} aria-label="Aufgabe hinzufügen">＋</button>
+          {/* Tabs */}
+          <div className="mode-toggle hub-todo-toggle">
+            <button className={todoView === 'alle'     ? 'active' : ''} onClick={() => setTodoView('alle')}>
+              Alle{todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
+            </button>
+            <button className={todoView === 'heute'    ? 'active' : ''} onClick={() => setTodoView('heute')}>
+              Heute{todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
+            </button>
+            <button className={todoView === 'wichtig'  ? 'active' : ''} onClick={() => setTodoView('wichtig')}>
+              Wichtig{todosWichtig.length > 0 && <span className="hub-todo-badge">{todosWichtig.length}</span>}
+            </button>
+            <button className={todoView === 'erledigt' ? 'active' : ''} onClick={() => setTodoView('erledigt')}>
+              Erledigt{todosErledigt.length > 0 && <span className="hub-todo-badge">{todosErledigt.length}</span>}
+            </button>
           </div>
 
-          {visibleTodos.length === 0 && (
+          {/* + Neue Aufgabe — Leiste unter den Tabs */}
+          <button className="hub-todo-add-bar" onClick={openNewTodo}>
+            <span className="hub-todo-add-plus">+</span>
+            <span>Neue Aufgabe</span>
+          </button>
+
+          {/* Task-Liste */}
+          {todoView !== 'erledigt' && visibleTodos.length === 0 && (
             <div className="hub-todo-empty">
               {todoView === 'heute'   ? 'Nichts für heute — gut so.' :
                todoView === 'wichtig' ? 'Keine wichtigen Aufgaben.' :
@@ -500,50 +509,28 @@ export default function Hub({ onOpenModule }) {
             </div>
           )}
 
-          <div className="hub-todo-list">
-            {visibleTodos.map((todo) => (
-              <div key={todo.id} className="hub-todo-row">
-                <button
-                  className={`hub-todo-check ${todo.done ? 'checked' : ''}`}
-                  onClick={() => handleToggleTodo(todo.id, todo.done)}
-                  aria-label="Erledigt"
-                />
-                <div className="hub-todo-content" onClick={() => openEditTodo(todo)}>
-                  <span className={`hub-todo-title ${todo.priority ? 'important' : ''}`}>
-                    {todo.title}
-                    {todo.priority && <span className="hub-todo-prio">!</span>}
-                  </span>
-                  {(todo.due_date || todo.note) && (
-                    <span className="hub-todo-meta">
-                      {todo.due_date && formatDueDate(todo.due_date, todayStr)}
-                      {todo.due_date && todo.note && ' · '}
-                      {todo.note}
-                    </span>
-                  )}
-                </div>
-                <button
-                  className="hub-todo-delete"
-                  onClick={() => handleDeleteTodo(todo.id)}
-                  aria-label="Löschen"
-                >×</button>
-              </div>
-            ))}
-          </div>
-
-          {/* Erledigte — kompakt einklappbar */}
-          {todosErledigt.length > 0 && (
-            <details className="hub-todo-done-section">
-              <summary className="hub-todo-done-label">
-                {todosErledigt.length} erledigt
-              </summary>
-              {todosErledigt.map((todo) => (
-                <div key={todo.id} className="hub-todo-row done">
+          {todoView !== 'erledigt' && (
+            <div className="hub-todo-list">
+              {visibleTodos.map((todo) => (
+                <div key={todo.id} className="hub-todo-row">
                   <button
-                    className="hub-todo-check checked"
+                    className={`hub-todo-check ${todo.done ? 'checked' : ''}`}
                     onClick={() => handleToggleTodo(todo.id, todo.done)}
-                    aria-label="Wiederherstellen"
+                    aria-label="Erledigt"
                   />
-                  <span className="hub-todo-title done">{todo.title}</span>
+                  <div className="hub-todo-content" onClick={() => openEditTodo(todo)}>
+                    <span className={`hub-todo-title ${todo.priority ? 'important' : ''}`}>
+                      {todo.title}
+                      {todo.priority && <span className="hub-todo-prio">!</span>}
+                    </span>
+                    {(todo.due_date || todo.note) && (
+                      <span className="hub-todo-meta">
+                        {todo.due_date && formatDueDate(todo.due_date, todayStr)}
+                        {todo.due_date && todo.note && ' · '}
+                        {todo.note}
+                      </span>
+                    )}
+                  </div>
                   <button
                     className="hub-todo-delete"
                     onClick={() => handleDeleteTodo(todo.id)}
@@ -551,7 +538,37 @@ export default function Hub({ onOpenModule }) {
                   >×</button>
                 </div>
               ))}
-            </details>
+            </div>
+          )}
+
+          {/* Erledigt-Tab */}
+          {todoView === 'erledigt' && (
+            <div className="hub-todo-list">
+              {todosErledigt.length === 0 ? (
+                <div className="hub-todo-empty">Noch nichts erledigt.</div>
+              ) : (
+                todosErledigt.map((todo) => (
+                  <div key={todo.id} className="hub-todo-row done">
+                    <button
+                      className="hub-todo-check checked"
+                      onClick={() => handleToggleTodo(todo.id, todo.done)}
+                      aria-label="Wiederherstellen"
+                    />
+                    <div className="hub-todo-content" onClick={() => openEditTodo(todo)}>
+                      <span className="hub-todo-title done">{todo.title}</span>
+                      {todo.due_date && (
+                        <span className="hub-todo-meta">{formatDueDate(todo.due_date, todayStr)}</span>
+                      )}
+                    </div>
+                    <button
+                      className="hub-todo-delete"
+                      onClick={() => handleDeleteTodo(todo.id)}
+                      aria-label="Löschen"
+                    >×</button>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </>
       )}
