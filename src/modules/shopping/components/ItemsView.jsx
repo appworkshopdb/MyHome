@@ -236,12 +236,12 @@ export default function ItemsView({ list, onBack }) {
     setError(null);
     try {
       await saveItem({
-        list_id:    list.id,
-        name:       trimmed,
-        category:   getCategory(trimmed),
-        quantity:   quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
-        unit:       unit.trim() || null,
-        store_name: selectedStore || null,
+        list_id:         list.id,
+        name:            trimmed,
+        category:        getCategory(trimmed),
+        quantity:        quantity.trim() ? parseFloat(quantity.replace(',', '.')) || null : null,
+        unit:            unit.trim() || null,
+        item_store_name: selectedStore || null,
       });
       await fetchItems();
       setInput('');
