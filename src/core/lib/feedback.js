@@ -37,15 +37,15 @@ export function setHapticEnabled(v) {
 // Audio-Objekte werden wiederverwendet (cloneNode) um paralleles Abspielen zu ermöglichen.
 
 const SOUND_FILES = {
-  erledigt:      '/sounds/erledigt.wav',
-  ziel_erreicht: '/sounds/ziel_erreicht.wav',
-  ziel_erreicht2:'/sounds/ziel_erreicht2.wav',
-  click:         '/sounds/click.mp3',
-  click2:        '/sounds/click2.wav',
-  swoosh:        '/sounds/swoosh.wav',
-  negativ:       '/sounds/negativ.wav',
-  zahlung:       '/sounds/zahlung.wav',
-  fixkosten_alle:'/sounds/fixkosten_alle.wav',
+  erledigt:      './sounds/erledigt.wav',
+  ziel_erreicht: './sounds/ziel_erreicht.wav',
+  ziel_erreicht2:'./sounds/ziel_erreicht2.wav',
+  click:         './sounds/click.mp3',
+  click2:        './sounds/click2.wav',
+  swoosh:        './sounds/swoosh.wav',
+  negativ:       './sounds/negativ.wav',
+  zahlung:       './sounds/zahlung.wav',
+  fixkosten_alle:'./sounds/fixkosten_alle.wav',
 };
 
 // Cache: name → Audio-Objekt (vorgeladen)
