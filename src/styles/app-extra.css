@@ -418,8 +418,32 @@
   margin-top: 24px;
   margin-bottom: 2px;
 }
-.hub-todo-toggle { flex: 1; }
+.hub-todo-toggle { width: 100%; margin-bottom: 0; }
 .hub-todo-toggle button { padding: 5px 0; font-size: 0.74rem; flex: 1; }
+
+.hub-todo-add-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 0;
+  border-bottom: 1.5px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  min-height: var(--touch-target);
+}
+.hub-todo-add-bar:active { color: var(--text-primary); }
+.hub-todo-add-plus {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
 .hub-todo-badge {
   display: inline-flex;
   align-items: center;
@@ -434,20 +458,6 @@
   margin-left: 5px;
   vertical-align: middle;
 }
-.hub-todo-add {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: 20px;
-  line-height: 1;
-  margin-left: 10px;
-  flex-shrink: 0;
-}
-.hub-todo-add:active { opacity: 0.7; }
 
 .hub-todo-empty {
   font-size: 13px;
