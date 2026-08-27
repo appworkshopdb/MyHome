@@ -1,6 +1,6 @@
 // src/core/lib/feedback.js
 // Haptik + Sound für die Zuhause-App.
-// Kein Package, kein CDN — nur Web Audio API + Vibration API.
+// Sounds liegen als Dateien in public/sounds/ und werden per Audio-API abgespielt.
 // Einstellungen liegen in localStorage, kein React-Context nötig.
 // Einfach importieren und aufrufen: import { fb } from '../lib/feedback';
 
@@ -32,6 +32,55 @@ export function setHapticEnabled(v) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...getSettings(), haptic: v }));
 }
 
+// ── Sound-Dateien vorladen ────────────────────────────────────────────────────
+// Alle Sounds beim ersten Import vorladen damit kein Delay beim ersten Abspielen.
+// Audio-Objekte werden wiederverwendet (cloneNode) um paralleles Abspielen zu ermöglichen.
+
+const SOUND_FILES = {
+  erledigt:      '/sounds/erledigt.wav',
+  ziel_erreicht: '/sounds/ziel_erreicht.wav',
+  ziel_erreicht2:'/sounds/ziel_erreicht2.wav',
+  click:         '/sounds/click.mp3',
+  click2:        '/sounds/click2.wav',
+  swoosh:        '/sounds/swoosh.wav',
+  negativ:       '/sounds/negativ.wav',
+  zahlung:       '/sounds/zahlung.wav',
+  fixkosten_alle:'/sounds/fixkosten_alle.wav',
+};
+
+// Cache: name → Audio-Objekt (vorgeladen)
+const _audioCache = {};
+
+function preload() {
+  for (const [name, path] of Object.entries(SOUND_FILES)) {
+    const a = new Audio(path);
+    a.preload = 'auto';
+    _audioCache[name] = a;
+  }
+}
+
+// Sofort vorladen sobald das Modul importiert wird
+try { preload(); } catch { /* SSR oder kein Audio-Support */ }
+
+/**
+ * Spielt einen vorgeladenen Sound ab.
+ * Nutzt cloneNode damit derselbe Sound parallel mehrfach abgespielt werden kann
+ * (z.B. schnelles Abhaken mehrerer Artikel).
+ */
+function playSound(name, volume = 1.0) {
+  if (!isSoundEnabled()) return;
+  const base = _audioCache[name];
+  if (!base) return;
+  try {
+    const clone = base.cloneNode();
+    clone.volume = Math.max(0, Math.min(1, volume));
+    clone.play().catch(() => {
+      // Autoplay-Policy: Browser blockiert Play ohne User-Geste.
+      // Da alle fb.*-Aufrufe in onClick-Handlern stehen, sollte das nie passieren.
+    });
+  } catch { /* still fail */ }
+}
+
 // ── Haptik (Vibration API) ────────────────────────────────────────────────────
 // Funktioniert auf Android Chrome/TWA. iOS Safari ignoriert das stillschweigend.
 
@@ -42,133 +91,121 @@ export function haptic(pattern = 30) {
   }
 }
 
-// ── Sound (Web Audio API) ─────────────────────────────────────────────────────
-// Kein Audio-File, kein CDN. Töne werden synthetisch erzeugt.
-// AudioContext wird lazy erstellt — muss nach einer User-Geste passieren,
-// sonst sperrt der Browser ihn (Autoplay-Policy). Da alle fb.*-Aufrufe
-// direkt in onClick/onTap-Handlern stehen, ist das garantiert erfüllt.
-
-let _audioCtx = null;
-
-function getAudioCtx() {
-  if (!_audioCtx) {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (_audioCtx.state === 'suspended') {
-    _audioCtx.resume();
-  }
-  return _audioCtx;
-}
-
-/**
- * Spielt einen einzelnen synthetischen Ton.
- * @param {number} freq       - Frequenz in Hz
- * @param {string} type       - OscillatorType: 'sine' | 'triangle' | 'square' | 'sawtooth'
- * @param {number} duration   - Tonlänge in Sekunden
- * @param {number} gain       - Lautstärke 0–1
- * @param {number} startDelay - Verzögerung in Sekunden, relativ zu jetzt
- */
-function playTone({ freq = 440, type = 'sine', duration = 0.12, gain = 0.12, startDelay = 0 } = {}) {
-  if (!isSoundEnabled()) return;
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime + startDelay;
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, now);
-    gainNode.gain.setValueAtTime(gain, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch {
-    // AudioContext gesperrt oder nicht verfügbar → still ignorieren
-  }
-}
-
-// ── Vorgefertigte Sounds ──────────────────────────────────────────────────────
-
-const SOUND = {
-  // Einzelnes Abhaken (ToDo / Gewohnheit / Einkauf-Artikel)
-  // Zwei aufsteigende Töne dicht hintereinander → kleines "Tock-Ting"
-  check: () => {
-    playTone({ freq: 698, type: 'sine', duration: 0.09, gain: 0.10 });                  // F5
-    playTone({ freq: 880, type: 'sine', duration: 0.13, gain: 0.12, startDelay: 0.06 }); // A5
-  },
-
-  // Alle Gewohnheiten des Tages erledigt — aufsteigender Dreiklang C5→E5→G5
-  allDone: () => {
-    playTone({ freq: 523, type: 'sine', duration: 0.12, gain: 0.11 });
-    playTone({ freq: 659, type: 'sine', duration: 0.12, gain: 0.12, startDelay: 0.10 });
-    playTone({ freq: 784, type: 'sine', duration: 0.20, gain: 0.13, startDelay: 0.20 });
-  },
-
-  // Liste angelegt — kurzer absteigender Swoosh (hoch → tief)
-  listCreate: () => {
-    playTone({ freq: 660, type: 'sine', duration: 0.06, gain: 0.09 });
-    playTone({ freq: 440, type: 'sine', duration: 0.10, gain: 0.11, startDelay: 0.05 });
-  },
-
-  // Artikel hinzugefügt — weiches "Pop" (einzelner mittlerer Ton)
-  itemAdd: () => {
-    playTone({ freq: 520, type: 'sine', duration: 0.08, gain: 0.10 });
-  },
-};
-
-// ── Vorgefertigte Haptik-Muster ───────────────────────────────────────────────
-
 const HAPTIC = {
-  // Weiches, kurzes Tippen — für einfache Bestätigungen
-  check: () => haptic(40),
-
-  // Sehr sanft — für Hinzufügen-Aktionen
-  soft: () => haptic(20),
-
-  // Doppel-Puls — für besondere Momente (alle erledigt, Workout fertig)
-  success: () => haptic([50, 80, 50]),
+  check:   () => haptic(40),           // kurzer Pulse — Abhaken
+  soft:    () => haptic(20),           // sehr sanft — Hinzufügen
+  success: () => haptic([50, 80, 50]), // Doppel-Pulse — Ziel erreicht
+  error:   () => haptic([20, 30, 20, 30, 20]), // 3× kurz — Fehler
+  neutral: () => haptic(15),           // kaum spürbar — Navigation/Status
 };
 
 // ── Öffentliche API ───────────────────────────────────────────────────────────
+// Zuordnung laut Tabelle:
+//
+// Habit abhaken                                → erledigt.wav
+// Letztes Habit (alle done)                   → ziel_erreicht.wav
+// ToDo abhaken                                → click.mp3
+// ToDo angelegt                               → click2.wav
+// Alle ToDos erledigt                         → ziel_erreicht.wav
+// Artikel abhaken                             → click2.wav
+// Letzter Artikel (alle done)                 → ziel_erreicht2.wav
+// Liste angelegt                              → erledigt.wav
+// Artikel hinzugefügt                         → click2.wav
+// Listen-Status weiterschalten                → swoosh.wav
+// Workout als erledigt markieren              → ziel_erreicht2.wav
+// Ruhetag eintragen                           → swoosh.wav
+// Training abhaken (Plan-Tag)                 → ziel_erreicht.wav
+// Speichern fehlgeschlagen / Netzwerkfehler   → negativ.wav
+// Fixkosten abhaken                           → zahlung.wav
+// Variable Kosten abhaken                     → zahlung.wav
+// Sonstige Ausgaben abhaken                   → zahlung.wav
+// Fix+Variable+Sonstige alle abgehakt         → fixkosten_alle.wav
 
 export const fb = {
-  // ── ToDo ──
-  // Task abhaken (nur beim Erledigen, nicht beim Rückgängig)
-  todoCheck: () => {
-    HAPTIC.check();
-    SOUND.check();
-  },
 
-  // ── Gewohnheiten ──
-  // Einzelne Gewohnheit abhaken
+  // ── Gewohnheiten ──────────────────────────────────────────────────
   habitCheck: () => {
     HAPTIC.check();
-    SOUND.check();
+    playSound('erledigt');
   },
 
-  // Alle Gewohnheiten des Tages erledigt — besonderer Moment
   habitAllDone: () => {
     HAPTIC.success();
-    SOUND.allDone();
+    playSound('ziel_erreicht');
   },
 
-  // ── Einkauf ──
-  // Artikel abhaken
+  // ── ToDo ──────────────────────────────────────────────────────────
+  todoCheck: () => {
+    HAPTIC.check();
+    playSound('click');
+  },
+
+  todoCreate: () => {
+    HAPTIC.soft();
+    playSound('click2');
+  },
+
+  todoAllDone: () => {
+    HAPTIC.success();
+    playSound('ziel_erreicht');
+  },
+
+  // ── Einkauf ───────────────────────────────────────────────────────
   itemCheck: () => {
     HAPTIC.check();
-    SOUND.check();
+    playSound('click2');
   },
 
-  // Liste neu angelegt — Swoosh
+  itemAllDone: () => {
+    HAPTIC.success();
+    playSound('ziel_erreicht2');
+  },
+
   listCreate: () => {
     HAPTIC.soft();
-    SOUND.listCreate();
+    playSound('erledigt');
   },
 
-  // Artikel zur Liste hinzugefügt — Pop
   itemAdd: () => {
     HAPTIC.soft();
-    SOUND.itemAdd();
+    playSound('click2');
+  },
+
+  listStatusCycle: () => {
+    HAPTIC.neutral();
+    playSound('swoosh', 0.7);
+  },
+
+  // ── Sport ─────────────────────────────────────────────────────────
+  workoutDone: () => {
+    HAPTIC.success();
+    playSound('ziel_erreicht2');
+  },
+
+  restDay: () => {
+    HAPTIC.neutral();
+    playSound('swoosh', 0.7);
+  },
+
+  planDayCheck: () => {
+    HAPTIC.check();
+    playSound('ziel_erreicht');
+  },
+
+  // ── Finanzen ──────────────────────────────────────────────────────
+  paymentCheck: () => {
+    HAPTIC.check();
+    playSound('zahlung');
+  },
+
+  paymentAllDone: () => {
+    HAPTIC.success();
+    playSound('fixkosten_alle');
+  },
+
+  // ── Fehler ────────────────────────────────────────────────────────
+  error: () => {
+    HAPTIC.error();
+    playSound('negativ');
   },
 };
