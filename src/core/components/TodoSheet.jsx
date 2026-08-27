@@ -79,13 +79,24 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
           {/* Fälligkeitsdatum + Priorität */}
           <div className="todo-sheet-row">
             <div className="todo-sheet-field todo-sheet-field--half">
-              <label className="todo-sheet-label">Fällig am</label>
-              <input
-                className="todo-sheet-input"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <label className="todo-sheet-label">Fällig am <span className="todo-sheet-optional">(optional)</span></label>
+              <div className="todo-sheet-date-row">
+                <input
+                  className="todo-sheet-input"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                {dueDate && (
+                  <button
+                    className="todo-sheet-date-clear"
+                    onClick={() => setDueDate('')}
+                    type="button"
+                    aria-label="Datum entfernen"
+                  >×</button>
+                )}
+              </div>
             </div>
 
             <button
