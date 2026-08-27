@@ -6,6 +6,7 @@ import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
+import HubCalendar from './components/HubCalendar';
 
 const CACHE_KEY = 'hub-cache-v2';
 
@@ -332,6 +333,12 @@ export default function Hub({ onOpenModule }) {
             <span>Ein <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(income)}</b></span>
             <span>Aus <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(expense)}</b></span>
           </div>
+
+          <div className="hub-divider" />
+
+          {/* ── Kalender (aktuelle Woche) ── */}
+          <div className="hub-section-label" style={{ marginTop: 0 }}>Diese Woche</div>
+          <HubCalendar />
 
           <div className="hub-divider" />
 
