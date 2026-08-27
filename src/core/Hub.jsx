@@ -42,8 +42,9 @@ async function loadTodayHabits() {
   const { data: entries, error: eErr } = await sb
     .from('hab_entries')
     .select('id, habit_id, count, logged_on, deleted_at')
-    .eq('logged_on', todayStr)
-    .is('deleted_at', null);
+    .eq('logged_on', todayStr);
+    // KEIN .is('deleted_at', null) — auch soft-gelöschte laden,
+    // damit Toggle-Handler die id kennt und immer Update statt Insert nutzt
   if (eErr) throw eErr;
   const wd = (new Date().getDay() + 6) % 7;
   const due = (habits ?? []).filter((h) => {
@@ -57,7 +58,10 @@ async function loadTodayHabits() {
   for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
   const doneIds = new Set(
     due
-      .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
+      .filter((h) => {
+        const e = entryMap[h.id];
+        return e && !e.deleted_at && e.count >= h.target_count;
+      })
       .map((h) => h.id)
   );
   return { total: due.length, done: doneIds.size, habits: due, entryMap };
@@ -139,7 +143,6 @@ export default function Hub({ onOpenModule }) {
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
       setHabEntryMap(todayHab.entryMap ?? {});
-      setHabEntryMap(todayHab.entryMap);
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
@@ -175,43 +178,58 @@ export default function Hub({ onOpenModule }) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    const wasDone  = existing && existing.count >= habit.target_count;
+    // "erledigt" = Eintrag vorhanden, NICHT soft-gelöscht, count erreicht
+    const wasDone  = !!(existing && !existing.deleted_at && existing.count >= habit.target_count);
 
-    // Optimistisch updaten
-    const nextMap  = { ...habEntryMap };
-    const nextDone = wasDone ? habDone - 1 : habDone + 1;
-    setHabDone(nextDone);
+    // Optimistisch sofort updaten — Map UND Counter zusammen
+    const nextMap = { ...habEntryMap };
+    if (wasDone) {
+      // Rückgängig: lokal als soft-gelöscht markieren, id BLEIBT in der Map
+      nextMap[habit.id] = { ...existing, deleted_at: new Date().toISOString() };
+    } else if (existing) {
+      // Reaktivieren — id bereits bekannt, einfach reaktivieren
+      nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
+    } else {
+      // Allererster Tap heute — Platzhalter ohne id
+      nextMap[habit.id] = { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr, deleted_at: null };
+    }
+    setHabEntryMap(nextMap);
+    setHabDone(wasDone ? habDone - 1 : habDone + 1);
 
     try {
-      if (existing) {
-        if (wasDone) {
-          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
-          delete nextMap[habit.id];
-        } else {
-          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
-          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
-        }
+      if (existing?.id) {
+        // id bekannt → immer Update, NIE Insert (verhindert 409-Konflikt)
+        await sb.from('hab_entries')
+          .update({
+            count:      wasDone ? existing.count : habit.target_count,
+            deleted_at: wasDone ? new Date().toISOString() : null,
+          })
+          .eq('id', existing.id);
       } else {
-        const { data } = await sb.from('hab_entries')
-          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
-          .select().single();
-        if (data) nextMap[habit.id] = data;
+        // Allererster Eintrag für diesen Tag → Insert
+        const { data, error } = await sb.from('hab_entries')
+          .insert({
+            habit_id:  habit.id,
+            logged_on: todayStr,
+            count:     habit.target_count,
+            owner_id:  session.user.id,
+          })
+          .select('id, habit_id, count, logged_on, deleted_at')
+          .single();
+        if (error) throw error;
+        if (data) setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
       }
-      setHabEntryMap(nextMap);
 
-      // Feedback — nur beim Abhaken, nicht beim Rückgängig
+      // Feedback — nur beim Abhaken
       if (!wasDone) {
-        const nowAllDone = nextDone === habTotal;
-        if (nowAllDone) {
-          fb.habitAllDone(); // Dreiklang + Doppel-Puls
-        } else {
-          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
-        }
+        const newDone = habDone + 1;
+        if (newDone === habTotal) fb.habitAllDone();
+        else                      fb.habitCheck();
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      setHabDone(habDone);
       setHabEntryMap(habEntryMap);
+      setHabDone(habDone);
     }
   }
 
@@ -397,7 +415,7 @@ export default function Hub({ onOpenModule }) {
               <div className="hub-hab-list">
                 {habHabits.map((h) => {
                   const entry  = habEntryMap[h.id];
-                  const isDone = entry && entry.count >= h.target_count;
+                  const isDone = !!(entry && !entry.deleted_at && entry.count >= h.target_count);
                   return (
                     <button
                       key={h.id}
