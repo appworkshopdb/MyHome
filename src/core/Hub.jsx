@@ -42,8 +42,9 @@ async function loadTodayHabits() {
   const { data: entries, error: eErr } = await sb
     .from('hab_entries')
     .select('id, habit_id, count, logged_on, deleted_at')
-    .eq('logged_on', todayStr)
-    .is('deleted_at', null);
+    .eq('logged_on', todayStr);
+    // KEIN .is('deleted_at', null) — auch soft-gelöschte Einträge laden,
+    // damit der Toggle-Handler die id kennt und immer Update statt Insert nutzt
   if (eErr) throw eErr;
   const wd = (new Date().getDay() + 6) % 7;
   const due = (habits ?? []).filter((h) => {
@@ -57,7 +58,10 @@ async function loadTodayHabits() {
   for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
   const doneIds = new Set(
     due
-      .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
+      .filter((h) => {
+        const e = entryMap[h.id];
+        return e && !e.deleted_at && e.count >= h.target_count;
+      })
       .map((h) => h.id)
   );
   return { total: due.length, done: doneIds.size, habits: due, entryMap };
@@ -176,34 +180,35 @@ export default function Hub({ onOpenModule }) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    const wasDone  = !!(existing && existing.count >= habit.target_count);
+    // "erledigt" = Eintrag existiert, nicht soft-gelöscht, count erreicht
+    const wasDone  = !!(existing && !existing.deleted_at && existing.count >= habit.target_count);
 
     // Optimistisch sofort updaten
     const nextMap = { ...habEntryMap };
     if (wasDone) {
-      // Rückgängig: count auf 0 setzen, Eintrag aber IN der Map behalten
-      // damit nächster Tap die id kennt und kein neues Insert versucht
-      nextMap[habit.id] = { ...existing, count: 0 };
+      // Rückgängig: als soft-gelöscht markieren im lokalen State
+      nextMap[habit.id] = { ...existing, deleted_at: new Date().toISOString() };
+    } else if (existing) {
+      // Reaktivieren oder count setzen — id bereits bekannt
+      nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
     } else {
-      // Abhaken: Platzhalter mit Zielcount setzen
-      nextMap[habit.id] = existing
-        ? { ...existing, count: habit.target_count }
-        : { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr };
+      // Erster Tap heute — Platzhalter ohne id
+      nextMap[habit.id] = { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr, deleted_at: null };
     }
     setHabEntryMap(nextMap);
     setHabDone(wasDone ? habDone - 1 : habDone + 1);
 
     try {
       if (existing?.id) {
-        // Eintrag existiert in DB — immer Update, nie Delete
+        // id bekannt → immer Update, nie Insert
         await sb.from('hab_entries')
           .update({
-            count:      wasDone ? 0 : habit.target_count,
-            deleted_at: null,
+            count:      wasDone ? existing.count : habit.target_count,
+            deleted_at: wasDone ? new Date().toISOString() : null,
           })
           .eq('id', existing.id);
       } else {
-        // Kein Eintrag in DB → neu anlegen
+        // Allererster Eintrag für diesen Tag
         const { data, error } = await sb.from('hab_entries')
           .insert({
             habit_id:  habit.id,
@@ -402,7 +407,7 @@ export default function Hub({ onOpenModule }) {
               <div className="hub-hab-list">
                 {habHabits.map((h) => {
                   const entry  = habEntryMap[h.id];
-                  const isDone = !!(entry && entry.count >= h.target_count);
+                  const isDone = !!(entry && !entry.deleted_at && entry.count >= h.target_count);
                   return (
                     <button
                       key={h.id}
