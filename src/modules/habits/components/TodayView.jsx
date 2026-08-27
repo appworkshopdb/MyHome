@@ -1,9 +1,10 @@
-// modules/habits/components/TodayView.jsx
+// src/modules/habits/components/TodayView.jsx
 // Heute-Ansicht + Wochenübersicht + Streak-Schutz-Anzeige
 
 import { useState, useMemo } from 'react';
 import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } from '../lib/habUtils.js';
 import { toggleEntry, setEntryCount } from '../lib/habData.js';
+import { fb } from '../../../core/lib/feedback';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -59,10 +60,14 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
     if (loading) return;
     setError(null);
     setLoading(habit.id);
+
+    // Zustand VOR dem Toggle merken — für Feedback-Entscheidung nach dem Laden
+    const wasAllDone = totalDue > 0 && totalDone === totalDue;
+    const entry = getEntry(entries, habit.id, todayStr);
+    const wasDone = entry && !entry.deleted_at && entry.count >= habit.target_count;
+
     try {
-      const entry = getEntry(entries, habit.id, todayStr);
-      const done  = entry && !entry.deleted_at && entry.count >= habit.target_count;
-      if (done) {
+      if (wasDone) {
         await toggleEntry(habit.id, todayStr);
       } else if (habit.target_count > 1) {
         await setEntryCount(habit.id, todayStr, habit.target_count);
@@ -70,6 +75,17 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
         await toggleEntry(habit.id, todayStr);
       }
       await onEntriesChange();
+
+      // Feedback — nur beim Abhaken (nicht beim Rückgängig)
+      if (!wasDone) {
+        // Prüfen ob jetzt alle erledigt sind: totalDone + 1 (dieser Habit)
+        const nowAllDone = !wasAllDone && (totalDone + 1 === totalDue);
+        if (nowAllDone) {
+          fb.habitAllDone(); // Dreiklang + Doppel-Puls
+        } else {
+          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
+        }
+      }
     } catch (e) {
       setError('Konnte nicht gespeichert werden.');
     } finally {
