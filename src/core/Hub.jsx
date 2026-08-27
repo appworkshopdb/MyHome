@@ -7,7 +7,7 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
-import { fb } from './lib/feedback'; // NEU
+import { fb } from './lib/feedback';
 
 const CACHE_KEY = 'hub-cache-v2';
 
@@ -138,8 +138,7 @@ export default function Hub({ onOpenModule }) {
       setHabTotal(todayHab.total);
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
-      setHabEntryMap(todayHab.entryMap ?? {});
-      setHabEntryMap(todayHab.entryMap);
+      setHabEntryMap(todayHab.entryMap);   // einmal, kein Duplikat
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
@@ -168,50 +167,70 @@ export default function Hub({ onOpenModule }) {
 
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
-  const habAllDone = habTotal > 0 && habDone === habTotal;
 
   // ── Habit-Toggle direkt im Hub ──
+  // FIX: Map und Counter werden VOR dem await gesetzt (optimistisch),
+  // damit schnelle Folge-Taps den korrekten State sehen und nicht
+  // mehrfach neu anlegen.
   async function handleToggleHabit(habit) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    const wasDone  = existing && existing.count >= habit.target_count;
+    const wasDone  = !!(existing && existing.count >= habit.target_count);
 
-    // Optimistisch updaten
-    const nextMap  = { ...habEntryMap };
-    const nextDone = wasDone ? habDone - 1 : habDone + 1;
-    setHabDone(nextDone);
+    // Optimistisch sofort updaten — Map UND Counter zusammen
+    const nextMap = { ...habEntryMap };
+    if (wasDone) {
+      delete nextMap[habit.id];
+    } else {
+      // Platzhalter damit nächster Tap 'existing' findet, bevor DB antwortet
+      nextMap[habit.id] = existing
+        ? { ...existing, count: habit.target_count }
+        : { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr };
+    }
+    setHabEntryMap(nextMap);
+    setHabDone(wasDone ? habDone - 1 : habDone + 1);
 
     try {
-      if (existing) {
+      if (existing?.id) {
+        // Eintrag existiert in DB
         if (wasDone) {
-          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
-          delete nextMap[habit.id];
+          await sb.from('hab_entries')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', existing.id);
         } else {
-          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
-          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
+          await sb.from('hab_entries')
+            .update({ deleted_at: null, count: habit.target_count })
+            .eq('id', existing.id);
         }
       } else {
-        const { data } = await sb.from('hab_entries')
-          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
-          .select().single();
-        if (data) nextMap[habit.id] = data;
+        // Neu anlegen, echte ID zurückschreiben
+        const { data, error } = await sb.from('hab_entries')
+          .insert({
+            habit_id:  habit.id,
+            logged_on: todayStr,
+            count:     habit.target_count,
+            owner_id:  session.user.id,
+          })
+          .select('id, habit_id, count, logged_on, deleted_at')
+          .single();
+        if (error) throw error;
+        if (data) {
+          setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
+        }
       }
-      setHabEntryMap(nextMap);
 
       // Feedback — nur beim Abhaken, nicht beim Rückgängig
       if (!wasDone) {
-        const nowAllDone = nextDone === habTotal;
-        if (nowAllDone) {
-          fb.habitAllDone(); // Dreiklang + Doppel-Puls
-        } else {
-          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
-        }
+        const allDone = (wasDone ? habDone - 1 : habDone + 1) === habTotal;
+        if (allDone) fb.habitAllDone();
+        else         fb.habitCheck();
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      setHabDone(habDone);
+      // Rollback
       setHabEntryMap(habEntryMap);
+      setHabDone(habDone);
     }
   }
 
@@ -219,7 +238,7 @@ export default function Hub({ onOpenModule }) {
   async function handleToggleTodo(id, currentDone) {
     const next = !currentDone;
     setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
-    if (!currentDone) fb.todoCheck(); // Feedback nur beim Abhaken
+    if (!currentDone) fb.todoCheck();
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
@@ -249,16 +268,15 @@ export default function Hub({ onOpenModule }) {
   }
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const todosHeute = todos.filter((t) => !t.done && (
-    (t.due_date && t.due_date <= todayStr) ||
-    (!t.due_date && t.priority)
+  const todosHeute   = todos.filter((t) => !t.done && (
+    (t.due_date && t.due_date <= todayStr) || (!t.due_date && t.priority)
   ));
   const todosAlle     = todos.filter((t) => !t.done);
   const todosWichtig  = todos.filter((t) => !t.done && t.priority);
   const todosErledigt = todos.filter((t) => t.done);
-  const visibleTodos =
-    todoView === 'heute'    ? todosHeute   :
-    todoView === 'wichtig'  ? todosWichtig :
+  const visibleTodos  =
+    todoView === 'heute'    ? todosHeute    :
+    todoView === 'wichtig'  ? todosWichtig  :
     todoView === 'erledigt' ? todosErledigt :
     todosAlle;
 
@@ -359,16 +377,10 @@ export default function Hub({ onOpenModule }) {
         <>
           {/* ── Finanz-Leitzahl ── */}
           <div className="hub-eyebrow">Saldo {monatsname}</div>
-          <div
-            className="hub-lead-stat"
-            style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}
-          >
+          <div className="hub-lead-stat" style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}>
             {formatEur(saldo)}
           </div>
-          <div
-            className="hub-lead-substats"
-            style={{ color: status === 'veraltet' ? 'var(--text-muted)' : undefined }}
-          >
+          <div className="hub-lead-substats" style={{ color: status === 'veraltet' ? 'var(--text-muted)' : undefined }}>
             <span>Ein <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(income)}</b></span>
             <span>Aus <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(expense)}</b></span>
           </div>
@@ -389,15 +401,12 @@ export default function Hub({ onOpenModule }) {
                 <span className="hub-hab-count">{habDone} / {habTotal}</span>
               </div>
               <div className="hub-hab-progress">
-                <div
-                  className="hub-hab-bar"
-                  style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
-                />
+                <div className="hub-hab-bar" style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }} />
               </div>
               <div className="hub-hab-list">
                 {habHabits.map((h) => {
                   const entry  = habEntryMap[h.id];
-                  const isDone = entry && entry.count >= h.target_count;
+                  const isDone = !!(entry && entry.count >= h.target_count);
                   return (
                     <button
                       key={h.id}
@@ -425,27 +434,21 @@ export default function Hub({ onOpenModule }) {
               {restToday ? (
                 <span className="hub-quick-muted">Restday</span>
               ) : doneToday.length > 0 ? (
-                <>
-                  {doneToday.map((w, i) => (
-                    <span key={w.id}>
-                      {i > 0 && <span className="hub-quick-sep"> · </span>}
-                      {sportLabel(w)}
-                      {w.duration_min ? ` ${w.duration_min} min` : ''}
-                      <span className="hub-quick-done"> ✓</span>
-                    </span>
-                  ))}
-                </>
+                doneToday.map((w, i) => (
+                  <span key={w.id}>
+                    {i > 0 && <span className="hub-quick-sep"> · </span>}
+                    {sportLabel(w)}{w.duration_min ? ` ${w.duration_min} min` : ''}
+                    <span className="hub-quick-done"> ✓</span>
+                  </span>
+                ))
               ) : plannedToday.length > 0 ? (
-                <>
-                  {plannedToday.map((w, i) => (
-                    <span key={w.id}>
-                      {i > 0 && <span className="hub-quick-sep"> · </span>}
-                      {sportLabel(w)}
-                      {w.duration_min ? ` ${w.duration_min} min` : ''}
-                      <span className="hub-quick-planned"> geplant</span>
-                    </span>
-                  ))}
-                </>
+                plannedToday.map((w, i) => (
+                  <span key={w.id}>
+                    {i > 0 && <span className="hub-quick-sep"> · </span>}
+                    {sportLabel(w)}{w.duration_min ? ` ${w.duration_min} min` : ''}
+                    <span className="hub-quick-planned"> geplant</span>
+                  </span>
+                ))
               ) : (
                 <span className="hub-quick-muted">Restday</span>
               )}
@@ -523,11 +526,7 @@ export default function Hub({ onOpenModule }) {
                       </span>
                     )}
                   </div>
-                  <button
-                    className="hub-todo-delete"
-                    onClick={() => handleDeleteTodo(todo.id)}
-                    aria-label="Löschen"
-                  >×</button>
+                  <button className="hub-todo-delete" onClick={() => handleDeleteTodo(todo.id)} aria-label="Löschen">×</button>
                 </div>
               ))}
             </div>
@@ -551,11 +550,7 @@ export default function Hub({ onOpenModule }) {
                         <span className="hub-todo-meta">{formatDueDate(todo.due_date, todayStr)}</span>
                       )}
                     </div>
-                    <button
-                      className="hub-todo-delete"
-                      onClick={() => handleDeleteTodo(todo.id)}
-                      aria-label="Löschen"
-                    >×</button>
+                    <button className="hub-todo-delete" onClick={() => handleDeleteTodo(todo.id)} aria-label="Löschen">×</button>
                   </div>
                 ))
               )}
