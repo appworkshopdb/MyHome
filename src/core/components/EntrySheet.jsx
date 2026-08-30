@@ -5,65 +5,44 @@ import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
 
-// Vereinfachte Kategorien für die Schnellerfassung — bewusst 4 statt der
-// vollen 5 aus core/lib CATEGORIES (siehe modules/finance/lib/finance.js),
-// weil das Sheet für Tempo optimiert ist. Volle Kategorie-Auswahl bleibt
-// über den bestehenden "Bearbeiten"-Weg (EntryModal) erreichbar.
 const QUICK_CATEGORIES = [
-  { key: 'variable_kosten', label: 'Variable' },
-  { key: 'fixkosten', label: 'Fixkosten' },
-  { key: 'sonstige_ausgaben', label: 'Sonstige' },
-  { key: 'sonstige_einnahmen', label: 'Einnahme' },
+  { key: 'sonstige_einnahmen', label: 'Einnahme',  color: 'var(--success)' },
+  { key: 'fixkosten',          label: 'Fixkosten', color: 'var(--danger)'  },
+  { key: 'variable_kosten',    label: 'Variable',  color: 'var(--danger)'  },
+  { key: 'sonstige_ausgaben',  label: 'Sonstige',  color: 'var(--text-muted)' },
 ];
-const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'Klarna'];
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', '⌫'];
-const MAX_CENTS = 99_999_999; // 999.999,99 € — genug Spielraum, kein absurder Überlauf
 
-function formatCents(cents) {
-  const euros = Math.floor(cents / 100);
-  const rest = String(cents % 100).padStart(2, '0');
-  return `${euros},${rest}`;
-}
+const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna'];
 
 function FinanceSheetBody({ onClose }) {
-  const { session } = useAuth();
-  const { showToast } = useUi();
-  const { notifySaved } = useEntrySheet();
+  const { session }      = useAuth();
+  const { showToast }    = useUi();
+  const { notifySaved }  = useEntrySheet();
 
-  // Ziffern laufen von rechts ein, wie am Kartenterminal — die letzten
-  // zwei Stellen sind immer die Cent-Stellen. Die Komma-Taste ist damit
-  // rein optisch (siehe .sheet-key.inert), kein eigener Handler nötig.
-  const [cents, setCents] = useState(0);
   const [category, setCategory] = useState('variable_kosten');
-  const [name, setName] = useState('');
-  const [payment, setPayment] = useState('Bar');
-  const [saving, setSaving] = useState(false);
-
-  function pressKey(k) {
-    if (k === ',') return; // funktionslos, siehe oben
-    if (k === '⌫') {
-      setCents((c) => Math.floor(c / 10));
-      return;
-    }
-    setCents((c) => Math.min(MAX_CENTS, c * 10 + Number(k)));
-  }
+  const [amount,   setAmount]   = useState('');
+  const [name,     setName]     = useState('');
+  const [payment,  setPayment]  = useState('');      // leer = optional
+  const [dueDate,  setDueDate]  = useState('');       // leer = optional
+  const [saving,   setSaving]   = useState(false);
 
   async function submit() {
-    const numeric = cents / 100;
+    const numeric = parseFloat(amount.replace(',', '.'));
     if (!numeric || numeric <= 0) return showToast('Bitte einen Betrag eingeben');
-    if (!name.trim()) return showToast('Bitte einen Namen eingeben');
+    if (!name.trim())             return showToast('Bitte einen Namen eingeben');
 
     setSaving(true);
     try {
       const now = new Date();
       await finData.saveEntry(session, {
         category,
-        name: name.trim(),
-        payment,
-        amount: numeric,
-        paid: payment === 'Bar',
-        year: now.getFullYear(),
-        month: now.getMonth() + 1,
+        name:     name.trim(),
+        payment:  payment || 'Bank',
+        amount:   numeric,
+        paid:     (payment || 'Bank') === 'Bar',
+        year:     now.getFullYear(),
+        month:    now.getMonth() + 1,
+        due_date: dueDate || null,
       });
       notifySaved();
       showToast('Gespeichert');
@@ -75,20 +54,17 @@ function FinanceSheetBody({ onClose }) {
     }
   }
 
+  const canSave = amount && parseFloat(amount.replace(',', '.')) > 0;
+
   return (
     <>
-      <div className="sheet-amount-row">
-        <div className="sheet-amount">{formatCents(cents)}</div>
-        <div className="sheet-amount-currency">€</div>
-        <div style={{ flex: 1 }} />
-        <div className="sheet-cursor" />
-      </div>
-
-      <div className="sheet-chip-row">
+      {/* Kategorie — 4 Chips, ein Schritt */}
+      <div className="sheet-chip-row" style={{ paddingTop: 20 }}>
         {QUICK_CATEGORIES.map((c) => (
           <button
             key={c.key}
             className={`sheet-chip ${category === c.key ? 'active' : ''}`}
+            style={category === c.key ? { background: c.color, borderColor: c.color, color: '#fff' } : {}}
             onClick={() => setCategory(c.key)}
           >
             {c.label}
@@ -96,56 +72,74 @@ function FinanceSheetBody({ onClose }) {
         ))}
       </div>
 
+      {/* Name */}
       <div className="sheet-name-field">
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Name"
+          placeholder="Name / Beschreibung"
+          autoFocus
         />
       </div>
 
-      <div className="sheet-chip-row small">
-        {QUICK_PAYMENTS.map((p) => (
-          <button
-            key={p}
-            className={`sheet-chip dark ${payment === p ? 'active' : ''}`}
-            onClick={() => setPayment(p)}
+      {/* Betrag + Zahlungsart nebeneinander */}
+      <div style={{ display: 'flex', gap: 12, padding: '14px 20px 0', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1 }}>
+          <div className="sheet-field-label">Betrag (€)</div>
+          <input
+            className="sheet-text-input"
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0,00"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div className="sheet-field-label">Zahlung <span className="sheet-optional">optional</span></div>
+          <select
+            className="sheet-text-input"
+            value={payment}
+            onChange={(e) => setPayment(e.target.value)}
           >
-            {p}
-          </button>
-        ))}
+            <option value="">– wählen –</option>
+            {QUICK_PAYMENTS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="sheet-keypad">
-        {KEYS.map((k) =>
-          k === ',' ? (
-            <div key={k} className="sheet-key inert">{k}</div>
-          ) : (
-            <button key={k} className="sheet-key" onClick={() => pressKey(k)}>{k}</button>
-          )
-        )}
+      {/* Fällig am — optional */}
+      <div style={{ padding: '14px 20px 0' }}>
+        <div className="sheet-field-label">Fällig am <span className="sheet-optional">optional</span></div>
+        <input
+          className="sheet-text-input"
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
       </div>
 
+      {/* Speichern */}
       <button
-        className={`sheet-save ${cents > 0 ? '' : 'disabled'}`}
+        className={`sheet-save ${canSave ? '' : 'disabled'}`}
         onClick={submit}
-        disabled={saving || cents === 0}
+        disabled={saving || !canSave}
+        style={{ marginTop: 20 }}
       >
-        {saving ? 'Speichert…' : cents > 0 ? 'Speichern' : 'Betrag fehlt'}
+        {saving ? 'Speichert…' : canSave ? 'Speichern' : 'Betrag fehlt'}
       </button>
-      <div className="sheet-footnote">Betrag zuerst, Rest optional — ein Screen, kein Scrollen.</div>
     </>
   );
 }
 
-// Für Module ohne eigene Erfassen-Logik (noch) — ehrlicher Platzhalter
-// statt so zu tun, als würde hier schon etwas gespeichert.
 function PlaceholderSheetBody({ moduleId, onClose }) {
   const mod = getModule(moduleId);
   return (
     <div className="sheet-placeholder">
-      <p>Schnellerfassung für {mod?.name || moduleId} ist noch nicht angebunden — bisher nur für Finanzen verdrahtet.</p>
+      <p>Schnellerfassung für {mod?.name || moduleId} ist noch nicht angebunden.</p>
       <button className="btn btn-secondary btn-block" onClick={onClose}>Schließen</button>
     </div>
   );
@@ -162,11 +156,9 @@ export default function EntrySheet() {
           <div className="sheet-title">Neuer Eintrag</div>
           <button className="sheet-cancel" onClick={close}>Abbrechen</button>
         </div>
-        {openFor === 'finance' ? (
-          <FinanceSheetBody onClose={close} />
-        ) : (
-          <PlaceholderSheetBody moduleId={openFor} onClose={close} />
-        )}
+        {openFor === 'finance'
+          ? <FinanceSheetBody onClose={close} />
+          : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
       </div>
     </div>
   );
