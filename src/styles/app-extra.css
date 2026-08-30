@@ -951,34 +951,70 @@
 }
 .sheet-name-field input:focus { border-bottom-color: var(--text-primary); box-shadow: none; }
 
-.sheet-keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  margin: 18px 20px 0;
+
+/* Neue Sheet-Felder (Betrag-Input, Zahlungsart-Select, Fälligkeitsdatum) */
+.sheet-field-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
 }
-.sheet-key {
-  background: var(--bg-secondary);
-  padding: 14px 0;
-  text-align: center;
-  font-size: 17px;
+.sheet-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+.sheet-text-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 9px 0;
+  font-size: 15px;
   font-weight: 600;
+  background: transparent;
+  color: var(--text-primary);
   min-height: var(--touch-target);
+  appearance: none;
+  -webkit-appearance: none;
 }
-.sheet-key:last-child { color: var(--text-muted); }
-.sheet-key.inert {
+.sheet-text-input:focus { border-bottom-color: var(--text-primary); outline: none; box-shadow: none; }
+.sheet-text-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+/* Fälligkeit-Badge in der Eintragszeile */
+.fin-row-due {
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* FAB — Floating Action Button Monatsansicht */
+.fin-fab {
+  position: fixed;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 16px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-secondary);
-  color: var(--text-muted);
-  font-size: 17px;
-  font-weight: 600;
-  cursor: default;
-  min-height: var(--touch-target);
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(43, 75, 255, 0.35);
+  border: none;
+  cursor: pointer;
 }
+.fin-fab:active { transform: scale(0.93); }
+
 
 .sheet-save {
   display: block;
@@ -1463,3 +1499,4 @@
   font-weight: 700;
   flex-shrink: 0;
 }
+
