@@ -1,54 +1,120 @@
 /* ============================================================
-   Editorial Bold — Schwarz/Weiß + Elektroblau-Akzent, scharfe Kanten.
-   Aktiviert über  .dark  auf <html> (per JS: Hell / Dunkel / System,
-   siehe core/lib/theme.js). Alle Werte kommen aus base.css :root
-   und werden hier für den Dunkel-Modus überschrieben.
+   themes.css — Dunkel-Modus "Kompakte Tiefe"
+   Aktiviert über .dark auf <html> (core/lib/theme.js).
+   Überschreibt nur Ebene-2-Tokens aus base.css.
+   Keine Komponente enthält Hex-Werte — alles via Tokens.
+   Schritt 1 des Umbaus (UMBAU.md).
    ============================================================ */
+
+/* ── Ebene 1 Dunkel: Rohwerte ────────────────────────────────*/
+
+.dark {
+  --raw-navy-300:  #8FA6D6;
+  --raw-green-300: #4FC79B;
+  --raw-red-300:   #F0837C;
+  --raw-ochre-300: #D9A94F;
+  --raw-night-950: #0E121A;
+  --raw-night-900: #151B26;
+  --raw-night-800: #1E2634;
+  --raw-night-700: #2A3345;
+  --raw-mist-100:  #E7EBF2;
+  --raw-mist-300:  #A9B3C4;
+}
+
+/* ── Ebene 2: Bedeutung (Dunkel) ─────────────────────────────*/
 
 .dark {
   color-scheme: dark;
 
-  --bg-primary: #0D0D0D;
-  --bg-secondary: #0D0D0D;
-  --bg-card: #161616;
-  --bg-input: #161616;
-  --text-primary: #FFFFFF;
-  --text-secondary: #A8A8A8;
-  --text-muted: #8A8A8A;  /* 4,5:1 auf #0D0D0D — WCAG AA */
-  --accent: #4B6BFF;
-  --accent-light: #16224D;
-  --accent-dark: #6B85FF;
-  --on-accent: #FFFFFF;
-  --danger: #E07860;
-  --danger-light: #301A16;
-  --warning: #D4AE5C;
-  --warning-light: #2C2410;
-  --success: #70A880;
-  --success-light: #1A2E20;
-  --border: #2A2A2A;
-  --border-strong: #FFFFFF;
-  --shadow: none;
-  --shadow-sm: none;
+  --surface-page:    var(--raw-night-950);
+  --surface-raised:  var(--raw-night-900);
+  --surface-sunken:  var(--raw-night-800);
+  --surface-inverse: var(--raw-mist-100);
+
+  --text-primary:    var(--raw-mist-100);
+  --text-secondary:  var(--raw-mist-300);
+  --text-muted:      #A9B3C4;   /* 4,5:1 auf night-900 — WCAG AA */
+  --text-on-accent:  var(--raw-night-950);
+
+  --action-primary:  var(--raw-navy-300);
+  --action-hover:    #A9BCE4;
+  --action-quiet-bg: var(--raw-night-800);
+  --focus-ring:      var(--raw-navy-300);
+
+  --status-positive:    var(--raw-green-300);
+  --status-positive-bg: #12271F;
+  --status-caution:     var(--raw-ochre-300);
+  --status-caution-bg:  #2A2113;
+  --status-critical:    var(--raw-red-300);
+  --status-critical-bg: #2C1614;
+
+  --border-hairline: var(--raw-night-700);
+  --border-strong:   #3A4658;
+
+  --data-1:     var(--raw-navy-300);
+  --data-2:     #5D77AE;
+  --data-3:     #3E4C68;
+  --data-track: var(--raw-night-800);
+
+  /* Schatten im Dunkelmodus bleiben, aber subtiler */
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-float: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-nav:   0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-fab:   0 6px 18px rgba(0, 0, 0, 0.55);
+
+  /* Abwärtskompatibilität (gleiche Aliase wie in base.css,
+     überschreiben automatisch mit Dunkel-Werten) */
+  --bg-primary:    var(--surface-page);
+  --bg-secondary:  var(--surface-raised);
+  --bg-card:       var(--surface-sunken);
+  --bg-input:      var(--surface-sunken);
+  --accent:        var(--action-primary);
+  --accent-light:  var(--action-quiet-bg);
+  --accent-dark:   var(--action-hover);
+  --on-accent:     var(--text-on-accent);
+  --danger:        var(--status-critical);
+  --danger-light:  var(--status-critical-bg);
+  --warning:       var(--status-caution);
+  --warning-light: var(--status-caution-bg);
+  --success:       var(--status-positive);
+  --success-light: var(--status-positive-bg);
+  --border:        var(--border-hairline);
+  --border-strong: #3A4658;
+  --shadow:        var(--shadow-card);
+  --shadow-sm:     var(--shadow-float);
 }
 
-/* Modus-Umschalter (Hell / Dunkel / System): schwarz/weißer Segmented
-   Control statt farbiger Pill — passend zur Editorial-Bold-Richtung */
+/* Dropdown-Pfeil im Dunkelmodus */
+.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolyline points='6,9 12,15 18,9' stroke='%23A9B3C4' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* ── Modus-Umschalter ────────────────────────────────────────
+   Hell/Dunkel/System Segmented Control —
+   nutzt surface-raised und action-primary statt Hex-Werte   */
+
 .mode-toggle {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
-  border: 1.5px solid var(--text-primary);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-md);
+  overflow: hidden;
 }
+
 .mode-toggle button {
   padding: 10px 6px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-secondary);
-  border-right: 1px solid var(--border);
-  transition: background 0.15s, color 0.15s;
+  border-right: 1px solid var(--border-hairline);
+  transition: background var(--motion-fast), color var(--motion-fast);
+  background: var(--surface-raised);
 }
+
 .mode-toggle button:last-child { border-right: none; }
+
 .mode-toggle button.active {
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
