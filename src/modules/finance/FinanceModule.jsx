@@ -12,10 +12,10 @@ const VIEWS = {
   settings: SettingsView,
 };
 const TABS = [
-  { key: 'months', label: 'Monat' },
-  { key: 'summary', label: 'Auswertung' },
+  { key: 'months',    label: 'Monat' },
   { key: 'contracts', label: 'Verträge' },
-  { key: 'settings', label: 'Einstellungen' },
+  { key: 'summary',   label: 'Auswertung' },
+  { key: 'settings',  label: 'Einstellungen' },
 ];
 const DEFAULT_VIEW = 'months';
 
