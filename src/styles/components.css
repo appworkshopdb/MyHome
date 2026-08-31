@@ -1,51 +1,83 @@
-/* Cards */
+/* ============================================================
+   components.css — Karten, Buttons, Chips, Tabellen
+   Schritt 2 des Umbaus (UMBAU.md):
+   - Alle border-radius auf Token-Skala (r-sm/r-md/r-lg/r-pill)
+   - Keine Rahmen auf Karten — shadow-card trennt statt border
+   - Keine Hex-Werte — alles via Tokens aus base.css/themes.css
+   - Badge-Farben auf status-* Tokens
+   ============================================================ */
+
+/* ── Karten ──────────────────────────────────────────────────
+   Trennung über Fläche + shadow-card, kein border mehr.      */
+
 .card {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 14px;
+  background: var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: var(--shadow-card);
 }
 
 .card-title {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 12px;           /* t-card-title */
+  line-height: 1.35;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
   margin-bottom: 12px;
 }
 
-/* Buttons */
+/* ── Buttons ─────────────────────────────────────────────────*/
+
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: var(--touch-target);
+  min-height: var(--touch-target);  /* 44px */
   padding: 9px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background 0.15s, opacity 0.15s;
+  border-radius: var(--r-xl);       /* war: --radius-sm (0) */
+  font-size: 13px;                  /* t-body */
+  font-weight: 600;
+  transition:
+    background var(--motion-fast),
+    opacity    var(--motion-fast),
+    transform  var(--motion-fast);
+}
+
+/* Aktiv: leicht skalieren (Zustands-Regel aus TOKENS.md) */
+.btn:active { transform: scale(0.97); }
+
+/* Fokus-Ring für alle Buttons */
+.btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Deaktiviert */
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
-  font-weight: 500;
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
-.btn-primary:hover { background: var(--accent-dark); }
+.btn-primary:hover { background: var(--action-hover); }
 
 .btn-secondary {
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hairline);
 }
-.btn-secondary:hover { background: var(--border); }
+.btn-secondary:hover { background: var(--action-quiet-bg); }
 
 .btn-danger {
-  background: var(--danger-light);
-  color: var(--danger);
+  background: var(--status-critical-bg);
+  color: var(--status-critical);
 }
 .btn-danger:hover { opacity: 0.8; }
 
@@ -54,101 +86,112 @@
   padding: 6px 10px;
 }
 .btn-ghost:hover {
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   color: var(--text-primary);
 }
 
 .btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-xs);
+  border-radius: var(--r-md);       /* war: --radius-xs (0) */
   color: var(--text-secondary);
+  /* Trefferfläche: min 44px via Pseudo-Element */
+  position: relative;
+}
+.btn-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
 }
 .btn-icon:hover {
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   color: var(--text-primary);
 }
 .btn-icon svg { width: 16px; height: 16px; }
 
-/* Summary Chips */
+/* ── Kennzahlen-Raster (summary chips) ───────────────────────
+   Sunken-Felder: Label 11px/600 in text-muted, Wert 14px/700  */
+
 .summary-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .summary-chip {
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);       /* war: --radius-sm (0) */
+  padding: 8px 10px;
 }
 
 .summary-chip .label {
-  font-size: 0.72rem;
+  font-size: 11px;                  /* t-meta */
+  line-height: 1.4;
+  font-weight: 600;
   color: var(--text-muted);
-  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4px;
 }
 
 .summary-chip .value {
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-size: 14px;                  /* t-body */
+  font-weight: 700;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
-.summary-chip.positive .value { color: var(--success); }
-.summary-chip.negative .value { color: var(--danger); }
-.summary-chip.neutral .value { color: var(--accent); }
+.summary-chip.positive .value { color: var(--status-positive); }
+.summary-chip.negative .value { color: var(--status-critical); }
+.summary-chip.neutral  .value { color: var(--action-primary);  }
 
-/* Monatsansicht: Einnahmen / Ausgaben / Verfügbar immer nebeneinander */
+/* Monatsansicht: immer drei Spalten */
 #month-summary {
   grid-template-columns: repeat(3, 1fr);
 }
-#month-summary .summary-chip {
-  min-width: 0; /* erlaubt echtes Drittel, ohne dass langer Betrag das Raster sprengt */
-}
+#month-summary .summary-chip { min-width: 0; }
 
-/* Tables */
+/* ── Tabellen ────────────────────────────────────────────────*/
+
 .entry-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: 13px;                  /* t-body */
 }
 
 .entry-table th {
   text-align: left;
   padding: 6px 8px;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 11px;                  /* t-meta */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .entry-table td {
-  padding: 8px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px;
+  border-bottom: 1px solid var(--border-hairline);
   color: var(--text-primary);
 }
 
 .entry-table tr:last-child td { border-bottom: none; }
 
-/* Monatstabellen: festes Layout -> nie breiter als der Bildschirm */
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .month-table { table-layout: fixed; width: 100%; }
 .month-table .c-pay  { width: 64px; }
 .month-table .c-amt  { width: 88px; }
 .month-table .c-paid { width: 44px; }
-.entry-row { transition: background 0.12s; }
-.entry-row:hover { background: var(--bg-input); }
+
+.entry-row { transition: background var(--motion-fast); }
+.entry-row:hover { background: var(--surface-sunken); }
+
 .month-table td:first-child {
   word-break: normal;
   overflow-wrap: break-word;
@@ -163,45 +206,42 @@
 
 .entry-table .amount {
   text-align: right;
-  font-weight: 500;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-
-.entry-table .actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
+.entry-table .actions { text-align: right; white-space: nowrap; }
 .entry-table tfoot td {
-  font-weight: 600;
+  font-weight: 700;
   border-top: 2px solid var(--border-strong);
   padding-top: 10px;
 }
 
-/* Payment Badge */
+/* ── Zahlungs-Badges ─────────────────────────────────────────
+   Früher mit Hex-Werten. Jetzt: status-* Tokens + action-primary
+   für neutrale Badges. Radius: r-pill (Avatare/Punkte-Ausnahme
+   laut TOKENS.md — Badge ist ein echter Pill-Fall).           */
+
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 500;
+  border-radius: var(--r-pill);      /* war: 99px hart codiert */
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.badge-bank { background: #EAF0FA; color: #3B6FAA; }
-.badge-bar { background: #FBF5E6; color: #A07828; }
-.badge-paypal { background: #EAF0FA; color: #1A5296; }
-.badge-sepa { background: #EBF3ED; color: #3A7550; }
-.badge-gutschein { background: #F3EBF5; color: #7A4F9A; }
-.badge-klarna { background: #FCE3EF; color: #B0327A; }
+/* Alle Badges laufen auf dieselben Bedeutungs-Tokens */
+.badge-bank     { background: var(--action-quiet-bg);    color: var(--action-primary); }
+.badge-bar      { background: var(--status-caution-bg);  color: var(--status-caution); }
+.badge-paypal   { background: var(--action-quiet-bg);    color: var(--action-primary); }
+.badge-sepa     { background: var(--status-positive-bg); color: var(--status-positive);}
+.badge-gutschein{ background: var(--status-caution-bg);  color: var(--status-caution); }
+.badge-klarna   { background: var(--status-critical-bg); color: var(--status-critical);}
 
-.dark .badge-bank { background: #1A2A40; color: #6A9ED4; }
-.dark .badge-bar { background: #2C2410; color: #C4A050; }
-.dark .badge-paypal { background: #1A2A40; color: #5A8EC8; }
-.dark .badge-sepa { background: #1A2E20; color: #6AAA80; }
-.dark .badge-gutschein { background: #28183A; color: #B07FD4; }
-.dark .badge-klarna { background: #3A1A2A; color: #E58FBE; }
+/* Dunkelmodus erbt automatisch über Tokens — kein .dark-Block nötig */
 
-/* Form Groups */
+/* ── Formular-Gruppen ────────────────────────────────────────*/
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -209,8 +249,8 @@
 }
 
 .form-group label {
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 11px;                  /* t-meta */
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
@@ -220,7 +260,8 @@
   gap: 10px;
 }
 
-/* Month Nav */
+/* ── Monats-Navigation ───────────────────────────────────────*/
+
 .month-nav {
   display: flex;
   align-items: center;
@@ -228,8 +269,8 @@
 }
 
 .month-nav .month-label {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 14px;                  /* t-title */
+  font-weight: 700;
   min-width: 140px;
   text-align: center;
 }
@@ -237,37 +278,33 @@
 .month-nav-btn {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  background: var(--bg-input);
+  border-radius: var(--r-lg);       /* war: 50% hart codiert */
+  background: var(--surface-sunken);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  transition: background var(--motion-fast);
 }
 .month-nav-btn:hover {
-  background: var(--border);
+  background: var(--action-quiet-bg);
   color: var(--text-primary);
 }
 .month-nav-btn svg { width: 16px; height: 16px; }
 
-/* Add entry row */
+/* ── Zeilen mit Aktions-Buttons ──────────────────────────────*/
+
 .add-row {
   display: flex;
   gap: 6px;
   margin-top: 8px;
   align-items: center;
 }
-
 .add-row input, .add-row select {
-  font-size: 0.85rem;
+  font-size: 13px;
   padding: 6px 8px;
 }
-/* ===== Mobile / iPhone (≤480px) ===== */
-/* Zeile mit Titel/Meta links + Aktions-Buttons rechts (z. B. Pläne,
-   Verträge, Listen mit mehreren Buttons pro Eintrag). Mobile-first:
-   auf schmalen Screens (Basis-Breakpoint, siehe base.css) bricht die
-   Button-Gruppe unter den Titel um, statt ihn zusammenzuquetschen. */
+
 .row-actions {
   display: flex;
   flex-wrap: wrap;
@@ -275,7 +312,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 .row-actions > .row-actions-info {
   min-width: 0;
@@ -287,6 +324,15 @@
   flex-wrap: wrap;
 }
 
+/* ── Fokusringe überall sichtbar ─────────────────────────────*/
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Mobile (≤480px) ─────────────────────────────────────────*/
+
 @media (max-width: 430px) {
   .row-actions > .row-actions-buttons {
     flex-basis: 100%;
@@ -294,41 +340,36 @@
   }
   .row-actions > .row-actions-buttons .btn {
     padding: 8px 12px;
-    font-size: 0.85rem;
+    font-size: 12px;
   }
 }
 
 @media (max-width: 480px) {
-  .summary-row { gap: 8px; }
+  .summary-row { gap: 6px; }
+  .summary-chip { padding: 8px 10px; }
+  .summary-chip .value { font-size: 13px; }
 
-  .summary-chip { padding: 11px 12px; }
-  .summary-chip .value { font-size: 1.05rem; }
-
-  /* Die drei Monats-Chips kompakter, damit sie zu dritt passen */
-  #month-summary .summary-chip { padding: 10px 8px; }
+  #month-summary .summary-chip { padding: 8px 6px; }
   #month-summary .summary-chip .label {
-    font-size: 0.64rem;
+    font-size: 10px;
     letter-spacing: 0.02em;
   }
   #month-summary .summary-chip .value {
-    font-size: 0.9rem;
+    font-size: 12px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* Tabellen kleiner und randlos passend */
-  .entry-table { font-size: 0.75rem; }
-  .entry-table th { padding: 5px 3px; font-size: 0.62rem; }
+  .entry-table { font-size: 12px; }
+  .entry-table th { padding: 5px 3px; font-size: 10px; }
   .entry-table td { padding: 6px 3px; }
   .entry-table .amount { white-space: nowrap; }
 
-  /* Feste Spalten für die Monatsansicht (ohne Aktionsspalte) */
   .month-table .c-pay  { width: 54px; }
   .month-table .c-amt  { width: 78px; }
   .month-table .c-paid { width: 30px; }
 
-  /* Karten-Header darf nicht überlaufen: Titel schrumpft, Button bleibt */
   #month-columns .card-title {
     min-width: 0;
     overflow: hidden;
@@ -337,21 +378,23 @@
   }
   #month-columns .btn { flex-shrink: 0; }
 
-  /* Zahlungs-Badge dünner; lange Begriffe werden gekürzt statt zu überlaufen */
   .badge {
-    font-size: 0.58rem;
+    font-size: 10px;
     padding: 2px 5px;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    box-sizing: border-box;
   }
 
-  .btn-icon { width: 26px; height: 26px; }
+  .btn-icon { width: 32px; height: 32px; }
   .btn-icon svg { width: 14px; height: 14px; }
   .entry-table .actions { padding-left: 0; padding-right: 1px; }
 
-  .card { padding: 14px; }
+  .card { padding: 12px; }
   .btn { padding: 8px 13px; }
+
+  .month-nav { gap: 6px; }
+  .month-nav .month-label { font-size: 13px; min-width: 96px; }
+  .month-nav-btn { width: 32px; height: 32px; }
 }

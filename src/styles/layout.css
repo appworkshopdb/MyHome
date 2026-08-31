@@ -1,109 +1,299 @@
+/* ============================================================
+   layout.css — Seitencontainer, Chrome-Platz, Modal, Toast
+   Schritt 2 des Umbaus (UMBAU.md):
+   - Platz für schwebende Chrome: 74px oben, 108px/152px unten
+   - Keine hart codierten 999px/50% — alles über Token-Skala
+   - border-top auf Bottom-Nav entfernt (schwebend = kein Rand)
+   - Gradienten oben/unten damit Inhalt nicht hart abschneidet
+   ============================================================ */
+
+/* ── Haupt-Inhaltsbereich ────────────────────────────────────
+   74px oben (TopBar-Chrome) + 108px unten (BottomNav-Chrome).
+   Seiten mit Eintrag-Knopf setzen .has-fab → 152px unten.    */
+
 .main-content {
-  padding: 16px 16px calc(var(--nav-height) + 16px);
+  padding-top: 74px;
+  padding-bottom: 108px;
+  padding-left: 16px;
+  padding-right: 16px;
   max-width: 900px;
   margin: 0 auto;
+  /* Verlauf oben: Inhalt scrollt unter TopBar durch */
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0px,
+      black 74px,
+      black calc(100% - 66px),
+      transparent 100%
+    );
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0px,
+      black 74px,
+      black calc(100% - 66px),
+      transparent 100%
+    );
+}
+
+/* Seiten mit schwebendem Eintrag-Knopf (Finanzen, Sport, Ernährung) */
+.main-content.has-fab {
+  padding-bottom: 152px;
 }
 
 .view { display: none; }
 .view.active { display: block; }
 
-/* Bottom Navigation — GLOBAL (nicht mehr pro Modul), 6 feste Zellen:
-   alle 6 Module in fester Reihenfolge (siehe core/components/
-   ModuleBottomNav.jsx). Start/Profil sitzen seit ModuleTopBar.jsx oben,
-   nicht mehr hier. Icon + kleines Label, damit bei 6 engen Zellen noch
-   Kontext lesbar bleibt. Aktive Zelle = volle Füllung. */
-.bottom-nav {
+/* ── Schwebende TopBar-Chrome ────────────────────────────────
+   Drei freistehende Elemente — kein gemeinsamer Hintergrund.
+   Kein border-bottom. Schritt 3 baut die Komponente selbst;
+   hier liegen nur die Layout-Regeln.                         */
+
+.chrome-top {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: var(--nav-height);
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--text-primary);
+  top: calc(16px + env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  height: 42px;
   display: flex;
-  align-items: stretch;
-  z-index: 100;
-  padding-bottom: env(safe-area-inset-bottom);
+  align-items: center;
+  gap: 8px;
+  z-index: 40;
+  pointer-events: none; /* Kinder setzen pointer-events: auto */
 }
 
-.nav-item {
-  flex: 1;
+.chrome-top > * { pointer-events: auto; }
+
+/* Linkes und rechtes Element: 42×42, r-xl */
+.chrome-top-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-float);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 2px;
-  color: var(--text-muted);
-  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  color: var(--action-primary);
+  position: relative;
+  transition: background var(--motion-fast);
+}
+.chrome-top-btn:hover { background: var(--surface-sunken); }
+.chrome-top-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.chrome-top-btn svg { width: 20px; height: 20px; }
+
+/* Profil-Button: gefüllte Pille */
+.chrome-top-btn--profile {
+  border-radius: var(--r-pill);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+}
+.chrome-top-btn--profile:hover { background: var(--action-hover); }
+
+/* Warnpunkt */
+.chrome-top-btn .warn-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--status-critical);
+  border: 1.5px solid var(--surface-raised);
+}
+
+/* Mittleres Element: flex:1, Höhe 42, r-xl, Modulname zentriert */
+.chrome-top-title {
+  flex: 1;
+  height: 42px;
+  border-radius: var(--r-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-float);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;             /* t-title */
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+/* ── Schwebende BottomNav ─────────────────────────────────────
+   Schritt 3 baut die Komponente; hier Layout-Regeln.
+   Kein border-top — Schatten übernimmt die Trennung.         */
+
+.bottom-nav {
+  position: fixed;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
+  height: 56px;
+  background: var(--surface-raised);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-nav);
+  display: flex;
+  align-items: center;
+  padding: 7px 8px;
+  gap: 3px;
+  z-index: 40;
+  /* Kein border-top mehr */
+}
+
+/* Nav-Items: inaktiv nur Symbol, aktiv Symbol + Label als Pille */
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 100%;
+  border-radius: var(--r-xl);
+  color: var(--nav-item-idle-fg);
+  transition:
+    background var(--motion-fast),
+    color      var(--motion-fast),
+    flex       var(--motion-calm);
   min-height: var(--touch-target);
+  padding: 0 6px;
+  /* Inaktive Punkte teilen den Rest gleichmäßig */
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-item svg {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  stroke-width: 1.8px;
+  stroke-linecap: round;
 }
 
+/* Label nur sichtbar wenn aktiv */
 .nav-item span {
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
-  white-space: nowrap;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width var(--motion-calm),
+    opacity   var(--motion-calm);
 }
 
+/* Aktiver Punkt: Pille mit Wort */
 .nav-item.active {
-  color: var(--bg-primary);
-  background: var(--text-primary);
+  background: var(--nav-item-active-bg);
+  color: var(--text-on-accent);
+  flex: none;              /* nur so breit wie der Inhalt */
+  padding: 0 14px;
+}
+
+.nav-item.active svg { width: 17px; height: 17px; }
+
+.nav-item.active span {
+  max-width: 100px;
+  opacity: 1;
 }
 
 .nav-item:hover:not(.active) {
   color: var(--text-primary);
 }
 
-/* Modul-interne Unteransicht-Tabs (core/components/ModuleTabs.jsx) —
-   übernimmt die Rolle, die vorher die modul-eigene Bottom-Nav hatte,
-   seit die Bottom-Nav global/modulübergreifend ist. */
+/* ── Schwebender Eintrag-Knopf (FAB) ─────────────────────────
+   Nur auf Seiten mit täglicher Erfassung: Finanzen, Ernährung,
+   Sport. Kein FAB in Hub, Gewohnheiten, Einkauf.             */
+
+.fab {
+  position: fixed;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  right: 14px;
+  height: 46px;
+  padding: 0 16px;
+  border-radius: var(--r-xl);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-fab);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 38;
+  transition:
+    background var(--motion-fast),
+    transform  var(--motion-fast);
+}
+.fab:hover { background: var(--action-hover); }
+.fab:active { transform: scale(0.97); }
+.fab svg { width: 18px; height: 18px; }
+
+/* ── Modul-Tabs (interne Unteransichten) ──────────────────────*/
+
 .module-tabs {
   display: flex;
-  border: 1px solid var(--border);
-  margin-bottom: 20px;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  margin-bottom: 16px;
   overflow-x: auto;
+  padding: 3px;
+  gap: 2px;
+  scrollbar-width: none;
 }
+.module-tabs::-webkit-scrollbar { display: none; }
+
 .module-tab {
   flex: 1;
-  padding: 11px 8px;
+  padding: 8px 10px;
   text-align: center;
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 12px;            /* t-card-title */
+  font-weight: 700;
   color: var(--text-secondary);
-  border-left: 1px solid var(--border);
+  border-radius: var(--r-md);
   min-height: var(--touch-target);
   white-space: nowrap;
-}
-.module-tab:first-child { border-left: none; }
-.module-tab.active {
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  transition:
+    background var(--motion-fast),
+    color      var(--motion-fast);
 }
 
-/* Page Header */
+.module-tab.active {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Seitenheader ─────────────────────────────────────────────*/
+
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-top: 8px;
+  margin-bottom: 16px;
+  padding-top: 4px;
 }
 
 .page-header h1 {
-  font-size: 1.4rem;
+  font-size: 19px;            /* t-value */
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-/* Modal */
+/* ── Modal ───────────────────────────────────────────────────*/
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -111,26 +301,22 @@
 }
 
 @media (min-width: 600px) {
-  .modal-overlay {
-    align-items: center;
-  }
+  .modal-overlay { align-items: center; }
 }
 
 .modal {
-  background: var(--bg-card);
-  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface-raised);
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;  /* war: --radius oben */
   width: 100%;
   max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 20px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-nav);
 }
 
 @media (min-width: 600px) {
-  .modal {
-    border-radius: var(--radius);
-  }
+  .modal { border-radius: var(--r-2xl); }
 }
 
 .modal-header {
@@ -140,15 +326,13 @@
   margin-bottom: 20px;
 }
 
-.modal-title {
-  font-size: 1.1rem;
-}
+.modal-title { font-size: 14px; font-weight: 700; }
 
 .modal-close {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: var(--bg-input);
+  border-radius: var(--r-lg);     /* war: 50% */
+  background: var(--surface-sunken);
   color: var(--text-secondary);
   font-size: 1.2rem;
   display: flex;
@@ -156,10 +340,7 @@
   justify-content: center;
   flex-shrink: 0;
 }
-
-.modal-close:hover {
-  background: var(--border);
-}
+.modal-close:hover { background: var(--action-quiet-bg); }
 
 .modal-body {
   display: flex;
@@ -167,43 +348,60 @@
   gap: 14px;
 }
 
-/* Toast */
+/* ── Toast ───────────────────────────────────────────────────*/
+
 .toast {
   position: fixed;
-  bottom: calc(var(--nav-height) + 16px);
+  bottom: calc(var(--nav-height, 68px) + 16px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--text-primary);
-  color: var(--bg-primary);
+  color: var(--surface-page);
   padding: 10px 20px;
-  border-radius: 99px;
-  font-size: 0.88rem;
-  font-weight: 500;
+  border-radius: var(--r-pill);   /* Pill bleibt — Toast ist echter Pill-Fall */
+  font-size: 13px;
+  font-weight: 600;
   opacity: 0;
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity   var(--motion-fast),
+    transform var(--motion-fast);
   pointer-events: none;
   z-index: 300;
   white-space: nowrap;
+  box-shadow: var(--shadow-float);
 }
 
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-/* ===== Mobile / iPhone (≤480px) ===== */
-@media (max-width: 480px) {
-  .main-content {
-    padding: 12px 12px calc(var(--nav-height) + 12px);
-  }
 
-  .page-header { margin-bottom: 16px; }
-  .page-header h1 { font-size: 1.25rem; }
-
-  .month-nav { gap: 6px; }
-  .month-nav .month-label {
-    font-size: 1rem;
-    min-width: 96px;
-  }
-  .month-nav-btn { width: 32px; height: 32px; }
+.toast-error {
+  background: var(--status-critical);
+  color: var(--text-on-accent);
 }
 
+/* ── Ladeplaceholder ─────────────────────────────────────────
+   Platzhalterfläche in surface-sunken, kein Spinner unter 400ms */
+
+.loading-note {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────*/
+
+@media (max-width: 480px) {
+  .main-content {
+    padding-top: 74px;
+    padding-bottom: 108px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .main-content.has-fab { padding-bottom: 152px; }
+
+  .page-header { margin-bottom: 14px; }
+  .page-header h1 { font-size: 17px; }
+}
