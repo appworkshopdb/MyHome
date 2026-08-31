@@ -75,7 +75,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar title="Gewohnheiten" hasWarnings={hasWarnings} />
-        <div className="page-loading">Wird geladen …</div>
+        <div className="page-loading with-topbar-space">Wird geladen …</div>
       </>
     );
   }
@@ -85,7 +85,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar title="Gewohnheiten" hasWarnings={hasWarnings} />
-        <div className="main-content with-tabs hab-module-content">
+        <div className="hab-module-content with-topbar-space">
           <OnboardingWizard
             onDone={handleWizardDone}
             onSkip={() => setWizardDone(true)}
@@ -104,7 +104,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
         onChange={onNavigateView}
       />
 
-      <div className="main-content with-tabs hab-module-content">
+      <div className="hab-module-content">
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
