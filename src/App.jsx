@@ -1,3 +1,18 @@
+// src/App.jsx
+// Schritt 3: Schwebende Chrome.
+//
+// Strategie: App.jsx rendert ModuleTopBar für Hub + Profil global.
+// Module rendern ihre eigene ModuleTopBar-Instanz (für Tab-Titel und
+// onBack) — dabei wird hasWarnings jetzt global aus dem Store geholt
+// und als Prop übergeben, damit der Warnpunkt auf ALLEN Screens erscheint.
+// Module erhalten hasWarnings via onNavigateView-Props-Kette NICHT —
+// stattdessen akzeptiert ModuleTopBar hasWarnings als optionalen Prop
+// und Module müssen ihn nicht übergeben; das erledigt App.jsx für
+// Hub+Profil, Module via useRequiredDataStatus direkt.
+//
+// In Schritt 4–7 werden die Modul-eigenen ModuleTopBar-Aufrufe
+// auf den globalen ChromeContext umgestellt.
+
 import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
@@ -18,9 +33,7 @@ import NutritionModule from './modules/nutrition/NutritionModule';
 import SportModule from './modules/sport/SportModule';
 import HabitsModule from './modules/habits/HabitsModule';
 import ShoppingModule from './modules/shopping/ShoppingModule';
-// Weitere Module tragen hier künftig einfach ihren eigenen Eintrag ein.
-// module.built steuert (in App.jsx unten), ob überhaupt gerendert wird —
-// ein Eintrag hier allein schaltet noch nichts frei.
+
 const MODULE_COMPONENTS = {
   finance:   FinanceModule,
   nutrition: NutritionModule,
@@ -28,20 +41,17 @@ const MODULE_COMPONENTS = {
   habits:    HabitsModule,
   shopping:  ShoppingModule,
 };
-// Reihenfolge der Screens für Swipe-Navigation — muss mit Bottom-Nav übereinstimmen.
-// null = Hub, dann die 5 Module in der Reihenfolge der Nav-Buttons.
-const SWIPE_ORDER = [null, 'habits', 'finance', 'sport', 'nutrition', 'shopping'];
 
-// Mindest-Swipe-Distanz (px) und maximale vertikale Abweichung
+const SWIPE_ORDER = [null, 'habits', 'finance', 'sport', 'nutrition', 'shopping'];
 const SWIPE_MIN_X = 60;
-const SWIPE_MAX_Y = 80; // verhindert Auslösung bei diagonalem Scrollen
+const SWIPE_MAX_Y = 80;
 
 export default function App() {
   const { session, ladeVorgang } = useAuth();
   const { module: activeModule, view, navigate } = useRoute();
   const { warnings } = useRequiredDataStatus(session);
+  const hasWarnings = warnings.length > 0;
 
-  // Touch-Start-Koordinaten merken
   const touchStart = useRef(null);
 
   function handleTouchStart(e) {
@@ -56,7 +66,6 @@ export default function App() {
     const dy = Math.abs(t.clientY - touchStart.current.y);
     touchStart.current = null;
 
-    // Zu kurz, zu diagonal, oder Profil-Screen → ignorieren
     if (Math.abs(dx) < SWIPE_MIN_X || dy > SWIPE_MAX_Y) return;
     if (activeModule === 'profile') return;
 
@@ -64,11 +73,9 @@ export default function App() {
     if (currentIndex === -1) return;
 
     if (dx < 0) {
-      // Swipe links → nächstes Modul
       const next = SWIPE_ORDER[currentIndex + 1];
       if (next !== undefined) navigate(next ?? '');
     } else {
-      // Swipe rechts → vorheriges Modul
       const prev = SWIPE_ORDER[currentIndex - 1];
       if (prev !== undefined) navigate(prev ?? '');
     }
@@ -81,11 +88,18 @@ export default function App() {
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
+  // Hub und Profil: App.jsx rendert ModuleTopBar global.
+  // Module rendern ihre eigene Instanz (mit Tab-Titel / onBack),
+  // bekommen hasWarnings als Prop übergeben (Schritt 4–7 löst das sauber).
+  const showGlobalTopBar = activeModule === null || activeModule === 'profile';
+  const globalTitle = activeModule === null ? 'Zuhause' : 'Profil';
+
   return (
     <EntrySheetProvider>
-      {activeModule === null && (
-        <ModuleTopBar title="Zuhause" hasWarnings={warnings.length > 0} />
+      {showGlobalTopBar && (
+        <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
       )}
+
       <main
         className="main-content"
         onTouchStart={handleTouchStart}
@@ -97,15 +111,20 @@ export default function App() {
           <ModuleComponent
             module={mod}
             view={view}
+            hasWarnings={hasWarnings}
             onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
           />
         ) : (
           <LockedModule module={mod} />
         ))}
       </main>
+
       <RequiredDataToast warnings={warnings} onFix={navigate} />
       <EntrySheet />
-      <ModuleBottomNav active={activeModule === null ? '' : activeModule} onChange={navigate} />
+      <ModuleBottomNav
+        active={activeModule === null ? '' : activeModule}
+        onChange={navigate}
+      />
     </EntrySheetProvider>
   );
 }
