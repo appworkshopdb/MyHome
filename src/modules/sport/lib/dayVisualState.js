@@ -1,36 +1,65 @@
-// Gemeinsame Farblogik für eine Kalenderzelle (Tag), genutzt sowohl von
-// der Monats- als auch der neuen Wochenansicht — ohne diese Auslagerung
-// würden beide Ansichten getrennt gepflegt und könnten auseinanderlaufen
-// (z.B. Ruhetag-Muster nur in einer der beiden aktualisiert).
+// src/modules/sport/lib/dayVisualState.js
+// Schritt 3-Fix: Tage werden nicht mehr blau gefüllt.
+// Stattdessen: nur Umrandung + kleines Symbol oben rechts.
+// hasDone  → blaue Umrandung + Häkchen-Symbol
+// hasPlanned → blaue Umrandung + Uhr-Symbol
+// isSelected → volle Füllung (Auswahl-Zustand, nicht Training-Zustand)
+// hasRest → Streifenmuster (bleibt wie bisher)
+
 export function computeCellStyle({ dayWorkouts, isSelected, isToday }) {
-  // Ruhetage separat behandeln: sie haben status='done' (siehe
-  // applyPlan), zählen aber nicht als absolvierte/geplante Einheit —
-  // sonst würde ein Ruhetag fälschlich limette gefüllt erscheinen.
   const realWorkouts = dayWorkouts.filter((w) => !w.is_rest);
-  const hasDone = realWorkouts.some((w) => w.status === 'done');
+  const hasDone    = realWorkouts.some((w) => w.status === 'done');
   const hasPlanned = realWorkouts.some((w) => w.status !== 'done');
-  const hasRest = dayWorkouts.some((w) => w.is_rest);
+  const hasRest    = dayWorkouts.some((w) => w.is_rest);
 
-  const background = isSelected
-    ? 'var(--text-primary)'
-    : hasDone ? 'var(--accent)'
-    : 'transparent';
+  // Ausgewählt: volle Füllung — Auswahl-Zustand, kein Training-Feedback
+  if (isSelected) {
+    return {
+      background: 'var(--action-primary)',
+      color: 'var(--text-on-accent)',
+      border: 'none',
+      fontWeight: isToday ? 700 : 400,
+      position: 'relative',
+    };
+  }
 
-  // Streifenmuster statt Flächenfarbe: eine reine Graufläche war im
-  // Dunkelmodus kontrastarm und kaum von einem leeren Tag zu
-  // unterscheiden.
-  const restPattern = hasRest && !hasPlanned && !hasDone && !isSelected
-    ? 'repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 4px, var(--border-strong) 4px, var(--border-strong) 8px)'
-    : undefined;
+  // Ruhetag: Streifenmuster
+  if (hasRest && !hasPlanned && !hasDone) {
+    return {
+      background: 'repeating-linear-gradient(135deg, var(--surface-sunken), var(--surface-sunken) 4px, var(--border-strong) 4px, var(--border-strong) 8px)',
+      color: 'var(--text-muted)',
+      border: 'none',
+      fontWeight: isToday ? 700 : 400,
+      position: 'relative',
+    };
+  }
 
-  const color = isSelected
-    ? 'var(--bg-primary)'
-    : hasDone ? 'var(--on-accent)' : 'var(--text-primary)';
+  // Erledigt oder Geplant: nur Umrandung, transparentes Innere
+  if (hasDone || hasPlanned) {
+    return {
+      background: 'transparent',
+      color: 'var(--text-primary)',
+      border: '2px solid var(--action-primary)',
+      fontWeight: isToday ? 700 : 400,
+      position: 'relative', // für das Symbol oben rechts (absolut positioniert in WorkoutCalendar)
+    };
+  }
 
+  // Kein Training
   return {
-    background: restPattern ?? background,
-    color,
-    border: hasPlanned && !hasDone ? '2px solid var(--accent)' : 'none',
+    background: 'transparent',
+    color: 'var(--text-primary)',
+    border: 'none',
     fontWeight: isToday ? 700 : 400,
+    position: 'relative',
   };
+}
+
+// Welches Symbol oben rechts anzeigen?
+// Gibt 'done' | 'planned' | null zurück
+export function getCellBadge({ dayWorkouts }) {
+  const realWorkouts = dayWorkouts.filter((w) => !w.is_rest);
+  if (realWorkouts.some((w) => w.status === 'done'))   return 'done';
+  if (realWorkouts.some((w) => w.status !== 'done'))   return 'planned';
+  return null;
 }
