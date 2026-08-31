@@ -226,10 +226,11 @@
   display: flex;
   border-radius: var(--r-lg);
   background: var(--surface-sunken);
-  /* margin-top statt padding: reserviert den Platz für die fixed TopBar,
-     OHNE die sunken-Fläche selbst zu strecken (das war der Fehler zuvor) */
-  margin-top: 74px;
-  margin-bottom: 8px;
+  /* Direkt unter der schwebenden TopBar (top:16px + Höhe 42px = 58px
+     Unterkante) — nur 2px Luft statt der vorherigen 16px+.
+     Direkt über dem Inhalt — nur 4px statt 8px. */
+  margin-top: 60px;
+  margin-bottom: 4px;
   overflow-x: auto;
   padding: 3px;
   gap: 2px;
