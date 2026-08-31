@@ -101,7 +101,7 @@ export default function App() {
       )}
 
       <main
-        className="main-content"
+        className={`main-content${isModule ? ' module-active' : ''}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
