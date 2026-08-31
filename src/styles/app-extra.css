@@ -2165,7 +2165,15 @@
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 3px;
+}
+
+/* Datum-Badge innerhalb der Meta-Zeile: kein margin mehr nötig */
+.sho-list-meta-row .sho-status-badge {
+  margin-top: 0;
+}
+.sho-list-meta-row .sho-status-wrap {
+  margin-top: 0;
 }
 
 /* Aktionen-Wrapper: Edit + Trash + Chevron */

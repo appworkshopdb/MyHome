@@ -228,7 +228,8 @@
   background: var(--surface-sunken);
   margin-bottom: 6px;
   overflow-x: auto;
-  padding: 3px;
+  /* padding-top: Platz für die fixed TopBar (42px + 16px oben + 8px Luft) */
+  padding: calc(74px + 6px) 3px 3px 3px;
   gap: 2px;
   scrollbar-width: none;
 }
@@ -387,4 +388,10 @@
 
   .page-header { margin-bottom: 14px; }
   .page-header h1 { font-size: 17px; }
+}
+
+/* Modul-Content wenn Tabs direkt darüber liegen:
+   Tabs übernehmen das padding-top für die TopBar, Content braucht keines mehr */
+.main-content.with-tabs {
+  padding-top: 0;
 }
