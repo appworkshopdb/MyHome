@@ -66,6 +66,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 64px;
   padding: 14px 0;
   cursor: pointer;
   background: none;
@@ -77,14 +78,34 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Meta-Zeile: Datum-Badge + Status-Badge nebeneinander, linksbündig
+   (EINKAUF-LISTENZEILE.md — einzige Definition, keine Duplikate) */
+.sho-list-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* Aktionen rechts: Edit, Löschen, Chevron — konsistenter Abstand
+   statt einzelner marginRight-Inlinestyles */
+.sho-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .sho-list-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--bg-card);
+  width: 36px;
+  height: 36px;
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
@@ -93,12 +114,12 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .sho-list-name {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 5px;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -615,35 +636,38 @@
 .sho-status-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
   border: none;
   cursor: pointer;
   font-family: var(--font);
   margin-top: 0;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s;
+  transition: opacity var(--motion-fast);
 }
 
 .sho-status-badge:active { opacity: 0.7; }
 
+/* Offen: neutral */
 .sho-status-offen {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   color: var(--text-muted);
 }
 
+/* Im Einkauf: Aktions-Farbe, weich */
 .sho-status-im_einkauf {
-  background: var(--status-caution-bg);
-  color: var(--status-caution);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
 }
 
-/* Dunkelmodus erbt automatisch via --status-caution* Tokens */
-
+/* Erledigt: positiv, weich — kein gefüllter Dunkel-Badge mehr */
 .sho-status-erledigt {
-  background: var(--action-primary);
-  color: var(--text-on-accent);
+  background: var(--status-positive-bg);
+  color: var(--status-positive);
 }
 
 /* ─── FreqView Filter + Rang ──────────────────────────────── */
@@ -719,16 +743,6 @@
   margin-top: 0;
 }
 
-/* Datum und Status als vertikaler Stack mit Abstand */
-.sho-list-date-status {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-
 .sho-status-hint {
   font-size: 0.68rem;
   color: var(--text-muted);
@@ -773,16 +787,21 @@
 .sho-due-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-top: 3px;
+  gap: 3px;
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 0;
+  background: var(--status-caution-bg);
+  color: var(--status-caution);
 }
 
 .sho-due-badge.sho-due-overdue {
-  color: var(--danger);
-  font-weight: 700;
+  background: var(--status-critical-bg);
+  color: var(--status-critical);
 }
 
 /* ─── Laden-Badge in der Listenübersicht ──────────────────── */
@@ -966,7 +985,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 3px;
+  margin-top: 0;
 }
 
 .sho-due-badge-btn {
@@ -998,14 +1017,19 @@
 }
 
 .sho-date-add {
-  font-size: 0.72rem;
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
-  background: none;
-  border: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
   cursor: pointer;
-  padding: 2px 0;
   font-family: var(--font);
-  margin-top: 2px;
+  margin-top: 0;
   -webkit-tap-highlight-color: transparent;
 }
