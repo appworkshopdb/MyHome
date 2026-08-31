@@ -43,13 +43,13 @@ function IcoFinance() {
 }
 
 function IcoSport() {
-  // Laufende Person: Kopf (Kreis), Rumpf schräg, Arme und Beine in Bewegung
   return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="14" cy="3.5" r="1.5" />
-      <path d="M9 20l3-6 3 3 2-5" />
-      <path d="M14 5.5l2 3-4 2.5-2-3" />
+    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
+      <path d="M6.5 6.5v11" />
+      <path d="M17.5 6.5v11" />
+      <path d="M4 9v6" />
+      <path d="M20 9v6" />
+      <line x1="6.5" y1="12" x2="17.5" y2="12" />
     </svg>
   );
 }
@@ -57,14 +57,17 @@ function IcoSport() {
 function IcoNutrition() {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      {/* Teller: Kreis + halber Kreis als Schatten/Rand */}
-      <circle cx="12" cy="13" r="7" />
-      <path d="M5 13h14" />
-      {/* Gabel links */}
-      <line x1="8" y1="3" x2="8" y2="7" />
-      <path d="M6 3v3a2 2 0 0 0 4 0V3" />
-      {/* Messer rechts */}
-      <line x1="16" y1="3" x2="16" y2="20" />
+      <g transform="rotate(-25 12 12)">
+        <line x1="9" y1="2" x2="9" y2="8" />
+        <line x1="12" y1="2" x2="12" y2="8" />
+        <line x1="15" y1="2" x2="15" y2="8" />
+        <path d="M9 8c0 1.5 1.3 2.5 3 2.5s3-1 3-2.5" />
+        <line x1="12" y1="10.5" x2="12" y2="22" />
+      </g>
+      <g transform="rotate(25 12 12)">
+        <path d="M15 2c-2 .5-3.5 2.8-3 5.5.3 1.8 1.5 3 3 3.3" />
+        <line x1="12" y1="2" x2="12" y2="22" />
+      </g>
     </svg>
   );
 }
