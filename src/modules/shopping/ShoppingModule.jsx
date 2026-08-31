@@ -50,7 +50,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
-        <div className="page-loading">Wird geladen …</div>
+        <div className="page-loading with-topbar-space">Wird geladen …</div>
       </>
     );
   }
@@ -64,7 +64,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar title={openList.name} onBack={handleBack} hasWarnings={hasWarnings} />
-        <div className="main-content sho-module-content">
+        <div className="sho-module-content sho-detail-content">
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
           )}
@@ -82,7 +82,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     <>
       <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeTab} onChange={handleTabChange} />
-      <div className="main-content with-tabs sho-module-content">
+      <div className="sho-module-content">
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
