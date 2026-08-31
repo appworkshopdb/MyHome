@@ -25,7 +25,7 @@ const TABS = [
 
 const DEFAULT_VIEW = 'today';
 
-export default function HabitsModule({ view, onNavigateView }) {
+export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   const activeTab = view || DEFAULT_VIEW;
 
   const [habits,       setHabits]       = useState([]);
@@ -74,7 +74,7 @@ export default function HabitsModule({ view, onNavigateView }) {
   if (loading) {
     return (
       <>
-        <ModuleTopBar title="Gewohnheiten" />
+        <ModuleTopBar title="Gewohnheiten" hasWarnings={hasWarnings} />
         <div className="page-loading">Wird geladen …</div>
       </>
     );
@@ -84,7 +84,7 @@ export default function HabitsModule({ view, onNavigateView }) {
   if (showWizard) {
     return (
       <>
-        <ModuleTopBar title="Gewohnheiten" />
+        <ModuleTopBar title="Gewohnheiten" hasWarnings={hasWarnings} />
         <div className="main-content hab-module-content">
           <OnboardingWizard
             onDone={handleWizardDone}
@@ -97,7 +97,7 @@ export default function HabitsModule({ view, onNavigateView }) {
 
   return (
     <>
-      <ModuleTopBar title={tabLabel} />
+      <ModuleTopBar title={tabLabel} hasWarnings={hasWarnings} />
       <ModuleTabs
         items={TABS}
         active={activeTab}
