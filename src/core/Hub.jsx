@@ -42,9 +42,8 @@ async function loadTodayHabits() {
   const { data: entries, error: eErr } = await sb
     .from('hab_entries')
     .select('id, habit_id, count, logged_on, deleted_at')
-    .eq('logged_on', todayStr);
-    // KEIN .is('deleted_at', null) — auch soft-gelöschte laden,
-    // damit Toggle-Handler die id kennt und immer Update statt Insert nutzt
+    .eq('logged_on', todayStr)
+    .is('deleted_at', null);
   if (eErr) throw eErr;
   const wd = (new Date().getDay() + 6) % 7;
   const due = (habits ?? []).filter((h) => {
@@ -58,10 +57,7 @@ async function loadTodayHabits() {
   for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
   const doneIds = new Set(
     due
-      .filter((h) => {
-        const e = entryMap[h.id];
-        return e && !e.deleted_at && e.count >= h.target_count;
-      })
+      .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
       .map((h) => h.id)
   );
   return { total: due.length, done: doneIds.size, habits: due, entryMap };
@@ -143,6 +139,7 @@ export default function Hub({ onOpenModule }) {
       setHabDone(todayHab.done);
       setHabHabits(todayHab.habits);
       setHabEntryMap(todayHab.entryMap ?? {});
+      setHabEntryMap(todayHab.entryMap);
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
@@ -178,66 +175,59 @@ export default function Hub({ onOpenModule }) {
     const sb       = getSupabase();
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = habEntryMap[habit.id];
-    // "erledigt" = Eintrag vorhanden, NICHT soft-gelöscht, count erreicht
-    const wasDone  = !!(existing && !existing.deleted_at && existing.count >= habit.target_count);
+    const wasDone  = existing && existing.count >= habit.target_count;
 
-    // Optimistisch sofort updaten — Map UND Counter zusammen
-    const nextMap = { ...habEntryMap };
-    if (wasDone) {
-      // Rückgängig: lokal als soft-gelöscht markieren, id BLEIBT in der Map
-      nextMap[habit.id] = { ...existing, deleted_at: new Date().toISOString() };
-    } else if (existing) {
-      // Reaktivieren — id bereits bekannt, einfach reaktivieren
-      nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
-    } else {
-      // Allererster Tap heute — Platzhalter ohne id
-      nextMap[habit.id] = { id: null, habit_id: habit.id, count: habit.target_count, logged_on: todayStr, deleted_at: null };
-    }
-    setHabEntryMap(nextMap);
-    setHabDone(wasDone ? habDone - 1 : habDone + 1);
+    // Optimistisch updaten
+    const nextMap  = { ...habEntryMap };
+    const nextDone = wasDone ? habDone - 1 : habDone + 1;
+    setHabDone(nextDone);
 
     try {
-      if (existing?.id) {
-        // id bekannt → immer Update, NIE Insert (verhindert 409-Konflikt)
-        await sb.from('hab_entries')
-          .update({
-            count:      wasDone ? existing.count : habit.target_count,
-            deleted_at: wasDone ? new Date().toISOString() : null,
-          })
-          .eq('id', existing.id);
+      if (existing) {
+        if (wasDone) {
+          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
+          delete nextMap[habit.id];
+        } else {
+          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
+          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
+        }
       } else {
-        // Allererster Eintrag für diesen Tag → Insert
-        const { data, error } = await sb.from('hab_entries')
-          .insert({
-            habit_id:  habit.id,
-            logged_on: todayStr,
-            count:     habit.target_count,
-            owner_id:  session.user.id,
-          })
-          .select('id, habit_id, count, logged_on, deleted_at')
-          .single();
-        if (error) throw error;
-        if (data) setHabEntryMap((prev) => ({ ...prev, [habit.id]: data }));
+        const { data } = await sb.from('hab_entries')
+          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
+          .select().single();
+        if (data) nextMap[habit.id] = data;
       }
+      setHabEntryMap(nextMap);
 
-      // Feedback — nur beim Abhaken
+      // Feedback — nur beim Abhaken, nicht beim Rückgängig
       if (!wasDone) {
-        const newDone = habDone + 1;
-        if (newDone === habTotal) fb.habitAllDone();
-        else                      fb.habitCheck();
+        const nowAllDone = nextDone === habTotal;
+        if (nowAllDone) {
+          fb.habitAllDone(); // Dreiklang + Doppel-Puls
+        } else {
+          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
+        }
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      setHabEntryMap(habEntryMap);
       setHabDone(habDone);
+      setHabEntryMap(habEntryMap);
     }
   }
 
   // ── Todo-Handler ──
   async function handleToggleTodo(id, currentDone) {
     const next = !currentDone;
-    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t));
-    if (!currentDone) fb.todoCheck(); // Feedback nur beim Abhaken
+    const updatedTodos = todos.map((t) => t.id === id ? { ...t, done: next, done_at: next ? new Date().toISOString() : null } : t);
+    setTodos(updatedTodos);
+    if (!currentDone) {
+      const offeneNachToggle = updatedTodos.filter((t) => !t.done);
+      if (offeneNachToggle.length === 0) {
+        fb.todoAllDone(); // ziel_erreicht.wav — alle erledigt
+      } else {
+        fb.todoCheck();   // click.mp3 — einzelnes ToDo
+      }
+    }
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
@@ -415,7 +405,7 @@ export default function Hub({ onOpenModule }) {
               <div className="hub-hab-list">
                 {habHabits.map((h) => {
                   const entry  = habEntryMap[h.id];
-                  const isDone = !!(entry && !entry.deleted_at && entry.count >= h.target_count);
+                  const isDone = entry && entry.count >= h.target_count;
                   return (
                     <button
                       key={h.id}
@@ -491,19 +481,24 @@ export default function Hub({ onOpenModule }) {
           {/* ── Aufgaben ── */}
           <div className="hub-section-label" style={{ marginTop: 0 }}>Aufgaben</div>
 
-          <div className="mode-toggle hub-todo-toggle">
-            <button className={todoView === 'alle'     ? 'active' : ''} onClick={() => setTodoView('alle')}>
-              Alle{todosAlle.length > 0 && <span className="hub-todo-badge">{todosAlle.length}</span>}
-            </button>
-            <button className={todoView === 'heute'    ? 'active' : ''} onClick={() => setTodoView('heute')}>
-              Heute{todosHeute.length > 0 && <span className="hub-todo-badge">{todosHeute.length}</span>}
-            </button>
-            <button className={todoView === 'wichtig'  ? 'active' : ''} onClick={() => setTodoView('wichtig')}>
-              Wichtig{todosWichtig.length > 0 && <span className="hub-todo-badge">{todosWichtig.length}</span>}
-            </button>
-            <button className={todoView === 'erledigt' ? 'active' : ''} onClick={() => setTodoView('erledigt')}>
-              Erledigt{todosErledigt.length > 0 && <span className="hub-todo-badge">{todosErledigt.length}</span>}
-            </button>
+          <div className="hub-todo-chips">
+            {[
+              { key: 'alle',     label: 'Alle',     count: todosAlle.length     },
+              { key: 'heute',    label: 'Heute',    count: todosHeute.length    },
+              { key: 'wichtig',  label: 'Wichtig',  count: todosWichtig.length  },
+              { key: 'erledigt', label: 'Erledigt', count: todosErledigt.length },
+            ].map(({ key, label, count }) => (
+              <button
+                key={key}
+                className={`hub-todo-chip${todoView === key ? ' active' : ''}`}
+                onClick={() => setTodoView(key)}
+              >
+                {label}
+                {count > 0 && (
+                  <span className="hub-todo-chip-badge">{count}</span>
+                )}
+              </button>
+            ))}
           </div>
 
           <button className="hub-todo-add-bar" onClick={openNewTodo}>
