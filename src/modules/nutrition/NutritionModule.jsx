@@ -30,13 +30,13 @@ registerRequirement('profile', async (session) => {
 });
 
 const VIEW_TITLES = {
-  ampel: 'Ernährungsampel',
   rezepte: 'Rezepte',
-  lexikon: 'Ernährungslexikon',
-  tipps: 'Tipps',
-  profil: 'Profil',
+  ampel:   'Ampel',
+  lexikon: 'Lexikon',
+  tipps:   'Tipps',
+  profil:  'Profil',
 };
-const DEFAULT_VIEW = 'ampel';
+const DEFAULT_VIEW = 'rezepte';
 const TABS = Object.entries(VIEW_TITLES).map(([key, label]) => ({ key, label }));
 
 // Das Ernährungs-Modul in seiner Gesamtheit. Lädt die persönlichen Daten
