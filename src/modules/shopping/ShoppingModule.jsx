@@ -82,7 +82,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     <>
       <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeTab} onChange={handleTabChange} />
-      <div className="main-content sho-module-content">
+      <div className="main-content with-tabs sho-module-content">
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
