@@ -226,10 +226,12 @@
   display: flex;
   border-radius: var(--r-lg);
   background: var(--surface-sunken);
-  margin-bottom: 6px;
+  /* margin-top statt padding: reserviert den Platz für die fixed TopBar,
+     OHNE die sunken-Fläche selbst zu strecken (das war der Fehler zuvor) */
+  margin-top: 74px;
+  margin-bottom: 8px;
   overflow-x: auto;
-  /* padding-top: Platz für die fixed TopBar (42px + 16px oben + 8px Luft) */
-  padding: calc(74px + 6px) 3px 3px 3px;
+  padding: 3px;
   gap: 2px;
   scrollbar-width: none;
 }

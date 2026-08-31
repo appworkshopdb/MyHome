@@ -2157,35 +2157,7 @@
   color: var(--text-on-accent);
 }
 
-/* Fix 5 — Einkauf Listenzeile */
-
-/* Meta-Zeile: Datum + Status nebeneinander */
-.sho-list-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 3px;
-}
-
-/* Datum-Badge innerhalb der Meta-Zeile: kein margin mehr nötig */
-.sho-list-meta-row .sho-status-badge {
-  margin-top: 0;
-}
-.sho-list-meta-row .sho-status-wrap {
-  margin-top: 0;
-}
-
-/* Aktionen-Wrapper: Edit + Trash + Chevron */
-.sho-list-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-/* Listenzeile: min-height 64px, Items auf Mittelachse */
-.sho-list-item {
-  min-height: 64px;
-  align-items: center;
-}
+/* Fix 5 — Einkauf Listenzeile:
+   .sho-list-item / .sho-list-meta-row / .sho-list-actions sind jetzt
+   ausschließlich in shopping.css definiert (EINKAUF-LISTENZEILE.md) —
+   hier keine Duplikate mehr, um Kaskaden-Konflikte zu vermeiden. */
