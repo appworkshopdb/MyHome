@@ -622,7 +622,7 @@
   border: none;
   cursor: pointer;
   font-family: var(--font);
-  margin-top: 3px;
+  margin-top: 0;
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s;
 }
