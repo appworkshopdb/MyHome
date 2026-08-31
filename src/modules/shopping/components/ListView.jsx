@@ -279,6 +279,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                   <div className="sho-list-icon">{list.icon || '🛒'}</div>
                   <div className="sho-list-info">
                     <div className="sho-list-name">{list.name}</div>
+                    {/* Meta-Zeile: Datum + Status nebeneinander, linksbündig */}
                     {dateEditId === list.id ? (
                       <div className="sho-date-inline" onClick={(e) => e.stopPropagation()}>
                         <input
@@ -316,26 +317,29 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                           ✕
                         </button>
                       </div>
-                    ) : list.due_date ? (
-                      <span className="sho-date-edit-row">
-                        <button className="sho-due-badge-btn" onClick={(e) => startDateEdit(e, list)} title="Datum ändern">
-                          <DueBadge date={list.due_date} time={list.due_time} />
-                        </button>
-                        <button className="sho-date-remove" onClick={(e) => handleRemoveDate(e, list)} title="Datum entfernen">✕</button>
-                      </span>
                     ) : (
-                      <button className="sho-date-add" onClick={(e) => startDateEdit(e, list)}>
-                        + Datum
-                      </button>
+                      <div className="sho-list-meta-row">
+                        {/* Datum — klickbar zum Bearbeiten */}
+                        {list.due_date ? (
+                          <span className="sho-date-edit-row">
+                            <button className="sho-due-badge-btn" onClick={(e) => startDateEdit(e, list)} title="Datum ändern">
+                              <DueBadge date={list.due_date} time={list.due_time} />
+                            </button>
+                            <button className="sho-date-remove" onClick={(e) => handleRemoveDate(e, list)} title="Datum entfernen">✕</button>
+                          </span>
+                        ) : (
+                          <button className="sho-date-add" onClick={(e) => startDateEdit(e, list)}>
+                            + Datum
+                          </button>
+                        )}
+                        {/* Status — direkt daneben */}
+                        <StatusBadge
+                          list={list}
+                          busy={statusBusy === list.id}
+                          onCycle={(e) => handleStatusCycle(e, list)}
+                        />
+                      </div>
                     )}
-                    {/* Datum + Status in einer Zeile nebeneinander */}
-                    <div className="sho-list-meta-row">
-                      <StatusBadge
-                        list={list}
-                        busy={statusBusy === list.id}
-                        onCycle={(e) => handleStatusCycle(e, list)}
-                      />
-                    </div>
                   </div>
                   {/* Aktionen: Edit + Trash + Chevron in einem Wrapper */}
                   <div className="sho-list-actions">
