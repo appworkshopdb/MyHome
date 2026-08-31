@@ -2087,3 +2087,97 @@
 .sho-module-tabs-gap {
   margin-bottom: 6px;
 }
+
+
+/* ============================================================
+   FIXES-2B — Chip-Filter, Einkauf-Meta-Zeile, Listenzeile
+   ============================================================ */
+
+/* Fix 1 — Hub ToDo Chip-Reihe */
+.hub-todo-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 10px;
+  padding-bottom: 2px; /* verhindert Clip des Fokusrings */
+}
+.hub-todo-chips::-webkit-scrollbar { display: none; }
+
+.hub-todo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast),
+    color      var(--motion-fast);
+  min-height: var(--touch-target);
+}
+
+.hub-todo-chip.active {
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+}
+
+.hub-todo-chip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Counter-Pille innerhalb des Chips */
+.hub-todo-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  /* Inaktiv: action-quiet-bg + action-primary Text */
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
+}
+
+.hub-todo-chip.active .hub-todo-chip-badge {
+  /* Aktiv: leicht weißer Overlay */
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--text-on-accent);
+}
+
+/* Fix 5 — Einkauf Listenzeile */
+
+/* Meta-Zeile: Datum + Status nebeneinander */
+.sho-list-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* Aktionen-Wrapper: Edit + Trash + Chevron */
+.sho-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Listenzeile: min-height 64px, Items auf Mittelachse */
+.sho-list-item {
+  min-height: 64px;
+  align-items: center;
+}
