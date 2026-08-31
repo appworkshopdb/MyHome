@@ -91,6 +91,9 @@
 .sho-list-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .sho-list-name {
@@ -632,18 +635,15 @@
 }
 
 .sho-status-im_einkauf {
-  background: #FFF3CD;
-  color: #856404;
+  background: var(--status-caution-bg);
+  color: var(--status-caution);
 }
 
-.dark .sho-status-im_einkauf {
-  background: #3D2E00;
-  color: #FFC947;
-}
+/* Dunkelmodus erbt automatisch via --status-caution* Tokens */
 
 .sho-status-erledigt {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
 
 /* ─── FreqView Filter + Rang ──────────────────────────────── */
@@ -715,8 +715,18 @@
 .sho-status-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  margin-top: 3px;
+  gap: 6px;
+  margin-top: 0;
+}
+
+/* Datum und Status als vertikaler Stack mit Abstand */
+.sho-list-date-status {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .sho-status-hint {
