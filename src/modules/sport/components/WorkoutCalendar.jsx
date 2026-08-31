@@ -92,6 +92,13 @@ export default function WorkoutCalendar({ workouts, year, monthIndex, selectedDa
         });
         const badge = getCellBadge({ dayWorkouts });
 
+        const isToday = key === todayIso;
+        const isSelected = key === selectedDate;
+        // Punkt-Farbe: weiß wenn Zelle gefüllt (selected), sonst action-primary
+        const dotColor = isSelected
+          ? 'var(--text-on-accent)'
+          : 'var(--action-primary)';
+
         return (
           <button
             key={key}
@@ -107,10 +114,24 @@ export default function WorkoutCalendar({ workouts, year, monthIndex, selectedDa
               padding: 0,
               ...style,
             }}
-            aria-label={`${date.getDate()}. ${badge === 'done' ? 'erledigt' : badge === 'planned' ? 'geplant' : ''}`}
+            aria-label={`${date.getDate()}. ${badge === 'done' ? 'erledigt' : badge === 'planned' ? 'geplant' : ''}${isToday ? ' heute' : ''}`}
           >
             {date.getDate()}
             <CellBadge type={badge} />
+            {/* Heute-Punkt — unabhängig vom Trainingsstatus */}
+            {isToday && (
+              <span style={{
+                position: 'absolute',
+                bottom: 3,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 5,
+                height: 5,
+                borderRadius: 'var(--r-pill)',
+                background: dotColor,
+                flexShrink: 0,
+              }} aria-hidden="true" />
+            )}
           </button>
         );
       })}
