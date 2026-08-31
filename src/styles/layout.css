@@ -25,6 +25,20 @@
   padding-bottom: 152px;
 }
 
+/* Wenn ein Modul aktiv ist: kein padding-top, weil das Modul seine
+   eigene ModuleTopBar (fixed) + ModuleTabs rendert. Die .module-tabs
+   reservieren den TopBar-Platz per margin-top selbst. Ohne diese
+   Regel addieren sich main-content-padding (74px) und Tab-margin. */
+.main-content.module-active {
+  padding-top: 0;
+}
+
+/* Für Modul-Ansichten OHNE Tabs (Loading, Wizard, Detail-Screens):
+   TopBar-Abstand selbst tragen, da keine .module-tabs vorhanden. */
+.with-topbar-space {
+  padding-top: 66px;
+}
+
 .view { display: none; }
 .view.active { display: block; }
 
