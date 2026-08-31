@@ -328,11 +328,14 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                         + Datum
                       </button>
                     )}
-                    <StatusBadge
-                      list={list}
-                      busy={statusBusy === list.id}
-                      onCycle={(e) => handleStatusCycle(e, list)}
-                    />
+                    {/* Status in eigener Zeile mit Abstand zum Datum */}
+                    <div style={{ marginTop: 4 }}>
+                      <StatusBadge
+                        list={list}
+                        busy={statusBusy === list.id}
+                        onCycle={(e) => handleStatusCycle(e, list)}
+                      />
+                    </div>
                   </div>
                   <button
                     className="btn-icon"
