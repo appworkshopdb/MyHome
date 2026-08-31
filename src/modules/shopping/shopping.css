@@ -9,6 +9,12 @@
   padding-bottom: 32px;
 }
 
+/* Artikelansicht (openList) hat KEINE Tabs — braucht daher selbst den
+   Abstand zur schwebenden TopBar (58px Unterkante + 8px Luft). */
+.sho-detail-content {
+  padding-top: 66px;
+}
+
 /* ─── Lade-Zustand ────────────────────────────────────────── */
 
 .page-loading {
