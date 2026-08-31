@@ -29,12 +29,12 @@ const DEFAULT_VIEW = 'months';
 // BOTTOMNAV_6MODULE.md global/modulübergreifend — die Unteransichten
 // dieses Moduls (Monat/Auswertung/Verträge/Einstellungen) laufen daher
 // über ModuleTabs oben im Content statt über eine modul-eigene Leiste.
-export default function FinanceModule({ view, onNavigateView }) {
+export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
   const activeView = VIEWS[view] ? view : DEFAULT_VIEW;
   const View = VIEWS[activeView];
   return (
     <>
-      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} />
+      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       <View />
     </>
