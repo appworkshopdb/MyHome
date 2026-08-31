@@ -328,8 +328,8 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                         + Datum
                       </button>
                     )}
-                    {/* Status in eigener Zeile mit Abstand zum Datum */}
-                    <div style={{ marginTop: 4 }}>
+                    {/* Datum + Status in einer Zeile nebeneinander */}
+                    <div className="sho-list-meta-row">
                       <StatusBadge
                         list={list}
                         busy={statusBusy === list.id}
@@ -337,23 +337,25 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
                       />
                     </div>
                   </div>
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => startEdit(e, list)}
-                    aria-label="Umbenennen"
-                    style={{ marginRight: 0 }}
-                  >
-                    <IconEdit size={15} />
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => handleDelete(e, list.id)}
-                    aria-label="Liste löschen"
-                  >
-                    <IconTrash size={15} />
-                  </button>
-                  <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
-                    <IconChevronRight />
+                  {/* Aktionen: Edit + Trash + Chevron in einem Wrapper */}
+                  <div className="sho-list-actions">
+                    <button
+                      className="btn-icon"
+                      onClick={(e) => startEdit(e, list)}
+                      aria-label="Umbenennen"
+                    >
+                      <IconEdit size={15} />
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={(e) => handleDelete(e, list.id)}
+                      aria-label="Liste löschen"
+                    >
+                      <IconTrash size={15} />
+                    </button>
+                    <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
+                      <IconChevronRight />
+                    </div>
                   </div>
                 </button>
               )}
