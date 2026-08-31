@@ -46,7 +46,7 @@ const TABS = Object.entries(VIEW_TITLES).map(([key, label]) => ({ key, label }))
 // ohne eigenes Supabase-Projekt.
 // view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
 // useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
-export default function NutritionModule({ view, onNavigateView }) {
+export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
@@ -121,7 +121,7 @@ export default function NutritionModule({ view, onNavigateView }) {
 
   return (
     <>
-      <ModuleTopBar title={VIEW_TITLES[activeView]} />
+      <ModuleTopBar title={VIEW_TITLES[activeView]} hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
       {activeView === 'ampel' && (
         <AmpelView foods={foods} onSaveFood={handleSaveFood} onDeleteFood={handleDeleteFood} />
