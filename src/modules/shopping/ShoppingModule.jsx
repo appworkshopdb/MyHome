@@ -19,7 +19,7 @@ const TABS = [
 
 const DEFAULT_VIEW = 'listen';
 
-export default function ShoppingModule({ view, onNavigateView }) {
+export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
   const activeTab = TABS.find((t) => t.key === view) ? view : DEFAULT_VIEW;
 
   const [lists,    setLists]    = useState([]);
@@ -49,7 +49,7 @@ export default function ShoppingModule({ view, onNavigateView }) {
   if (loading) {
     return (
       <>
-        <ModuleTopBar title="Einkauf" />
+        <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
         <div className="page-loading">Wird geladen …</div>
       </>
     );
@@ -63,7 +63,7 @@ export default function ShoppingModule({ view, onNavigateView }) {
     }
     return (
       <>
-        <ModuleTopBar title={openList.name} onBack={handleBack} />
+        <ModuleTopBar title={openList.name} onBack={handleBack} hasWarnings={hasWarnings} />
         <div className="main-content sho-module-content">
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
@@ -80,7 +80,7 @@ export default function ShoppingModule({ view, onNavigateView }) {
   // ── Hauptansicht mit Tabs ────────────────────────────────────
   return (
     <>
-      <ModuleTopBar title="Einkauf" />
+      <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeTab} onChange={handleTabChange} />
       <div className="main-content sho-module-content">
         {error && (
