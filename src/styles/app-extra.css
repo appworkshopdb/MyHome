@@ -2030,3 +2030,60 @@
   /* Kein eigenes Element mehr nötig — Initiale direkt im Profil-Button */
   display: none;
 }
+
+
+/* ============================================================
+   Schritt 3-Fixes — Monatsnavigation + Sport-Kalender
+   ============================================================ */
+
+/* Gemeinsame Monatsnavigation (Finanzen + Sport) —
+   volle Breite, gleiche Optik wie die Tabs darüber */
+.fin-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+
+.fin-month-label {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Jahres-Dropdown im Kalender-Header — minimalistisch, kein border-box */
+.spo-year-select {
+  width: auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 0 18px 0 0;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.spo-year-select:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Sport-Kalender Zellen: border-radius auf Token */
+.spo-cal-cell {
+  border-radius: var(--r-md);
+}
+
+/* Einkauf: Abstand zwischen Tabs (ShoppingModule) und der Liste */
+.sho-module-tabs-gap {
+  margin-bottom: 6px;
+}
