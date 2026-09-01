@@ -392,7 +392,11 @@ export default function ContractsView() {
 
   async function handleSaveTemplate(tpl) {
     const isNew = !tpl.id;
-    const saved = await db.saveFixTemplate(session, tpl);
+    // _src und andere Join-Felder aus ContractsView entfernen
+    // bevor sie an die DB weitergegeben werden
+    // eslint-disable-next-line no-unused-vars
+    const { _src, ...cleanTpl } = tpl;
+    const saved = await db.saveFixTemplate(session, cleanTpl);
     if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
     setModal(null);
     showToast(isNew ? 'Posten in alle Monate übernommen' : 'Posten aktualisiert');
@@ -470,3 +474,4 @@ export default function ContractsView() {
     </>
   );
 }
+
