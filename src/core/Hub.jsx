@@ -8,6 +8,7 @@ import ProgressStat from './components/ProgressStat';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
 import { fb } from './lib/feedback'; // NEU
+import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 
 const CACHE_KEY = 'hub-cache-v2';
 
@@ -28,39 +29,6 @@ function readCache() {
 }
 function writeCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, savedAt: new Date().toISOString() })); } catch { /* egal */ }
-}
-
-async function loadTodayHabits() {
-  const sb = getSupabase();
-  const todayStr = new Date().toISOString().split('T')[0];
-  const { data: habits, error: hErr } = await sb
-    .from('hab_habits')
-    .select('id, name, icon, active, frequency, frequency_days, target_count, created_at, deleted_at')
-    .is('deleted_at', null)
-    .eq('active', true);
-  if (hErr) throw hErr;
-  const { data: entries, error: eErr } = await sb
-    .from('hab_entries')
-    .select('id, habit_id, count, logged_on, deleted_at')
-    .eq('logged_on', todayStr)
-    .is('deleted_at', null);
-  if (eErr) throw eErr;
-  const wd = (new Date().getDay() + 6) % 7;
-  const due = (habits ?? []).filter((h) => {
-    if (new Date(h.created_at).toISOString().split('T')[0] > todayStr) return false;
-    if (h.frequency === 'daily') return true;
-    if (h.frequency === 'weekdays') return wd < 5;
-    if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
-    return true;
-  });
-  const entryMap = {};
-  for (const e of entries ?? []) { entryMap[e.habit_id] = e; }
-  const doneIds = new Set(
-    due
-      .filter((h) => entryMap[h.id] && entryMap[h.id].count >= h.target_count)
-      .map((h) => h.id)
-  );
-  return { total: due.length, done: doneIds.size, habits: due, entryMap };
 }
 
 async function loadTodaySport() {
@@ -109,10 +77,14 @@ export default function Hub({ onOpenModule }) {
   const [expense, setExpense]   = useState(0);
   const [cacheZeit, setCacheZeit] = useState(null);
 
-  const [habTotal, setHabTotal]       = useState(0);
-  const [habDone, setHabDone]         = useState(0);
-  const [habHabits, setHabHabits]     = useState([]);
-  const [habEntryMap, setHabEntryMap] = useState({});
+  // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
+  // Abhaken hier ist sofort im Modul sichtbar und umgekehrt.
+  const { habits: allHabits, entries: habEntries } = useHabitsStore();
+  const habHabits = getDueToday(allHabits, habEntries);
+  const habTotal  = habHabits.length;
+  const habDone   = habHabits.filter(
+    (h) => isDone(habEntries, h.id, habTodayStr(), h.target_count)
+  ).length;
 
   const [todaySport, setTodaySport] = useState([]);
   const [openFix, setOpenFix]       = useState([]);
@@ -125,26 +97,22 @@ export default function Hub({ onOpenModule }) {
     setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, todayHab, sport, fix, todoList] = await Promise.all([
+      const [inc, exp, , sport, fix, todoList] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
-        loadTodayHabits(),
+        // Habits kommen aus dem gemeinsamen Store (force = frischer Stand)
+        loadHabitsData({ force: true }).catch(() => null),
         loadTodaySport(),
         loadOpenFixCosts(),
         getTodos(session),
       ]);
       setIncome(inc);
       setExpense(exp);
-      setHabTotal(todayHab.total);
-      setHabDone(todayHab.done);
-      setHabHabits(todayHab.habits);
-      setHabEntryMap(todayHab.entryMap ?? {});
-      setHabEntryMap(todayHab.entryMap);
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
       writeCache({ income: inc, expense: exp });
-      setStatus(inc > 0 || exp > 0 || todayHab.total > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
+      setStatus(inc > 0 || exp > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
     } catch (e) {
       console.error('[Hub] Laden fehlgeschlagen:', e);
       setStatus('fehler');
@@ -171,47 +139,19 @@ export default function Hub({ onOpenModule }) {
   const habAllDone = habTotal > 0 && habDone === habTotal;
 
   // ── Habit-Toggle direkt im Hub ──
+  // Läuft über den gemeinsamen Store — das Habits-Modul sieht die
+  // Änderung sofort, ohne Reload.
   async function handleToggleHabit(habit) {
-    const sb       = getSupabase();
-    const todayStr = new Date().toISOString().split('T')[0];
-    const existing = habEntryMap[habit.id];
-    const wasDone  = existing && existing.count >= habit.target_count;
-
-    // Optimistisch updaten
-    const nextMap  = { ...habEntryMap };
-    const nextDone = wasDone ? habDone - 1 : habDone + 1;
-    setHabDone(nextDone);
-
+    const wasDone = isDone(habEntries, habit.id, habTodayStr(), habit.target_count);
     try {
-      if (existing) {
-        if (wasDone) {
-          await sb.from('hab_entries').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id);
-          delete nextMap[habit.id];
-        } else {
-          await sb.from('hab_entries').update({ deleted_at: null, count: habit.target_count }).eq('id', existing.id);
-          nextMap[habit.id] = { ...existing, deleted_at: null, count: habit.target_count };
-        }
-      } else {
-        const { data } = await sb.from('hab_entries')
-          .insert({ habit_id: habit.id, logged_on: todayStr, count: habit.target_count })
-          .select().single();
-        if (data) nextMap[habit.id] = data;
-      }
-      setHabEntryMap(nextMap);
-
-      // Feedback — nur beim Abhaken, nicht beim Rückgängig
+      await toggleHabitOn(habit);
+      // Feedback nur beim Abhaken, nicht beim Rückgängigmachen
       if (!wasDone) {
-        const nowAllDone = nextDone === habTotal;
-        if (nowAllDone) {
-          fb.habitAllDone(); // Dreiklang + Doppel-Puls
-        } else {
-          fb.habitCheck();   // Einzelnes Ding + kurzer Pulse
-        }
+        if (habDone + 1 === habTotal) fb.habitAllDone();
+        else                          fb.habitCheck();
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
-      setHabDone(habDone);
-      setHabEntryMap(habEntryMap);
     }
   }
 
@@ -404,16 +344,15 @@ export default function Hub({ onOpenModule }) {
               </div>
               <div className="hub-hab-list">
                 {habHabits.map((h) => {
-                  const entry  = habEntryMap[h.id];
-                  const isDone = entry && entry.count >= h.target_count;
+                  const erledigt = isDone(habEntries, h.id, habTodayStr(), h.target_count);
                   return (
                     <button
                       key={h.id}
-                      className={`hub-hab-row ${isDone ? 'done' : ''}`}
+                      className={`hub-hab-row ${erledigt ? 'done' : ''}`}
                       onClick={() => handleToggleHabit(h)}
                     >
-                      <span className={`hub-hab-check ${isDone ? 'checked' : ''}`}>
-                        {isDone && '✓'}
+                      <span className={`hub-hab-check ${erledigt ? 'checked' : ''}`}>
+                        {erledigt && '✓'}
                       </span>
                       <span className="hub-hab-icon">{h.icon}</span>
                       <span className="hub-hab-name">{h.name}</span>
