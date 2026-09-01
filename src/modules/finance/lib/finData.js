@@ -66,9 +66,18 @@ export async function getFixTemplates(session) {
   return data;
 }
 
+// Felder die NICHT in fin_fixtemplates gespeichert werden dürfen
+// (React-interne Flags, Join-Felder aus ContractsView etc.)
+const TEMPLATE_STRIP = ['_src', 'updated_at'];
+
 export async function saveFixTemplate(session, tpl) {
   const isUpdate = !!tpl.id;
-  const payload = { ...tpl, owner_id: ownerId(session) };
+  // Payload bereinigen: unbekannte Felder entfernen, leere Strings → null
+  const payload = Object.fromEntries(
+    Object.entries({ ...tpl, owner_id: ownerId(session) })
+      .filter(([k]) => !TEMPLATE_STRIP.includes(k))
+      .map(([k, v]) => [k, v === '' ? null : v])
+  );
   const { data: saved, error } = await getSupabase()
     .from('fin_fixtemplates')
     .upsert(payload)
@@ -124,14 +133,18 @@ async function syncTemplateEntries(session, tpl) {
           .eq('id', entry.id);
       }
     } else {
-      // Vorlage gilt noch — Name und Betrag nachziehen wenn unbezahlt
-      // Zukünftige Einträge immer aktualisieren (noch nicht "real")
-      if (!entry.paid || isFuture) {
-        await getSupabase()
-          .from('fin_entries')
-          .update({ name: tpl.name, amount: tpl.amount, payment: tpl.payment })
-          .eq('id', entry.id);
-      }
+      // Name, Betrag und Zahlungsart in ALLEN Einträgen nachziehen —
+      // auch in bezahlten, damit die Monatsansicht konsistent bleibt.
+      // Ausnahme: der amount bezahlter Vergangenheits-Einträge bleibt
+      // unverändert (historische Wahrheit), nur Name und Zahlung folgen.
+      const isPastPaid = entry.paid && !isFuture;
+      await getSupabase()
+        .from('fin_entries')
+        .update(isPastPaid
+          ? { name: tpl.name, payment: tpl.payment }          // Betrag bleibt
+          : { name: tpl.name, amount: tpl.amount, payment: tpl.payment }
+        )
+        .eq('id', entry.id);
     }
   }
 
@@ -169,14 +182,15 @@ export async function deleteFixTemplate(session, id) {
     .eq('id', id);
   if (tplErr) throw tplErr;
 
-  // 2. Alle noch nicht bezahlten fin_entries dieser Vorlage soft-deleten.
-  //    Bezahlte Einträge bleiben als historische Buchung erhalten —
-  //    sie sind bereits abgerechnet und gehören zur Monatswahrheit.
+  // 2. ALLE fin_entries dieser Vorlage soft-deleten — auch bezahlte.
+  //    Begründung: Eine Vorlage ist eine Wiederkehr-Regel. Wird sie
+  //    gelöscht, soll sie aus ALLEN Monaten verschwinden, auch aus
+  //    vergangenen. Wer einen einzelnen historischen Eintrag behalten
+  //    will, trennt ihn manuell vom Template (from_template auf null).
   const { error: entryErr } = await getSupabase()
     .from('fin_entries')
     .update({ deleted_at: now })
     .eq('from_template', id)
-    .eq('paid', false)
     .is('deleted_at', null);
   if (entryErr) throw entryErr;
 }
@@ -456,3 +470,4 @@ export async function importLegacyBackup(session, data, currentYear, currentMont
 
   return counts;
 }
+
