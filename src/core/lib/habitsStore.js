@@ -164,13 +164,24 @@ export async function reloadHabits() {
 // fehl, wird der alte State wiederhergestellt.
 
 export async function toggleHabitOn(habit, dateStr = todayStr()) {
-  const sb       = getSupabase();
-  const target   = habit.target_count ?? 1;
-  const existing = state.entries.find(
-    (e) => e.habit_id === habit.id && e.logged_on === dateStr
-  );
-  const wasDone  = !!existing && !existing.deleted_at && existing.count >= target;
-  const before   = state.entries;
+  const sb     = getSupabase();
+  const target = habit.target_count ?? 1;
+  const before = state.entries;
+
+  // WICHTIG: state.entries enthält nur nicht-gelöschte Zeilen (siehe loadHabitsData).
+  // Für die Insert/Update-Entscheidung muss aber auch eine evtl. bereits
+  // vorhandene, soft-gelöschte Zeile berücksichtigt werden — sonst schlägt
+  // der Insert mit 409 Conflict gegen die Unique-Constraint fehl (Habit
+  // wurde früher schon mal an/aus geschaltet).
+  const { data: existing, error: findErr } = await sb
+    .from('hab_entries')
+    .select('*')
+    .eq('habit_id', habit.id)
+    .eq('logged_on', dateStr)
+    .maybeSingle();
+  if (findErr) throw findErr;
+
+  const wasDone = !!existing && !existing.deleted_at && existing.count >= target;
 
   // 1) Optimistisch updaten — sofort sichtbar in Hub und Modul
   let optimistic;
@@ -232,11 +243,18 @@ export async function toggleHabitOn(habit, dateStr = todayStr()) {
 
 // Zähler setzen (für Habits mit target_count > 1)
 export async function setHabitCount(habit, count, dateStr = todayStr()) {
-  const sb       = getSupabase();
-  const existing = state.entries.find(
-    (e) => e.habit_id === habit.id && e.logged_on === dateStr
-  );
+  const sb     = getSupabase();
   const before = state.entries;
+
+  // Wie in toggleHabitOn: auch soft-gelöschte Zeilen berücksichtigen,
+  // sonst 409 Conflict beim Insert gegen die Unique-Constraint.
+  const { data: existing, error: findErr } = await sb
+    .from('hab_entries')
+    .select('id, deleted_at')
+    .eq('habit_id', habit.id)
+    .eq('logged_on', dateStr)
+    .maybeSingle();
+  if (findErr) throw findErr;
 
   let optimistic;
   if (count <= 0) {
