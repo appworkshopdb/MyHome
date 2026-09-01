@@ -168,28 +168,19 @@ export async function toggleHabitOn(habit, dateStr = todayStr()) {
   const target = habit.target_count ?? 1;
   const before = state.entries;
 
-  // WICHTIG: state.entries enthält nur nicht-gelöschte Zeilen (siehe loadHabitsData).
-  // Für die Insert/Update-Entscheidung muss aber auch eine evtl. bereits
-  // vorhandene, soft-gelöschte Zeile berücksichtigt werden — sonst schlägt
-  // der Insert mit 409 Conflict gegen die Unique-Constraint fehl (Habit
-  // wurde früher schon mal an/aus geschaltet).
-  const { data: existing, error: findErr } = await sb
-    .from('hab_entries')
-    .select('*')
-    .eq('habit_id', habit.id)
-    .eq('logged_on', dateStr)
-    .maybeSingle();
-  if (findErr) throw findErr;
+  // 1) SOFORTIGES optimistisches Update aus dem lokalen State — die UI
+  // muss hier reagieren, ohne auf einen Netzwerk-Roundtrip zu warten.
+  const localExisting = before.find(
+    (e) => e.habit_id === habit.id && e.logged_on === dateStr
+  );
+  const wasDone = !!localExisting && !localExisting.deleted_at && localExisting.count >= target;
 
-  const wasDone = !!existing && !existing.deleted_at && existing.count >= target;
-
-  // 1) Optimistisch updaten — sofort sichtbar in Hub und Modul
   let optimistic;
   if (wasDone) {
-    optimistic = before.filter((e) => e.id !== existing.id);
-  } else if (existing) {
+    optimistic = before.filter((e) => e.id !== localExisting.id);
+  } else if (localExisting) {
     optimistic = before.map((e) =>
-      e.id === existing.id ? { ...e, deleted_at: null, count: target } : e
+      e.id === localExisting.id ? { ...e, deleted_at: null, count: target } : e
     );
   } else {
     optimistic = [
@@ -199,8 +190,17 @@ export async function toggleHabitOn(habit, dateStr = todayStr()) {
   }
   setState({ entries: optimistic });
 
-  // 2) Persistieren
+  // 2) Erst JETZT — im Hintergrund, UI ist schon aktualisiert — die
+  // autoritative DB-Prüfung (inkl. soft-gelöschter Zeilen), damit
+  // Insert vs. Update korrekt entschieden wird und kein 409 entsteht.
   try {
+    const { data: existing, error: findErr } = await sb
+      .from('hab_entries')
+      .select('*')
+      .eq('habit_id', habit.id)
+      .eq('logged_on', dateStr)
+      .maybeSingle();
+    if (findErr) throw findErr;
     if (existing) {
       if (wasDone) {
         const { error } = await sb
@@ -246,22 +246,17 @@ export async function setHabitCount(habit, count, dateStr = todayStr()) {
   const sb     = getSupabase();
   const before = state.entries;
 
-  // Wie in toggleHabitOn: auch soft-gelöschte Zeilen berücksichtigen,
-  // sonst 409 Conflict beim Insert gegen die Unique-Constraint.
-  const { data: existing, error: findErr } = await sb
-    .from('hab_entries')
-    .select('id, deleted_at')
-    .eq('habit_id', habit.id)
-    .eq('logged_on', dateStr)
-    .maybeSingle();
-  if (findErr) throw findErr;
+  // 1) SOFORTIGES optimistisches Update aus dem lokalen State
+  const localExisting = before.find(
+    (e) => e.habit_id === habit.id && e.logged_on === dateStr
+  );
 
   let optimistic;
   if (count <= 0) {
     optimistic = before.filter((e) => !(e.habit_id === habit.id && e.logged_on === dateStr));
-  } else if (existing) {
+  } else if (localExisting) {
     optimistic = before.map((e) =>
-      e.id === existing.id ? { ...e, count, deleted_at: null } : e
+      e.id === localExisting.id ? { ...e, count, deleted_at: null } : e
     );
   } else {
     optimistic = [
@@ -271,7 +266,17 @@ export async function setHabitCount(habit, count, dateStr = todayStr()) {
   }
   setState({ entries: optimistic });
 
+  // 2) Erst jetzt die autoritative DB-Prüfung (inkl. soft-gelöschter
+  // Zeilen), um Insert vs. Update korrekt zu entscheiden.
   try {
+    const { data: existing, error: findErr } = await sb
+      .from('hab_entries')
+      .select('id, deleted_at')
+      .eq('habit_id', habit.id)
+      .eq('logged_on', dateStr)
+      .maybeSingle();
+    if (findErr) throw findErr;
+
     if (count <= 0) {
       if (existing) {
         const { error } = await sb
