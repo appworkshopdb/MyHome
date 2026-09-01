@@ -12,7 +12,7 @@ import CalendarView     from './components/CalendarView.jsx';
 import StatsView        from './components/StatsView.jsx';
 import OnboardingWizard from './components/OnboardingWizard.jsx';
 
-import { loadHabits, loadAllEntries } from './lib/habData.js';
+import { useHabitsStore, loadHabitsData, reloadHabits, reloadEntries } from '../../core/lib/habitsStore.js';
 
 import './habits.css';
 
@@ -28,35 +28,25 @@ const DEFAULT_VIEW = 'today';
 export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   const activeTab = view || DEFAULT_VIEW;
 
-  const [habits,       setHabits]       = useState([]);
-  const [entries,      setEntries]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
+  // Gemeinsamer Store — dieselben Daten wie im Hub.
+  // Abhaken hier ist sofort im Hub sichtbar und umgekehrt.
+  const { habits, entries, loaded } = useHabitsStore();
+  const loading = !loaded;
+
+  const [error,      setError]      = useState(null);
   // Wizard anzeigen wenn keine Habits vorhanden und noch nicht übersprungen
-  const [wizardDone,   setWizardDone]   = useState(false);
+  const [wizardDone, setWizardDone] = useState(false);
 
-  const fetchHabits = useCallback(async () => {
-    try {
-      const data = await loadHabits();
-      setHabits(data);
-    } catch (e) {
-      setError('Gewohnheiten konnten nicht geladen werden.');
-    }
-  }, []);
-
-  const fetchEntries = useCallback(async () => {
-    try {
-      const data = await loadAllEntries();
-      setEntries(data);
-    } catch (e) {
-      setError('Einträge konnten nicht geladen werden.');
-    }
-  }, []);
-
+  // Beim Öffnen des Moduls frische Daten holen (falls zwischenzeitlich
+  // woanders etwas geändert wurde)
   useEffect(() => {
-    Promise.all([fetchHabits(), fetchEntries()])
-      .finally(() => setLoading(false));
-  }, [fetchHabits, fetchEntries]);
+    loadHabitsData({ force: true }).catch(() =>
+      setError('Gewohnheiten konnten nicht geladen werden.')
+    );
+  }, []);
+
+  const fetchHabits  = useCallback(() => reloadHabits(),  []);
+  const fetchEntries = useCallback(() => reloadEntries(), []);
 
   const tabLabel = TABS.find((t) => t.key === activeTab)?.label ?? 'Gewohnheiten';
 
