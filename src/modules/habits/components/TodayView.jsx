@@ -3,7 +3,8 @@
 
 import { useState, useMemo } from 'react';
 import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } from '../lib/habUtils.js';
-import { toggleEntry, setEntryCount } from '../lib/habData.js';
+import { toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
+import { fb } from '../../../core/lib/feedback.js';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -65,18 +66,25 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
     setError(null);
     setLoading(habit.id);
     try {
-      const entry = getEntry(entries, habit.id, todayStr);
-      const done  = entry && !entry.deleted_at && entry.count >= habit.target_count;
-      if (done) {
-        await toggleEntry(habit.id, todayStr);
-      } else if (habit.target_count > 1) {
-        await setEntryCount(habit.id, todayStr, habit.target_count);
+      const entry  = getEntry(entries, habit.id, todayStr);
+      const wasDone = entry && !entry.deleted_at && entry.count >= habit.target_count;
+
+      // Läuft über den gemeinsamen Store — Hub sieht die Änderung sofort
+      if (!wasDone && habit.target_count > 1) {
+        await setHabitCount(habit, habit.target_count, todayStr);
       } else {
-        await toggleEntry(habit.id, todayStr);
+        await toggleHabitOn(habit, todayStr);
       }
-      await onEntriesChange();
+
+      // Feedback nur beim Abhaken, nicht beim Rückgängigmachen
+      if (!wasDone) {
+        const nowDone = totalDone + 1;
+        if (nowDone === totalDue) fb.habitAllDone();
+        else                      fb.habitCheck();
+      }
     } catch (e) {
       setError('Konnte nicht gespeichert werden.');
+      fb.error();
     } finally {
       setLoading(null);
     }
