@@ -23,6 +23,7 @@ import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
+import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
@@ -121,6 +122,7 @@ export default function App() {
 
       <RequiredDataToast warnings={warnings} onFix={navigate} />
       <EntrySheet />
+      <GlobalFab activeModule={activeModule} />
       <ModuleBottomNav
         active={activeModule === null ? '' : activeModule}
         onChange={navigate}
