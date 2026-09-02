@@ -2161,3 +2161,241 @@
    .sho-list-item / .sho-list-meta-row / .sho-list-actions sind jetzt
    ausschließlich in shopping.css definiert (EINKAUF-LISTENZEILE.md) —
    hier keine Duplikate mehr, um Kaskaden-Konflikte zu vermeiden. */
+
+/* ── Globaler FAB ─────────────────────────────────────────────────────── */
+.global-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 16px);
+  width: 52px;
+  height: 52px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 190;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.global-fab:active { opacity: 0.75; }
+.global-fab--disabled {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: default;
+}
+.global-fab-plus {
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* ── QuickSheet gemeinsame Styles ─────────────────────────────────────── */
+.qsheet-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.qsheet-input {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1.5px solid var(--border);
+  padding: 10px 0;
+  font-size: 15px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  margin-top: 4px;
+}
+.qsheet-input--lg { font-size: 18px; font-weight: 600; }
+.qsheet-input:focus { outline: none; border-bottom-color: var(--text-primary); }
+
+.qsheet-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+
+.qsheet-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.qsheet-chip {
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.qsheet-chip.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.qsheet-seg {
+  display: flex;
+  border: 1.5px solid var(--border);
+  margin-top: 4px;
+}
+.qsheet-seg button {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  background: none;
+  color: var(--text-secondary);
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+}
+.qsheet-seg button:last-child { border-right: none; }
+.qsheet-seg button.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-weight: 700;
+}
+
+.qsheet-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.qsheet-icon-grid--sm { grid-template-columns: repeat(6, 1fr); }
+.qsheet-icon-btn {
+  font-size: 20px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  text-align: center;
+}
+.qsheet-icon-btn.active {
+  border-color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.qsheet-day-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.qsheet-day {
+  flex: 1;
+  padding: 8px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  text-align: center;
+}
+.qsheet-day.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.qsheet-count-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+.qsheet-count-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+  background: var(--bg-card);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+.qsheet-count-val {
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: center;
+}
+
+.qsheet-preview {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.qsheet-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.qsheet-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.qsheet-mode-btn {
+  padding: 12px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  text-align: center;
+}
+.qsheet-mode-btn.active {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.qsheet-type-group { margin-bottom: 8px; }
+.qsheet-type-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.qsheet-row-half {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.qsheet-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.qsheet-error {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 10px;
+}
