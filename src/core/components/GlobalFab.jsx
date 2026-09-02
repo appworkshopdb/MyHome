@@ -9,7 +9,7 @@ import TodoSheet          from './TodoSheet';
 // Erscheint auf allen Screens außer Profil.
 // module: null = Hub, 'habits', 'finance', 'sport', 'nutrition', 'shopping'
 export default function GlobalFab({ activeModule, onTodoSaved }) {
-  const { openSheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
+  const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
   const [open, setOpen] = useState(null); // null | 'todo' | 'habit' | 'sport' | 'shopping'
 
   // Kein FAB auf Profil
@@ -18,7 +18,7 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
   function handlePress() {
     if (activeModule === null)       return setOpen('todo');
     if (activeModule === 'habits')   return setOpen('habit');
-    if (activeModule === 'finance')  return openSheet();   // bestehender EntrySheet
+    if (activeModule === 'finance')  return openEntrySheet('finance');   // bestehender EntrySheet
     if (activeModule === 'sport')    return setOpen('sport');
     if (activeModule === 'nutrition') return null;         // später
     if (activeModule === 'shopping') return setOpen('shopping');
