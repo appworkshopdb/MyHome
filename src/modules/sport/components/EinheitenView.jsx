@@ -1,5 +1,6 @@
 import UnitEditor from './UnitEditor';
 import { resolveTypeLabel } from '../lib/typeLabel';
+import { getMuscleVisual, muscleImagePath } from '../lib/data/muscleGroups';
 
 // Frühere "Training"-Ansicht (direktes Eintragen einer Einheit) wurde
 // hierzu — einzelne Trainingseinheiten sind jetzt eine eigene, wieder-
@@ -46,6 +47,24 @@ export default function EinheitenView({ units, loading, userSports, editing, onN
                   {resolveTypeLabel(unit.type_key) ?? 'Kein Typ'}
                   {unit.duration_min ? ` · ${unit.duration_min} Min.` : ''}
                 </div>
+                {/* Fehlt ein Bild (noch nicht hochgeladen), blendet sich
+                    die Miniatur per onError unsichtbar aus statt als
+                    kaputtes Icon zu erscheinen. */}
+                {unit.muscle_groups?.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                    {unit.muscle_groups.map((key) => {
+                      const m = getMuscleVisual(key);
+                      if (!m) return null;
+                      return (
+                        <img
+                          key={key} src={muscleImagePath(m)} alt=""
+                          style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover', border: '1px solid var(--border)' }}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="row-actions-buttons">
                 <button className="btn btn-secondary" onClick={() => onEditUnit(unit)}>Bearbeiten</button>
