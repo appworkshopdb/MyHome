@@ -7,6 +7,13 @@
 // Tagesobergrenze über alle 4 Kategorien hinweg — nicht nur die
 // Pro-Kategorie-Drossel von vorher.
 //
+// ZEITZONEN-REGEL: Jede Datums-/Stunden-/Wochentagslogik in dieser
+// Function rechnet in Europe/Berlin — nie mit UTC-Hilfsmitteln wie
+// toISOString().split('T'), getDay(), getMonth() oder setUTCHours().
+// Alles läuft über berlinNow() / toBerlinDateStr() / berlinStartOfDay()
+// unten. Vorher war das Tageslimit-Fenster (sentTodayCount) auf UTC
+// gerechnet und damit 1–2 Stunden gegen den Rest verschoben.
+//
 // WICHTIG: dupliziert bewusst etwas Prüf-Logik aus dem Frontend
 // (core/lib/bodyProfileData.js BODY_REQUIRED_FIELDS, core/Hub.jsx
 // loadTodayHabits) — Edge Functions können kein Frontend-JS importieren.
@@ -55,16 +62,62 @@ const DEFAULT_PREFS = {
   quiet_end: 6,
 };
 
-function berlinNow() {
-  const parts = new Intl.DateTimeFormat('de-DE', {
+// ─────────────────────────────────────────────────────────────────────
+// Zeit-Helfer — die EINZIGEN Stellen, die Zeitzone kennen.
+// ─────────────────────────────────────────────────────────────────────
+
+// Datum eines beliebigen Zeitpunkts als YYYY-MM-DD in Berlin-Zeit.
+// (en-CA formatiert von Haus aus als YYYY-MM-DD.)
+function toBerlinDateStr(date) {
+  return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+// Aktueller Berlin-Zustand: Stunde, Wochentag (Mo=0…So=6), Datum,
+// Jahr/Monat — alles aus EINEM Intl-Aufruf, damit es um Mitternacht
+// nicht zwischen zwei Aufrufen "kippen" kann.
+function berlinNow() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: 'numeric',
+    hourCycle: 'h23',
     weekday: 'short',
-    hour12: false,
   }).formatToParts(new Date());
-  const hour = Number(parts.find((p) => p.type === 'hour').value);
-  const weekdayShort = parts.find((p) => p.type === 'weekday').value;
-  return { hour, isSunday: weekdayShort.startsWith('So') };
+  const get = (t) => parts.find((p) => p.type === t)?.value;
+
+  const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdayIndex = WEEKDAYS.indexOf(get('weekday')); // Mo=0 … So=6
+
+  return {
+    hour: Number(get('hour')),
+    weekdayIndex,
+    isSunday: weekdayIndex === 6,
+    todayStr: `${get('year')}-${get('month')}-${get('day')}`,
+    year: Number(get('year')),
+    month: Number(get('month')),
+  };
+}
+
+// UTC-Zeitpunkt von "heute 00:00 Uhr in Berlin" — für Vergleiche gegen
+// sent_at (timestamptz). Trick: UTC-Mitternacht desselben Datums nehmen
+// und um den Berlin-Offset (1h Winter / 2h Sommer) zurückschieben.
+function berlinStartOfDay(todayStr) {
+  const utcMidnight = new Date(`${todayStr}T00:00:00Z`);
+  const offsetHour = Number(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Berlin',
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).format(utcMidnight)
+  );
+  return new Date(utcMidnight.getTime() - offsetHour * 3600000);
 }
 
 function inQuietHours(hour, quietStart, quietEnd) {
@@ -86,9 +139,10 @@ async function alreadySentRecently(ownerId, category, days) {
   return (data?.length ?? 0) > 0;
 }
 
-async function sentTodayCount(ownerId) {
-  const startOfDay = new Date();
-  startOfDay.setUTCHours(0, 0, 0, 0);
+// Zählt Versände seit Berlin-Mitternacht (vorher: UTC-Mitternacht —
+// dadurch war das Tageslimit-Fenster gegen preferred_hour verschoben).
+async function sentTodayCount(ownerId, berlin) {
+  const startOfDay = berlinStartOfDay(berlin.todayStr);
   const { data } = await supabase
     .from('notification_log')
     .select('id')
@@ -123,7 +177,7 @@ async function sendToUser(ownerId, category, title, body, url = './') {
   await supabase.from('notification_log').insert({ owner_id: ownerId, category });
 }
 
-async function checkCategory(category, ownerId, todayStr, isSunday) {
+async function checkCategory(category, ownerId, berlin) {
   if (category === 'habits') {
     const { data: habits } = await supabase
       .from('hab_habits')
@@ -132,9 +186,10 @@ async function checkCategory(category, ownerId, todayStr, isSunday) {
       .eq('active', true)
       .is('deleted_at', null);
 
-    const wd = (new Date().getDay() + 6) % 7;
+    const wd = berlin.weekdayIndex; // Mo=0 … So=6, Berlin-Wochentag
     const due = (habits ?? []).filter((h) => {
-      if (new Date(h.created_at).toISOString().split('T')[0] > todayStr) return false;
+      // created_at (timestamptz) als Berlin-Datum vergleichen, nicht UTC
+      if (toBerlinDateStr(new Date(h.created_at)) > berlin.todayStr) return false;
       if (h.frequency === 'daily') return true;
       if (h.frequency === 'weekdays') return wd < 5;
       if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
@@ -146,7 +201,7 @@ async function checkCategory(category, ownerId, todayStr, isSunday) {
       .from('hab_entries')
       .select('habit_id, count')
       .eq('owner_id', ownerId)
-      .eq('logged_on', todayStr)
+      .eq('logged_on', berlin.todayStr)
       .is('deleted_at', null);
     const doneIds = new Set(
       (entries ?? [])
@@ -174,13 +229,14 @@ async function checkCategory(category, ownerId, todayStr, isSunday) {
   }
 
   if (category === 'fin_due') {
-    const now = new Date();
+    // Jahr/Monat aus Berlin-Sicht — an Monatsgrenzen (31.12. 23:30 UTC =
+    // 1.1. 00:30 Berlin) sonst der falsche Monat.
     const { data: openEntries } = await supabase
       .from('fin_entries')
       .select('id')
       .eq('owner_id', ownerId)
-      .eq('year', now.getFullYear())
-      .eq('month', now.getMonth() + 1)
+      .eq('year', berlin.year)
+      .eq('month', berlin.month)
       .eq('paid', false)
       .not('from_template', 'is', null)
       .is('deleted_at', null);
@@ -189,7 +245,7 @@ async function checkCategory(category, ownerId, todayStr, isSunday) {
   }
 
   if (category === 'weekly_recap') {
-    if (!isSunday) return null;
+    if (!berlin.isSunday) return null;
     return { title: 'Deine Woche', body: 'Dein Wochenrückblick ist da.', url: './' };
   }
 
@@ -206,8 +262,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { hour, isSunday } = berlinNow();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const berlin = berlinNow();
 
   const { data: subRows } = await supabase.from('push_subscriptions').select('owner_id');
   const ownerIds = [...new Set((subRows ?? []).map((s) => s.owner_id))];
@@ -226,10 +281,10 @@ Deno.serve(async (req) => {
     const quietStart = prefRow?.quiet_start ?? DEFAULT_PREFS.quiet_start;
     const quietEnd = prefRow?.quiet_end ?? DEFAULT_PREFS.quiet_end;
 
-    if (hour !== preferredHour) continue;
-    if (inQuietHours(hour, quietStart, quietEnd)) continue;
+    if (berlin.hour !== preferredHour) continue;
+    if (inQuietHours(berlin.hour, quietStart, quietEnd)) continue;
 
-    let remainingBudget = DAILY_CAP_TOTAL - (await sentTodayCount(ownerId));
+    let remainingBudget = DAILY_CAP_TOTAL - (await sentTodayCount(ownerId, berlin));
     if (remainingBudget <= 0) continue;
 
     for (const category of PRIORITY_ORDER) {
@@ -237,7 +292,7 @@ Deno.serve(async (req) => {
       if (!prefs[category]) continue;
       if (await alreadySentRecently(ownerId, category, THROTTLE_DAYS[category])) continue;
 
-      const result = await checkCategory(category, ownerId, todayStr, isSunday);
+      const result = await checkCategory(category, ownerId, berlin);
       if (!result) continue;
 
       await sendToUser(ownerId, category, result.title, result.body, result.url);
@@ -246,7 +301,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ checked: ownerIds.length, sent: sentCount, hour }), {
+  return new Response(JSON.stringify({ checked: ownerIds.length, sent: sentCount, hour: berlin.hour }), {
     headers: { 'Content-Type': 'application/json' },
   });
 });
