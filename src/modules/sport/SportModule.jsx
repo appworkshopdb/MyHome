@@ -57,7 +57,6 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   // im Kalender sowie "Starten" bei einem Vorschlag springen deshalb
   // alle auf 'verlauf'.
   const [formInitial, setFormInitial] = useState(false);
-  const [editingUnit, setEditingUnit] = useState(null);   // Einheiten-Editor
   const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
   const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
 
@@ -83,6 +82,15 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   }, [session, showToast]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Der FAB (GlobalFab → SportQuickSheet) sitzt außerhalb dieses Moduls
+  // in App.jsx und legt/ändert Einheiten direkt in der DB an — ohne
+  // dieses Event würde SportModule davon nichts mitbekommen und die
+  // Einheiten-Liste bliebe bis zum nächsten manuellen Reload veraltet.
+  useEffect(() => {
+    window.addEventListener('sport:data-changed', load);
+    return () => window.removeEventListener('sport:data-changed', load);
+  }, [load]);
 
   async function handleSave(workout) {
     try {
@@ -135,29 +143,10 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     onNavigateView('verlauf');
   }
 
-  // --- Einheiten-Bibliothek --------------------------------------------
-
-  async function handleSaveUnit(unit) {
-    try {
-      await db.saveUnit(session, unit);
-      setEditingUnit(null);
-      showToast('Einheit gespeichert');
-      await load();
-    } catch (e) {
-      console.error(e);
-      showToast('Einheit konnte nicht gespeichert werden');
-    }
-  }
-
-  async function handleDeleteUnit(id) {
-    try {
-      await db.deleteUnit(id);
-      await load();
-    } catch (e) {
-      console.error(e);
-      showToast('Einheit konnte nicht gelöscht werden');
-    }
-  }
+  // Einheiten anlegen/bearbeiten/löschen läuft seit dem Design-Handoff
+  // "Sport Einheiten Mockups" komplett über den FAB (SportQuickSheet.jsx,
+  // Modi "Neue Einheit"/"Verwalten") — hier gibt es dafür bewusst keine
+  // eigene Speicher-Logik mehr, siehe sport:data-changed-Listener oben.
 
   // --- Plan-Vorlagen -------------------------------------------------
 
@@ -216,23 +205,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
         showToast={showToast}
       />
     ),
-    einheiten: (
-      <EinheitenView
-        units={units}
-        loading={loading}
-        userSports={userSports}
-        editing={editingUnit}
-        onNewUnit={() => setEditingUnit({})}
-        onAdoptPredefined={(preset) => setEditingUnit({
-          title: preset.title, type_key: preset.type_key, muscle_groups: preset.muscle_groups,
-        })}
-        onEditUnit={setEditingUnit}
-        onDeleteUnit={handleDeleteUnit}
-        onSaveUnit={handleSaveUnit}
-        onCancelEdit={() => setEditingUnit(null)}
-        showToast={showToast}
-      />
-    ),
+    einheiten: <EinheitenView units={units} loading={loading} />,
     plaene: (
       <PlaeneView
         session={session}
