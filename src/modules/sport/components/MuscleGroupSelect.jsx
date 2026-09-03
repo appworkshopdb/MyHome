@@ -8,7 +8,7 @@ const REGIONS = ['Vorne', 'Hinten'];
 
 function ChipGrid({ items, value, onToggle }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))', gap: 6 }}>
       {items.map((m) => {
         const active = value.includes(m.key);
         return (
@@ -16,14 +16,25 @@ function ChipGrid({ items, value, onToggle }) {
             key={m.key}
             onClick={() => onToggle(m.key)}
             style={{
-              padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              padding: '6px', borderRadius: 'var(--radius-sm)',
               border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
               background: active ? 'var(--accent)' : 'var(--bg-secondary)',
               color: active ? 'var(--on-accent)' : 'var(--text-secondary)',
-              fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+              cursor: 'pointer',
             }}
           >
-            {m.label}
+            {/* Bild in der Auswahl selbst — vorher gab es Bilder nur bei
+                bereits ausgewählten Chips und in der fertigen Liste,
+                nicht beim eigentlichen Durchsuchen/Anklicken. onError
+                blendet fehlende Dateien unsichtbar aus, das Label bleibt
+                trotzdem lesbar. */}
+            <img
+              src={muscleImagePath(m)} alt=""
+              style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover', background: 'var(--bg-input)' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label}</span>
           </button>
         );
       })}
