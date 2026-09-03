@@ -223,6 +223,9 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
         userSports={userSports}
         editing={editingUnit}
         onNewUnit={() => setEditingUnit({})}
+        onAdoptPredefined={(preset) => setEditingUnit({
+          title: preset.title, type_key: preset.type_key, muscle_groups: preset.muscle_groups,
+        })}
         onEditUnit={setEditingUnit}
         onDeleteUnit={handleDeleteUnit}
         onSaveUnit={handleSaveUnit}
