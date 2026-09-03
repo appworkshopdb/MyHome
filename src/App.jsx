@@ -12,12 +12,16 @@
 //
 // In Schritt 4–7 werden die Modul-eigenen ModuleTopBar-Aufrufe
 // auf den globalen ChromeContext umgestellt.
+//
+// Die frühere Swipe-Navigation zwischen Modulen wurde bewusst ENTFERNT
+// (kollidierte mit horizontal scrollbaren Inhalten wie Heatmap/Tabs).
+// Modulwechsel läuft ausschließlich über die Bottom-Nav — bitte nicht
+// wieder einbauen.
 
 import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
-import { useRef } from 'react';
 import Login from './core/components/Login';
 import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
@@ -27,7 +31,6 @@ import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
-import StubModule from './core/StubModule';
 import { getModule } from './core/modules';
 import FinanceModule from './modules/finance/FinanceModule';
 import NutritionModule from './modules/nutrition/NutritionModule';
@@ -43,44 +46,11 @@ const MODULE_COMPONENTS = {
   shopping:  ShoppingModule,
 };
 
-const SWIPE_ORDER = [null, 'habits', 'finance', 'sport', 'nutrition', 'shopping'];
-const SWIPE_MIN_X = 60;
-const SWIPE_MAX_Y = 80;
-
 export default function App() {
   const { session, ladeVorgang } = useAuth();
   const { module: activeModule, view, navigate } = useRoute();
   const { warnings } = useRequiredDataStatus(session);
   const hasWarnings = warnings.length > 0;
-
-  const touchStart = useRef(null);
-
-  function handleTouchStart(e) {
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
-  }
-
-  function handleTouchEnd(e) {
-    if (!touchStart.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStart.current.x;
-    const dy = Math.abs(t.clientY - touchStart.current.y);
-    touchStart.current = null;
-
-    if (Math.abs(dx) < SWIPE_MIN_X || dy > SWIPE_MAX_Y) return;
-    if (activeModule === 'profile') return;
-
-    const currentIndex = SWIPE_ORDER.indexOf(activeModule);
-    if (currentIndex === -1) return;
-
-    if (dx < 0) {
-      const next = SWIPE_ORDER[currentIndex + 1];
-      if (next !== undefined) navigate(next ?? '');
-    } else {
-      const prev = SWIPE_ORDER[currentIndex - 1];
-      if (prev !== undefined) navigate(prev ?? '');
-    }
-  }
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
@@ -101,11 +71,7 @@ export default function App() {
         <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
       )}
 
-      <main
-        className={`main-content${isModule ? ' module-active' : ''}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      <main className={`main-content${isModule ? ' module-active' : ''}`}>
         {activeModule === null && <Hub onOpenModule={navigate} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
         {mod && (ModuleComponent ? (
