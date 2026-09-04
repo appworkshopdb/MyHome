@@ -10,7 +10,16 @@ import HubCalendar from './components/HubCalendar';
 import { fb } from './lib/feedback'; // NEU
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 
-const CACHE_KEY = 'hub-cache-v2';
+// v3: enthält jetzt nicht mehr nur Ein-/Ausgaben, sondern den ganzen
+// sichtbaren Hub-Stand. Zweck ist ein sofortiges Bild beim Start —
+// vorher lag der Cache nur als Fehler-Notnagel herum ("Letzten Stand
+// ansehen"), während der Hub bis zum Eintreffen von sechs parallelen
+// Supabase-Abfragen ein Skelett zeigte.
+const CACHE_KEY = 'hub-cache-v3';
+
+// Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
+// des Vormonats, und das fällt niemandem auf.
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function formatDueDate(dueDateStr, todayStr) {
   if (!dueDateStr) return null;
@@ -21,10 +30,15 @@ function formatDueDate(dueDateStr, todayStr) {
   return new Date(dueDateStr).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-function readCache() {
+function readCache({ ignoreAge = false } = {}) {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!ignoreAge && data.savedAt) {
+      if (Date.now() - new Date(data.savedAt).getTime() > CACHE_MAX_AGE_MS) return null;
+    }
+    return data;
   } catch { return null; }
 }
 function writeCache(data) {
@@ -72,9 +86,15 @@ function sportLabel(w) {
 
 export default function Hub({ onOpenModule }) {
   const { session } = useAuth();
-  const [status, setStatus]     = useState('laedt');
-  const [income, setIncome]     = useState(0);
-  const [expense, setExpense]   = useState(0);
+
+  // Beim ersten Rendern gleich aus dem Cache füllen (stale-while-revalidate):
+  // sichtbarer Hub sofort, frische Zahlen ersetzen ihn ein paar hundert
+  // Millisekunden später. Nur wenn nichts Brauchbares im Cache liegt, wird
+  // das Skelett gezeigt.
+  const [initialCache] = useState(() => readCache());
+  const [status, setStatus]     = useState(initialCache ? 'daten' : 'laedt');
+  const [income, setIncome]     = useState(initialCache?.income ?? 0);
+  const [expense, setExpense]   = useState(initialCache?.expense ?? 0);
   const [cacheZeit, setCacheZeit] = useState(null);
 
   // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
@@ -86,15 +106,18 @@ export default function Hub({ onOpenModule }) {
     (h) => isDone(habEntries, h.id, habTodayStr(), h.target_count)
   ).length;
 
-  const [todaySport, setTodaySport] = useState([]);
-  const [openFix, setOpenFix]       = useState([]);
-  const [todos, setTodos]           = useState([]);
+  const [todaySport, setTodaySport] = useState(initialCache?.todaySport ?? []);
+  const [openFix, setOpenFix]       = useState(initialCache?.openFix ?? []);
+  const [todos, setTodos]           = useState(initialCache?.todos ?? []);
   const [todoSheet, setTodoSheet]   = useState(false);
   const [editTodo, setEditTodo]     = useState(null);
   const [todoView, setTodoView]     = useState('alle');
 
-  const load = useCallback(async () => {
-    setStatus('laedt');
+  const load = useCallback(async (opts = {}) => {
+    // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
+    // sonst würde der sichtbare Hub kurz durch das Skelett ersetzt, was
+    // schlechter aussieht als vorher.
+    if (!opts.imHintergrund) setStatus('laedt');
     const now = new Date();
     try {
       const [inc, exp, , sport, fix, todoList] = await Promise.all([
@@ -111,25 +134,39 @@ export default function Hub({ onOpenModule }) {
       setTodaySport(sport);
       setOpenFix(fix);
       setTodos(todoList);
-      writeCache({ income: inc, expense: exp });
+      writeCache({ income: inc, expense: exp, todaySport: sport, openFix: fix, todos: todoList });
+      setCacheZeit(null);
       setStatus(inc > 0 || exp > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
     } catch (e) {
       console.error('[Hub] Laden fehlgeschlagen:', e);
-      setStatus('fehler');
+      // Mit gecachtem Stand auf dem Schirm ist ein Fehlerscreen die falsche
+      // Antwort — dann bleibt das Bild stehen und bekommt oben nur einen
+      // Hinweis, dass es nicht der aktuelle Stand ist.
+      if (opts.imHintergrund) {
+        setCacheZeit(initialCache?.savedAt ?? null);
+        setStatus('veraltet');
+      } else {
+        setStatus('fehler');
+      }
     }
-  }, [session]);
+  }, [session, initialCache]);
 
   useEffect(() => {
     let aktiv = true;
-    load().catch(() => { if (aktiv) setStatus('fehler'); });
+    load({ imHintergrund: Boolean(initialCache) }).catch(() => {
+      if (aktiv) setStatus(initialCache ? 'veraltet' : 'fehler');
+    });
     return () => { aktiv = false; };
   }, [load]);
 
   function letztenStandAnsehen() {
-    const cached = readCache();
+    const cached = readCache({ ignoreAge: true });
     if (!cached) return;
-    setIncome(cached.income);
-    setExpense(cached.expense);
+    setIncome(cached.income ?? 0);
+    setExpense(cached.expense ?? 0);
+    setTodaySport(cached.todaySport ?? []);
+    setOpenFix(cached.openFix ?? []);
+    setTodos(cached.todos ?? []);
     setCacheZeit(cached.savedAt);
     setStatus('veraltet');
   }
@@ -248,7 +285,7 @@ export default function Hub({ onOpenModule }) {
           <p className="hub-error-sub">Keine Verbindung zur Datenbank. Deine Daten sind da — sie kommen hier nur nicht an.</p>
           <div className="auth-actions" style={{ marginTop: 20 }}>
             <button className="btn btn-primary btn-block" onClick={load}>Nochmal versuchen</button>
-            {readCache() && (
+            {readCache({ ignoreAge: true }) && (
               <button className="btn-outline-block" onClick={letztenStandAnsehen}>Letzten Stand ansehen</button>
             )}
           </div>
@@ -265,8 +302,8 @@ export default function Hub({ onOpenModule }) {
       {status === 'veraltet' && (
         <div className="hub-stale-bar">
           <span className="hub-stale-dot" />
-          <span>Stand von {cacheZeit ? new Date(cacheZeit).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'} — Sitzung abgelaufen</span>
-          <button className="hub-stale-login" onClick={() => window.location.reload()}>Anmelden</button>
+          <span>Stand von {cacheZeit ? new Date(cacheZeit).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'} — gerade nicht aktualisierbar</span>
+          <button className="hub-stale-login" onClick={() => load()}>Neu laden</button>
         </div>
       )}
 
