@@ -52,6 +52,10 @@ function MusclePreview({ tags }) {
             key={key}
             src={muscleImagePath(m)}
             alt=""
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
             style={{
               width: 40, height: 40, borderRadius: 999, objectFit: 'cover',
               objectPosition: objectPositionFor(key),

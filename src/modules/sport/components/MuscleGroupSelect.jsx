@@ -28,9 +28,15 @@ function ChipGrid({ items, value, onToggle }) {
                 bereits ausgewählten Chips und in der fertigen Liste,
                 nicht beim eigentlichen Durchsuchen/Anklicken. onError
                 blendet fehlende Dateien unsichtbar aus, das Label bleibt
-                trotzdem lesbar. */}
+                trotzdem lesbar.
+                width/height als echte Attribute (nicht nur CSS): das Grid
+                reserviert den Platz, bevor das Bild da ist — sonst springt
+                die Liste beim Nachladen. loading="lazy" lädt nur die
+                Kacheln, die beim Aufklappen wirklich sichtbar sind. */}
             <img
               src={muscleImagePath(m)} alt=""
+              width={48} height={48}
+              loading="lazy" decoding="async"
               style={{ width: 48, height: 48, borderRadius: 4, objectFit: 'cover', background: 'var(--bg-input)' }}
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
@@ -79,6 +85,8 @@ export default function MuscleGroupSelect({ value = [], onChange }) {
               {m && (
                 <img
                   src={muscleImagePath(m)} alt=""
+                  width={20} height={20}
+                  decoding="async"
                   style={{ width: 20, height: 20, borderRadius: 3, objectFit: 'cover', background: 'var(--on-accent)' }}
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
