@@ -200,7 +200,7 @@ export default function Hub({ onOpenModule }) {
     if (!currentDone) {
       const offeneNachToggle = updatedTodos.filter((t) => !t.done);
       if (offeneNachToggle.length === 0) {
-        fb.todoAllDone(); // ziel_erreicht.wav — alle erledigt
+        fb.todoAllDone(); // ziel_erreicht.mp3 — alle erledigt
       } else {
         fb.todoCheck();   // click.mp3 — einzelnes ToDo
       }
