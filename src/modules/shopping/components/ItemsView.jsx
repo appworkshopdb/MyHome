@@ -240,9 +240,9 @@ export default function ItemsView({ list, onBack }) {
         // Prüfen ob nach diesem Toggle alle Artikel erledigt sind
         const offeneNachToggle = updatedItems.filter((i) => !i.done);
         if (offeneNachToggle.length === 0) {
-          fb.itemAllDone(); // ziel_erreicht2.wav — alle abgehakt
+          fb.itemAllDone(); // ziel_erreicht2.mp3 — alle abgehakt
         } else {
-          fb.itemCheck();   // click2.wav — einzelner Artikel
+          fb.itemCheck();   // click2.mp3 — einzelner Artikel
         }
       }
     } catch (e) {
