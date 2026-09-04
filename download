@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.DS_Store
+
+# Original-Muskelbilder (~1,4 MB je PNG, 38 MB gesamt) — nur lokale Quelle
+# fuer "npm run images:optimize". Ausgeliefert werden die WebP-Varianten
+# unter public/images/muscles/thumb/ (und ggf. full/).
+public/images/muscles/_original/
