@@ -1,13 +1,15 @@
 // modules/habits/HabitsModule.jsx
 // Einstiegspunkt des Gewohnheiten-Moduls
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import ModuleTopBar     from '../../core/components/ModuleTopBar.jsx';
 import ModuleTabs       from '../../core/components/ModuleTabs.jsx';
 import GoalsSection     from '../../core/components/GoalsSection.jsx';
 
 import TodayView        from './components/TodayView.jsx';
-import HabitsView       from './components/HabitsView.jsx';
+// Getrennt geladen: HabitsView zieht @dnd-kit fuer die Sortierung nach
+// (44 kB). Der Today-Tab ist der Standard und braucht es nicht.
+const HabitsView = lazy(() => import('./components/HabitsView.jsx'));
 import CalendarView     from './components/CalendarView.jsx';
 import StatsView        from './components/StatsView.jsx';
 import OnboardingWizard from './components/OnboardingWizard.jsx';
@@ -109,7 +111,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
         )}
 
         {activeTab === 'habits' && (
-          <>
+          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
             <HabitsView
               habits={habits}
               onHabitsChange={async () => {
@@ -118,7 +120,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
               }}
             />
             <GoalsSection sourceModule="habits" />
-          </>
+          </Suspense>
         )}
 
         {activeTab === 'calendar' && (
