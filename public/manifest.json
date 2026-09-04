@@ -1,0 +1,35 @@
+{
+  "id": "/MyHome/",
+  "name": "Zuhause",
+  "short_name": "Zuhause",
+  "description": "Finanzen, Ernährung, Sport, Einkauf und Gewohnheiten an einem Ort.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF1F6",
+  "theme_color": "#EEF1F6",
+  "categories": ["lifestyle", "productivity", "health"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
