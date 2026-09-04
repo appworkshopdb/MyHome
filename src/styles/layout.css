@@ -412,3 +412,13 @@
 .main-content.with-tabs {
   padding-top: 0;
 }
+
+/* Platzhalter, waehrend ein nachgeladener Modul-Chunk unterwegs ist
+   (React.lazy/Suspense in App.jsx, FinanceModule, HabitsModule).
+   Bewusst leer und nur hoch genug, damit die Seite nicht zusammenklappt
+   und die schwebende Chrome nicht springt — kein Spinner, weil der Chunk
+   im Normalfall in unter 100 ms da ist und ein Indikator nur flackern
+   wuerde. */
+.module-loading {
+  min-height: 60vh;
+}
