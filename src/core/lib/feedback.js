@@ -32,56 +32,120 @@ export function setHapticEnabled(v) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...getSettings(), haptic: v }));
 }
 
-// ── Sound-Dateien vorladen ────────────────────────────────────────────────────
-// Alle Sounds beim ersten Import vorladen damit kein Delay beim ersten Abspielen.
-// Audio-Objekte werden wiederverwendet (cloneNode) um paralleles Abspielen zu ermöglichen.
+// ── Sound-Wiedergabe (Web Audio API) ─────────────────────────────────────────
+//
+// WICHTIG — nicht auf `new Audio(...)` zurückbauen:
+// Ein <audio>-Element gilt für Android und iOS als MEDIENWIEDERGABE. Beim
+// Abspielen fordert es den Audiofokus an, und das Betriebssystem pausiert
+// dafür laufende Musik oder Podcasts (Spotify blieb stehen, wenn man
+// nebenbei eine Gewohnheit abgehakt hat). Für 300-ms-Effekttöne ist das
+// die falsche Bauweise.
+//
+// Die Web Audio API gilt stattdessen als Effektton und mischt sich unter
+// die laufende Wiedergabe, statt sie zu verdrängen. Zusätzlich setzen wir
+// unten die Audio-Session auf "ambient" — das ist die ausdrückliche
+// Ansage an iOS: mitmischen, nichts unterbrechen.
+//
+// Nebeneffekt: <audio> lädt Dateien über Range-Requests (HTTP 206), die
+// der Service Worker nicht cachen kann. fetch() unten liefert normale
+// 200er-Antworten, damit sind auch die Cache-Fehler weg.
 
 const SOUND_FILES = {
-  erledigt:      './sounds/erledigt.wav',
-  ziel_erreicht: './sounds/ziel_erreicht.wav',
-  ziel_erreicht2:'./sounds/ziel_erreicht2.wav',
+  erledigt:      './sounds/erledigt.mp3',
+  ziel_erreicht: './sounds/ziel_erreicht.mp3',
+  ziel_erreicht2:'./sounds/ziel_erreicht2.mp3',
   click:         './sounds/click.mp3',
-  click2:        './sounds/click2.wav',
-  swoosh:        './sounds/swoosh.wav',
-  negativ:       './sounds/negativ.wav',
-  zahlung:       './sounds/zahlung.wav',
-  fixkosten_alle:'./sounds/fixkosten_alle.wav',
+  click2:        './sounds/click2.mp3',
+  swoosh:        './sounds/swoosh.mp3',
+  negativ:       './sounds/negativ.mp3',
+  zahlung:       './sounds/zahlung.mp3',
+  fixkosten_alle:'./sounds/fixkosten_alle.mp3',
 };
-
-// Cache: name → Audio-Objekt (vorgeladen)
-const _audioCache = {};
 
 const VOLUME = 0.5; // Globale Lautstärke 0.0–1.0 — hier zentral anpassen
 
-function preload() {
-  for (const [name, path] of Object.entries(SOUND_FILES)) {
-    const a = new Audio(path);
-    a.preload = 'auto';
-    a.volume = VOLUME;
-    _audioCache[name] = a;
-  }
+let _ctx = null;                 // AudioContext, erst bei der ersten Geste erzeugt
+const _buffers = {};             // name → decodierter AudioBuffer
+const _laufendeLadungen = {};    // name → Promise, verhindert Doppel-Downloads
+
+// iOS ab 16.4: sagt dem System, dass unsere Töne beiläufig sind und
+// fremde Wiedergabe nicht unterbrechen dürfen. Andere Browser kennen die
+// Eigenschaft nicht — dort ist Web Audio ohnehin schon unkritisch.
+function setzeAmbientSession() {
+  try {
+    if ('audioSession' in navigator) navigator.audioSession.type = 'ambient';
+  } catch { /* Eigenschaft nicht schreibbar */ }
 }
 
-// Sofort vorladen sobald das Modul importiert wird
-try { preload(); } catch { /* SSR oder kein Audio-Support */ }
+function getCtx() {
+  if (_ctx) return _ctx;
+  const Ctor = window.AudioContext || window.webkitAudioContext;
+  if (!Ctor) return null;
+  setzeAmbientSession();
+  // latencyHint 'interactive': kürzeste Verzögerung, passend für UI-Töne
+  _ctx = new Ctor({ latencyHint: 'interactive' });
+  return _ctx;
+}
+
+// Bewusst KEIN Vorladen beim Import mehr: vorher zogen zehn <audio>-
+// Elemente mit preload="auto" rund 2 MB WAV beim Start der App, obwohl
+// die meisten Töne in einer Sitzung nie vorkommen. Jetzt wird jede Datei
+// beim ersten Bedarf geholt und danach als decodierter Puffer behalten.
+function ladeBuffer(name) {
+  if (_buffers[name]) return Promise.resolve(_buffers[name]);
+  if (_laufendeLadungen[name]) return _laufendeLadungen[name];
+
+  const ctx = getCtx();
+  const pfad = SOUND_FILES[name];
+  if (!ctx || !pfad) return Promise.resolve(null);
+
+  _laufendeLadungen[name] = fetch(pfad)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    .then((daten) => ctx.decodeAudioData(daten))
+    .then((buffer) => { _buffers[name] = buffer; return buffer; })
+    .catch(() => null)
+    .finally(() => { delete _laufendeLadungen[name]; });
+
+  return _laufendeLadungen[name];
+}
+
+function spiele(buffer) {
+  const ctx = getCtx();
+  if (!ctx || !buffer) return;
+  // Nach längerer Untätigkeit legen Browser den Context schlafen
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  const quelle = ctx.createBufferSource();
+  const lautstaerke = ctx.createGain();
+  quelle.buffer = buffer;
+  lautstaerke.gain.value = VOLUME;
+  quelle.connect(lautstaerke).connect(ctx.destination);
+  quelle.start(0);
+  // Aufräumen, damit sich bei schnellem Abhaken keine Knoten stapeln
+  quelle.onended = () => { try { quelle.disconnect(); lautstaerke.disconnect(); } catch { /* egal */ } };
+}
 
 /**
- * Spielt einen vorgeladenen Sound ab.
- * Nutzt cloneNode damit derselbe Sound parallel mehrfach abgespielt werden kann
- * (z.B. schnelles Abhaken mehrerer Artikel).
+ * Spielt einen Sound ab. Beim ersten Mal wird die Datei geholt und
+ * decodiert (dann startet der Ton minimal verzögert), danach kommt er
+ * sofort aus dem Speicher. Mehrfaches Abspielen parallel ist möglich:
+ * jede Wiedergabe bekommt eine eigene BufferSource.
  */
 function playSound(name) {
   if (!isSoundEnabled()) return;
-  const base = _audioCache[name];
-  if (!base) return;
   try {
-    const clone = base.cloneNode();
-    clone.volume = VOLUME;
-    clone.play().catch(() => {
-      // Autoplay-Policy: Browser blockiert Play ohne User-Geste.
-      // Da alle fb.*-Aufrufe in onClick-Handlern stehen, sollte das nie passieren.
-    });
+    if (_buffers[name]) { spiele(_buffers[name]); return; }
+    ladeBuffer(name).then((buffer) => { if (buffer) spiele(buffer); });
   } catch { /* still fail */ }
+}
+
+/**
+ * Optional beim App-Start aufrufbar, um die häufigsten Töne im
+ * Hintergrund vorzubereiten — ohne sie abzuspielen. Nicht automatisch,
+ * damit der Start nichts nachlädt, was vielleicht gar nicht gebraucht wird.
+ */
+export function warmeSoundsVor(namen = ['erledigt', 'click', 'click2']) {
+  if (!isSoundEnabled()) return;
+  namen.forEach((n) => { ladeBuffer(n); });
 }
 
 // ── Haptik (Vibration API) ────────────────────────────────────────────────────
@@ -105,24 +169,24 @@ const HAPTIC = {
 // ── Öffentliche API ───────────────────────────────────────────────────────────
 // Zuordnung laut Tabelle:
 //
-// Habit abhaken                                → erledigt.wav
-// Letztes Habit (alle done)                   → ziel_erreicht.wav
+// Habit abhaken                                → erledigt.mp3
+// Letztes Habit (alle done)                   → ziel_erreicht.mp3
 // ToDo abhaken                                → click.mp3
-// ToDo angelegt                               → click2.wav
-// Alle ToDos erledigt                         → ziel_erreicht.wav
-// Artikel abhaken                             → click2.wav
-// Letzter Artikel (alle done)                 → ziel_erreicht2.wav
-// Liste angelegt                              → erledigt.wav
-// Artikel hinzugefügt                         → click2.wav
-// Listen-Status weiterschalten                → swoosh.wav
-// Workout als erledigt markieren              → ziel_erreicht2.wav
-// Ruhetag eintragen                           → swoosh.wav
-// Training abhaken (Plan-Tag)                 → ziel_erreicht.wav
-// Speichern fehlgeschlagen / Netzwerkfehler   → negativ.wav
-// Fixkosten abhaken                           → zahlung.wav
-// Variable Kosten abhaken                     → zahlung.wav
-// Sonstige Ausgaben abhaken                   → zahlung.wav
-// Fix+Variable+Sonstige alle abgehakt         → fixkosten_alle.wav
+// ToDo angelegt                               → click2.mp3
+// Alle ToDos erledigt                         → ziel_erreicht.mp3
+// Artikel abhaken                             → click2.mp3
+// Letzter Artikel (alle done)                 → ziel_erreicht2.mp3
+// Liste angelegt                              → erledigt.mp3
+// Artikel hinzugefügt                         → click2.mp3
+// Listen-Status weiterschalten                → swoosh.mp3
+// Workout als erledigt markieren              → ziel_erreicht2.mp3
+// Ruhetag eintragen                           → swoosh.mp3
+// Training abhaken (Plan-Tag)                 → ziel_erreicht.mp3
+// Speichern fehlgeschlagen / Netzwerkfehler   → negativ.mp3
+// Fixkosten abhaken                           → zahlung.mp3
+// Variable Kosten abhaken                     → zahlung.mp3
+// Sonstige Ausgaben abhaken                   → zahlung.mp3
+// Fix+Variable+Sonstige alle abgehakt         → fixkosten_alle.mp3
 
 export const fb = {
 
