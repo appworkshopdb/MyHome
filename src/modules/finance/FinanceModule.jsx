@@ -1,9 +1,13 @@
+import { lazy, Suspense } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
 import ModuleTabs from '../../core/components/ModuleTabs';
 import MonthsView from './components/MonthsView';
-import SummaryView from './components/SummaryView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
+
+// Getrennt geladen: SummaryView zieht chart.js + react-chartjs-2 nach
+// (zusammen 177 kB). Wer nur Monatsansicht und Verträge nutzt, lädt das nie.
+const SummaryView = lazy(() => import('./components/SummaryView'));
 
 const VIEWS = {
   months: MonthsView,
@@ -36,7 +40,9 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
     <>
       <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} hasWarnings={hasWarnings} />
       <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
-      <View />
+      <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+        <View />
+      </Suspense>
     </>
   );
 }
