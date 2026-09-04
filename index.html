@@ -14,6 +14,17 @@
     <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+
+    <!-- Web-App-Manifest: macht die App installierbar (Homescreen/Play Store).
+         Ohne diese Datei laesst sich keine TWA bauen. Relativer Pfad, damit
+         es unter https://<user>.github.io/<repo>/ funktioniert. -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- iOS kennt kein Manifest: Vollbild-Verhalten und Statusleiste dort
+         ueber eigene Meta-Tags. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Zuhause" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Plus Jakarta Sans = Erstwahl aus --font (base.css, "Kompakte Tiefe");
