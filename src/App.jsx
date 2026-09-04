@@ -18,6 +18,7 @@
 // Modulwechsel läuft ausschließlich über die Bottom-Nav — bitte nicht
 // wieder einbauen.
 
+import { lazy, Suspense } from 'react';
 import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
@@ -32,11 +33,20 @@ import Hub from './core/Hub';
 import Profile from './core/Profile';
 import LockedModule from './core/LockedModule';
 import { getModule } from './core/modules';
-import FinanceModule from './modules/finance/FinanceModule';
-import NutritionModule from './modules/nutrition/NutritionModule';
-import SportModule from './modules/sport/SportModule';
-import HabitsModule from './modules/habits/HabitsModule';
-import ShoppingModule from './modules/shopping/ShoppingModule';
+
+// Module werden erst geladen, wenn man sie betritt (Code-Splitting).
+// Vorher steckte die gesamte App in EINER 1,23-MB-Datei — jeder Nutzer lud
+// beim Start des Hubs u.a. die komplette Ernährungs-Datenbank (316 kB) und
+// chart.js (177 kB) mit, ohne sie je zu öffnen.
+//
+// Login, Hub und Profil bleiben bewusst statisch importiert: Login ist der
+// allererste Screen, Hub der Startpunkt nach dem Anmelden. Beide nachträglich
+// zu laden würde den Start verlangsamen statt beschleunigen.
+const FinanceModule   = lazy(() => import('./modules/finance/FinanceModule'));
+const NutritionModule = lazy(() => import('./modules/nutrition/NutritionModule'));
+const SportModule     = lazy(() => import('./modules/sport/SportModule'));
+const HabitsModule    = lazy(() => import('./modules/habits/HabitsModule'));
+const ShoppingModule  = lazy(() => import('./modules/shopping/ShoppingModule'));
 
 const MODULE_COMPONENTS = {
   finance:   FinanceModule,
@@ -75,12 +85,17 @@ export default function App() {
         {activeModule === null && <Hub onOpenModule={navigate} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
         {mod && (ModuleComponent ? (
-          <ModuleComponent
-            module={mod}
-            view={view}
-            hasWarnings={hasWarnings}
-            onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
-          />
+          // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
+          // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
+          // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
+          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            <ModuleComponent
+              module={mod}
+              view={view}
+              hasWarnings={hasWarnings}
+              onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
+            />
+          </Suspense>
         ) : (
           <LockedModule module={mod} />
         ))}
