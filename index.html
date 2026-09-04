@@ -3,7 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#FFFFFF" />
+    <!-- Statusleisten-/Browserfarbe je Modus. Vorher war das fest auf Weiß,
+         wodurch im Dunkelmodus eine helle Leiste über schwarzem UI stand. -->
+    <meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E121A" media="(prefers-color-scheme: dark)" />
+
+    <!-- Favicon + Homescreen-Icons. Ohne diese Zeilen fragt jeder Browser
+         /favicon.ico an und bekommt einen 404 von GitHub Pages. -->
+    <link rel="icon" href="./icons/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Plus Jakarta Sans = Erstwahl aus --font (base.css, "Kompakte Tiefe");
@@ -13,7 +23,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <title>Zuhause — Finanzen</title>
+    <title>Zuhause</title>
     <script>
       // Hell/Dunkel vor dem ersten Paint setzen (kein Aufblitzen des falschen Modus)
       (function () {
