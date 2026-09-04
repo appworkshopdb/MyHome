@@ -29,7 +29,7 @@
 // CACHE_VERSION bei Änderungen an dieser Datei hochzählen. Beim Aktivieren
 // werden alle Caches mit anderem Namen gelöscht.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `zuhause-${CACHE_VERSION}`;
 
 // Minimal halten: gehashte Assets kennt der Worker zur Installationszeit
@@ -58,6 +58,22 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Nur vollständige, eigene 200er-Antworten sind cachebar. Teilantworten
+// (HTTP 206, z.B. bei Range-Requests von <audio>/<video>) lehnt die
+// Cache-API ab und wirft dabei eine unbehandelte Ablehnung — genau das
+// ist beim ersten Deploy in der Konsole aufgeschlagen.
+function darfGecachtWerden(antwort) {
+  return antwort && antwort.ok && antwort.status === 200 && antwort.type === 'basic';
+}
+
+function lege(request, antwort) {
+  if (!darfGecachtWerden(antwort)) return;
+  const kopie = antwort.clone();
+  caches.open(CACHE_NAME)
+    .then((c) => c.put(request, kopie))
+    .catch(() => { /* Cache voll oder Antwort nicht speicherbar — egal */ });
+}
+
 function istAsset(url) {
   return url.pathname.includes('/assets/');
 }
@@ -70,6 +86,10 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
+  // Range-Requests (Teilbereiche einer Datei) nie abfangen — die Antwort
+  // waere ein 206 und im Cache nicht speicherbar.
+  if (request.headers.has('range')) return;
+
   const url = new URL(request.url);
   // Fremde Hosts (Supabase, Google Fonts) unangetastet lassen
   if (url.origin !== self.location.origin) return;
@@ -79,8 +99,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((antwort) => {
-          const kopie = antwort.clone();
-          caches.open(CACHE_NAME).then((c) => c.put('./index.html', kopie));
+          lege('./index.html', antwort);
           return antwort;
         })
         .catch(() => caches.match('./index.html').then((treffer) => treffer || Response.error()))
@@ -92,10 +111,7 @@ self.addEventListener('fetch', (event) => {
   if (istAsset(url)) {
     event.respondWith(
       caches.match(request).then((treffer) => treffer || fetch(request).then((antwort) => {
-        if (antwort.ok) {
-          const kopie = antwort.clone();
-          caches.open(CACHE_NAME).then((c) => c.put(request, kopie));
-        }
+        lege(request, antwort);
         return antwort;
       }))
     );
@@ -107,10 +123,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request).then((treffer) => {
         const frisch = fetch(request).then((antwort) => {
-          if (antwort.ok) {
-            const kopie = antwort.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(request, kopie));
-          }
+          lege(request, antwort);
           return antwort;
         }).catch(() => treffer);
         return treffer || frisch;
