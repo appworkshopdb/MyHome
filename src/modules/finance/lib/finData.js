@@ -32,6 +32,37 @@ export async function getAllEntries(session) {
   return data;
 }
 
+// Namensvorschläge aus bisherigen Einträgen aggregieren.
+// Zählt Häufigkeit je Name (case-insensitive gruppiert), merkt sich die
+// zuletzt genutzte Kategorie + Zahlungsart, und gibt bei einer Eingabe
+// die am Wortanfang passenden Namen zurück — häufigste zuerst.
+export async function getNameSuggestions(session) {
+  const entries = await getAllEntries(session);
+  // key = lowercase name; value = { name (Original-Schreibweise der
+  // häufigsten Variante), count, cat, payment, lastCreated }
+  const map = new Map();
+  for (const e of entries) {
+    const raw = (e.name || '').trim();
+    if (!raw) continue;
+    const key = raw.toLowerCase();
+    const prev = map.get(key);
+    const created = e.created_at ? new Date(e.created_at).getTime() : 0;
+    if (!prev) {
+      map.set(key, { name: raw, count: 1, cat: e.category, payment: e.payment, lastCreated: created });
+    } else {
+      prev.count += 1;
+      // Kategorie/Zahlungsart vom jüngsten Eintrag übernehmen
+      if (created >= prev.lastCreated) {
+        prev.cat = e.category;
+        prev.payment = e.payment;
+        prev.name = raw; // jüngste Schreibweise gewinnt
+        prev.lastCreated = created;
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
 export async function saveEntry(session, entry) {
   const payload = { ...entry, owner_id: ownerId(session) };
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
