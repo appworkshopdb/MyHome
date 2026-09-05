@@ -1012,13 +1012,8 @@
 }
 .wiz-seg.done { background: var(--action-primary); }
 
-.wiz-steplabel {
-  padding: 0 var(--space-6) var(--space-3);
-  color: var(--text-muted);
-}
-
 .wiz-body {
-  padding: var(--space-3) var(--space-6) var(--space-2);
+  padding: var(--space-4) var(--space-6) var(--space-2);
   min-height: 220px;
 }
 
@@ -1050,6 +1045,19 @@
   border-color: var(--focus-ring);
   box-shadow: 0 0 0 3px var(--action-quiet-bg);
 }
+
+/* Name-Feld: bewusst dicker umrandet, klar abgesetzt von der
+   Vorschlagsliste die darunter erscheint */
+.wiz-name-block { position: relative; }
+.wiz-input-name {
+  border-width: 2px;
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  font-weight: 600;
+}
+.wiz-input-name:focus {
+  border-color: var(--focus-ring);
+}
 .wiz-textarea {
   min-height: 70px;
   padding: var(--space-3) var(--space-4);
@@ -1062,6 +1070,10 @@
   flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-2);
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px;
 }
 .wiz-suggest-item {
   text-align: left;
@@ -1096,10 +1108,15 @@
   font-size: 13px;
   font-weight: 600;
   background: var(--surface-sunken);
-  border: 1px solid var(--border-hairline);
+  border: 1.5px solid var(--border-hairline);
   border-radius: var(--r-md);
   color: var(--text-primary);
   transition: all var(--motion-fast);
+}
+.wiz-cat.active {
+  background: var(--action-quiet-bg);
+  border-color: var(--action-primary);
+  color: var(--text-primary);
 }
 
 .wiz-pay-row {
