@@ -194,12 +194,7 @@ export default function MonthsView() {
                 : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc').map((e) => entryRow(e))}
               {colEntries.length === 0 && <div className="fin-row-empty">Keine Einträge</div>}
 
-              <button
-                className="fin-add-row"
-                onClick={() => setModal({ entry: null, defaultCategory: col.cats[col.cats.length - 1] })}
-              >
-                + Eintrag zu {col.label}
-              </button>
+
             </div>
           );
         })
