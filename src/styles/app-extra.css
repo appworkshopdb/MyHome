@@ -872,31 +872,75 @@
 
 /* ===== Erfassen-Sheet (core/components/EntrySheet.jsx) ===== */
 
+/* ── Bottom-Sheet ──────────────────────────────────────────────────────
+   Wird von SheetShell.jsx per Portal an <body> gehängt — nie in einen
+   Container einbetten, sonst scrollt das Sheet mit (siehe SheetShell). */
+
 .sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.4);
+  background: rgba(13, 13, 13, 0.45);
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   z-index: 220;
+  animation: sheet-fade var(--motion-calm, 240ms) ease;
 }
+.sheet-overlay.is-closing { animation: sheet-fade var(--motion-fast, 120ms) ease reverse forwards; }
 
 .sheet {
-  background: var(--bg-secondary);
+  background: var(--surface-raised, var(--bg-secondary));
   width: 100%;
   max-width: 480px;
-  margin: 0 auto;
-  border-top: 1.5px solid var(--text-primary);
-  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  /* Zwei Drittel des Bildschirms, wächst bei viel Inhalt bis 88 % */
+  height: 67vh;
   max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-2xl, 18px) var(--r-2xl, 18px) 0 0;
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  transition: transform var(--motion-calm, 240ms) cubic-bezier(.22,.61,.36,1);
+  animation: sheet-rise var(--motion-calm, 240ms) cubic-bezier(.22,.61,.36,1);
+}
+.sheet.is-closing { transform: translateY(100%); }
+
+@keyframes sheet-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Griff zum Herunterwischen */
+.sheet-grab {
+  padding: 10px 0 4px;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.sheet-grab-bar {
+  width: 38px;
+  height: 4px;
+  border-radius: var(--r-pill, 999px);
+  background: var(--border-strong);
+}
+
+/* Scrollbereich — nur der Inhalt scrollt, das Sheet selbst bleibt stehen */
+.sheet-scroll {
+  flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-overlay { animation: none; transition: none; }
 }
 
 .sheet-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 0;
+  padding: 6px 20px 0;
 }
 .sheet-title { font-size: 15px; font-weight: 700; }
 .sheet-cancel { font-size: 13px; font-weight: 500; color: var(--text-muted); }
