@@ -418,7 +418,7 @@
   margin-top: 24px;
   margin-bottom: 2px;
 }
-.hub-todo-toggle { width: 100%; margin-bottom: 0; }
+.hub-todo-toggle { width: 100%; margin-top: 14px; margin-bottom: 0; }
 .hub-todo-toggle button { padding: 5px 0; font-size: 0.74rem; flex: 1; }
 
 .hub-todo-add-bar {
@@ -622,19 +622,22 @@
   padding: 10px 0 4px;
 }
 .todo-priority-toggle {
-  padding: 8px 14px;
+  padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-muted);
-  border: 1.5px solid var(--border);
-  background: none;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--action-quiet-bg);
+  border-radius: var(--r-pill);
   white-space: nowrap;
   flex-shrink: 0;
   min-height: var(--touch-target);
+  cursor: pointer;
 }
 .todo-priority-toggle.active {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--action-primary);
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
 }
 
 .hub-module-grid {
@@ -2334,19 +2337,19 @@
 .global-fab {
   position: fixed;
   right: 20px;
-  bottom: calc(64px + env(safe-area-inset-bottom) + 16px);
+  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px);
   width: 52px;
   height: 52px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
   border: none;
-  border-radius: 0;
+  border-radius: var(--r-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 190;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  box-shadow: var(--shadow-fab);
 }
 .global-fab:active { opacity: 0.75; }
 .global-fab--disabled {
