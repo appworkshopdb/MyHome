@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { saveTodo } from '../lib/todoData';
 import { fb } from '../lib/feedback';
+import SheetShell from './SheetShell';
 
 export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
   const { session } = useAuth();
@@ -43,8 +44,7 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
   }
 
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <SheetShell onClose={onClose}>
         {/* Header */}
         <div className="sheet-header">
           <span className="sheet-title">{editTodo ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</span>
@@ -117,7 +117,7 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
         >
           {saving ? 'Wird gespeichert…' : editTodo ? 'Speichern' : 'Aufgabe hinzufügen'}
         </button>
-      </div>
-    </div>
+      </SheetShell>
+    
   );
 }

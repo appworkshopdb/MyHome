@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { saveList } from '../../modules/shopping/lib/shoData';
+import SheetShell from './SheetShell';
 
 const ICONS = ['🛒','🥦','🥩','🍞','🧴','🏠','💊','🐾','🍷','👕','🔧','🎁'];
 const TODAY  = () => new Date().toISOString().slice(0, 10);
@@ -31,8 +32,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
   }
 
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <SheetShell onClose={onClose}>
         <div className="sheet-header">
           <span className="sheet-title">Neue Einkaufsliste</span>
           <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
@@ -78,7 +78,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
             {saving ? 'Wird gespeichert…' : 'Liste anlegen'}
           </button>
         </div>
-      </div>
-    </div>
+      </SheetShell>
+    
   );
 }

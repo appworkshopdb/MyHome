@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
+import SheetShell from './SheetShell';
 
 // Kategorien mit semantischen Status-Tokens (Design-System "Kompakte Tiefe").
 // Auswahl wird nur über Rahmen + dunklere Fläche markiert, NICHT über
@@ -253,8 +254,7 @@ export default function EntrySheet() {
   if (!openFor) return null;
 
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && close()}>
-      <div className="sheet">
+    <SheetShell onClose={close}>
         <div className="sheet-header">
           <div className="sheet-title t-title">Neuer Eintrag</div>
           <button className="sheet-cancel" onClick={close}>Abbrechen</button>
@@ -262,7 +262,7 @@ export default function EntrySheet() {
         {openFor === 'finance'
           ? <FinanceWizard onClose={close} />
           : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
-      </div>
-    </div>
+      </SheetShell>
+    
   );
 }

@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import * as db from '../../modules/sport/lib/spoData';
 import { TRAINING_TYPES } from '../../modules/sport/lib/data/trainingTypes';
 import { PREDEFINED_UNITS } from '../../modules/sport/lib/data/predefinedUnits';
+import SheetShell from './SheetShell';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
@@ -158,8 +159,7 @@ export default function SportQuickSheet({ onClose, onSaved }) {
   }
 
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <SheetShell onClose={onClose}>
         <div className="sheet-header">
           <span className="sheet-title">Sport eintragen</span>
           <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
@@ -350,7 +350,7 @@ export default function SportQuickSheet({ onClose, onSaved }) {
             </button>
           )}
         </div>
-      </div>
-    </div>
+      </SheetShell>
+    
   );
 }

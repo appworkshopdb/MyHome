@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { saveHabit } from '../../modules/habits/lib/habData';
 import { HABIT_CATEGORIES, HABIT_ICONS } from '../../modules/habits/lib/habUtils';
+import SheetShell from './SheetShell';
 
 const FREQ_OPTIONS = [
   { key: 'daily',    label: 'Täglich' },
@@ -44,8 +45,7 @@ export default function HabitQuickSheet({ onClose, onSaved }) {
   }
 
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <SheetShell onClose={onClose}>
         <div className="sheet-header">
           <span className="sheet-title">Neue Gewohnheit</span>
           <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
@@ -122,7 +122,7 @@ export default function HabitQuickSheet({ onClose, onSaved }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </SheetShell>
+    
   );
 }

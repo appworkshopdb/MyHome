@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCalendarEvents } from '../lib/calendarData';
+import SheetShell from './SheetShell';
 
 // Icon-Map pro Modul — klein, erkennbar, kein Emoji-Overhead
 const MODULE_ICON = {
@@ -32,8 +33,7 @@ function toDateStr(d) {
 function DaySheet({ date, events, onClose }) {
   const label = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet">
+    <SheetShell onClose={onClose}>
         <div className="sheet-header">
           <span className="sheet-title">{label}</span>
           <button className="sheet-cancel" onClick={onClose}>Schließen</button>
@@ -56,8 +56,7 @@ function DaySheet({ date, events, onClose }) {
             ))
           )}
         </div>
-      </div>
-    </div>
+    </SheetShell>
   );
 }
 
