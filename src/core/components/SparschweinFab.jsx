@@ -82,7 +82,7 @@ export default function SparschweinFab() {
                     <div key={tx.id} className="sparschwein-ledger-row">
                       <div>
                         <div className="t-body" style={{ fontWeight: 600 }}>
-                          {tx.direction === 'in' ? 'Einzahlung · Ersparnisse' : 'Entnahme · Sparschwein'}
+                          {tx.direction === 'in' ? 'Einzahlung' : 'Entnahme'} · {tx.name}
                         </div>
                         <div className="t-meta" style={{ color: 'var(--text-muted)' }}>
                           {tx.created_at ? formatDate(tx.created_at) : `${MONTHS_DE[tx.month - 1]} ${tx.year}`}
