@@ -6,34 +6,36 @@ import ShoppingQuickSheet from './ShoppingQuickSheet';
 import TodoSheet          from './TodoSheet';
 
 // Globaler FAB — rendert sich je nach aktivem Modul anders.
-// Erscheint auf allen Screens außer Profil.
+// Erscheint auf allen Screens außer Profil UND Ernährung.
 // module: null = Hub, 'habits', 'finance', 'sport', 'nutrition', 'shopping'
+//
+// Ernährung hat KEINEN globalen FAB (mehr): "Neu anlegen" bedeutet dort
+// je nach Unter-Tab etwas anderes (Ampel -> Lebensmittel, Rezepte ->
+// Rezept, Lexikon/Tipps/Profil -> gar nichts) — das kann ein modul-
+// unabhängiger FAB nicht sinnvoll entscheiden, da er den aktiven
+// Unter-Tab nicht kennt. Das Modul rendert stattdessen seinen eigenen
+// kontextabhängigen Fab direkt in AmpelView.jsx/RezepteView.jsx.
 export default function GlobalFab({ activeModule, onTodoSaved }) {
   const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
   const [open, setOpen] = useState(null); // null | 'todo' | 'habit' | 'sport' | 'shopping'
 
-  // Kein FAB auf Profil
-  if (activeModule === 'profile') return null;
+  // Kein FAB auf Profil oder Ernährung
+  if (activeModule === 'profile' || activeModule === 'nutrition') return null;
 
   function handlePress() {
     if (activeModule === null)       return setOpen('todo');
     if (activeModule === 'habits')   return setOpen('habit');
     if (activeModule === 'finance')  return openEntrySheet('finance');   // bestehender EntrySheet
     if (activeModule === 'sport')    return setOpen('sport');
-    if (activeModule === 'nutrition') return null;         // später
     if (activeModule === 'shopping') return setOpen('shopping');
   }
-
-  // Ernährung bekommt einen deaktivierten FAB mit Hinweis
-  const isDisabled = activeModule === 'nutrition';
 
   return (
     <>
       <button
-        className={`global-fab ${isDisabled ? 'global-fab--disabled' : ''}`}
+        className="global-fab"
         onClick={handlePress}
         aria-label="Neuen Eintrag erstellen"
-        title={isDisabled ? 'Funktion kommt bald' : undefined}
       >
         <span className="global-fab-plus">+</span>
       </button>
