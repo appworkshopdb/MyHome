@@ -44,16 +44,32 @@ export function isSparschweinDeposit(entry) {
     normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase();
 }
 
+// Entnahme aus dem Sparschwein — zwei Wege:
+//  1. Zahlungsart "Sparschwein" auf einem beliebigen Ausgaben-Eintrag,
+//     egal welche Kategorie (Fixkosten/Variable/Sonstige) — der
+//     eigentliche, primäre Weg. Beispiel: 100€ Variable Kosten "Urlaub",
+//     bezahlt mit "Sparschwein" -> Ausgabe im Monat + Entnahme aus dem
+//     Sparschwein in einem Schritt.
+//  2. Einnahme-Eintrag exakt benannt "Sparschwein" (älterer, weiterhin
+//     unterstützter Weg — falls jemand die Entnahme lieber als
+//     eigenständige Einnahme verbuchen möchte statt sie einer Ausgabe
+//     zuzuordnen).
+// Ein Eintrag der bereits als Einzahlung zählt (isSparschweinDeposit)
+// wird hier ausgeschlossen, damit "Ersparnisse" nie beides gleichzeitig
+// sein kann, selbst wenn versehentlich payment=Sparschwein gewählt wurde.
 export function isSparschweinWithdrawal(entry) {
-  return INCOME_CATEGORIES.has(entry.category) &&
+  if (isSparschweinDeposit(entry)) return false;
+  const viaPayment = EXPENSE_CATEGORIES.has(entry.category) && entry.payment === 'Sparschwein';
+  const viaIncomeName = INCOME_CATEGORIES.has(entry.category) &&
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
+  return viaPayment || viaIncomeName;
 }
 
 export function isSparschweinEntry(entry) {
   return isSparschweinDeposit(entry) || isSparschweinWithdrawal(entry);
 }
 
-export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
+export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
 
 // Intervalle für feste Posten (FixTemplates) und Verträge
 // interval-Wert → wie viele Monate zwischen zwei Buchungen

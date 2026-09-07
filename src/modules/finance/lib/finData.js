@@ -35,6 +35,8 @@ export async function getSparschweinLedger(session) {
     if (isDeposit) totalIn += Number(e.amount); else totalOut += Number(e.amount);
     return {
       id: e.id,
+      name: e.name,
+      category: e.category,
       direction: isDeposit ? 'in' : 'out',
       signedAmount,
       balanceAfter: running,
