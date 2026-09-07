@@ -1,8 +1,55 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { templateAppliesTo, MONTHS_DE } from './finance';
+import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal } from './finance';
 
 function ownerId(session) {
   return session.user.id;
+}
+
+// ---------------------------------------------------------------------
+// Sparschwein — Ledger + Kontostand
+// ---------------------------------------------------------------------
+
+// Sammelt alle Ersparnisse-/Sparschwein-Einträge aus fin_entries und
+// berechnet einen laufenden Kontostand. Keine eigene Tabelle — läuft
+// direkt über die vorhandenen Buchungen, inkl. deren echtem Timestamp.
+export async function getSparschweinLedger(session) {
+  const all = await getAllEntries(session);
+  const relevant = all.filter((e) => isSparschweinDeposit(e) || isSparschweinWithdrawal(e));
+
+  // Chronologisch aufsteigend sortieren, um den laufenden Stand
+  // korrekt hochzuzählen (created_at, Fallback auf year/month)
+  relevant.sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    if (ta !== tb) return ta - tb;
+    return (a.year * 12 + a.month) - (b.year * 12 + b.month);
+  });
+
+  let running = 0;
+  let totalIn = 0;
+  let totalOut = 0;
+  const ledger = relevant.map((e) => {
+    const isDeposit = isSparschweinDeposit(e);
+    const signedAmount = isDeposit ? Number(e.amount) : -Number(e.amount);
+    running += signedAmount;
+    if (isDeposit) totalIn += Number(e.amount); else totalOut += Number(e.amount);
+    return {
+      id: e.id,
+      direction: isDeposit ? 'in' : 'out',
+      signedAmount,
+      balanceAfter: running,
+      amount: Number(e.amount),
+      year: e.year,
+      month: e.month,
+      payment: e.payment,
+      created_at: e.created_at,
+    };
+  });
+
+  // Für die Anzeige neueste zuerst
+  ledger.reverse();
+
+  return { ledger, balance: running, totalIn, totalOut };
 }
 
 // ---------------------------------------------------------------------

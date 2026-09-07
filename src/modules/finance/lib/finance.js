@@ -19,6 +19,40 @@ export const FIX_TEMPLATE_CATEGORIES = {
   fixkosten: 'Fixkosten',
 };
 
+// ---------------------------------------------------------------------
+// Sparschwein — ersetzt das alte manuelle fin_savings-System.
+// Erkennung läuft rein über exakten Namen (case-insensitive, getrimmt):
+//   • Ausgabe-Eintrag "Ersparnisse" (beliebige Ausgaben-Kategorie)
+//     -> Einzahlung ins Sparschwein (+)
+//   • Einnahme-Eintrag "Sparschwein" (beliebige Einnahme-Kategorie)
+//     -> Entnahme aus dem Sparschwein (-), Geld fließt zurück ins Budget
+// Keine eigene Tabelle nötig — läuft direkt über fin_entries, damit
+// Timestamp (created_at), Zahlungsart etc. automatisch mitkommen.
+// ---------------------------------------------------------------------
+export const SPARSCHWEIN_DEPOSIT_NAME = 'Ersparnisse';
+export const SPARSCHWEIN_WITHDRAWAL_NAME = 'Sparschwein';
+
+const EXPENSE_CATEGORIES = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
+const INCOME_CATEGORIES = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
+
+function normName(name) {
+  return (name || '').trim().toLowerCase();
+}
+
+export function isSparschweinDeposit(entry) {
+  return EXPENSE_CATEGORIES.has(entry.category) &&
+    normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase();
+}
+
+export function isSparschweinWithdrawal(entry) {
+  return INCOME_CATEGORIES.has(entry.category) &&
+    normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
+}
+
+export function isSparschweinEntry(entry) {
+  return isSparschweinDeposit(entry) || isSparschweinWithdrawal(entry);
+}
+
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
 
 // Intervalle für feste Posten (FixTemplates) und Verträge
