@@ -2407,6 +2407,88 @@
   line-height: 1;
 }
 
+/* ── Sparschwein — schwebender Button über dem globalen FAB ──────────── */
+.sparschwein-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px + 52px + 12px);
+  width: 44px;
+  height: 44px;
+  background: var(--surface-raised);
+  border: 1.5px solid var(--border-hairline);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 190;
+  cursor: pointer;
+  box-shadow: var(--shadow-float);
+  padding: 0;
+}
+.sparschwein-fab:active { transform: scale(0.93); }
+.sparschwein-fab-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.sparschwein-fab-badge {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* ── Sparschwein — Sheet-Inhalt ───────────────────────────────────────── */
+.sparschwein-stat-card {
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+}
+.sparschwein-balance {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+.sparschwein-stat-row {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.sparschwein-stat-chip {
+  flex: 1;
+  background: var(--surface-raised);
+  border-radius: var(--r-sm);
+  padding: var(--space-2) var(--space-3);
+}
+.sparschwein-stat-value { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.sparschwein-stat-value.positive { color: var(--status-positive); }
+.sparschwein-stat-value.negative { color: var(--status-critical); }
+
+.sparschwein-ledger {
+  display: flex;
+  flex-direction: column;
+}
+.sparschwein-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.sparschwein-ledger-row:last-child { border-bottom: none; }
+.sparschwein-ledger-amount { font-size: 14px; font-weight: 700; }
+.sparschwein-ledger-amount.positive { color: var(--status-positive); }
+.sparschwein-ledger-amount.negative { color: var(--status-critical); }
+
 /* ── QuickSheet gemeinsame Styles ─────────────────────────────────────── */
 .qsheet-body {
   padding: 16px 20px;
