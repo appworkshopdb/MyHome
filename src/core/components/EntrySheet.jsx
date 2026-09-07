@@ -4,14 +4,15 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
+import { SPARSCHWEIN_DEPOSIT_NAME } from '../../modules/finance/lib/finance';
 
 // Kategorien mit semantischen Status-Tokens (Design-System "Kompakte Tiefe").
 // Einnahme → positiv, Fixkosten/Variable → kritisch, Sonstige → neutral.
 const QUICK_CATEGORIES = [
-  { key: 'sonstige_einnahmen', label: 'Einnahme',  token: 'var(--status-positive)' },
-  { key: 'fixkosten',          label: 'Fixkosten', token: 'var(--status-critical)' },
-  { key: 'variable_kosten',    label: 'Variable',  token: 'var(--status-critical)' },
-  { key: 'sonstige_ausgaben',  label: 'Sonstige',  token: 'var(--text-muted)' },
+  { key: 'sonstige_einnahmen', label: 'Einnahme'  },
+  { key: 'fixkosten',          label: 'Fixkosten' },
+  { key: 'variable_kosten',    label: 'Variable'  },
+  { key: 'sonstige_ausgaben',  label: 'Sonstige'  },
 ];
 
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein'];
@@ -87,6 +88,15 @@ function FinanceWizard({ onClose }) {
     if (step === 1 && !step1Valid) {
       return showToast('Bitte Name und Betrag eingeben');
     }
+    // Beim Übergang zu Schritt 2: für "Ersparnisse" IMMER Sparschwein als
+    // Zahlungsart und Variable Kosten als Kategorie vorbelegen — unabhängig
+    // davon, was die Namensvorschlags-Historie zuletzt gespeichert hat
+    // (z.B. alte "Bar"-Einträge). Der Nutzer kann es in Schritt 2 weiterhin
+    // manuell ändern, das hier ist nur die Vorbelegung.
+    if (step === 1 && name.trim().toLowerCase() === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase()) {
+      setCategory('variable_kosten');
+      setPayment('Sparschwein');
+    }
     if (step < 3) setStep(step + 1);
     else submit();
   }
@@ -157,7 +167,6 @@ function FinanceWizard({ onClose }) {
                   <button
                     key={c.key}
                     className={`wiz-cat ${active ? 'active' : ''}`}
-                    style={active ? { background: c.token, borderColor: c.token, color: 'var(--text-on-accent)' } : {}}
                     onClick={() => setCategory(c.key)}
                   >
                     {c.label}
