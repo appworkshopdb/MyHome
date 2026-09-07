@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { IconSearch, IconPlus, IconChevronDown } from '../../../core/components/Icons';
+import { IconSearch, IconChevronDown } from '../../../core/components/Icons';
 import { AMPEL_CATS, GROUP_COLORS, TAG_COLORS, CUSTOM_TAGS, basis } from '../lib/nutrition';
 import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
@@ -159,8 +159,8 @@ export default function AmpelView({ foods, currentUserId, onSaveFood, onDeleteFo
         );
       })}
 
-      <button className="fab" onClick={() => { setFormFood(null); setShowForm(true); }}>
-        <IconPlus />
+      <button className="global-fab" onClick={() => { setFormFood(null); setShowForm(true); }} aria-label="Neues Lebensmittel">
+        <span className="global-fab-plus">+</span>
       </button>
 
       {selected && (

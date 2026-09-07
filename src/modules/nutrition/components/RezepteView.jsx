@@ -103,7 +103,9 @@ export default function RezepteView({ foods, recipes, currentUserId, onSaveRecip
       })}
 
       {tab === 'eigene' && (
-        <button className="fab" onClick={() => setEditing(null)}><IconPlus /></button>
+        <button className="global-fab" onClick={() => setEditing(null)} aria-label="Neues Rezept">
+          <span className="global-fab-plus">+</span>
+        </button>
       )}
 
       {editing !== undefined && (
