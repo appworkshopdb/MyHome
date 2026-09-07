@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
-import { getAllEntries, getSavingsByYear } from '../lib/finData';
+import { getAllEntries, getSparschweinLedger } from '../lib/finData';
 import { MONTHS_DE, formatEur } from '../lib/finance';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
@@ -34,18 +34,20 @@ export default function SummaryView() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthData, setMonthData] = useState(null);
   const [colors, setColors] = useState(getChartColors);
+  const [sparschweinBalance, setSparschweinBalance] = useState(null);
 
   // Diagrammfarben nachziehen, wenn die Palette gewechselt wird
   useEffect(() => { setColors(getChartColors()); }, [mode]);
 
   useEffect(() => {
     (async () => {
-      const [allEntries, savings] = await Promise.all([
-        getAllEntries(session),
-        getSavingsByYear(session, year),
-      ]);
+      const allEntries = await getAllEntries(session);
       const entries = allEntries.filter((e) => e.year === year);
 
+      // Ersparnisse-Einträge (Sparschwein-Einzahlungen) sind selbst normale
+      // Ausgaben-Buchungen und stecken bereits in totalAus/fixKost/varKost —
+      // keine zusätzliche Subtraktion nötig (früher: fin_savings, wurde
+      // vom Sparschwein abgelöst, siehe getSparschweinLedger unten).
       setMonthData(MONTHS_DE.map((name, i) => {
         const m = i + 1;
         const me = entries.filter((e) => e.month === m);
@@ -54,11 +56,17 @@ export default function SummaryView() {
         const varKost = sum(me, 'variable_kosten');
         const sonstAus = sum(me, 'sonstige_ausgaben');
         const totalAus = fixKost + varKost + sonstAus;
-        const gespart = savings.filter((s) => s.month === m).reduce((a, x) => a + Number(x.amount || 0), 0);
-        return { name, totalEin, fixKost, varKost, sonstAus, totalAus, verfuegbar: totalEin - totalAus - gespart, gespart };
+        return { name, totalEin, fixKost, varKost, sonstAus, totalAus, verfuegbar: totalEin - totalAus };
       }));
     })();
   }, [session, year]);
+
+  // Sparschwein-Stand: eine laufende Gesamtsumme über alle Jahre, nicht
+  // an das gewählte Auswertungsjahr gekoppelt (ein Sparschwein leert sich
+  // nicht am 1. Januar).
+  useEffect(() => {
+    getSparschweinLedger(session).then(({ balance }) => setSparschweinBalance(balance));
+  }, [session]);
 
   if (!monthData) return <div className="loading-note">Lädt…</div>;
 
@@ -67,7 +75,6 @@ export default function SummaryView() {
   const totVar = monthData.reduce((s, m) => s + m.varKost, 0);
   const totSonst = monthData.reduce((s, m) => s + m.sonstAus, 0);
   const totAus = monthData.reduce((s, m) => s + m.totalAus, 0);
-  const totGespart = monthData.reduce((s, m) => s + m.gespart, 0);
   const balance = totEin - totAus;
 
   const labels = MONTHS_DE.map((m) => m.substring(0, 3));
@@ -91,7 +98,7 @@ export default function SummaryView() {
         <div className="summary-chip"><div className="label">Einnahmen gesamt</div><div className="value">{formatEur(totEin)}</div></div>
         <div className="summary-chip negative"><div className="label">Ausgaben gesamt</div><div className="value">{formatEur(totAus)}</div></div>
         <div className={`summary-chip ${balance >= 0 ? 'positive' : 'negative'}`}><div className="label">Bilanz</div><div className="value">{formatEur(balance)}</div></div>
-        <div className="summary-chip neutral"><div className="label">Erspartes gesamt</div><div className="value">{formatEur(totGespart)}</div></div>
+        <div className="summary-chip neutral"><div className="label">Sparschwein</div><div className="value">{sparschweinBalance === null ? '…' : formatEur(sparschweinBalance)}</div></div>
       </div>
 
       <div className="card">
@@ -107,7 +114,6 @@ export default function SummaryView() {
                 <th style={{ textAlign: 'right' }}>Sonst. Ausg.</th>
                 <th style={{ textAlign: 'right' }}>Ausg. Ges.</th>
                 <th style={{ textAlign: 'right' }}>Verfügbar</th>
-                <th style={{ textAlign: 'right' }}>Erspart</th>
               </tr>
             </thead>
             <tbody>
@@ -122,7 +128,6 @@ export default function SummaryView() {
                   <td className="amount" style={{ color: m.verfuegbar >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                     {(m.totalEin > 0 || m.totalAus > 0) ? formatEur(m.verfuegbar) : '—'}
                   </td>
-                  <td className="amount" style={{ color: 'var(--accent)' }}>{m.gespart > 0 ? formatEur(m.gespart) : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -135,7 +140,6 @@ export default function SummaryView() {
                 <td className="amount">{formatEur(totSonst)}</td>
                 <td className="amount" style={{ color: 'var(--danger)' }}>{formatEur(totAus)}</td>
                 <td className="amount" style={{ color: balance >= 0 ? 'var(--success)' : 'var(--danger)' }}>{formatEur(balance)}</td>
-                <td className="amount" style={{ color: 'var(--accent)' }}>{formatEur(totGespart)}</td>
               </tr>
             </tfoot>
           </table>
