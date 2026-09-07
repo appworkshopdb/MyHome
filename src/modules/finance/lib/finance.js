@@ -62,24 +62,55 @@ export function formatDateTime(ts) {
 }
 
 // Gilt eine Vorlage in diesem Monat?
-//  - monthly (oder quarterly=false im Altformat): jeden Monat (true)
-//  - quarterly / biannually / annually: nur ab Startmonat/-jahr und
-//    dann alle N Monate
+//  1. Beginn/Ende (start_date/end_date bzw. contract_duration_months)
+//     werden IMMER geprüft, unabhängig vom Intervall — ein Posten mit
+//     Beginn 01.09.2026 darf in Juni/Juli/August nie erscheinen.
+//  2. Danach das Intervall:
+//     - monthly (oder quarterly=false im Altformat): jeden Monat, sofern
+//       Punkt 1 zutrifft
+//     - quarterly / biannually / annually: nur ab Startmonat/-jahr und
+//       dann alle N Monate, sofern Punkt 1 zutrifft
 export function templateAppliesTo(t, year, month) {
   if (!t) return true;
 
-  // Rückwärtskompatibilität: ältere Einträge haben `quarterly: true/false`
-  // statt `interval`. Wir übersetzen on-the-fly.
+  // ---- 1. Beginn/Ende-Fenster (start_date/end_date) ----
+  // Monatsvergleich: der 1. des geprüften Monats muss >= Startmonat sein,
+  // und < dem Monat NACH dem Enddatum (das Enddatum-Monat zählt noch mit).
+  const monthIdx = year * 12 + (month - 1);
+
+  if (t.start_date) {
+    const sd = new Date(t.start_date);
+    if (!isNaN(sd)) {
+      const startIdx = sd.getFullYear() * 12 + sd.getMonth();
+      if (monthIdx < startIdx) return false;
+    }
+  }
+
+  if (!t.is_open) {
+    let endIdx = null;
+    if (t.end_date) {
+      const ed = new Date(t.end_date);
+      if (!isNaN(ed)) endIdx = ed.getFullYear() * 12 + ed.getMonth();
+    } else if (t.contract_duration_months && t.start_date) {
+      const sd = new Date(t.start_date);
+      if (!isNaN(sd)) {
+        const startIdx = sd.getFullYear() * 12 + sd.getMonth();
+        endIdx = startIdx + Number(t.contract_duration_months) - 1;
+      }
+    }
+    if (endIdx !== null && monthIdx > endIdx) return false;
+  }
+
+  // ---- 2. Intervall (Rückwärtskompatibilität: quarterly-Flag) ----
   const interval = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
   const intervalMonths = INTERVALS[interval]?.months ?? 1;
 
-  if (intervalMonths <= 1) return true; // monatlich — immer fällig
+  if (intervalMonths <= 1) return true; // monatlich — jeden Monat fällig
 
   const sy = t.start_year || year;
   const sm = t.start_month || 1;
   const start = sy * 12 + (sm - 1);
-  const idx = year * 12 + (month - 1);
-  return idx >= start && (idx - start) % intervalMonths === 0;
+  return monthIdx >= start && (monthIdx - start) % intervalMonths === 0;
 }
 
 // Vertragsstatus: active / expiring (< 30 Tage) / expired

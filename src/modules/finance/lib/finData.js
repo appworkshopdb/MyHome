@@ -155,14 +155,17 @@ async function syncTemplateEntries(session, tpl) {
       (entry.year === currentYear && entry.month > currentMonth);
 
     if (!applies) {
-      // Vorlage gilt nicht mehr für diesen Monat (Intervall geändert) →
-      // nur löschen wenn noch nicht bezahlt; bezahlte sind historisch
-      if (!entry.paid) {
-        await getSupabase()
-          .from('fin_entries')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', entry.id);
-      }
+      // Vorlage gilt für diesen Monat nicht mehr — entweder wegen
+      // geändertem Intervall ODER weil der Monat außerhalb von
+      // Beginn/Ende liegt. Ein Beginn/Ende-Fenster ist ein Fakt (der
+      // Posten konnte in diesem Monat nicht existiert haben), deshalb
+      // wird IMMER gelöscht, auch wenn der Eintrag schon bezahlt war —
+      // anders als bei Name/Betrag-Änderungen ist das keine nachträgliche
+      // Geschäftsregel-Änderung, sondern eine Korrektur eines Fehlers.
+      await getSupabase()
+        .from('fin_entries')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', entry.id);
     } else {
       // Name, Betrag und Zahlungsart in ALLEN Einträgen nachziehen —
       // auch in bezahlten, damit die Monatsansicht konsistent bleibt.
