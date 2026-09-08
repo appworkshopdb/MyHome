@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useEntrySheet } from '../lib/EntrySheetContext';
 import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
@@ -6,8 +6,10 @@ import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
 import { SPARSCHWEIN_DEPOSIT_NAME } from '../../modules/finance/lib/finance';
 
-// Kategorien mit semantischen Status-Tokens (Design-System "Kompakte Tiefe").
-// Einnahme → positiv, Fixkosten/Variable → kritisch, Sonstige → neutral.
+// Kategorien — bewusst OHNE Statusfarben-Token. Aktive Auswahl wird
+// ausschließlich über die CSS-Klasse .wiz-cat.active gesteuert (Rahmen +
+// dunklere Fläche, kein Rot/Grün). NIE wieder per Inline-Style
+// überschreiben — das war schon zweimal ein Bug.
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
   { key: 'fixkosten',          label: 'Fixkosten' },
@@ -31,26 +33,33 @@ function FinanceWizard({ onClose }) {
   const [note,     setNote]     = useState('');
   const [saving,   setSaving]   = useState(false);
 
-  // Vorschläge einmalig laden
+  // Steuert ob die Vorschlagsliste sichtbar ist. Nach Auswahl oder
+  // Verlassen des Feldes wird sie ausgeblendet, damit sie nicht
+  // unnötig stehen bleibt.
+  const [showSuggest, setShowSuggest] = useState(false);
+  const amountRef = useRef(null);
+
   const [history, setHistory] = useState([]);
   useEffect(() => {
     finData.getNameSuggestions(session).then(setHistory).catch(() => {});
   }, [session]);
 
-  // Live-Vorschläge: Wortanfang-Match, häufigste zuerst
   const suggestions = useMemo(() => {
     const q = name.trim().toLowerCase();
     if (!q) return [];
     return history
       .filter((h) => h.name.toLowerCase().startsWith(q))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
+      .slice(0, 8);
   }, [name, history]);
 
   function pickSuggestion(h) {
     setName(h.name);
     if (h.cat) setCategory(h.cat);
     if (h.payment) setPayment(h.payment);
+    setShowSuggest(false);
+    // Fokus direkt ins Betragsfeld — spart einen Klick
+    setTimeout(() => amountRef.current?.focus(), 0);
   }
 
   const amountNum = parseFloat(String(amount).replace(',', '.'));
@@ -102,51 +111,58 @@ function FinanceWizard({ onClose }) {
   }
   function back() { if (step > 1) setStep(step - 1); }
 
-  const STEP_LABELS = {
-    1: 'Schritt 1 · Name und Betrag',
-    2: 'Schritt 2 · Kategorie und Zahlungsart',
-    3: 'Schritt 3 · Fälligkeit und Notiz',
-  };
+  const showSuggestList = showSuggest && suggestions.length > 0;
 
   return (
     <>
-      {/* Fortschrittsleiste — 3 Segmente */}
+      {/* Fortschrittsleiste — 3 Segmente (Textlabel bewusst entfernt) */}
       <div className="wiz-progress">
         {[1, 2, 3].map((n) => (
           <div key={n} className={`wiz-seg ${n <= step ? 'done' : ''}`} />
         ))}
       </div>
-      <div className="wiz-steplabel t-meta">{STEP_LABELS[step]}</div>
 
       <div className="wiz-body">
         {step === 1 && (
           <>
             <label className="wiz-label t-meta">Name</label>
-            <input
-              className="wiz-input"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="z.B. Tanken"
-              autoFocus
-              autoComplete="off"
-            />
-            {suggestions.length > 0 && (
-              <div className="wiz-suggest">
-                {suggestions.map((h) => (
-                  <button key={h.name} className="wiz-suggest-item" onClick={() => pickSuggestion(h)}>
-                    {h.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Name-Feld bleibt fixiert, Liste erscheint darunter */}
+            <div className="wiz-name-block">
+              <input
+                className="wiz-input wiz-input-name"
+                type="text"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setShowSuggest(true); }}
+                onFocus={() => setShowSuggest(true)}
+                placeholder="z.B. Tanken"
+                autoFocus
+                autoComplete="off"
+              />
+              {showSuggestList && (
+                <div className="wiz-suggest">
+                  {suggestions.map((h) => (
+                    <button
+                      key={h.name}
+                      type="button"
+                      className="wiz-suggest-item"
+                      onClick={() => pickSuggestion(h)}
+                    >
+                      {h.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Betrag (€)</label>
             <input
+              ref={amountRef}
               className="wiz-input"
               type="number"
               inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              onFocus={() => setShowSuggest(false)}
               placeholder="0,00"
               min="0"
               step="0.01"
@@ -161,33 +177,27 @@ function FinanceWizard({ onClose }) {
             </div>
             <label className="wiz-label t-meta">Kategorie</label>
             <div className="wiz-cat-grid">
-              {QUICK_CATEGORIES.map((c) => {
-                const active = category === c.key;
-                return (
-                  <button
-                    key={c.key}
-                    className={`wiz-cat ${active ? 'active' : ''}`}
-                    onClick={() => setCategory(c.key)}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
+              {QUICK_CATEGORIES.map((c) => (
+                <button
+                  key={c.key}
+                  className={`wiz-cat ${category === c.key ? 'active' : ''}`}
+                  onClick={() => setCategory(c.key)}
+                >
+                  {c.label}
+                </button>
+              ))}
             </div>
             <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
             <div className="wiz-pay-row">
-              {QUICK_PAYMENTS.map((p) => {
-                const active = payment === p;
-                return (
-                  <button
-                    key={p}
-                    className={`wiz-pay ${active ? 'active' : ''}`}
-                    onClick={() => setPayment(active ? '' : p)}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
+              {QUICK_PAYMENTS.map((p) => (
+                <button
+                  key={p}
+                  className={`wiz-pay ${payment === p ? 'active' : ''}`}
+                  onClick={() => setPayment(payment === p ? '' : p)}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </>
         )}
