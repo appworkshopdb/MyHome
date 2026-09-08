@@ -4,10 +4,12 @@ import { useUi } from './lib/UiContext';
 import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bodyProfileData';
 import { getDietProfile, saveDietProfile } from './lib/dietProfileData';
-import { computeBody, GOAL_NOTE } from './lib/bodyCalc';
+import { computeBody, GOAL_NOTE, METRIC_INFO } from './lib/bodyCalc';
 import { getGoals } from './lib/goalsData';
 import BodyProfileForm from './components/BodyProfileForm';
 import ModuleTopBar from './components/ModuleTopBar';
+import Modal from './components/Modal';
+import { IconInfo } from './components/Icons';
 import { MODULES } from './modules';
 
 // Trainingsfokus zusätzlich zu BODY_REQUIRED_FIELDS: Profile.jsx ist die
@@ -54,6 +56,7 @@ export default function Profile({ onOpenModule }) {
   const [dietProfile, setDietProfile] = useState(null);
   const [goalsByModule, setGoalsByModule] = useState({});
   const [loading, setLoading] = useState(true);
+  const [infoKey, setInfoKey] = useState(null); // welches Info-Modal offen ist
 
   const [pwForm, setPwForm] = useState(false);
   const [pw1, setPw1] = useState('');
@@ -206,7 +209,8 @@ export default function Profile({ onOpenModule }) {
         </div>
       )}
 
-      {/* BMI/Kalorien-Ergebnis (aus dem Ernährungs-Modul migriert) */}
+      {/* BMI/Kalorien-Ergebnis (aus dem Ernährungs-Modul migriert, um
+          Fett-/KH-Ziel und Idealgewicht-Bereich ergänzt) */}
       {!loading && (
         <div className="card">
           <div className="card-title">Dein Ergebnis</div>
@@ -215,14 +219,22 @@ export default function Profile({ onOpenModule }) {
               Trag oben Alter, Größe und Gewicht ein, um dein Ergebnis zu sehen.
             </p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              <ResultTile label="BMI" value={body.bmi} note={body.bmiCat} />
-              <ResultTile label="Grundumsatz" value={body.bmr} unit="kcal" note="BMR (Mifflin-St Jeor)" />
-              <ResultTile label="Tagesbedarf" value={body.tdee} unit="kcal" note="TDEE" />
-              <ResultTile label="Kalorienziel" value={body.target} unit="kcal" note={GOAL_NOTE[bodyProfile.goal] || ''} />
-              <ResultTile label="Proteinziel" value={body.protein} unit="g" note="täglich" />
-              <ResultTile label="Wasserbedarf" value={body.water} unit="L" note="täglich" />
-            </div>
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                <ResultTile metricKey="bmi" value={body.bmi} note={body.bmiCat} onInfo={setInfoKey} />
+                <ResultTile metricKey="bmr" value={body.bmr} unit="kcal" note="BMR (Mifflin-St Jeor)" onInfo={setInfoKey} />
+                <ResultTile metricKey="tdee" value={body.tdee} unit="kcal" note="TDEE" onInfo={setInfoKey} />
+                <ResultTile metricKey="target" value={body.target} unit="kcal" note={GOAL_NOTE[bodyProfile.goal] || ''} onInfo={setInfoKey} />
+                <ResultTile metricKey="protein" value={body.protein} unit="g" note="täglich" onInfo={setInfoKey} />
+                <ResultTile metricKey="fat" value={body.fatG} unit="g" note="täglich" onInfo={setInfoKey} />
+                <ResultTile metricKey="carb" value={body.carbG} unit="g" note="täglich" onInfo={setInfoKey} />
+                <ResultTile metricKey="water" value={body.water} unit="L" note="täglich" onInfo={setInfoKey} />
+                <ResultTile metricKey="idealweight" value={`${body.wMin}–${body.wMax}`} unit="kg" note="bei deiner Größe" onInfo={setInfoKey} />
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 10 }}>
+                Alle Werte sind rechnerische Schätzungen auf Basis anerkannter Formeln, keine medizinische Beratung.
+              </p>
+            </>
           )}
         </div>
       )}
@@ -255,15 +267,46 @@ export default function Profile({ onOpenModule }) {
           );
         })}
       </div>
+
+      {infoKey && (
+        <Modal title={METRIC_INFO[infoKey].title} onClose={() => setInfoKey(null)}>
+          <InfoRow label="Was ist das?" text={METRIC_INFO[infoKey].was} />
+          <InfoRow label="Wofür?" text={METRIC_INFO[infoKey].wofuer} />
+          <InfoRow label="Wie berechnet?" text={METRIC_INFO[infoKey].wie} />
+        </Modal>
+      )}
     </div>
   );
 }
 
-function ResultTile({ label, value, unit, note }) {
+function InfoRow({ label, text }) {
   return (
-    <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
-      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 3 }}>
         {label}
+      </div>
+      <div style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>{text}</div>
+    </div>
+  );
+}
+
+function ResultTile({ metricKey, value, unit, note, onInfo }) {
+  return (
+    <div style={{ position: 'relative', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
+      <button
+        onClick={() => onInfo(metricKey)}
+        aria-label={`Erklärung zu ${METRIC_INFO[metricKey].title}`}
+        style={{
+          position: 'absolute', top: 8, right: 8,
+          width: 22, height: 22, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--text-muted)',
+        }}
+      >
+        <IconInfo />
+      </button>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', paddingRight: 20 }}>
+        {METRIC_INFO[metricKey].title}
       </div>
       <div style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: 2 }}>
         {value}
