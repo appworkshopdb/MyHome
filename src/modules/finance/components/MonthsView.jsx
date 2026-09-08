@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
-import { useEntrySheet } from '../../../core/lib/EntrySheetContext';import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
@@ -30,7 +31,11 @@ function sortByCreated(arr, dir = 'asc') {
 export default function MonthsView() {
   const { session } = useAuth();
   const { showToast } = useUi();
-  const { version } = useEntrySheet();
+  // notifySaved zusätzlich zu version destructured — muss nach JEDER
+  // Änderung (Speichern/Löschen/Abhaken) aufgerufen werden, damit andere
+  // Verbraucher des globalen Contexts (z.B. der Sparschwein-Button)
+  // ebenfalls neu laden, statt erst nach einem kompletten Seiten-Reload.
+  const { version, notifySaved } = useEntrySheet();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -67,6 +72,7 @@ export default function MonthsView() {
     setModal(null);
     showToast(entry.id ? 'Eintrag aktualisiert' : 'Eintrag hinzugefügt');
     load();
+    notifySaved(); // Sparschwein-Button & andere Views informieren
   }
 
   async function handleDelete(id) {
@@ -75,6 +81,7 @@ export default function MonthsView() {
     setModal(null);
     showToast('Eintrag gelöscht');
     load();
+    notifySaved();
   }
 
   async function togglePaid(entry, e) {
@@ -82,6 +89,7 @@ export default function MonthsView() {
     await db.togglePaid(entry.id, !entry.paid);
     showToast(!entry.paid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
     load();
+    notifySaved();
   }
 
   const fixEin = sumCat(entries, 'fixeinnahmen');
@@ -193,8 +201,6 @@ export default function MonthsView() {
                 ? sortByCreated(colEntries, 'asc').map((e) => entryRow(e))
                 : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc').map((e) => entryRow(e))}
               {colEntries.length === 0 && <div className="fin-row-empty">Keine Einträge</div>}
-
-
             </div>
           );
         })
