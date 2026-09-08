@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUi } from './lib/UiContext';
 import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bodyProfileData';
+import { getDietProfile, saveDietProfile } from './lib/dietProfileData';
+import { computeBody, GOAL_NOTE } from './lib/bodyCalc';
 import { getGoals } from './lib/goalsData';
 import BodyProfileForm from './components/BodyProfileForm';
 import ModuleTopBar from './components/ModuleTopBar';
@@ -15,6 +17,11 @@ import { MODULES } from './modules';
 // eine eigene, manuell synchron zu haltende Ergänzung — ändert sich
 // modules/sport/lib/requiredFields.js, hier nachziehen.
 const PROFILE_REQUIRED_FIELDS = [...BODY_REQUIRED_FIELDS, { key: 'training_focus', label: 'Trainingsfokus' }];
+
+const DIET_OPTIONS = [
+  { key: 'alles', label: 'Alles' }, { key: 'vegetarisch', label: 'Vegetarisch' },
+  { key: 'vegan', label: 'Vegan' }, { key: 'glutenfrei', label: 'Glutenfrei' },
+];
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);
@@ -29,16 +36,22 @@ function memberSince(isoDate) {
 }
 
 // Die Profil-Seite (Avatar-Button rechts) ist bewusst nur noch für
-// Konto/Körperdaten/Ziele zuständig — Benachrichtigungen sitzen jetzt im
-// linken Dropdown-Menü (AppMenu.jsx), neben Design. Legt selbst keine
-// Ziele an — liest nur die geteilte goals-Tabelle ungefiltert und
-// gruppiert nach source_module. Angelegt werden Ziele im jeweiligen
-// Modul (core/components/GoalsSection.jsx).
+// Konto/Körperdaten/Ernährungsform/Ziele zuständig — Benachrichtigungen
+// sitzen jetzt im linken Dropdown-Menü (AppMenu.jsx), neben Design.
+// Ernährungsform + BMI-Ergebnis sind aus dem Ernährungs-Modul hierher
+// migriert (dessen eigener "Profil"-Tab wurde entfernt, siehe
+// Projektkontext.md) — die zugehörigen Formeln/Datenzugriffe liegen
+// dafür jetzt in lib/bodyCalc.js und lib/dietProfileData.js.
+// Legt selbst keine Ziele an — liest nur die geteilte goals-Tabelle
+// ungefiltert und gruppiert nach source_module. Angelegt werden Ziele im
+// jeweiligen Modul (core/components/GoalsSection.jsx); Ernährung hat
+// aktuell bewusst keine eigene Ziele-Funktion (siehe Projektkontext.md).
 export default function Profile({ onOpenModule }) {
   const { session, setSession } = useAuth();
   const { showToast } = useUi();
 
   const [bodyProfile, setBodyProfile] = useState(null);
+  const [dietProfile, setDietProfile] = useState(null);
   const [goalsByModule, setGoalsByModule] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -51,9 +64,14 @@ export default function Profile({ onOpenModule }) {
     let aktiv = true;
     async function load() {
       try {
-        const [body, goals] = await Promise.all([getBodyProfile(session), getGoals(session)]);
+        const [body, diet, goals] = await Promise.all([
+          getBodyProfile(session),
+          getDietProfile(session),
+          getGoals(session),
+        ]);
         if (!aktiv) return;
         setBodyProfile(body);
+        setDietProfile(diet);
         const grouped = {};
         for (const g of goals) (grouped[g.source_module] ||= []).push(g);
         setGoalsByModule(grouped);
@@ -67,12 +85,25 @@ export default function Profile({ onOpenModule }) {
     return () => { aktiv = false; };
   }, [session]);
 
+  const body = useMemo(() => (bodyProfile ? computeBody(bodyProfile) : null), [bodyProfile]);
+
   async function handleBodyChange(next) {
     setBodyProfile(next);
     try {
       await saveBodyProfile(session, next);
     } catch (e) {
       showToast('Körperdaten konnten nicht gespeichert werden');
+      console.error(e);
+    }
+  }
+
+  async function handleDietChange(key) {
+    const next = { ...dietProfile, diet: key };
+    setDietProfile(next);
+    try {
+      await saveDietProfile(session, next);
+    } catch (e) {
+      showToast('Ernährungsform konnte nicht gespeichert werden');
       console.error(e);
     }
   }
@@ -145,6 +176,57 @@ export default function Profile({ onOpenModule }) {
         </p>
       </div>
 
+      {/* Ernährungsform (aus dem Ernährungs-Modul migriert) */}
+      {!loading && dietProfile && (
+        <div className="card">
+          <div className="card-title">Ernährungsform</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            {DIET_OPTIONS.map((d) => {
+              const active = dietProfile.diet === d.key;
+              return (
+                <button
+                  key={d.key}
+                  onClick={() => handleDietChange(d.key)}
+                  style={{
+                    padding: '10px 6px',
+                    borderRadius: 'var(--radius-xs)',
+                    border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                    background: active ? 'var(--accent)' : 'var(--bg-secondary)',
+                    color: active ? 'var(--on-accent)' : 'var(--text-secondary)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                  }}
+                >
+                  {d.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* BMI/Kalorien-Ergebnis (aus dem Ernährungs-Modul migriert) */}
+      {!loading && (
+        <div className="card">
+          <div className="card-title">Dein Ergebnis</div>
+          {!body ? (
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Trag oben Alter, Größe und Gewicht ein, um dein Ergebnis zu sehen.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              <ResultTile label="BMI" value={body.bmi} note={body.bmiCat} />
+              <ResultTile label="Grundumsatz" value={body.bmr} unit="kcal" note="BMR (Mifflin-St Jeor)" />
+              <ResultTile label="Tagesbedarf" value={body.tdee} unit="kcal" note="TDEE" />
+              <ResultTile label="Kalorienziel" value={body.target} unit="kcal" note={GOAL_NOTE[bodyProfile.goal] || ''} />
+              <ResultTile label="Proteinziel" value={body.protein} unit="g" note="täglich" />
+              <ResultTile label="Wasserbedarf" value={body.water} unit="L" note="täglich" />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Ziele-Vorschau je Modul */}
       <div className="hub-activity-label">Ziele &amp; Meilensteine</div>
       <div className="card hub-activity-card">
@@ -173,6 +255,21 @@ export default function Profile({ onOpenModule }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function ResultTile({ label, value, unit, note }) {
+  return (
+    <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
+      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: 2 }}>
+        {value}
+        {unit && <span style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: 3 }}>{unit}</span>}
+      </div>
+      {note && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{note}</div>}
     </div>
   );
 }
