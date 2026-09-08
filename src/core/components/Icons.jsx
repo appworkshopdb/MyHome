@@ -225,3 +225,11 @@ export const IconEuro = () => (
     <line x1="4" y1="13.6" x2="13" y2="13.6" />
   </svg>
 );
+
+export const IconInfo = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <line x1="12" y1="11" x2="12" y2="16.5" />
+    <circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none" />
+  </svg>
+);
