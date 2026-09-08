@@ -2315,6 +2315,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  margin-top: 14px;
   margin-bottom: 10px;
   padding-bottom: 2px; /* verhindert Clip des Fokusrings */
 }
