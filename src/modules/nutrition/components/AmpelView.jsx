@@ -5,7 +5,10 @@ import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
 import CompareModal from './CompareModal';
 
-export default function AmpelView({ foods, currentUserId, onSaveFood, onDeleteFood }) {
+export default function AmpelView({
+  foods, currentUserId, onSaveFood, onDeleteFood,
+  showForm, setShowForm, formFood, setFormFood, // lifted nach NutritionModule.jsx — siehe dort für Begründung
+}) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [tag, setTag] = useState('all');
@@ -13,8 +16,6 @@ export default function AmpelView({ foods, currentUserId, onSaveFood, onDeleteFo
   const [laktosefrei, setLaktosefrei] = useState(false);
   const [collapsed, setCollapsed] = useState(() => new Set(foods.map((f) => f.group)));
   const [selected, setSelected] = useState(null);
-  const [formFood, setFormFood] = useState(null); // undefined = closed, null = new, object = edit
-  const [showForm, setShowForm] = useState(false);
   const [compare, setCompare] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
 
@@ -158,10 +159,6 @@ export default function AmpelView({ foods, currentUserId, onSaveFood, onDeleteFo
           </div>
         );
       })}
-
-      <button className="global-fab" onClick={() => { setFormFood(null); setShowForm(true); }} aria-label="Neues Lebensmittel">
-        <span className="global-fab-plus">+</span>
-      </button>
 
       {selected && (
         <FoodDetailModal

@@ -5,10 +5,12 @@ import { TEMPLATE_RECIPES } from '../lib/data/templates';
 import RecipeEditorModal from './RecipeEditorModal';
 import RecipeDetailModal from './RecipeDetailModal';
 
-export default function RezepteView({ foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast }) {
+export default function RezepteView({
+  foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast,
+  editing, setEditing, // lifted nach NutritionModule.jsx — siehe dort für Begründung
+}) {
   const [tab, setTab] = useState('eigene'); // 'eigene' | 'vorlagen'
   const [catIndex, setCatIndex] = useState(0);
-  const [editing, setEditing] = useState(undefined); // undefined = closed, null = new, object = edit
   const [detail, setDetail] = useState(null);
 
   const foodsById = useMemo(() => Object.fromEntries(foods.map((f) => [f.id, f])), [foods]);
@@ -101,12 +103,6 @@ export default function RezepteView({ foods, recipes, currentUserId, onSaveRecip
           </div>
         );
       })}
-
-      {tab === 'eigene' && (
-        <button className="global-fab" onClick={() => setEditing(null)} aria-label="Neues Rezept">
-          <span className="global-fab-plus">+</span>
-        </button>
-      )}
 
       {editing !== undefined && (
         <RecipeEditorModal
