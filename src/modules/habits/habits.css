@@ -39,6 +39,13 @@
   line-height: 1.5;
 }
 
+.hab-empty-fab-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  align-self: center;
+  margin-top: 4px;
+}
+
 /* ─── Sektion-Label ───────────────────────────────────────── */
 
 .hab-section {
