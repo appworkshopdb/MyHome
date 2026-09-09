@@ -9,6 +9,8 @@ import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
 import { fb } from './lib/feedback'; // NEU
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
+import { awardPoints } from './lib/gamificationData.js';
+import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 
 // v3: enthält jetzt nicht mehr nur Ein-/Ausgaben, sondern den ganzen
 // sichtbaren Hub-Stand. Zweck ist ein sofortiges Bild beim Start —
@@ -186,6 +188,23 @@ export default function Hub({ onOpenModule }) {
       if (!wasDone) {
         if (habDone + 1 === habTotal) fb.habitAllDone();
         else                          fb.habitCheck();
+
+        // ── Gamification ──
+        // habit_check: 5 Punkte, max 8x täglich, Dedup über entity_id=habit.id
+        awardPoints('habit_check', habit.id)
+          .then((result) => {
+            if (result.awarded) {
+              optimisticUpdate(result);
+              refreshStore();
+              // Bonus wenn alle Habits des Tages erledigt
+              if (habDone + 1 === habTotal) {
+                awardPoints('habit_all_done_bonus', `bonus_${habTodayStr()}`)
+                  .then((r) => { if (r.awarded) { optimisticUpdate(r); refreshStore(); } })
+                  .catch(() => {});
+              }
+            }
+          })
+          .catch(() => {}); // Gamification-Fehler nie die Haupt-Funktion blockieren
       }
     } catch (e) {
       console.error('[Hub] Habit-Toggle fehlgeschlagen:', e);
@@ -204,6 +223,17 @@ export default function Hub({ onOpenModule }) {
       } else {
         fb.todoCheck();   // click.mp3 — einzelnes ToDo
       }
+
+      // ── Gamification ──
+      // todo_check: 5 Punkte, max 8x täglich, Dedup über entity_id=todo.id
+      awardPoints('todo_check', id)
+        .then((result) => {
+          if (result.awarded) {
+            optimisticUpdate(result);
+            refreshStore();
+          }
+        })
+        .catch(() => {}); // Gamification-Fehler nie die Haupt-Funktion blockieren
     }
     try { await toggleTodo(id, next); }
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
