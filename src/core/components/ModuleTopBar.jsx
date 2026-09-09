@@ -1,13 +1,19 @@
 // src/core/components/ModuleTopBar.jsx
-// Schwebende Top-Chrome — drei freistehende Elemente über dem Inhalt.
+// Schwebende Top-Chrome — zwei freistehende Elemente über dem Inhalt.
 // position: fixed, liegt über allem, Inhalt scrollt darunter durch.
-// Schritt 3 des Umbaus (UMBAU.md / NAVIGATION.md).
 //
 // Links:  Einstellungs-Button (Zahnrad) → öffnet AppMenu
 //         Ausnahme: onBack zeigt Zurück-Pfeil für modul-interne Navigation
-// Mitte:  Modulname als nicht-klickbare Anzeige (title-Prop)
 // Rechts: [Gamification-Badges] · Profil-Avatar (Initiale auf --action-primary) → #/profile
 //         Warnpunkt in --status-critical wenn hasWarnings
+//
+// KEIN Titel-Element mehr in der Mitte (weder Modulname noch Tab-Name):
+// die Bottom-Nav zeigt bereits, in welchem Modul man ist, und innerhalb
+// eines Moduls gibt es keine Tabs mehr, die benannt werden müssten
+// (Module sind eine einzige durchlaufende Seite). Schafft Platz oben.
+// `title`-Prop wird nicht mehr genutzt, Aufrufer dürfen ihn trotzdem
+// noch übergeben (wird einfach ignoriert) — spart, alle Aufrufer sofort
+// anfassen zu müssen.
 
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -36,7 +42,7 @@ function IconArrowLeft() {
   );
 }
 
-export default function ModuleTopBar({ title, onBack, hasWarnings }) {
+export default function ModuleTopBar({ onBack, hasWarnings }) {
   const { session } = useAuth();
   const { navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,7 +50,7 @@ export default function ModuleTopBar({ title, onBack, hasWarnings }) {
 
   return (
     <>
-      {/* Drei freistehende Elemente — kein gemeinsamer Hintergrund */}
+      {/* Zwei freistehende Cluster — kein gemeinsamer Hintergrund */}
       <div className="chrome-top" role="banner">
 
         {/* Links: Zurück oder Einstellungen */}
@@ -66,11 +72,6 @@ export default function ModuleTopBar({ title, onBack, hasWarnings }) {
             <IconGear />
           </button>
         )}
-
-        {/* Mitte: Modulname — kein Knopf */}
-        <div className="chrome-top-title" aria-live="polite">
-          {title}
-        </div>
 
         {/* Rechts: Gamification-Badges + Profil */}
         <div className="chrome-top-right">
