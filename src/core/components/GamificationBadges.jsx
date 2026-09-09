@@ -1,8 +1,13 @@
 // core/components/GamificationBadges.jsx
-// Zwei Badges für die ModuleTopBar: Streak (Vogel + Zahl) und Level (Nest + Zahl).
-// Tap auf einen der Badges öffnet GamificationSheet.
+// EINE Tippfläche in der TopBar-Pille (chrome-top-right): Vogel-Charakter +
+// Level, dahinter kleiner Nest + Streak-Zahl. Öffnet GamificationSheet.
+// Wird von ModuleTopBar.jsx als linke Tippfläche der gemeinsamen Pille
+// gerendert (rechts davon, hinter einer Haarlinie, folgt der Profil-Button
+// — beide zusammen bilden EIN Element, siehe ModuleTopBar.jsx).
 //
-// Wird in ModuleTopBar.jsx direkt rechts vom Mitte-Titel, links vom Avatar eingebunden.
+// Reihenfolge bewusst Vogel↔Level, Nest↔Streak (Mockup-Vorgabe): der Vogel
+// wächst mit dem Level (Charakter-Fortschritt), das Nest füllt sich mit
+// der Serie (Tage in Folge) — nicht umgekehrt.
 
 import { useState } from 'react';
 import { useGamificationStore } from '../lib/gamificationStore.js';
@@ -10,34 +15,27 @@ import { IconBird, IconNest } from './GamificationIcons.jsx';
 import GamificationSheet from './GamificationSheet.jsx';
 
 export default function GamificationBadges() {
-  const status     = useGamificationStore();
+  const status = useGamificationStore();
   const [open, setOpen] = useState(false);
 
   if (!status.loaded) return null; // erst sichtbar sobald geladen
 
   return (
     <>
-      <div className="gami-badges" aria-label="Gamification-Status">
-        {/* Streak-Badge */}
-        <button
-          className="gami-badge"
-          onClick={() => setOpen(true)}
-          aria-label={`Streak: ${status.current_streak} Tage`}
-        >
-          <IconBird size={17} />
-          <span className="gami-badge__num t-meta">{status.current_streak}</span>
-        </button>
-
-        {/* Level-Badge */}
-        <button
-          className="gami-badge"
-          onClick={() => setOpen(true)}
-          aria-label={`Level ${status.level}`}
-        >
-          <IconNest size={17} />
-          <span className="gami-badge__num t-meta">{status.level}</span>
-        </button>
-      </div>
+      <button
+        className="gami-tapzone"
+        onClick={() => setOpen(true)}
+        aria-label={`Fortschritt öffnen — Level ${status.level}, Serie ${status.current_streak} Tage`}
+      >
+        <span className="gami-tapzone__item">
+          <IconBird size={30} />
+          <span className="gami-tapzone__label">Lv {status.level}</span>
+        </span>
+        <span className="gami-tapzone__item gami-tapzone__item--nest">
+          <IconNest size={22} />
+          <span className="gami-tapzone__label gami-tapzone__label--num">{status.current_streak}</span>
+        </span>
+      </button>
 
       {open && (
         <GamificationSheet

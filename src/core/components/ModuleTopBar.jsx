@@ -1,16 +1,24 @@
 // src/core/components/ModuleTopBar.jsx
-// Schwebende Top-Chrome — zwei freistehende Elemente über dem Inhalt.
-// position: fixed, liegt über allem, Inhalt scrollt darunter durch.
+// Schwebende Top-Chrome — zwei Elemente über dem Inhalt: links ein
+// freistehender Button, rechts EINE zusammenhängende Pille mit zwei
+// Tippflächen. position: fixed, liegt über allem, Inhalt scrollt darunter.
 //
 // Links:  Einstellungs-Button (Zahnrad) → öffnet AppMenu
 //         Ausnahme: onBack zeigt Zurück-Pfeil für modul-interne Navigation
-// Rechts: [Gamification-Badges] · Profil-Avatar (Initiale auf --action-primary) → #/profile
-//         Warnpunkt in --status-critical wenn hasWarnings
+//         (Detail-Screens innerhalb eines Bereichs) — NUR der linke Button
+//         wechselt, die rechte Pille bleibt unverändert bestehen.
+// Rechts: EINE Pille (`.chrome-top-right`), zwei Tippflächen getrennt durch
+//         eine Haarlinie: GamificationBadges (Vogel+Level, Nest+Streak,
+//         öffnet GamificationSheet) und Profil-Avatar (Initiale auf
+//         --action-primary) → #/profile, Warnpunkt bei fehlenden
+//         Pflichtdaten. Bleibt auf JEDER Modul-Hauptansicht UND jedem
+//         Detail-Screen sichtbar — verschwindet nur hinter dem Backdrop
+//         eines offenen FAB-Sheets (SheetShell deckt den ganzen Screen ab),
+//         nicht beim reinen Navigieren in einen Bereich.
 //
 // KEIN Titel-Element mehr in der Mitte (weder Modulname noch Tab-Name):
 // die Bottom-Nav zeigt bereits, in welchem Modul man ist, und innerhalb
-// eines Moduls gibt es keine Tabs mehr, die benannt werden müssten
-// (Module sind eine einzige durchlaufende Seite). Schafft Platz oben.
+// eines Moduls gibt es keine Tabs mehr, die benannt werden müssten.
 // `title`-Prop wird nicht mehr genutzt, Aufrufer dürfen ihn trotzdem
 // noch übergeben (wird einfach ignoriert) — spart, alle Aufrufer sofort
 // anfassen zu müssen.
@@ -50,7 +58,7 @@ export default function ModuleTopBar({ onBack, hasWarnings }) {
 
   return (
     <>
-      {/* Zwei freistehende Cluster — kein gemeinsamer Hintergrund */}
+      {/* Links: freistehender Button. Rechts: eine zusammenhängende Pille. */}
       <div className="chrome-top" role="banner">
 
         {/* Links: Zurück oder Einstellungen */}
@@ -73,12 +81,16 @@ export default function ModuleTopBar({ onBack, hasWarnings }) {
           </button>
         )}
 
-        {/* Rechts: Gamification-Badges + Profil */}
+        {/* Rechts: EIN Element, zwei Tippflächen — Gamification links,
+            Profil rechts hinter einer Haarlinie. Beide bleiben auch auf
+            Detail-Screens sichtbar (onBack ändert nur den linken Button). */}
         <div className="chrome-top-right">
           <GamificationBadges />
 
+          <span className="chrome-top-divider" aria-hidden="true" />
+
           <button
-            className="chrome-top-btn chrome-top-btn--profile"
+            className="chrome-top-profile-zone"
             onClick={() => navigate('profile')}
             aria-label={
               hasWarnings
@@ -86,10 +98,12 @@ export default function ModuleTopBar({ onBack, hasWarnings }) {
                 : 'Zum Profil'
             }
           >
-            {initial}
-            {hasWarnings && (
-              <span className="warn-dot" aria-hidden="true" />
-            )}
+            <span className="chrome-top-avatar">
+              {initial}
+              {hasWarnings && (
+                <span className="warn-dot" aria-hidden="true" />
+              )}
+            </span>
           </button>
         </div>
       </div>
