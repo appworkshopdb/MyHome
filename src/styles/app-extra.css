@@ -2697,3 +2697,151 @@
   color: var(--danger);
   margin-top: 10px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Gamification — Vogel/Nest-System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── TopBar: rechte Gruppe aus Badges + Avatar ────────────────── */
+.chrome-top-right {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+}
+
+/* ── Badge-Gruppe (Vogel + Nest nebeneinander) ────────────────── */
+.gami-badges {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+}
+
+/* Einzelner Badge-Button */
+.gami-badge {
+  display:         flex;
+  align-items:     center;
+  gap:             3px;
+  height:          32px;
+  padding:         0 var(--space-2);
+  border:          none;
+  border-radius:   var(--r-pill);
+  background:      var(--action-quiet-bg);
+  color:           var(--action-primary);
+  cursor:          pointer;
+  transition:      background var(--motion-fast);
+  white-space:     nowrap;
+}
+.gami-badge:active {
+  background: var(--border-hairline);
+}
+
+.gami-badge__num {
+  font-variant-numeric: tabular-nums;
+  color:                var(--text-primary);
+  font-weight:          700;
+  font-size:            11px;
+}
+
+/* ── Sheet ─────────────────────────────────────────────────────── */
+.gami-sheet {
+  padding: var(--space-6) var(--space-5) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.gami-sheet__title {
+  color:      var(--text-primary);
+  margin:     0 0 var(--space-2);
+  text-align: center;
+}
+
+/* Karte (für Level-Block und Streak-Block) */
+.gami-sheet__card {
+  background:     var(--surface-raised);
+  border-radius:  var(--r-xl);
+  padding:        var(--space-5);
+  box-shadow:     var(--shadow-card);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.gami-sheet__card-label {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  color:       var(--text-muted);
+}
+
+/* Level */
+.gami-sheet__level-row {
+  display:     flex;
+  align-items: baseline;
+  gap:         var(--space-3);
+}
+.gami-sheet__level-num {
+  color:       var(--action-primary);
+  line-height: 1;
+}
+.gami-sheet__level-name {
+  color: var(--text-secondary);
+}
+
+/* Fortschrittsbalken */
+.gami-sheet__bar-track {
+  height:        8px;
+  border-radius: var(--r-pill);
+  background:    var(--data-track);
+  overflow:      hidden;
+}
+.gami-sheet__bar-fill {
+  height:        100%;
+  border-radius: var(--r-pill);
+  background:    var(--action-primary);
+  transition:    width var(--motion-calm);
+}
+
+.gami-sheet__bar-meta {
+  display:         flex;
+  justify-content: space-between;
+  color:           var(--text-muted);
+}
+
+.gami-sheet__points {
+  color:      var(--text-muted);
+  margin-top: var(--space-1);
+}
+.gami-sheet__points strong {
+  color: var(--text-primary);
+}
+
+/* Streak */
+.gami-sheet__streak-row {
+  display:     flex;
+  align-items: baseline;
+  gap:         var(--space-3);
+}
+.gami-sheet__streak-num {
+  color:       var(--action-primary);
+  line-height: 1;
+}
+.gami-sheet__streak-label {
+  color: var(--text-secondary);
+}
+.gami-sheet__streak-hint {
+  color:  var(--text-muted);
+  margin: 0;
+}
+.gami-sheet__streak-hint strong {
+  color: var(--text-primary);
+}
+
+/* Footer-Hinweis */
+.gami-sheet__footer {
+  color:      var(--text-muted);
+  text-align: center;
+  margin:     0;
+  padding:    0 var(--space-4);
+}
