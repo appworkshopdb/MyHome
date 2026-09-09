@@ -4,56 +4,13 @@
 // Tap auf Liste → öffnet ItemsView (via onOpenList).
 
 import { useState, useRef, useEffect } from 'react';
-import { IconPlus, IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
+import { IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
 import {
   saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
 } from '../lib/shoData.js';
-
-const DEFAULT_ICONS = ['🛒', '🥦', '🏠', '🎉', '💊', '🐾', '🧹', '📦'];
-
-// Deutsche Supermärkte & Discounter — nach Bekanntheitsgrad geordnet
-const STORES = [
-  // Discounter
-  { group: 'Discounter',    name: 'Aldi Nord' },
-  { group: 'Discounter',    name: 'Aldi Süd' },
-  { group: 'Discounter',    name: 'Lidl' },
-  { group: 'Discounter',    name: 'Penny' },
-  { group: 'Discounter',    name: 'Netto Marken-Discount' },
-  { group: 'Discounter',    name: 'Netto (Edeka)' },
-  { group: 'Discounter',    name: 'Norma' },
-  // Supermärkte
-  { group: 'Supermarkt',    name: 'REWE' },
-  { group: 'Supermarkt',    name: 'Edeka' },
-  { group: 'Supermarkt',    name: 'Tegut' },
-  { group: 'Supermarkt',    name: 'Hit' },
-  // SB-Warenhäuser
-  { group: 'Warenhaus',     name: 'Kaufland' },
-  { group: 'Warenhaus',     name: 'Globus' },
-  // Bio
-  { group: 'Bio',           name: "Denn's Biomarkt" },
-  { group: 'Bio',           name: 'Alnatura' },
-  { group: 'Bio',           name: 'Basic' },
-  // Drogerie
-  { group: 'Drogerie',      name: 'dm' },
-  { group: 'Drogerie',      name: 'Rossmann' },
-  { group: 'Drogerie',      name: 'Müller' },
-  // Sonstiges
-  { group: 'Sonstiges',     name: 'Wochenmarkt' },
-  { group: 'Sonstiges',     name: 'Metzger' },
-  { group: 'Sonstiges',     name: 'Bäcker' },
-  { group: 'Sonstiges',     name: 'Asia-Shop' },
-  { group: 'Sonstiges',     name: 'Online-Lieferung' },
-];
+import { STORES } from '../lib/data/stores.js';
 
 export default function ListView({ lists, onListsChange, onOpenList }) {
-  const [showForm,    setShowForm]    = useState(false);  // Neue Liste
-  const [name,        setName]        = useState('');
-  const [icon,        setIcon]        = useState('🛒');
-  const [dueDate,     setDueDate]     = useState('');
-  const [dueTime,     setDueTime]     = useState('');
-  const [store,       setStore]       = useState('');       // gewählter Laden (Name oder '__custom')
-  const [storeCustom, setStoreCustom] = useState('');       // freier Text wenn eigener Laden
-  const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState(null);
   const [deleting,    setDeleting]    = useState(null);
   const [statusBusy,  setStatusBusy]  = useState(null); // id der Liste deren Status gerade gesetzt wird
@@ -73,38 +30,14 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [tmplLoading, setTmplLoading] = useState(false);
   const [loadingTmpl, setLoadingTmpl] = useState(null); // id der Vorlage die geladen wird
 
-  const inputRef   = useRef(null);
   const editRef    = useRef(null);
-
-  useEffect(() => {
-    if (showForm) inputRef.current?.focus();
-  }, [showForm]);
 
   useEffect(() => {
     if (editId) editRef.current?.focus();
   }, [editId]);
 
-  // ─── Neue Liste ──────────────────────────────────────────────
-  async function handleSave() {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setSaving(true); setError(null);
-    try {
-      const storeName = store === '__custom' ? storeCustom.trim() : store || null;
-      await saveList({
-        name:         trimmed,
-        icon,
-        due_date:     dueDate     || null,
-        due_time:     dueTime     || null,
-        store_name:   storeName   || null,
-        store_custom: store === '__custom' ? storeCustom.trim() || null : null,
-      });
-      await onListsChange();
-      setName(''); setIcon('🛒'); setDueDate(''); setDueTime('');
-      setStore(''); setStoreCustom(''); setShowForm(false);
-    } catch { setError('Speichern fehlgeschlagen.'); }
-    finally { setSaving(false); }
-  }
+  // Neue Liste läuft nur noch über den globalen FAB (ShoppingQuickSheet).
+
 
   // ─── Löschen ────────────────────────────────────────────────
   async function handleDelete(e, listId) {
@@ -213,12 +146,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     finally { setDeleting(null); }
   }
 
-  // ─── Key-Handler ─────────────────────────────────────────────
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') { setShowForm(false); setName(''); }
-  }
-
   function handleEditKeyDown(e) {
     if (e.key === 'Enter') handleRename();
     if (e.key === 'Escape') setEditId(null);
@@ -236,7 +163,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       )}
 
       {/* Empty State */}
-      {normalLists.length === 0 && !showForm && (
+      {normalLists.length === 0 && (
         <div className="sho-empty">
           <div className="sho-empty-icon">🛒</div>
           <div className="sho-empty-title">Noch keine Liste</div>
@@ -362,134 +289,17 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         </div>
       )}
 
-      {/* Neue-Liste-Formular */}
-      {showForm && (
-        <div className="sho-new-list-form">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {DEFAULT_ICONS.map((ic) => (
-              <button
-                key={ic}
-                onClick={() => setIcon(ic)}
-                style={{
-                  fontSize: '1.4rem', width: 40, height: 40, borderRadius: 0,
-                  border: icon === ic ? '2px solid var(--accent)' : '1.5px solid var(--border)',
-                  background: icon === ic ? 'var(--accent-light)' : 'var(--bg-card)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {ic}
-              </button>
-            ))}
-          </div>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Name der Liste, z.B. REWE"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={handleKeyDown}
-            maxLength={60}
-          />
-
-          {/* Fälligkeit */}
-          <div className="sho-due-row">
-            <div className="sho-due-field">
-              <label className="sho-due-label">Fällig am</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="sho-due-input"
-              />
-            </div>
-            <div className="sho-due-field">
-              <label className="sho-due-label">Tageszeit</label>
-              <select
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                className="sho-unit-select"
-              >
-                <option value="">Optional</option>
-                <option value="morgens">🌅 Morgens</option>
-                <option value="mittags">☀️ Mittags</option>
-                <option value="nachmittags">🌤️ Nachmittags</option>
-                <option value="abends">🌙 Abends</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Laden-Auswahl */}
-          <div className="sho-due-field">
-            <label className="sho-due-label">Laden</label>
-            <select
-              value={store}
-              onChange={(e) => setStore(e.target.value)}
-              className="sho-unit-select"
-            >
-              <option value="">Kein Laden / Egal</option>
-              {Object.entries(
-                STORES.reduce((acc, s) => {
-                  if (!acc[s.group]) acc[s.group] = [];
-                  acc[s.group].push(s.name);
-                  return acc;
-                }, {})
-              ).map(([group, names]) => (
-                <optgroup key={group} label={group}>
-                  {names.map((n) => <option key={n} value={n}>{n}</option>)}
-                </optgroup>
-              ))}
-              <optgroup label="Eigener Laden">
-                <option value="__custom">+ Eigener Laden …</option>
-              </optgroup>
-            </select>
-            {store === '__custom' && (
-              <input
-                type="text"
-                placeholder="Name des Ladens"
-                value={storeCustom}
-                onChange={(e) => setStoreCustom(e.target.value)}
-                style={{ marginTop: 6 }}
-                maxLength={60}
-                autoFocus
-              />
-            )}
-          </div>
-
-          <div className="sho-new-list-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => { setShowForm(false); setName(''); setDueDate(''); setDueTime(''); setStore(''); setStoreCustom(''); setError(null); }}
-            >
-              Abbrechen
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleSave}
-              disabled={saving || !name.trim()}
-            >
-              {saving ? 'Speichern …' : 'Anlegen'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Buttons: Neue Liste + Aus Vorlage */}
-      {!showForm && (
-        <div className="sho-bottom-actions">
-          <button className="sho-add-btn" onClick={() => setShowForm(true)}>
-            <span style={{ display: 'flex', width: 20, height: 20 }}><IconPlus /></span>
-            Neue Liste
-          </button>
-          <button
-            className="sho-add-btn sho-tmpl-btn"
-            onClick={handleShowTemplates}
-            disabled={tmplLoading}
-          >
-            <span style={{ fontSize: '1rem' }}>📋</span>
-            {tmplLoading ? 'Laden …' : 'Aus Vorlage'}
-          </button>
-        </div>
-      )}
+      {/* Aus Vorlage — Neue Liste läuft nur noch über den globalen FAB */}
+      <div className="sho-bottom-actions">
+        <button
+          className="sho-add-btn sho-tmpl-btn"
+          onClick={handleShowTemplates}
+          disabled={tmplLoading}
+        >
+          <span style={{ fontSize: '1rem' }}>📋</span>
+          {tmplLoading ? 'Laden …' : 'Aus Vorlage'}
+        </button>
+      </div>
 
       {/* Vorlagen-Panel */}
       {showTmpl && (
