@@ -1,16 +1,24 @@
 import { useState } from 'react';
 import { saveList } from '../../modules/shopping/lib/shoData';
+import { STORES, DAY_PARTS } from '../../modules/shopping/lib/data/stores';
 import SheetShell from './SheetShell';
 
 const ICONS = ['🛒','🥦','🥩','🍞','🧴','🏠','💊','🐾','🍷','👕','🔧','🎁'];
-const TODAY  = () => new Date().toISOString().slice(0, 10);
+
+// Läden nach Gruppe sortiert für den <select> — gleiche Aufbereitung wie
+// in ListView.jsx, damit beide Stellen exakt gleich aussehen.
+const STORE_GROUPS = STORES.reduce((acc, s) => {
+  (acc[s.group] ??= []).push(s.name);
+  return acc;
+}, {});
 
 export default function ShoppingQuickSheet({ onClose, onSaved }) {
   const [name,        setName]        = useState('');
   const [icon,        setIcon]        = useState('🛒');
   const [dueDate,     setDueDate]     = useState('');
-  const [dueTime,     setDueTime]     = useState('');
-  const [store,       setStore]       = useState('');
+  const [dueTime,     setDueTime]     = useState(''); // Tageszeit-Wert, KEINE Uhrzeit — siehe DAY_PARTS
+  const [store,       setStore]       = useState(''); // Ladenname oder '__custom'
+  const [storeCustom, setStoreCustom] = useState('');
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState('');
 
@@ -18,12 +26,14 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
     if (!name.trim()) { setError('Bitte einen Namen eingeben'); return; }
     setSaving(true); setError('');
     try {
+      const storeName = store === '__custom' ? storeCustom.trim() : store || null;
       await saveList({
-        name:       name.trim(),
+        name:         name.trim(),
         icon,
-        due_date:   dueDate  || null,
-        due_time:   dueTime  || null,
-        store_name: store.trim() || null,
+        due_date:     dueDate  || null,
+        due_time:     dueTime  || null,
+        store_name:   storeName || null,
+        store_custom: store === '__custom' ? (storeCustom.trim() || null) : null,
       });
       onSaved?.();
       onClose();
@@ -53,12 +63,26 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
             value={name} onChange={(e) => setName(e.target.value)}
             autoFocus onKeyDown={(e) => e.key === 'Enter' && submit()} />
 
-          {/* Laden */}
-          <input className="qsheet-input" type="text"
-            placeholder="Geschäft (optional)"
-            value={store} onChange={(e) => setStore(e.target.value)} />
+          {/* Laden — gruppierter Dropdown, identisch zu ListView.jsx */}
+          <div className="qsheet-label">Laden</div>
+          <select className="qsheet-input" value={store} onChange={(e) => setStore(e.target.value)}>
+            <option value="">Kein Laden / Egal</option>
+            {Object.entries(STORE_GROUPS).map(([group, names]) => (
+              <optgroup key={group} label={group}>
+                {names.map((n) => <option key={n} value={n}>{n}</option>)}
+              </optgroup>
+            ))}
+            <optgroup label="Eigener Laden">
+              <option value="__custom">+ Eigener Laden …</option>
+            </optgroup>
+          </select>
+          {store === '__custom' && (
+            <input className="qsheet-input" type="text" placeholder="Name des Ladens"
+              value={storeCustom} onChange={(e) => setStoreCustom(e.target.value)}
+              maxLength={60} autoFocus />
+          )}
 
-          {/* Datum + Uhrzeit */}
+          {/* Datum + Tageszeit */}
           <div className="qsheet-row-half">
             <div>
               <div className="qsheet-label">Fällig am (optional)</div>
@@ -66,9 +90,13 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                 value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div>
-              <div className="qsheet-label">Uhrzeit (optional)</div>
-              <input className="qsheet-input" type="time"
-                value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
+              <div className="qsheet-label">Tageszeit (optional)</div>
+              <select className="qsheet-input" value={dueTime} onChange={(e) => setDueTime(e.target.value)}>
+                <option value="">Optional</option>
+                {DAY_PARTS.map((d) => (
+                  <option key={d.value} value={d.value}>{d.icon} {d.label}</option>
+                ))}
+              </select>
             </div>
           </div>
 
