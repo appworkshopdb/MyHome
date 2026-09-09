@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
 import { getBodyProfile } from '../../core/lib/bodyProfileData';
@@ -7,8 +7,8 @@ import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
+import PageSection from '../../core/components/PageSection';
 import { fb } from '../../core/lib/feedback';
-import ModuleTabs from '../../core/components/ModuleTabs';
 import EinheitenView from './components/EinheitenView';
 import VerlaufView from './components/VerlaufView';
 import PlaeneView from './components/PlaeneView';
@@ -19,46 +19,44 @@ registerRequirement('profile', async (session) => {
   return getMissingFields(SPORT_REQUIRED_FIELDS, body);
 });
 
-// KONZEPT-KORREKTUR (vorheriger Stand: Training/Kalender/Pläne/
-// Auswertung, "Training" war ein leerer Direkt-Eintragen-Screen):
-// einzelne Trainingseinheiten (z.B. "Arme", "Legday") sind jetzt eine
-// eigene, wiederverwendbare Bibliothek (Tab "Einheiten") — ein
-// Trainingsplan setzt sich aus mehreren Einheiten zusammen, statt dass
-// jede Einheit als eigener 1-Tage-"Plan" angelegt werden musste.
-const DEFAULT_VIEW = 'verlauf';
-const TABS = [
-  { key: 'verlauf', label: 'Kalender' },
-  { key: 'einheiten', label: 'Einheiten' },
-  { key: 'plaene', label: 'Pläne' },
-  { key: 'auswertung', label: 'Auswertung' },
-];
-
+// KEINE TABS MEHR: Kalender/Einheiten/Pläne/Auswertung liegen als vier
+// PageSection-Blöcke untereinander, in derselben Reihenfolge wie die
+// früheren Tabs. Einheiten und Pläne neu anlegen läuft ausschließlich
+// über den globalen FAB (core/components/GlobalFab.jsx → SportQuickSheet)
+// — die früheren eigenen "+"-Buttons in EinheitenView/PlaeneView sind
+// entfernt, "Bearbeiten" bestehender Einträge bleibt jeweils bestehen.
+//
 // Hält den gesamten Modul-Zustand: Einheiten (Workouts im Kalender),
 // die Einheiten-Bibliothek, Plan-Vorlagen und die im Profil gewählten
-// Sportarten. Alles wird EINMAL geladen und an die Views durchgereicht
-// — dadurch arbeiten Kalender, Pläne und Auswertung garantiert auf
-// demselben Stand.
-// view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
-// useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
-export default function SportModule({ view, onNavigateView, hasWarnings }) {
+// Sportarten. Alles wird EINMAL geladen und an die Sektionen
+// durchgereicht — dadurch arbeiten Kalender, Pläne und Auswertung
+// garantiert auf demselben Stand.
+export default function SportModule({ hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
-  const activeView = ['verlauf', 'einheiten', 'plaene', 'auswertung'].includes(view) ? view : DEFAULT_VIEW;
   const [workouts, setWorkouts] = useState([]);
   const [units, setUnits] = useState([]);
   const [plans, setPlans] = useState([]);
   const [userSports, setUserSports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // formInitial steuert jetzt das Formular INNERHALB des Kalender-Tabs
-  // (VerlaufView) statt eines eigenen "Training"-Tabs — der ist mit der
-  // Einheiten-Bibliothek weggefallen. "Bearbeiten"/"+ Einzelne Einheit"
-  // im Kalender sowie "Starten" bei einem Vorschlag springen deshalb
-  // alle auf 'verlauf'.
+  // formInitial steuert das Formular INNERHALB der Kalender-Sektion
+  // (VerlaufView) — beim Bearbeiten eines Workouts oder Anlegen eines
+  // geplanten Trainings für einen Kalendertag ersetzt es dort kurz die
+  // Kalenderansicht. Beides passiert innerhalb der Kalender-Sektion
+  // selbst, kein Scrollen nötig.
   const [formInitial, setFormInitial] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
   const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
+
+  // Sprungziel für "Starten" bei einem Plan-Vorschlag (sitzt in der
+  // Pläne-Sektion, das Formular erscheint aber oben in der Kalender-
+  // Sektion) — ersetzt den früheren Tab-Wechsel durch Hochscrollen.
+  const kalenderAnchorRef = useRef(null);
+  function scrollToKalenderSection() {
+    kalenderAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,9 +82,9 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   useEffect(() => { load(); }, [load]);
 
   // Der FAB (GlobalFab → SportQuickSheet) sitzt außerhalb dieses Moduls
-  // in App.jsx und legt/ändert Einheiten direkt in der DB an — ohne
-  // dieses Event würde SportModule davon nichts mitbekommen und die
-  // Einheiten-Liste bliebe bis zum nächsten manuellen Reload veraltet.
+  // in App.jsx und legt/ändert Einheiten/Workouts/Pläne direkt in der DB
+  // an — ohne dieses Event würde SportModule davon nichts mitbekommen
+  // und die Listen blieben bis zum nächsten manuellen Reload veraltet.
   useEffect(() => {
     window.addEventListener('sport:data-changed', load);
     return () => window.removeEventListener('sport:data-changed', load);
@@ -128,25 +126,28 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }
 
+  // Bearbeiten und "Training für diesen Tag" passieren innerhalb der
+  // Kalender-Sektion selbst — kein Sprung nötig, formInitial genügt.
   function handleEdit(workout) {
     setFormInitial(workout);
-    onNavigateView('verlauf');
   }
 
   function handlePlanNew(date) {
     setFormInitial({ occurred_on: date, status: 'planned' });
-    onNavigateView('verlauf');
   }
 
+  // "Starten" bei einem Plan-Vorschlag sitzt in der Pläne-Sektion, das
+  // Formular lebt aber in der Kalender-Sektion weiter oben — dorthin
+  // scrollen, damit der Sprung nicht verwirrt.
   function startFromPlan(preset) {
     setFormInitial({ type_key: preset.type_key, title: preset.title });
-    onNavigateView('verlauf');
+    scrollToKalenderSection();
   }
 
-  // Einheiten anlegen/bearbeiten/löschen läuft seit dem Design-Handoff
-  // "Sport Einheiten Mockups" komplett über den FAB (SportQuickSheet.jsx,
-  // Modi "Neue Einheit"/"Verwalten") — hier gibt es dafür bewusst keine
-  // eigene Speicher-Logik mehr, siehe sport:data-changed-Listener oben.
+  // Einheiten anlegen/bearbeiten/löschen läuft komplett über den FAB
+  // (SportQuickSheet.jsx, Modus "Neue Einheit") — hier gibt es dafür
+  // bewusst keine eigene Speicher-Logik, siehe sport:data-changed-
+  // Listener oben.
 
   // --- Plan-Vorlagen -------------------------------------------------
 
@@ -178,63 +179,68 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
       setApplyingPlan(null);
       showToast(`${count} Einheiten eingetragen`);
       await load();
-      onNavigateView('verlauf');
+      scrollToKalenderSection();
     } catch (e) {
       console.error(e);
       showToast('Plan konnte nicht eingetragen werden');
     }
   }
 
-  const VIEWS = {
-    verlauf: (
-      <VerlaufView
-        workouts={workouts}
-        plans={plans}
-        units={units}
-        loading={loading}
-        onToggleDone={handleToggleDone}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onPlanNew={handlePlanNew}
-        onApplyPlan={handleApplyPlan}
-        formInitial={formInitial}
-        onOpenForm={setFormInitial}
-        onCancelForm={() => setFormInitial(false)}
-        onSaveForm={handleSave}
-        userSports={userSports}
-        showToast={showToast}
-      />
-    ),
-    einheiten: <EinheitenView units={units} loading={loading} />,
-    plaene: (
-      <PlaeneView
-        session={session}
-        plans={plans}
-        units={units}
-        loading={loading}
-        userSports={userSports}
-        editing={editingPlan}
-        applying={applyingPlan}
-        onNewPlan={() => setEditingPlan({})}
-        onEditPlan={setEditingPlan}
-        onDeletePlan={handleDeletePlan}
-        onSavePlan={handleSavePlan}
-        onCancelEdit={() => setEditingPlan(null)}
-        onOpenApply={setApplyingPlan}
-        onApplyPlan={handleApplyPlan}
-        onCancelApply={() => setApplyingPlan(null)}
-        onStartFromPlan={startFromPlan}
-        showToast={showToast}
-      />
-    ),
-    auswertung: <AuswertungView workouts={workouts} loading={loading} />,
-  };
-
   return (
     <>
-      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} hasWarnings={hasWarnings} />
-      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
-      {VIEWS[activeView]}
+      <ModuleTopBar hasWarnings={hasWarnings} />
+
+      <div className="sport-module-content with-topbar-space">
+        <div ref={kalenderAnchorRef} />
+        <PageSection title="Kalender">
+          <VerlaufView
+            workouts={workouts}
+            plans={plans}
+            units={units}
+            loading={loading}
+            onToggleDone={handleToggleDone}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onPlanNew={handlePlanNew}
+            onApplyPlan={handleApplyPlan}
+            formInitial={formInitial}
+            onOpenForm={setFormInitial}
+            onCancelForm={() => setFormInitial(false)}
+            onSaveForm={handleSave}
+            userSports={userSports}
+            showToast={showToast}
+          />
+        </PageSection>
+
+        <PageSection title="Einheiten">
+          <EinheitenView units={units} loading={loading} />
+        </PageSection>
+
+        <PageSection title="Pläne">
+          <PlaeneView
+            session={session}
+            plans={plans}
+            units={units}
+            loading={loading}
+            userSports={userSports}
+            editing={editingPlan}
+            applying={applyingPlan}
+            onEditPlan={setEditingPlan}
+            onDeletePlan={handleDeletePlan}
+            onSavePlan={handleSavePlan}
+            onCancelEdit={() => setEditingPlan(null)}
+            onOpenApply={setApplyingPlan}
+            onApplyPlan={handleApplyPlan}
+            onCancelApply={() => setApplyingPlan(null)}
+            onStartFromPlan={startFromPlan}
+            showToast={showToast}
+          />
+        </PageSection>
+
+        <PageSection title="Auswertung">
+          <AuswertungView workouts={workouts} loading={loading} />
+        </PageSection>
+      </div>
     </>
   );
 }
