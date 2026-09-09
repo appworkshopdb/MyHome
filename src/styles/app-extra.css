@@ -2716,44 +2716,87 @@
   margin: 24px 0 14px;
 }
 
-/* ── TopBar: rechte Gruppe aus Badges + Avatar ────────────────── */
+/* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
+   Gamification (links) + Trennlinie + Profil (rechts). Ersetzt die
+   frühere Aufteilung in zwei freistehende Elemente — siehe Mockup
+   "Chrome & Gamification". */
 .chrome-top-right {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-1);
+  display:       flex;
+  align-items:   stretch;
+  height:        42px;
+  background:    var(--chrome-pill-bg);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-pill);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
 }
 
-/* ── Badge-Gruppe (Vogel + Nest nebeneinander) ────────────────── */
-.gami-badges {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-1);
-}
-
-/* Einzelner Badge-Button */
-.gami-badge {
-  display:         flex;
-  align-items:     center;
-  gap:             3px;
-  height:          32px;
-  padding:         0 var(--space-2);
-  border:          none;
-  border-radius:   var(--r-pill);
-  background:      var(--action-quiet-bg);
-  color:           var(--action-primary);
-  cursor:          pointer;
-  transition:      background var(--motion-fast);
-  white-space:     nowrap;
-}
-.gami-badge:active {
+.chrome-top-divider {
+  width:      1px;
+  align-self: stretch;
   background: var(--border-hairline);
+  flex-shrink: 0;
 }
 
-.gami-badge__num {
-  font-variant-numeric: tabular-nums;
-  color:                var(--text-primary);
-  font-weight:          700;
-  font-size:            11px;
+/* Tippfläche 1 — Gamification (Vogel+Level, Nest+Streak) */
+.gami-tapzone {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  padding:     5px 13px 5px 5px;
+  border:      none;
+  background:  none;
+  cursor:      pointer;
+  min-height:  var(--touch-target);
+  transition:  background var(--motion-fast);
+}
+.gami-tapzone:active { background: var(--surface-sunken); }
+
+.gami-tapzone__item {
+  display:     flex;
+  align-items: center;
+  gap:         7px;
+  flex:        none;
+}
+.gami-tapzone__item--nest { gap: 6px; }
+
+.gami-tapzone__label {
+  font-size:      14px;
+  font-weight:    800;
+  color:          var(--text-primary);
+  letter-spacing: -0.01em;
+  white-space:    nowrap;
+}
+.gami-tapzone__label--num { font-variant-numeric: tabular-nums; }
+
+/* Tippfläche 2 — Profil */
+.chrome-top-profile-zone {
+  display:     flex;
+  align-items: center;
+  padding:     4px 4px 4px 9px;
+  border:      none;
+  background:  none;
+  cursor:      pointer;
+  min-height:  var(--touch-target);
+  min-width:   var(--touch-target);
+  justify-content: center;
+  transition:  background var(--motion-fast);
+}
+.chrome-top-profile-zone:active { background: var(--surface-sunken); }
+
+.chrome-top-avatar {
+  width:          32px;
+  height:         32px;
+  border-radius:  var(--r-pill);
+  background:     var(--action-primary);
+  color:          var(--text-on-accent);
+  display:        flex;
+  align-items:    center;
+  justify-content: center;
+  font-size:      14px;
+  font-weight:    800;
+  flex-shrink:    0;
+  position:       relative;
 }
 
 /* ── Sheet ─────────────────────────────────────────────────────── */

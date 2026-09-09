@@ -84,19 +84,13 @@
 }
 .chrome-top-btn svg { width: 20px; height: 20px; }
 
-/* Profil-Button: gefüllte Pille */
-.chrome-top-btn--profile {
-  border-radius: var(--r-pill);
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-}
-.chrome-top-btn--profile:hover { background: var(--action-hover); }
-
-/* Warnpunkt */
-.chrome-top-btn .warn-dot {
+/* Warnpunkt — sitzt jetzt am Avatar-Kreis (chrome-top-avatar, 32px)
+   statt am 42px-Button, da Profil eine eigene Tippfläche in der
+   gemeinsamen Pille ist, siehe app-extra.css .chrome-top-avatar. */
+.chrome-top-avatar .warn-dot {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: -1px;
+  right: -1px;
   width: 8px;
   height: 8px;
   border-radius: var(--r-pill);
