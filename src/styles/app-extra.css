@@ -2700,8 +2700,21 @@
 
 
 /* ═══════════════════════════════════════════════════════════════
-   Gamification — Vogel/Nest-System
+   PageSection — Sektions-Überschrift für zusammengelegte Modulseiten
+   (ersetzt die frühere Tab-Leiste innerhalb eines Moduls, siehe
+   PageSection.jsx). Optik wie .hub-section-label auf dem Hub.
    ═══════════════════════════════════════════════════════════════ */
+.page-section { margin-top: 8px; }
+.page-section + .page-section { margin-top: 8px; }
+.page-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1.5px solid var(--text-primary);
+  padding-bottom: 7px;
+  margin: 24px 0 14px;
+}
 
 /* ── TopBar: rechte Gruppe aus Badges + Avatar ────────────────── */
 .chrome-top-right {

@@ -55,7 +55,7 @@
   height: 42px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between; /* zwei Cluster, kein Titel dazwischen */
   z-index: 40;
   pointer-events: none; /* Kinder setzen pointer-events: auto */
 }
@@ -104,25 +104,8 @@
   border: 1.5px solid var(--surface-raised);
 }
 
-/* Mittleres Element: flex:1, Höhe 42, r-xl, Modulname zentriert */
-.chrome-top-title {
-  flex: 1;
-  height: 42px;
-  border-radius: var(--r-xl);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-float);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;             /* t-title */
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 12px;
-  pointer-events: none;
-}
+/* Kein Titel-Element mehr — chrome-top-title entfernt (ModuleTopBar.jsx
+   zeigt keinen Modul-/Tab-Namen mehr, siehe Komponente für Begründung). */
 
 /* ── Schwebende BottomNav ─────────────────────────────────────
    Schritt 3 baut die Komponente; hier Layout-Regeln.
