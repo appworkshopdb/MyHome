@@ -2,13 +2,16 @@ import PlanSuggestions from './PlanSuggestions';
 import PlanEditor from './PlanEditor';
 import ApplyPlanDialog from './ApplyPlanDialog';
 
-// Drei Zustände in einem Tab: Liste (Standard), Editor (Vorlage bauen/
+// Drei Zustände in einer Sektion: Liste (Standard), Editor (Vorlage bauen/
 // bearbeiten), Anwenden-Dialog. Der jeweilige Zustand kommt von
-// SportModule, weil das Anwenden anschließend in den Kalender wechselt.
+// SportModule. Neuanlegen läuft ausschließlich über den globalen FAB
+// (SportQuickSheet, Modus "Trainingsplan") — dieselbe Aktion soll app-weit
+// immer über denselben Weg laufen (siehe EinheitenView.jsx). "Bearbeiten"
+// bestehender Pläne bleibt hier, das ist keine Neuanlage.
 export default function PlaeneView({
   session, plans, units, loading, userSports,
   editing, applying,
-  onNewPlan, onEditPlan, onDeletePlan, onSavePlan, onCancelEdit,
+  onEditPlan, onDeletePlan, onSavePlan, onCancelEdit,
   onOpenApply, onApplyPlan, onCancelApply,
   onStartFromPlan, showToast,
 }) {
@@ -36,18 +39,15 @@ export default function PlaeneView({
 
   return (
     <div className="page">
-      <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={onNewPlan}>
-        + Trainingsplan erstellen
-      </button>
-
       <div className="card">
         <div className="card-title">Deine Pläne</div>
         {loading ? (
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Lädt…</p>
         ) : plans.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-            Noch kein eigener Plan. Erstelle eine Vorlage aus mehreren Tagen und
-            trage sie ab einem beliebigen Starttag in den Kalender ein.
+            Noch kein eigener Plan. Leg über den ＋-Button unten rechts einen an
+            — Vorlage aus mehreren Tagen, ab einem beliebigen Starttag in den
+            Kalender eintragbar.
           </p>
         ) : (
           plans.map((plan) => {
