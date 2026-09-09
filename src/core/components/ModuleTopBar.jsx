@@ -6,13 +6,14 @@
 // Links:  Einstellungs-Button (Zahnrad) → öffnet AppMenu
 //         Ausnahme: onBack zeigt Zurück-Pfeil für modul-interne Navigation
 // Mitte:  Modulname als nicht-klickbare Anzeige (title-Prop)
-// Rechts: Profil-Avatar (Initiale auf --action-primary) → #/profile
+// Rechts: [Gamification-Badges] · Profil-Avatar (Initiale auf --action-primary) → #/profile
 //         Warnpunkt in --status-critical wenn hasWarnings
 
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useRoute } from '../lib/useRoute';
 import AppMenu from '../AppMenu';
+import GamificationBadges from './GamificationBadges.jsx';
 
 // Zahnrad-Icon — 20px, 1.8px Stroke, stroke-linecap: round
 function IconGear() {
@@ -71,21 +72,25 @@ export default function ModuleTopBar({ title, onBack, hasWarnings }) {
           {title}
         </div>
 
-        {/* Rechts: Profil */}
-        <button
-          className="chrome-top-btn chrome-top-btn--profile"
-          onClick={() => navigate('profile')}
-          aria-label={
-            hasWarnings
-              ? 'Zum Profil — Pflichtdaten unvollständig'
-              : 'Zum Profil'
-          }
-        >
-          {initial}
-          {hasWarnings && (
-            <span className="warn-dot" aria-hidden="true" />
-          )}
-        </button>
+        {/* Rechts: Gamification-Badges + Profil */}
+        <div className="chrome-top-right">
+          <GamificationBadges />
+
+          <button
+            className="chrome-top-btn chrome-top-btn--profile"
+            onClick={() => navigate('profile')}
+            aria-label={
+              hasWarnings
+                ? 'Zum Profil — Pflichtdaten unvollständig'
+                : 'Zum Profil'
+            }
+          >
+            {initial}
+            {hasWarnings && (
+              <span className="warn-dot" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* AppMenu — öffnet sich unterhalb der Chrome */}
