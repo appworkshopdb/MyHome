@@ -1,8 +1,24 @@
 // modules/shopping/ShoppingModule.jsx
+//
+// SONDERFALL unter den fünf Modulen: "Listen" ist kein einfacher Tab mit
+// Inhalt — ein Tap auf eine Liste wechselt komplett auf ItemsView mit
+// eigenem Zurück-Pfeil (Drill-down, keine Geschwister-Ansicht wie bei den
+// anderen Modulen). Würden Listen + Artikelansicht stumpf untereinander-
+// gelegt, lägen die Artikel ALLER Listen auf einer Seite — ein anderes
+// Feature, nicht dieselbe Funktion in neuer Optik.
+//
+// Deshalb: "Listen" und "Häufig" werden zu einer durchlaufenden Seite
+// zusammengelegt (zwei PageSections), die Artikelansicht EINER Liste
+// bleibt aber ein eigener Screen mit Zurück-Pfeil, unverändert.
+//
+// Da die TopBar app-weit keinen Titel mehr zeigt (siehe ModuleTopBar.jsx),
+// aber der Listenname in der Artikelansicht wichtiger Kontext ist (welche
+// Liste ist das?), steht er dort jetzt als Inhalts-Überschrift direkt in
+// der Seite (.page-header), nicht mehr in der fixen Chrome oben.
 
 import { useState, useEffect, useCallback } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar.jsx';
-import ModuleTabs   from '../../core/components/ModuleTabs.jsx';
+import PageSection  from '../../core/components/PageSection.jsx';
 
 import ListView    from './components/ListView.jsx';
 import ItemsView   from './components/ItemsView.jsx';
@@ -12,16 +28,7 @@ import { loadLists } from './lib/shoData.js';
 
 import './shopping.css';
 
-const TABS = [
-  { key: 'listen', label: 'Listen'  },
-  { key: 'haeufig', label: 'Häufig' },
-];
-
-const DEFAULT_VIEW = 'listen';
-
-export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
-  const activeTab = TABS.find((t) => t.key === view) ? view : DEFAULT_VIEW;
-
+export default function ShoppingModule({ hasWarnings }) {
   const [lists,    setLists]    = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
@@ -40,22 +47,16 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     fetchLists().finally(() => setLoading(false));
   }, [fetchLists]);
 
-  // Beim Tab-Wechsel offene Liste schließen
-  function handleTabChange(key) {
-    setOpenList(null);
-    onNavigateView(key);
-  }
-
   if (loading) {
     return (
       <>
-        <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
+        <ModuleTopBar hasWarnings={hasWarnings} />
         <div className="page-loading with-topbar-space">Wird geladen …</div>
       </>
     );
   }
 
-  // ── Artikelansicht: TopBar zeigt Zurück-Pfeil + Listenname ──
+  // ── Artikelansicht: eigener Screen mit Zurück-Pfeil, unverändert ──
   if (openList) {
     async function handleBack() {
       await fetchLists(); // Status neu laden
@@ -63,8 +64,11 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     }
     return (
       <>
-        <ModuleTopBar title={openList.name} onBack={handleBack} hasWarnings={hasWarnings} />
-        <div className="sho-module-content sho-detail-content">
+        <ModuleTopBar onBack={handleBack} hasWarnings={hasWarnings} />
+        <div className="sho-module-content sho-detail-content with-topbar-space">
+          <div className="page-header">
+            <h1>{openList.name}</h1>
+          </div>
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
           )}
@@ -77,33 +81,29 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     );
   }
 
-  // ── Hauptansicht mit Tabs ────────────────────────────────────
+  // ── Hauptseite: Listen + Häufig als zwei Abschnitte ──────────────
   return (
     <>
-      <ModuleTopBar title="Einkauf" hasWarnings={hasWarnings} />
-      <ModuleTabs items={TABS} active={activeTab} onChange={handleTabChange} />
-      <div className="sho-module-content">
+      <ModuleTopBar hasWarnings={hasWarnings} />
+      <div className="sho-module-content with-topbar-space">
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
 
-        {activeTab === 'listen' && (
+        <PageSection title="Listen">
           <ListView
             lists={lists}
             onListsChange={fetchLists}
-            onOpenList={(list) => {
-              setOpenList(list);
-              // Tab bleibt auf 'listen', openList steuert die Tiefe
-            }}
+            onOpenList={setOpenList}
           />
-        )}
+        </PageSection>
 
-        {activeTab === 'haeufig' && (
+        <PageSection title="Häufig">
           <FreqView onAddToList={(item) => {
             // Öffnet die erste Liste direkt wenn vorhanden
             if (lists.length > 0) setOpenList(lists[0]);
           }} />
-        )}
+        </PageSection>
       </div>
     </>
   );

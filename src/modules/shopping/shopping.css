@@ -9,11 +9,9 @@
   padding-bottom: 32px;
 }
 
-/* Artikelansicht (openList) hat KEINE Tabs — braucht daher selbst den
-   Abstand zur schwebenden TopBar (58px Unterkante + 8px Luft). */
-.sho-detail-content {
-  padding-top: 66px;
-}
+/* Artikelansicht (openList) hat keine PageSection über sich — braucht
+   daher .with-topbar-space (siehe layout.css) für den Abstand zur
+   schwebenden TopBar, genau wie alle anderen tabellosen Screens. */
 
 /* ─── Lade-Zustand ────────────────────────────────────────── */
 
