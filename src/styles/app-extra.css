@@ -2706,14 +2706,206 @@
    ═══════════════════════════════════════════════════════════════ */
 .page-section { margin-top: 8px; }
 .page-section + .page-section { margin-top: 8px; }
-.page-section-title {
-  font-size: 11px;
+/* ═══════════════════════════════════════════════════════════════
+   SectionHead — Kopfzeile jeder Sektion (Fokuskarte-Übersichten UND
+   Detail-Screens, siehe PageSection.jsx). Ersetzt die frühere kleine
+   Versal-Überschrift der Tab-Flachlegung.
+   ═══════════════════════════════════════════════════════════════ */
+.section-head {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  margin-bottom:   10px;
+}
+.section-head-title {
+  font-size:      19px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--text-primary);
+  margin:         0;
+}
+.section-head-action {
+  font-size:   13px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  color:       var(--action-primary);
+  background:  none;
+  border:      none;
+  padding:     0;
+  cursor:      pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FocusCard — dunkle Fokuskarte (FocusCard.jsx)
+   ═══════════════════════════════════════════════════════════════ */
+.focus-card {
+  background:    var(--surface-inverse);
+  color:         var(--raw-paper-000);
+  border-radius: var(--r-2xl);
+  padding:       20px;
+  box-shadow:    var(--shadow-float);
+}
+
+.focus-card-eyebrow-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             10px;
+}
+.focus-card-eyebrow {
+  font-size:      11px;
+  font-weight:    700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-bottom: 1.5px solid var(--text-primary);
-  padding-bottom: 7px;
-  margin: 24px 0 14px;
+  color:          var(--raw-grey-300);
+}
+.focus-card-eyebrow-right {
+  font-size:   12px;
+  font-weight: 800;
+  color:       var(--raw-grey-300);
+  flex-shrink: 0;
+}
+
+.focus-card-value {
+  font-size:            36px;
+  font-weight:           800;
+  letter-spacing:        -0.03em;
+  font-variant-numeric:  tabular-nums;
+  margin-top:            4px;
+  line-height:           1.15;
+}
+
+.focus-card-meta {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--raw-grey-300);
+  margin-top:  6px;
+  display:     flex;
+  gap:         18px;
+}
+.focus-card-meta b { color: var(--raw-paper-000); font-weight: 700; }
+
+.focus-card-progress {
+  height:        8px;
+  border-radius: var(--r-pill);
+  overflow:      hidden;
+  background:    var(--raw-navy-600);
+  margin-top:    16px;
+}
+.focus-card-progress-fill {
+  height:     100%;
+  background: var(--raw-paper-000);
+  transition: width var(--motion-calm);
+}
+
+.focus-card-footer {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-top:      16px;
+  font-size:       13px;
+  font-weight:     700;
+}
+.focus-card-footer--divider {
+  padding-top: 14px;
+  border-top:  1px solid var(--raw-navy-600);
+}
+
+.focus-card-pill {
+  font-size:     12px;
+  font-weight:   800;
+  background:    var(--raw-paper-000);
+  color:         var(--surface-inverse);
+  border:        none;
+  border-radius: var(--r-pill);
+  padding:       7px 13px;
+  cursor:        pointer;
+  flex-shrink:   0;
+  min-height:    32px;
+}
+
+.focus-card-action-row {
+  display:    flex;
+  gap:        10px;
+  margin-top: 16px;
+}
+.focus-card-action {
+  font-size:      14px;
+  font-weight:    800;
+  border-radius:  12px;
+  padding:        13px;
+  border:         none;
+  cursor:         pointer;
+  min-height:     var(--touch-target);
+  text-align:     center;
+}
+.focus-card-action--primary {
+  flex:       1;
+  background: var(--raw-paper-000);
+  color:      var(--surface-inverse);
+}
+.focus-card-action--secondary {
+  flex:       none;
+  background: none;
+  color:      var(--raw-paper-000);
+  border:     1.5px solid var(--raw-navy-600);
+  padding:    13px 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AreaList / AreaRow — "Bereiche"-Liste (AreaList.jsx, AreaRow.jsx)
+   ═══════════════════════════════════════════════════════════════ */
+.area-list {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
+}
+
+.area-row {
+  display:         flex;
+  align-items:     center;
+  width:           100%;
+  padding:         15px 18px;
+  border:          none;
+  border-top:      1px solid var(--surface-page);
+  background:      none;
+  cursor:          pointer;
+  text-align:      left;
+  min-height:      var(--touch-target);
+}
+.area-row:first-child { border-top: none; }
+
+.area-row-label {
+  flex:        1;
+  font-size:   14px;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.area-row-value {
+  font-size:    12px;
+  font-weight:  700;
+  margin-right: 10px;
+  white-space:  nowrap;
+}
+.area-row-value--neutral  { color: var(--text-muted); }
+.area-row-value--caution  { color: var(--status-caution); font-weight: 800; }
+.area-row-value--critical { color: var(--status-critical); font-weight: 800; }
+
+.area-row-chevron {
+  font-size:   15px;
+  font-weight: 700;
+  color:       var(--raw-ink-400);
+  flex-shrink: 0;
+}
+
+/* FAB-Freiraum: nur die letzte Zeile bekommt zusätzlichen Platz rechts,
+   damit der schwebende FAB (56px, right:18px) nichts verdeckt. */
+.area-list--fab-clearance .area-row:last-child {
+  padding-right: 76px;
 }
 
 /* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
