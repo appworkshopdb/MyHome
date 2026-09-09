@@ -6,55 +6,52 @@ import { getBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfile
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
-import ModuleTabs from '../../core/components/ModuleTabs';
+import PageSection from '../../core/components/PageSection';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
 import LexikonView from './components/LexikonView';
 import TippsView from './components/TippsView';
 import * as db from './lib/nutData';
 
-// Meldet sich beim zentralen, modulunabhängigen Pflichtdaten-Register an
-// (core/lib/requiredDataRegistry.js) — läuft einmalig beim ersten Import
-// dieser Datei, unabhängig davon, ob der Hub oder das Modul gerade
-// angezeigt wird. Der Hub kennt dadurch "Ernährung" nicht direkt.
-// Körperdaten (body_profile) gehören core, nicht dem Ernährungs-Modul —
-// die Lücke wird deshalb unter dem Key "profile" gemeldet (dort ist auch
-// das Formular), nicht unter "nutrition". Sport meldet sich mit einer
-// eigenen Spec unter demselben Key an — beide werden im Register
-// automatisch zusammengeführt (siehe core/lib/requiredDataRegistry.js).
-// Bleibt unverändert bestehen, obwohl der Ernährungs-eigene Profil-Tab
-// entfernt wurde — die Warnung führt jetzt einfach direkt zur
-// gemeinsamen Profil-Seite statt zu einem modul-eigenen Tab.
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
   return getMissingFields(BODY_REQUIRED_FIELDS, body);
 });
 
-// Profil ist raus (siehe Projektkontext.md) — Ernährungsform + BMI-
-// Ergebnis leben jetzt auf der gemeinsamen Profil-Seite
-// (core/Profile.jsx), Körperdaten sowieso schon länger dort.
-const VIEW_TITLES = {
-  rezepte: 'Rezepte',
-  ampel:   'Ampel',
-  lexikon: 'Lexikon',
-  tipps:   'Tipps',
-};
-const DEFAULT_VIEW = 'rezepte';
-const TABS = Object.entries(VIEW_TITLES).map(([key, label]) => ({ key, label }));
-
-// Das Ernährungs-Modul in seiner Gesamtheit. Lädt die persönlichen Daten
-// (eigene Lebensmittel-Ergänzungen, Rezepte) einmalig aus Supabase und
-// reicht sie an die vier Unteransichten weiter.
-// view/onNavigateView kommen von App.jsx (URL-Routing) — kein eigener
-// useState für die Unteransicht mehr, siehe FinanceModule.jsx/Projektkontext.md.
-export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
+// KEINE TABS MEHR: Rezepte/Ampel/Lexikon/Tipps liegen als vier
+// PageSection-Blöcke untereinander, in derselben Reihenfolge wie die
+// früheren Tabs.
+//
+// BESONDERHEIT diese Modul: RezepteView UND AmpelView hatten JEWEILS
+// einen eigenen fest positionierten "+"-Button (".global-fab", identisch
+// positioniert wie der App-weite FAB) — deshalb blendete sich der
+// globale FAB für "nutrition" bisher komplett aus (siehe GlobalFab.jsx).
+// Das ging nur gut, weil immer nur einer der beiden Tabs sichtbar war.
+// Auf der zusammengelegten Seite wären jetzt BEIDE FABs gleichzeitig im
+// DOM und würden sich exakt überlappen.
+//
+// Lösung: "editing"/"foodForm" werden hierher gehoben (lifted state,
+// gleiches Muster wie editingPlan in SportModule), der globale FAB
+// (core/, darf nicht aus modules/ importieren) zeigt bei Ernährung eine
+// kleine Moduswahl "Neues Rezept"/"Neues Lebensmittel" und feuert dafür
+// ein window-Event — GENAU wie sport:data-changed, nur in die andere
+// Richtung. Dieses Modul hört zu und öffnet den passenden, unverändert
+// bestehenden Dialog (RecipeEditorModal/FoodFormModal). Kein Import
+// zwischen core/ und modules/nutrition/ nötig, keine Dopplung der
+// bestehenden, funktionierenden Formulare.
+export default function NutritionModule({ hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
-  const activeView = VIEW_TITLES[view] ? view : DEFAULT_VIEW;
   const [foods, setFoods] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Lifted aus RezepteView: undefined = geschlossen, null = neu, Objekt = bearbeiten
+  const [editingRecipe, setEditingRecipe] = useState(undefined);
+  // Lifted aus AmpelView
+  const [showFoodForm, setShowFoodForm] = useState(false);
+  const [editingFood, setEditingFood]   = useState(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -74,6 +71,19 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   }, [session, showToast]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Hört auf den globalen FAB (GlobalFab.jsx, core/) — der darf nicht
+  // direkt in dieses Modul reinrufen, deshalb window-Events statt Props.
+  useEffect(() => {
+    function openNewRecipe() { setEditingRecipe(null); }
+    function openNewFood()   { setEditingFood(null); setShowFoodForm(true); }
+    window.addEventListener('nutrition:new-recipe', openNewRecipe);
+    window.addEventListener('nutrition:new-food', openNewFood);
+    return () => {
+      window.removeEventListener('nutrition:new-recipe', openNewRecipe);
+      window.removeEventListener('nutrition:new-food', openNewFood);
+    };
+  }, []);
 
   async function handleSaveFood(food) {
     await db.saveFood(session, food);
@@ -102,27 +112,54 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     setRecipes((prev) => prev.filter((r) => r.id !== id));
   }
 
-  if (loading) return <div className="loading-note">Lädt…</div>;
+  if (loading) {
+    return (
+      <>
+        <ModuleTopBar hasWarnings={hasWarnings} />
+        <div className="loading-note with-topbar-space">Lädt…</div>
+      </>
+    );
+  }
 
   return (
     <>
-      <ModuleTopBar title={VIEW_TITLES[activeView]} hasWarnings={hasWarnings} />
-      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
-      {activeView === 'ampel' && (
-        <AmpelView foods={foods} currentUserId={session.user.id} onSaveFood={handleSaveFood} onDeleteFood={handleDeleteFood} />
-      )}
-      {activeView === 'rezepte' && (
-        <RezepteView
-          foods={foods}
-          recipes={recipes}
-          currentUserId={session.user.id}
-          onSaveRecipe={handleSaveRecipe}
-          onDeleteRecipe={handleDeleteRecipe}
-          showToast={showToast}
-        />
-      )}
-      {activeView === 'lexikon' && <LexikonView />}
-      {activeView === 'tipps' && <TippsView />}
+      <ModuleTopBar hasWarnings={hasWarnings} />
+
+      <div className="nut-module-content with-topbar-space">
+        <PageSection title="Rezepte">
+          <RezepteView
+            foods={foods}
+            recipes={recipes}
+            currentUserId={session.user.id}
+            onSaveRecipe={handleSaveRecipe}
+            onDeleteRecipe={handleDeleteRecipe}
+            showToast={showToast}
+            editing={editingRecipe}
+            setEditing={setEditingRecipe}
+          />
+        </PageSection>
+
+        <PageSection title="Ampel">
+          <AmpelView
+            foods={foods}
+            currentUserId={session.user.id}
+            onSaveFood={handleSaveFood}
+            onDeleteFood={handleDeleteFood}
+            showForm={showFoodForm}
+            setShowForm={setShowFoodForm}
+            formFood={editingFood}
+            setFormFood={setEditingFood}
+          />
+        </PageSection>
+
+        <PageSection title="Lexikon">
+          <LexikonView />
+        </PageSection>
+
+        <PageSection title="Tipps">
+          <TippsView />
+        </PageSection>
+      </div>
     </>
   );
 }
