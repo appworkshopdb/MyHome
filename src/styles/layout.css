@@ -98,8 +98,27 @@
   border: 1.5px solid var(--surface-raised);
 }
 
-/* Kein Titel-Element mehr — chrome-top-title entfernt (ModuleTopBar.jsx
-   zeigt keinen Modul-/Tab-Namen mehr, siehe Komponente für Begründung). */
+/* Titel für Detail-Screens (onBack gesetzt) — nur dort gerendert, siehe
+   ModuleTopBar.jsx. flex:1 zentriert den Text automatisch im Raum
+   zwischen dem linken Zurück-Button und der rechten Pille, unabhängig
+   davon, wie breit die Pille gerade ist (Vogel/Nest/Avatar variieren
+   nicht in der Breite, aber das Prinzip bleibt robust). Kein eigener
+   Hintergrund/Radius — reiner Text, wie im Mockup "Detail-Screen". */
+.chrome-top-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+}
+
+/* Übersichten (kein onBack, kein Titel): chrome-top hat nur zwei Kinder,
+   space-between schiebt sie an die Enden — wie bisher. */
 
 /* ── Schwebende BottomNav ─────────────────────────────────────
    Schritt 3 baut die Komponente; hier Layout-Regeln.
