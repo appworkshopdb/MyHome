@@ -1,48 +1,48 @@
 import { lazy, Suspense } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
-import ModuleTabs from '../../core/components/ModuleTabs';
+import PageSection from '../../core/components/PageSection';
 import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
 
 // Getrennt geladen: SummaryView zieht chart.js + react-chartjs-2 nach
-// (zusammen 177 kB). Wer nur Monatsansicht und Verträge nutzt, lädt das nie.
+// (zusammen 177 kB). Bleibt hinter Suspense, damit der Rest der Seite
+// (Monat, Verträge) sofort sichtbar ist, während dieser Abschnitt im
+// Hintergrund nachlädt — lädt jetzt zwar bei jedem Öffnen des Moduls
+// mit (vorher nur bei Tab-Klick), aber blockiert den ersten Render nicht.
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
-const VIEWS = {
-  months: MonthsView,
-  summary: SummaryView,
-  contracts: ContractsView,
-  settings: SettingsView,
-};
-const TABS = [
-  { key: 'months',    label: 'Monat' },
-  { key: 'contracts', label: 'Verträge' },
-  { key: 'summary',   label: 'Auswertung' },
-  { key: 'settings',  label: 'Einstellungen' },
-];
-const DEFAULT_VIEW = 'months';
-
-// Das Finanzen-Modul in seiner Gesamtheit — genau der Inhalt, der vorher
-// die komplette App war. view/onNavigateView kommen von App.jsx (URL-
-// Routing, core/lib/useRoute.js) — kein eigener useState mehr, dadurch
-// übersteht die aktuelle Unteransicht einen Reload automatisch und hat
-// einen eigenen Link (#/finance/summary usw.), siehe Projektkontext.md.
-//
-// Die Bottom-Nav (core/components/ModuleBottomNav.jsx) ist seit
-// BOTTOMNAV_6MODULE.md global/modulübergreifend — die Unteransichten
-// dieses Moduls (Monat/Auswertung/Verträge/Einstellungen) laufen daher
-// über ModuleTabs oben im Content statt über eine modul-eigene Leiste.
-export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
-  const activeView = VIEWS[view] ? view : DEFAULT_VIEW;
-  const View = VIEWS[activeView];
+// KEINE TABS MEHR: Monat/Verträge/Auswertung/Einstellungen liegen als
+// vier PageSection-Blöcke untereinander, in derselben Reihenfolge wie
+// die früheren Tabs. Keine eigenen "+"-Konflikte mit dem globalen FAB
+// hier — MonthsView hatte schon keinen eigenen Neu-Button (Einträge
+// laufen über den FAB → EntrySheet), und die "+Fixkosten"/"+Vertrag"-
+// Buttons in ContractsView legen etwas anderes an (wiederkehrende
+// Vorlagen, nicht einzelne Buchungen) und bleiben unverändert bestehen.
+export default function FinanceModule({ hasWarnings }) {
   return (
     <>
-      <ModuleTopBar title={TABS.find((t) => t.key === activeView)?.label} hasWarnings={hasWarnings} />
-      <ModuleTabs items={TABS} active={activeView} onChange={onNavigateView} />
-      <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
-        <View />
-      </Suspense>
+      <ModuleTopBar hasWarnings={hasWarnings} />
+
+      <div className="fin-module-content with-topbar-space">
+        <PageSection title="Monat">
+          <MonthsView />
+        </PageSection>
+
+        <PageSection title="Verträge">
+          <ContractsView />
+        </PageSection>
+
+        <PageSection title="Auswertung">
+          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            <SummaryView />
+          </Suspense>
+        </PageSection>
+
+        <PageSection title="Einstellungen">
+          <SettingsView />
+        </PageSection>
+      </div>
     </>
   );
 }
