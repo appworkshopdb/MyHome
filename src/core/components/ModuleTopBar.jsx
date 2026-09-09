@@ -7,6 +7,15 @@
 //         Ausnahme: onBack zeigt Zurück-Pfeil für modul-interne Navigation
 //         (Detail-Screens innerhalb eines Bereichs) — NUR der linke Button
 //         wechselt, die rechte Pille bleibt unverändert bestehen.
+// Mitte:  Titel — NUR sichtbar wenn onBack gesetzt ist (Detail-Screen),
+//         sonst kein Titel (Übersichten haben keinen). title-Prop wird
+//         dafür seit Schritt 4 (UMBAU-PLAN.md) wieder ausgewertet.
+//         Zentriert im verfügbaren Raum zwischen Zurück-Button und Pille
+//         — NICHT exakt auf die volle Bildschirmbreite bezogen, weil die
+//         Pille (anders als ein einzelner 36px-Button) breiter ist. Das
+//         weicht von der ursprünglichen README-Vorgabe "36px Ausgleich
+//         rechts" ab, die von einer verschwindenden Pille ausging — hier
+//         bewusst angepasst, weil die Pille laut Vorgabe bestehen bleibt.
 // Rechts: EINE Pille (`.chrome-top-right`), zwei Tippflächen getrennt durch
 //         eine Haarlinie: GamificationBadges (Vogel+Level, Nest+Streak,
 //         öffnet GamificationSheet) und Profil-Avatar (Initiale auf
@@ -16,12 +25,10 @@
 //         eines offenen FAB-Sheets (SheetShell deckt den ganzen Screen ab),
 //         nicht beim reinen Navigieren in einen Bereich.
 //
-// KEIN Titel-Element mehr in der Mitte (weder Modulname noch Tab-Name):
-// die Bottom-Nav zeigt bereits, in welchem Modul man ist, und innerhalb
-// eines Moduls gibt es keine Tabs mehr, die benannt werden müssten.
-// `title`-Prop wird nicht mehr genutzt, Aufrufer dürfen ihn trotzdem
-// noch übergeben (wird einfach ignoriert) — spart, alle Aufrufer sofort
-// anfassen zu müssen.
+// Auf Modul-Übersichten (kein onBack) gibt es keinen Titel — die Bottom-
+// Nav zeigt bereits, in welchem Modul man ist. Auf Detail-Screens (onBack
+// gesetzt) steht der Bereichsname mittig zwischen den beiden Chrome-
+// Elementen.
 
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -50,7 +57,7 @@ function IconArrowLeft() {
   );
 }
 
-export default function ModuleTopBar({ onBack, hasWarnings }) {
+export default function ModuleTopBar({ onBack, title, hasWarnings }) {
   const { session } = useAuth();
   const { navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,7 +65,8 @@ export default function ModuleTopBar({ onBack, hasWarnings }) {
 
   return (
     <>
-      {/* Links: freistehender Button. Rechts: eine zusammenhängende Pille. */}
+      {/* Links: freistehender Button. Mitte: Titel (nur Detail-Screens).
+          Rechts: eine zusammenhängende Pille. */}
       <div className="chrome-top" role="banner">
 
         {/* Links: Zurück oder Einstellungen */}
@@ -79,6 +87,11 @@ export default function ModuleTopBar({ onBack, hasWarnings }) {
           >
             <IconGear />
           </button>
+        )}
+
+        {/* Mitte: Titel — nur auf Detail-Screens (onBack gesetzt) */}
+        {onBack && title && (
+          <div className="chrome-top-title">{title}</div>
         )}
 
         {/* Rechts: EIN Element, zwei Tippflächen — Gamification links,
