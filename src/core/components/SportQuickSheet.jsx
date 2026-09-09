@@ -10,7 +10,6 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 const MODES = [
   { key: 'training', label: '💪 Training' },
   { key: 'einheit',  label: '📋 Neue Einheit' },
-  { key: 'verwalten', label: '✏️ Verwalten' },
   { key: 'plan',     label: '🗓 Trainingsplan' },
   { key: 'rest',     label: '😴 Restday' },
 ];
@@ -47,21 +46,6 @@ export default function SportQuickSheet({ onClose, onSaved }) {
   const [saving,  setSaving]  = useState(false);
   const [error,   setError]   = useState('');
 
-  // "Verwalten"-Modus: eigene Einheiten laden, eine zum Bearbeiten/
-  // Löschen auswählen.
-  const [myUnits, setMyUnits] = useState([]);
-  const [unitsLoading, setUnitsLoading] = useState(false);
-  const [selectedUnitId, setSelectedUnitId] = useState(null);
-
-  useEffect(() => {
-    if (mode !== 'verwalten') return;
-    setUnitsLoading(true);
-    db.getUnits(session)
-      .then(setMyUnits)
-      .catch(() => setError('Einheiten konnten nicht geladen werden'))
-      .finally(() => setUnitsLoading(false));
-  }, [mode, session]);
-
   function selectType(key, label) {
     setTypeKey(key);
     if (!title) setTitle(label);
@@ -75,36 +59,6 @@ export default function SportQuickSheet({ onClose, onSaved }) {
     setTitle(preset.title);
     setMuscleGroups(preset.muscle_groups ?? []);
     setShowPresets(false);
-  }
-
-  function selectUnitToEdit(unit) {
-    setSelectedUnitId(unit.id);
-    setTitle(unit.title);
-    setTypeKey(unit.type_key ?? '');
-    setDuration(unit.duration_min != null ? String(unit.duration_min) : '');
-    setMuscleGroups(unit.muscle_groups ?? []);
-    setError('');
-  }
-
-  function backToUnitList() {
-    setSelectedUnitId(null);
-    setTitle(''); setTypeKey(''); setDuration(''); setMuscleGroups([]);
-  }
-
-  async function deleteSelectedUnit() {
-    if (!selectedUnitId) return;
-    setSaving(true);
-    try {
-      await db.deleteUnit(selectedUnitId);
-      notifySportDataChanged();
-      backToUnitList();
-      const fresh = await db.getUnits(session);
-      setMyUnits(fresh);
-    } catch (e) {
-      setError('Löschen fehlgeschlagen');
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function submit() {
@@ -123,16 +77,6 @@ export default function SportQuickSheet({ onClose, onSaved }) {
       } else if (mode === 'einheit') {
         if (!title.trim()) { setError('Bitte Bezeichnung eingeben'); setSaving(false); return; }
         await db.saveUnit(session, {
-          title: title.trim(),
-          type_key: typeKey || null,
-          duration_min: duration ? parseInt(duration, 10) : null,
-          muscle_groups: muscleGroups,
-        });
-      } else if (mode === 'verwalten') {
-        if (!selectedUnitId) { setSaving(false); return; }
-        if (!title.trim()) { setError('Bitte Bezeichnung eingeben'); setSaving(false); return; }
-        await db.saveUnit(session, {
-          id: selectedUnitId,
           title: title.trim(),
           type_key: typeKey || null,
           duration_min: duration ? parseInt(duration, 10) : null,
@@ -249,65 +193,6 @@ export default function SportQuickSheet({ onClose, onSaved }) {
             </>
           )}
 
-          {/* VERWALTEN — bestehende eigene Einheiten bearbeiten/löschen */}
-          {mode === 'verwalten' && (
-            <>
-              {!selectedUnitId ? (
-                unitsLoading ? (
-                  <div className="qsheet-hint">Lädt…</div>
-                ) : myUnits.length === 0 ? (
-                  <div className="qsheet-hint">Noch keine eigene Einheit angelegt.</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {myUnits.map((u) => (
-                      <button
-                        key={u.id}
-                        className="qsheet-chip"
-                        style={{ textAlign: 'left' }}
-                        onClick={() => selectUnitToEdit(u)}
-                      >
-                        {u.title}{u.duration_min ? ` · ${u.duration_min} Min.` : ''}
-                      </button>
-                    ))}
-                  </div>
-                )
-              ) : (
-                <>
-                  <button className="qsheet-chip" style={{ marginBottom: 10 }} onClick={backToUnitList}>
-                    ← Zurück zur Liste
-                  </button>
-
-                  <div className="qsheet-label">Trainingstyp</div>
-                  {TYPE_GROUPS.map(({ group, types }) => (
-                    <div key={group} className="qsheet-type-group">
-                      <div className="qsheet-type-group-label">{group}</div>
-                      <div className="qsheet-chip-row">
-                        {types.map((t) => (
-                          <button key={t.key} className={`qsheet-chip ${typeKey === t.key ? 'active' : ''}`}
-                            onClick={() => selectType(t.key, t.label)}>{t.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <input className="qsheet-input" style={{ marginTop: 14 }} type="text"
-                    placeholder="Name der Einheit"
-                    value={title} onChange={(e) => setTitle(e.target.value)} />
-                  <input className="qsheet-input" type="number" placeholder="Richtwert Dauer in Minuten (optional)"
-                    value={duration} onChange={(e) => setDuration(e.target.value)} min="0" max="1440" />
-
-                  <button
-                    className="qsheet-chip"
-                    style={{ marginTop: 14, color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                    disabled={saving}
-                    onClick={deleteSelectedUnit}
-                  >
-                    Diese Einheit löschen
-                  </button>
-                </>
-              )}
-            </>
-          )}
-
           {/* PLAN */}
           {mode === 'plan' && (
             <>
@@ -336,19 +221,13 @@ export default function SportQuickSheet({ onClose, onSaved }) {
 
           {error && <div className="qsheet-error">{error}</div>}
 
-          {/* Im Verwalten-Modus ohne Auswahl gibt es nichts zu speichern —
-              der Button wäre dann irreführend, deshalb ausgeblendet statt
-              deaktiviert (kein Disabled-Button ohne erklärenden Kontext). */}
-          {!(mode === 'verwalten' && !selectedUnitId) && (
-            <button className="sheet-save" disabled={saving} onClick={submit} style={{ marginTop: 20 }}>
-              {saving ? 'Wird gespeichert…' :
-               mode === 'training' ? 'Training eintragen' :
-               mode === 'einheit'  ? 'Einheit speichern' :
-               mode === 'verwalten' ? 'Änderungen speichern' :
-               mode === 'plan'     ? 'Plan anlegen' :
-               'Restday eintragen'}
-            </button>
-          )}
+          <button className="sheet-save" disabled={saving} onClick={submit} style={{ marginTop: 20 }}>
+            {saving ? 'Wird gespeichert…' :
+             mode === 'training' ? 'Training eintragen' :
+             mode === 'einheit'  ? 'Einheit speichern' :
+             mode === 'plan'     ? 'Plan anlegen' :
+             'Restday eintragen'}
+          </button>
         </div>
       </SheetShell>
     
