@@ -1,15 +1,19 @@
 // core/components/PageSection.jsx
-// Ersetzt die frühere Tab-Leiste (ModuleTabs) innerhalb eines Moduls: statt
-// mehrerer Unteransichten, zwischen denen man tippen muss, liegt der
-// gesamte Modulinhalt jetzt auf einer durchlaufenden Seite. Jeder frühere
-// Tab-Inhalt wird zu einem PageSection-Block mit eigener Überschrift.
+// Sektions-Wrapper mit Kopfzeile — auf Detail-Screens weiterhin genutzt
+// (siehe UMBAU-PLAN.md Schritt 4: "Regel: ein Detail-Screen = ein Bereich",
+// Detail-Screens rendern bestehende Views in genau so einer Sektion).
+// Nutzt jetzt SectionHead.jsx für die Kopfzeile statt eigenes Markup, damit
+// Detail-Screens und Modul-Übersichten optisch identisch aussehen.
 //
-// Optik identisch zu Hub.jsx' .hub-section-label (Unterstrich, Versalien,
-// 24px Abstand nach oben) — dadurch sehen Hub und Module konsistent aus.
-export default function PageSection({ title, children }) {
+// action: optional { label, onPress } für einen Ausstieg rechts im Kopf
+// (selten auf Detail-Screens gebraucht, aber möglich — z. B. ein
+// Filter-Reset o. Ä.). Ohne action bleibt die Kopfzeile wie bisher: nur Titel.
+import SectionHead from './SectionHead.jsx';
+
+export default function PageSection({ title, action, children }) {
   return (
     <section className="page-section">
-      <h2 className="page-section-title">{title}</h2>
+      <SectionHead title={title} label={action?.label} onPress={action?.onPress} />
       {children}
     </section>
   );
