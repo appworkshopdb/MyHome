@@ -117,14 +117,10 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  function openCreate() {
-    setEditHabit(null);
-    setForm({ ...EMPTY_HABIT });
-    setShowForm(true);
-    setShowLibrary(false);
-    setError(null);
-    setLocalOrder(null);
-  }
+  // openCreate() wurde entfernt — "Neue Gewohnheit" läuft jetzt
+  // ausschließlich über den globalen FAB (HabitQuickSheet). openLibrary/
+  // applyTemplate bleiben unverändert, das ist ein eigenständiges Feature
+  // (Vorlagen durchsuchen), keine manuelle Neuanlage.
 
   function openEdit(habit) {
     setEditHabit(habit);
@@ -541,7 +537,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
     <div className="hab-habits-view">
 
       <div className="hab-habits-actions">
-        <button className="btn btn-primary" onClick={openCreate}>+ Neue Gewohnheit</button>
         <button className="btn btn-secondary" onClick={openLibrary}>Vorlagen</button>
         <button className="hab-archive-btn" onClick={openArchive} title="Archiv">📦</button>
       </div>
@@ -561,8 +556,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
           <div className="hab-empty-title">Noch keine Gewohnheiten</div>
           <div className="hab-empty-text">Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.</div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={openCreate}>Selbst erstellen</button>
-            <button className="btn btn-secondary" onClick={openLibrary}>Aus Vorlagen</button>
+            <button className="btn btn-primary" onClick={openLibrary}>Aus Vorlagen</button>
+            <div className="hab-empty-fab-hint">oder mit dem <b>＋</b>-Button unten rechts von Grund auf neu</div>
           </div>
         </div>
       )}
