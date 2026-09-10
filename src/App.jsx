@@ -69,11 +69,17 @@ export default function App() {
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
-  // Hub und Profil: App.jsx rendert ModuleTopBar global.
-  // Module rendern ihre eigene Instanz (mit Tab-Titel / onBack),
-  // bekommen hasWarnings als Prop übergeben (Schritt 4–7 löst das sauber).
-  const showGlobalTopBar = activeModule === null || activeModule === 'profile';
-  const globalTitle = activeModule === null ? 'Zuhause' : 'Profil';
+  // Nur noch die Profilseite bekommt eine global gerenderte ModuleTopBar.
+  // Module UND Hub rendern seit Schritt 10 ihre eigene Instanz, weil sie
+  // auf Detail-Screens einen Zurück-Pfeil und einen zentrierten Titel
+  // brauchen — beides kann App.jsx von außen nicht wissen.
+  const showGlobalTopBar = activeModule === 'profile';
+  const globalTitle = 'Profil';
+
+  // padding-top:0, wo die Seite ihre eigene fixed TopBar mitbringt (Hub
+  // und Module); die Inhalte tragen den Abstand selbst über
+  // .with-topbar-space. Nur die Profilseite behält das Padding.
+  const eigeneTopBar = activeModule !== 'profile';
 
   return (
     <EntrySheetProvider>
@@ -81,8 +87,8 @@ export default function App() {
         <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
       )}
 
-      <main className={`main-content${isModule ? ' module-active' : ''}`}>
-        {activeModule === null && <Hub onOpenModule={navigate} />}
+      <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
+        {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
         {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
         {mod && (ModuleComponent ? (
           // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
