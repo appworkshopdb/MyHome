@@ -207,3 +207,37 @@ export function getContractEndDate(c) {
 export function sumCat(entries, cat) {
   return entries.filter((e) => e.category === cat).reduce((s, e) => s + Number(e.amount || 0), 0);
 }
+
+// ---------------------------------------------------------------------
+// Status/Enddatum einer Vorlage für feste Posten (fin_fix_templates).
+// Gleiche Logik wie getContractStatus/getContractEndDate oben, nur auf
+// Vorlagen statt Verträge angewandt.
+//
+// Lag bis Schritt 6 lokal in ContractsView.jsx — hierher gehoben, weil
+// die Modul-Übersicht (components/OverviewSection.jsx) für die Zeile
+// "Verträge (X läuft aus)" denselben Status braucht. Zwei Kopien
+// derselben Regel würden zwangsläufig auseinanderlaufen.
+// ---------------------------------------------------------------------
+export function getTemplateEndDate(t) {
+  if (t.is_open) return null;
+  if (t.end_date) return new Date(t.end_date);
+  if (t.contract_duration_months && t.start_date) {
+    const s = new Date(t.start_date);
+    if (!isNaN(s)) {
+      const e = new Date(s);
+      e.setMonth(e.getMonth() + Number(t.contract_duration_months));
+      return e;
+    }
+  }
+  return null;
+}
+
+export function getTemplateStatus(t) {
+  if (t.is_open || (!t.end_date && !t.contract_duration_months)) return 'active';
+  const endDate = getTemplateEndDate(t);
+  if (!endDate || isNaN(endDate)) return 'active';
+  const diff = (endDate - new Date()) / (1000 * 60 * 60 * 24);
+  if (diff < 0) return 'expired';
+  if (diff <= 30) return 'expiring';
+  return 'active';
+}
