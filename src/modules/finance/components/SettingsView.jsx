@@ -187,7 +187,7 @@ export default function SettingsView() {
       </p>
 
       <div style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-        Zuhause · Finanzen-Modul · Cloud-Sync über Supabase
+        Nestua · Finanzen-Modul · Cloud-Sync über Supabase
       </div>
     </>
   );
