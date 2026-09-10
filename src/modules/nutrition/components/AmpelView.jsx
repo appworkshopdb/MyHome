@@ -5,16 +5,23 @@ import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
 import CompareModal from './CompareModal';
 
+// initialSearch: Startwert des Suchfelds. Ohne Angabe wie bisher leer.
+// Die Ampel-Fokuskarte der Modul-Übersicht (Schritt 9) reicht damit den
+// dort eingetippten Suchbegriff durch, statt ihn beim Wechsel auf diesen
+// Bereich zu verlieren. Bei vorbelegter Suche starten die Gruppen
+// aufgeklappt — sonst stünde man vor lauter zugeklappten Kopfzeilen und
+// müsste die Treffer erst suchen.
 export default function AmpelView({
   foods, currentUserId, onSaveFood, onDeleteFood,
   showForm, setShowForm, formFood, setFormFood, // lifted nach NutritionModule.jsx — siehe dort für Begründung
+  initialSearch = '',
 }) {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
   const [category, setCategory] = useState('all');
   const [tag, setTag] = useState('all');
   const [glutenfrei, setGlutenfrei] = useState(false);
   const [laktosefrei, setLaktosefrei] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => new Set(foods.map((f) => f.group)));
+  const [collapsed, setCollapsed] = useState(() => (initialSearch ? new Set() : new Set(foods.map((f) => f.group))));
   const [selected, setSelected] = useState(null);
   const [compare, setCompare] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
