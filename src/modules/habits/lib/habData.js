@@ -2,6 +2,7 @@
 // Alle Supabase-Zugriffe für das Gewohnheiten-Modul
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
+import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID)
 // Analog zum rawAuth-Workaround: kein supabase.auth.getUser(),
@@ -9,8 +10,8 @@ import { getSupabase } from '../../../core/lib/supabaseClient.js';
 function getOwnerIdFromToken() {
   try {
     // Token liegt im localStorage unter dem Supabase-Auth-Key
-    // rawAuth.js speichert Session unter 'zuhause_session' (JSON mit access_token)
-    const token = JSON.parse(localStorage.getItem('zuhause_session') || '{}').access_token;
+    // rawAuth.js speichert Session unter SESSION_STORAGE_KEY (JSON mit access_token)
+    const token = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || '{}').access_token;
     if (!token) throw new Error('Kein Token gefunden');
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub; // sub = user UUID
