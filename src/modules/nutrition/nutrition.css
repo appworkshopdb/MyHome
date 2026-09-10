@@ -301,3 +301,116 @@
 .ingredient-row { display: flex; align-items: center; gap: 8px; }
 .ingredient-row .food-name { flex: 1; font-size: 0.85rem; }
 .ingredient-row input { width: 72px; text-align: right; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritt 9 — Ernährungs-Übersicht (components/OverviewSection.jsx):
+   Ampel-Fokuskarte mit Suchfeld und Legende, Rezeptkarten.
+   ═══════════════════════════════════════════════════════════════ */
+.nut-focus-question {
+  font-size:      20px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--raw-paper-000);
+  margin:         6px 0 14px;
+}
+
+.nut-focus-search {
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  background:    var(--raw-paper-000);
+  border-radius: var(--r-lg);
+  padding:       13px 15px;
+}
+.nut-focus-search-icon {
+  display:     flex;
+  color:       var(--raw-ink-400);
+  flex-shrink: 0;
+}
+.nut-focus-search input {
+  flex:        1;
+  border:      none;
+  outline:     none;
+  background:  none;
+  font-family: inherit;
+  font-size:   14px;
+  font-weight: 600;
+  color:       var(--raw-ink-900);
+  min-width:   0;
+}
+.nut-focus-search input::placeholder {
+  color:       var(--raw-ink-400);
+  font-weight: 600;
+}
+
+.nut-ampel-legend {
+  display:    flex;
+  gap:        18px;
+  margin-top: 14px;
+}
+.nut-ampel-legend-item {
+  display:              flex;
+  align-items:          center;
+  gap:                  7px;
+  font-size:            13px;
+  font-weight:          700;
+  color:                var(--raw-grey-300);
+  font-variant-numeric: tabular-nums;
+}
+.nut-ampel-dot {
+  width:         9px;
+  height:        9px;
+  border-radius: var(--r-pill);
+  flex-shrink:   0;
+}
+.nut-ampel-dot--erlaubt { background: var(--raw-green-300); }
+.nut-ampel-dot--okay    { background: var(--raw-ochre-300); }
+.nut-ampel-dot--tabu    { background: var(--raw-red-300); }
+
+.nut-recipe-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   12px;
+}
+.nut-recipe-card {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  background:     var(--surface-raised);
+  border:         1px solid var(--border-hairline);
+  border-radius:  var(--r-2xl);
+  box-shadow:     var(--shadow-card);
+  padding:        10px 10px 13px;
+  cursor:         pointer;
+  text-align:     left;
+  overflow:       hidden;
+}
+/* Platzhalterfläche statt Foto — nut_recipes hat kein Bildfeld. */
+.nut-recipe-image {
+  display:       block;
+  height:        72px;
+  border-radius: var(--r-lg);
+  background:    var(--surface-sunken);
+  margin-bottom: 6px;
+}
+.nut-recipe-title {
+  font-size:   13px;
+  font-weight: 800;
+  color:       var(--text-primary);
+}
+.nut-recipe-meta {
+  font-size:   11px;
+  font-weight: 600;
+  color:       var(--text-muted);
+}
+
+.nut-recipe-empty {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       18px;
+  font-size:     13px;
+  font-weight:   600;
+  color:         var(--text-muted);
+}

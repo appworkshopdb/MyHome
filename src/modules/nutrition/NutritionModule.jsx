@@ -6,7 +6,7 @@ import { getBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfile
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
-import PageSection from '../../core/components/PageSection';
+import OverviewSection from './components/OverviewSection';
 import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
 import LexikonView from './components/LexikonView';
@@ -18,34 +18,42 @@ registerRequirement('profile', async (session) => {
   return getMissingFields(BODY_REQUIRED_FIELDS, body);
 });
 
-// KEINE TABS MEHR: Rezepte/Ampel/Lexikon/Tipps liegen als vier
-// PageSection-Blöcke untereinander, in derselben Reihenfolge wie die
-// früheren Tabs.
+// NEU (UMBAU-PLAN.md Schritt 9): kein Stapel aus vier PageSection-Blöcken
+// mehr — ohne `view` zeigt sich die Übersicht (Ampel-Fokuskarte mit
+// Suchfeld, Rezeptkarten, Bereiche), mit `view` genau EIN Bereich als
+// Vollbild-Detail-Screen.
 //
-// BESONDERHEIT diese Modul: RezepteView UND AmpelView hatten JEWEILS
-// einen eigenen fest positionierten "+"-Button (".global-fab", identisch
-// positioniert wie der App-weite FAB) — deshalb blendete sich der
-// globale FAB für "nutrition" bisher komplett aus (siehe GlobalFab.jsx).
-// Das ging nur gut, weil immer nur einer der beiden Tabs sichtbar war.
-// Auf der zusammengelegten Seite wären jetzt BEIDE FABs gleichzeitig im
-// DOM und würden sich exakt überlappen.
+// KEIN "Mein Profil" im Modul: Körperdaten, Trainingsfokus, Sportarten
+// und Ernährungsform liegen ausschließlich auf der Profilseite oben
+// rechts (core/Profile.jsx). Das Mockup listet "Mein Profil" als
+// Bereich — bewusst nicht umgesetzt, sonst gäbe es zwei Oberflächen für
+// dieselben Daten. ProfilView.jsx bleibt deshalb ungenutzt liegen.
 //
-// Lösung: "editing"/"foodForm" werden hierher gehoben (lifted state,
-// gleiches Muster wie editingPlan in SportModule), der globale FAB
+// BESONDERHEIT dieses Moduls (unverändert): RezepteView UND AmpelView
+// hatten je einen eigenen fest positionierten "+"-Button. "editing"/
+// "foodForm" liegen deshalb hier (lifted state); der globale FAB
 // (core/, darf nicht aus modules/ importieren) zeigt bei Ernährung eine
-// kleine Moduswahl "Neues Rezept"/"Neues Lebensmittel" und feuert dafür
-// ein window-Event — GENAU wie sport:data-changed, nur in die andere
-// Richtung. Dieses Modul hört zu und öffnet den passenden, unverändert
-// bestehenden Dialog (RecipeEditorModal/FoodFormModal). Kein Import
-// zwischen core/ und modules/nutrition/ nötig, keine Dopplung der
-// bestehenden, funktionierenden Formulare.
-export default function NutritionModule({ hasWarnings }) {
+// Moduswahl "Neues Rezept"/"Neues Lebensmittel" und feuert dafür ein
+// window-Event. Dieses Modul hört zu und öffnet den passenden,
+// unverändert bestehenden Dialog.
+const DETAIL_TITLES = {
+  lebensmittel: 'Lebensmittel',
+  rezepte:      'Rezepte',
+  lexikon:      'Lexikon',
+  tipps:        'Tipps',
+};
+
+export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
 
   const [foods, setFoods] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Suchbegriff aus der Ampel-Fokuskarte, der an AmpelView durchgereicht
+  // wird — nur beim Wechsel über die Fokuskarte gesetzt.
+  const [ampelSearch, setAmpelSearch] = useState('');
 
   // Lifted aus RezepteView: undefined = geschlossen, null = neu, Objekt = bearbeiten
   const [editingRecipe, setEditingRecipe] = useState(undefined);
@@ -74,16 +82,28 @@ export default function NutritionModule({ hasWarnings }) {
 
   // Hört auf den globalen FAB (GlobalFab.jsx, core/) — der darf nicht
   // direkt in dieses Modul reinrufen, deshalb window-Events statt Props.
+  // Beide Wege springen zusätzlich in den passenden Bereich, damit der
+  // Dialog nicht über einer Übersicht aufgeht, in der er nichts ändert.
   useEffect(() => {
-    function openNewRecipe() { setEditingRecipe(null); }
-    function openNewFood()   { setEditingFood(null); setShowFoodForm(true); }
+    function openNewRecipe() { setEditingRecipe(null); onNavigateView('rezepte'); }
+    function openNewFood()   { setEditingFood(null); setShowFoodForm(true); onNavigateView('lebensmittel'); }
     window.addEventListener('nutrition:new-recipe', openNewRecipe);
     window.addEventListener('nutrition:new-food', openNewFood);
     return () => {
       window.removeEventListener('nutrition:new-recipe', openNewRecipe);
       window.removeEventListener('nutrition:new-food', openNewFood);
     };
-  }, []);
+  }, [onNavigateView]);
+
+  function backToOverview() {
+    setAmpelSearch('');
+    onNavigateView(null);
+  }
+
+  function openAmpelWithSearch(query) {
+    setAmpelSearch(query);
+    onNavigateView('lebensmittel');
+  }
 
   async function handleSaveFood(food) {
     await db.saveFood(session, food);
@@ -121,44 +141,57 @@ export default function NutritionModule({ hasWarnings }) {
     );
   }
 
+  // ── Detail-Screens: ein Bereich pro Screen ──
+  if (view && DETAIL_TITLES[view]) {
+    return (
+      <>
+        <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
+        <div className="nut-module-content with-topbar-space">
+          {view === 'lebensmittel' && (
+            <AmpelView
+              foods={foods}
+              currentUserId={session.user.id}
+              onSaveFood={handleSaveFood}
+              onDeleteFood={handleDeleteFood}
+              showForm={showFoodForm}
+              setShowForm={setShowFoodForm}
+              formFood={editingFood}
+              setFormFood={setEditingFood}
+              initialSearch={ampelSearch}
+            />
+          )}
+
+          {view === 'rezepte' && (
+            <RezepteView
+              foods={foods}
+              recipes={recipes}
+              currentUserId={session.user.id}
+              onSaveRecipe={handleSaveRecipe}
+              onDeleteRecipe={handleDeleteRecipe}
+              showToast={showToast}
+              editing={editingRecipe}
+              setEditing={setEditingRecipe}
+            />
+          )}
+
+          {view === 'lexikon' && <LexikonView />}
+          {view === 'tipps'   && <TippsView />}
+        </div>
+      </>
+    );
+  }
+
+  // ── Übersicht ──
   return (
     <>
       <ModuleTopBar hasWarnings={hasWarnings} />
-
       <div className="nut-module-content with-topbar-space">
-        <PageSection title="Rezepte">
-          <RezepteView
-            foods={foods}
-            recipes={recipes}
-            currentUserId={session.user.id}
-            onSaveRecipe={handleSaveRecipe}
-            onDeleteRecipe={handleDeleteRecipe}
-            showToast={showToast}
-            editing={editingRecipe}
-            setEditing={setEditingRecipe}
-          />
-        </PageSection>
-
-        <PageSection title="Ampel">
-          <AmpelView
-            foods={foods}
-            currentUserId={session.user.id}
-            onSaveFood={handleSaveFood}
-            onDeleteFood={handleDeleteFood}
-            showForm={showFoodForm}
-            setShowForm={setShowFoodForm}
-            formFood={editingFood}
-            setFormFood={setEditingFood}
-          />
-        </PageSection>
-
-        <PageSection title="Lexikon">
-          <LexikonView />
-        </PageSection>
-
-        <PageSection title="Tipps">
-          <TippsView />
-        </PageSection>
+        <OverviewSection
+          foods={foods}
+          recipes={recipes}
+          onSearch={openAmpelWithSearch}
+          onNavigate={onNavigateView}
+        />
       </div>
     </>
   );
