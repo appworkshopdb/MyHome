@@ -3447,3 +3447,204 @@
   text-align:  center;
   min-height:  var(--touch-target);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritte 8 & 9 — Einkauf- und Ernährungs-Übersicht
+   (OverviewSection.jsx in modules/shopping und modules/nutrition)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Einkauf ─────────────────────────────────────────────────── */
+
+/* Titelzeile in der Fokuskarte */
+.sho-focus-title {
+  font-size:      24px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--raw-paper-000);
+  margin-top:     6px;
+}
+
+/* Häufig-Karte: Wrapper */
+.sho-freq-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       14px 14px 8px;
+}
+
+/* Chip-Reihe */
+.sho-chip-row {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       8px;
+}
+
+.sho-chip {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       7px 13px;
+  border:        1.5px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background:    var(--surface-sunken);
+  font-size:     12px;
+  font-weight:   700;
+  color:         var(--text-primary);
+  cursor:        pointer;
+  min-height:    var(--touch-target);
+  transition:    background var(--motion-fast), border-color var(--motion-fast);
+}
+.sho-chip:active,
+.sho-chip:disabled {
+  background:    var(--action-quiet-bg);
+  border-color:  var(--action-primary);
+  color:         var(--action-primary);
+}
+
+.sho-freq-empty {
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--text-muted);
+  padding:     6px 0 8px;
+}
+
+.sho-freq-error {
+  margin-top:  8px;
+  font-size:   12px;
+  font-weight: 600;
+  color:       var(--status-critical);
+}
+
+/* ── Ernährung ───────────────────────────────────────────────── */
+
+/* Fokuskarte: große Frage */
+.nut-focus-question {
+  font-size:      24px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--raw-paper-000);
+  margin-top:     6px;
+  margin-bottom:  10px;
+}
+
+/* Suchfeld in der dunklen Fokuskarte */
+.nut-focus-search {
+  position:    relative;
+  margin-bottom: 12px;
+}
+.nut-focus-search-icon {
+  position:    absolute;
+  left:        13px;
+  top:         50%;
+  transform:   translateY(-50%);
+  color:       var(--raw-ink-400, #6E7686);
+  display:     flex;
+  align-items: center;
+  pointer-events: none;
+}
+.nut-focus-search input {
+  width:          100%;
+  padding:        13px 15px 13px 38px;
+  border-radius:  12px;
+  border:         none;
+  background:     var(--raw-paper-000);
+  font-size:      14px;
+  font-weight:    500;
+  color:          var(--raw-ink-900);
+  outline:        none;
+  box-sizing:     border-box;
+  /* Kein font-size < 16px → kein iOS-Reinzoomen */
+  font-size:      max(16px, 1rem);
+}
+.nut-focus-search input::placeholder {
+  color: var(--raw-ink-400, #6E7686);
+}
+
+/* Ampel-Legende mit drei farbigen Punkten (auf dunklem Grund → helle Varianten) */
+.nut-ampel-legend {
+  display:     flex;
+  gap:         16px;
+  align-items: center;
+}
+.nut-ampel-legend-item {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   13px;
+  font-weight: 700;
+  color:       var(--raw-paper-000);
+}
+
+/* 9×9 gefüllte Punkte — helle Varianten weil auf dunkler Fokuskarte */
+.nut-ampel-dot {
+  display:       block;
+  width:         9px;
+  height:        9px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+.nut-ampel-dot--erlaubt { background: var(--raw-green-300,  #4FC79B); }
+.nut-ampel-dot--okay    { background: var(--raw-ochre-300,  #D9A94F); }
+.nut-ampel-dot--tabu    { background: var(--raw-red-300,    #F0837C); }
+
+/* Rezept-Grid: zwei Karten nebeneinander */
+.nut-recipe-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   10px;
+}
+
+.nut-recipe-card {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+  padding:        0 0 10px;
+  background:     var(--surface-raised);
+  border:         1px solid var(--border-hairline);
+  border-radius:  var(--r-xl);
+  box-shadow:     var(--shadow-card);
+  cursor:         pointer;
+  text-align:     left;
+  overflow:       hidden;
+  min-height:     var(--touch-target);
+}
+
+/* Platzhalterfläche statt Bild (nut_recipes hat kein Bildfeld) */
+.nut-recipe-image {
+  display:    block;
+  height:     72px;
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.nut-recipe-title {
+  font-size:     13px;
+  font-weight:   800;
+  color:         var(--text-primary);
+  padding:       0 10px;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.nut-recipe-meta {
+  font-size:     11px;
+  font-weight:   600;
+  color:         var(--text-muted);
+  padding:       0 10px;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.nut-recipe-empty {
+  padding:     18px;
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--text-muted);
+  text-align:  center;
+  background:  var(--surface-raised);
+  border:      1px solid var(--border-hairline);
+  border-radius: var(--r-xl);
+}
