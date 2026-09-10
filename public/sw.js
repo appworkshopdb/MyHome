@@ -29,8 +29,14 @@
 // CACHE_VERSION bei Änderungen an dieser Datei hochzählen. Beim Aktivieren
 // werden alle Caches mit anderem Namen gelöscht.
 
-const CACHE_VERSION = 'v2';
-const CACHE_NAME = `zuhause-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `nestua-${CACHE_VERSION}`;
+
+// Beim Aktivieren werden fremde Caches gelöscht. Nach der Umbenennung
+// "Zuhause" → "Nestua" muss auch das alte Präfix mit aufgeräumt werden,
+// sonst bliebe der Cache "zuhause-v2" für immer auf den Geräten liegen.
+// Das alte Präfix kann in einer späteren Version entfernt werden.
+const CACHE_PREFIXES = ['nestua-', 'zuhause-'];
 
 // Minimal halten: gehashte Assets kennt der Worker zur Installationszeit
 // nicht (die Namen ändern sich bei jedem Build), sie landen beim ersten
@@ -51,7 +57,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((namen) => Promise.all(
-        namen.filter((n) => n.startsWith('zuhause-') && n !== CACHE_NAME)
+        namen.filter((n) => CACHE_PREFIXES.some((p) => n.startsWith(p)) && n !== CACHE_NAME)
              .map((n) => caches.delete(n))
       ))
       .then(() => self.clients.claim())
@@ -139,10 +145,10 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data ? event.data.json() : {};
   } catch {
-    payload = { title: 'Zuhause', body: event.data ? event.data.text() : '' };
+    payload = { title: 'Nestua', body: event.data ? event.data.text() : '' };
   }
 
-  const title = payload.title || 'Zuhause';
+  const title = payload.title || 'Nestua';
   const options = {
     body: payload.body || '',
     tag: payload.category || undefined, // gleiche Kategorie ersetzt alte Benachrichtigung statt zu stapeln

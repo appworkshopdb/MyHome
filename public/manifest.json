@@ -1,7 +1,7 @@
 {
-  "id": "/MyHome/",
-  "name": "Zuhause",
-  "short_name": "Zuhause",
+  "id": "./",
+  "name": "Nestua",
+  "short_name": "Nestua",
   "description": "Finanzen, Ernährung, Sport, Einkauf und Gewohnheiten an einem Ort.",
   "lang": "de",
   "dir": "ltr",
