@@ -2707,6 +2707,19 @@
 .page-section { margin-top: 8px; }
 .page-section + .page-section { margin-top: 8px; }
 /* ═══════════════════════════════════════════════════════════════
+   Modul-Übersicht: Seitentitel — 26px/800, über der Fokuskarte auf
+   jeder Modul-Hauptansicht (Hub, Gewohnheiten, Finanzen, Sport, …).
+   Gemeinsam genutzt, deshalb hier statt in einem Modul-CSS.
+   ═══════════════════════════════════════════════════════════════ */
+.overview-page-title {
+  font-size:      26px;
+  font-weight:    800;
+  letter-spacing: -0.03em;
+  color:          var(--text-primary);
+  margin:         0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SectionHead — Kopfzeile jeder Sektion (Fokuskarte-Übersichten UND
    Detail-Screens, siehe PageSection.jsx). Ersetzt die frühere kleine
    Versal-Überschrift der Tab-Flachlegung.
