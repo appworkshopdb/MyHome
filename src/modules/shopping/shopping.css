@@ -1037,3 +1037,52 @@
   margin-top: 0;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritt 8 — Einkauf-Übersicht (components/OverviewSection.jsx):
+   Listenname in der Fokuskarte und die "Häufig"-Chips.
+   ═══════════════════════════════════════════════════════════════ */
+.sho-focus-title {
+  font-size:      24px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--raw-paper-000);
+  margin:         6px 0 14px;
+}
+
+.sho-freq-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       15px 18px;
+}
+
+.sho-chip-row {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       8px;
+}
+.sho-chip {
+  background:    var(--surface-sunken);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-pill);
+  padding:       8px 13px;
+  font-size:     13px;
+  font-weight:   700;
+  color:         var(--text-primary);
+  cursor:        pointer;
+}
+.sho-chip:disabled { opacity: 0.5; cursor: default; }
+
+.sho-freq-empty {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text-muted);
+}
+.sho-freq-error {
+  font-size:   12px;
+  font-weight: 700;
+  color:       var(--status-critical);
+  margin-top:  10px;
+}

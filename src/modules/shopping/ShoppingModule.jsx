@@ -1,25 +1,25 @@
 // modules/shopping/ShoppingModule.jsx
 //
-// SONDERFALL unter den fünf Modulen: "Listen" ist kein einfacher Tab mit
-// Inhalt — ein Tap auf eine Liste wechselt komplett auf ItemsView mit
-// eigenem Zurück-Pfeil (Drill-down, keine Geschwister-Ansicht wie bei den
-// anderen Modulen). Würden Listen + Artikelansicht stumpf untereinander-
-// gelegt, lägen die Artikel ALLER Listen auf einer Seite — ein anderes
-// Feature, nicht dieselbe Funktion in neuer Optik.
+// NEU (UMBAU-PLAN.md Schritt 8): ohne `view` zeigt sich die Übersicht
+// (aktive Liste als Fokuskarte, "Häufig"-Chips, Bereiche), mit `view`
+// genau EIN Bereich als Vollbild-Detail-Screen.
 //
-// Deshalb: "Listen" und "Häufig" werden zu einer durchlaufenden Seite
-// zusammengelegt (zwei PageSections), die Artikelansicht EINER Liste
-// bleibt aber ein eigener Screen mit Zurück-Pfeil, unverändert.
+// SONDERFALL unter den fünf Modulen: die Artikelansicht EINER Liste
+// (ItemsView) war schon vor dem Umbau ein eigener Drill-down-Screen mit
+// Zurück-Pfeil — der bleibt exakt so, als lokaler `openList`-Zustand
+// statt als Hash-Bereich. Der Plan sagt das ausdrücklich ("ItemsView
+// bleibt der bestehende Drill-down"). Deshalb führen sowohl die
+// Fokuskarte als auch die Listen-Zeilen in "Bereiche" direkt dorthin,
+// nicht über onNavigateView.
 //
-// Da die TopBar app-weit keinen Titel mehr zeigt (siehe ModuleTopBar.jsx),
-// aber der Listenname in der Artikelansicht wichtiger Kontext ist (welche
-// Liste ist das?), steht er dort jetzt als Inhalts-Überschrift direkt in
-// der Seite (.page-header), nicht mehr in der fixen Chrome oben.
+// Der Listenname steht in der Artikelansicht als Inhalts-Überschrift in
+// der Seite (.page-header) — die TopBar zeigt dort weiterhin keinen
+// Titel, weil sie den Drill-down nicht kennt.
 
 import { useState, useEffect, useCallback } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar.jsx';
-import PageSection  from '../../core/components/PageSection.jsx';
 
+import OverviewSection from './components/OverviewSection.jsx';
 import ListView    from './components/ListView.jsx';
 import ItemsView   from './components/ItemsView.jsx';
 import FreqView    from './components/FreqView.jsx';
@@ -28,7 +28,12 @@ import { loadLists } from './lib/shoData.js';
 
 import './shopping.css';
 
-export default function ShoppingModule({ hasWarnings }) {
+const DETAIL_TITLES = {
+  listen:  'Alle Listen',
+  haeufig: 'Häufig',
+};
+
+export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
   const [lists,    setLists]    = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
@@ -47,6 +52,8 @@ export default function ShoppingModule({ hasWarnings }) {
     fetchLists().finally(() => setLoading(false));
   }, [fetchLists]);
 
+  function backToOverview() { onNavigateView(null); }
+
   if (loading) {
     return (
       <>
@@ -56,7 +63,7 @@ export default function ShoppingModule({ hasWarnings }) {
     );
   }
 
-  // ── Artikelansicht: eigener Screen mit Zurück-Pfeil, unverändert ──
+  // ── Artikelansicht: bestehender Drill-down, unverändert ──
   if (openList) {
     async function handleBack() {
       await fetchLists(); // Status neu laden
@@ -81,7 +88,31 @@ export default function ShoppingModule({ hasWarnings }) {
     );
   }
 
-  // ── Hauptseite: Listen + Häufig als zwei Abschnitte ──────────────
+  // ── Detail-Screens: ein Bereich pro Screen ──
+  if (view && DETAIL_TITLES[view]) {
+    return (
+      <>
+        <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
+        <div className="sho-module-content with-topbar-space">
+          {error && (
+            <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
+          )}
+
+          {view === 'listen' && (
+            <ListView
+              lists={lists}
+              onListsChange={fetchLists}
+              onOpenList={setOpenList}
+            />
+          )}
+
+          {view === 'haeufig' && <FreqView />}
+        </div>
+      </>
+    );
+  }
+
+  // ── Übersicht ──
   return (
     <>
       <ModuleTopBar hasWarnings={hasWarnings} />
@@ -89,21 +120,12 @@ export default function ShoppingModule({ hasWarnings }) {
         {error && (
           <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
         )}
-
-        <PageSection title="Listen">
-          <ListView
-            lists={lists}
-            onListsChange={fetchLists}
-            onOpenList={setOpenList}
-          />
-        </PageSection>
-
-        <PageSection title="Häufig">
-          <FreqView onAddToList={(item) => {
-            // Öffnet die erste Liste direkt wenn vorhanden
-            if (lists.length > 0) setOpenList(lists[0]);
-          }} />
-        </PageSection>
+        <OverviewSection
+          lists={lists}
+          onOpenList={setOpenList}
+          onListsChange={fetchLists}
+          onNavigate={onNavigateView}
+        />
       </div>
     </>
   );
