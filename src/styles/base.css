@@ -32,6 +32,15 @@
   --raw-ochre-700:#7A5200;
   --raw-ochre-100:#F7EEDC;
 
+  /* Helle Signalfarben — gedacht für farbige Punkte auf DUNKLEM Grund
+     (Ampel-Legende in der Ernährungs-Fokuskarte). Die 700er-Varianten
+     oben wären dort nicht lesbar. Standen bisher nur in themes.css im
+     .dark-Block; hier in Ebene 1 ergänzt, weil die Fokuskarte in BEIDEN
+     Modi dunkel ist. Werte identisch, .dark überschreibt sie folgenlos. */
+  --raw-green-300:#4FC79B;
+  --raw-ochre-300:#D9A94F;
+  --raw-red-300:  #F0837C;
+
   /* Abstände (4px-Raster) */
   --space-1: 4px;
   --space-2: 8px;

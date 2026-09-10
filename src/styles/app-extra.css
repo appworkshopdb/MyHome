@@ -3106,3 +3106,172 @@
   margin:     0;
   padding:    0 var(--space-4);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritt 6 — Finanzen-Übersicht (modules/finance/components/
+   OverviewSection.jsx). Kopfzeile mit Monatswechsler und die helle
+   Karte "Wohin es geht" (gestapelter Balken + Legende).
+   ═══════════════════════════════════════════════════════════════ */
+.fin-overview-head {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  margin-bottom:   14px;
+}
+
+.fin-month-pill {
+  display:       flex;
+  align-items:   center;
+  gap:           2px;
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-pill);
+  box-shadow:    var(--shadow-card);
+  padding:       3px 6px;
+  flex-shrink:   0;
+}
+.fin-month-pill span {
+  font-size:   13px;
+  font-weight: 800;
+  color:       var(--text-primary);
+  min-width:   74px;
+  text-align:  center;
+}
+.fin-month-pill button {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           30px;
+  height:          30px;
+  border:          none;
+  background:      none;
+  color:           var(--text-muted);
+  cursor:          pointer;
+  border-radius:   var(--r-pill);
+}
+
+.fin-split-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       18px;
+}
+
+.fin-split-bar {
+  display:       flex;
+  height:        12px;
+  border-radius: var(--r-sm);
+  overflow:      hidden;
+  background:    var(--data-track);
+}
+.fin-split-seg      { height: 100%; }
+.fin-split-seg--a   { background: var(--data-1); }
+.fin-split-seg--b   { background: var(--data-2); }
+.fin-split-seg--c   { background: var(--data-3); }
+
+.fin-split-legend {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       6px 16px;
+  margin-top: 13px;
+}
+.fin-split-legend-item {
+  display:     flex;
+  align-items: center;
+  gap:         7px;
+  font-size:   12px;
+  font-weight: 700;
+  color:       var(--text-muted);
+}
+.fin-split-legend-item b {
+  color:                var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.fin-split-dot {
+  width:         9px;
+  height:        9px;
+  border-radius: 3px;
+  flex-shrink:   0;
+}
+.fin-split-dot--a { background: var(--data-1); }
+.fin-split-dot--b { background: var(--data-2); }
+.fin-split-dot--c { background: var(--data-3); }
+
+.fin-split-empty {
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text-muted);
+  text-align:  center;
+  padding:     6px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritt 7 — Sport-Übersicht (modules/sport/components/
+   OverviewSection.jsx): Titelzeile der Heute-Fokuskarte und das
+   Wochenraster in der hellen Karte "Diese Woche".
+   ═══════════════════════════════════════════════════════════════ */
+.spo-focus-title {
+  font-size:      24px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  color:          var(--raw-paper-000);
+  margin-top:     6px;
+}
+
+.spo-week-card {
+  display:         flex;
+  justify-content: space-between;
+  gap:             4px;
+  background:      var(--surface-raised);
+  border:          1px solid var(--border-hairline);
+  border-radius:   var(--r-2xl);
+  box-shadow:      var(--shadow-card);
+  padding:         15px 12px;
+}
+
+.spo-week-day {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            7px;
+  flex:           1;
+}
+.spo-week-label {
+  font-size:   10px;
+  font-weight: 700;
+  color:       var(--text-muted);
+}
+.spo-week-cell {
+  width:           32px;
+  height:          32px;
+  border-radius:   11px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       10px;
+  font-weight:     700;
+}
+.spo-week-cell--done {
+  background: var(--action-primary);
+  color:      var(--text-on-accent);
+  font-size:  15px;
+  font-weight: 800;
+}
+.spo-week-cell--today {
+  background: var(--action-quiet-bg);
+  border:     2px solid var(--action-primary);
+}
+.spo-week-cell--planned {
+  background: var(--surface-sunken);
+  border:     1px dashed var(--raw-navy-400);
+}
+.spo-week-cell--rest {
+  background: var(--surface-sunken);
+  color:      var(--text-muted);
+}
+.spo-week-cell--empty {
+  background: var(--surface-sunken);
+  border:     1px solid var(--border-hairline);
+}
