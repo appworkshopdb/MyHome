@@ -3275,3 +3275,175 @@
   background: var(--surface-sunken);
   border:     1px solid var(--border-hairline);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Schritt 10 — Hub-Übersicht (core/Hub.jsx): Datumszeile unter der
+   Begrüßung, die zwei "Heute"-Kacheln und die Aufgaben-Karte.
+   Die alten Hub-Klassen (hub-hab-*, hub-todo-*, hub-quick-*) bleiben
+   unverändert — sie werden jetzt auf den Bereichs-Screens gerendert.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Der Hub bringt seit Schritt 10 seine eigene fixed ModuleTopBar mit und
+   trägt den Abstand deshalb selbst. Zwei Klassen, damit die Regel das
+   .hub { padding-top: 6px } weiter oben in dieser Datei schlägt —
+   .with-topbar-space aus layout.css allein würde verlieren, weil
+   app-extra.css später geladen wird. 66px TopBar + 6px Luft. */
+.hub.with-topbar-space { padding-top: 72px; }
+
+.hub-date {
+  font-size:     13px;
+  font-weight:   600;
+  color:         var(--text-muted);
+  margin:        4px 0 18px;
+}
+
+/* ── "Heute": zwei gleich breite helle Kacheln ── */
+.hub-tiles {
+  display: flex;
+  gap:     12px;
+}
+.hub-tile {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            3px;
+  background:     var(--surface-raised);
+  border:         1px solid var(--border-hairline);
+  border-radius:  var(--r-2xl);
+  box-shadow:     var(--shadow-card);
+  padding:        15px 16px;
+  cursor:         pointer;
+  text-align:     left;
+  min-width:      0;
+}
+.hub-tile-value {
+  font-size:            24px;
+  font-weight:          800;
+  letter-spacing:       -0.02em;
+  color:                var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height:          1.1;
+}
+.hub-tile-value--done { color: var(--status-positive); }
+
+.hub-tile-label {
+  font-size:   12px;
+  font-weight: 700;
+  color:       var(--text-muted);
+}
+.hub-tile-sub {
+  font-size:     12px;
+  font-weight:   700;
+  color:         var(--text-primary);
+  margin-top:    3px;
+  max-width:     100%;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+}
+
+.hub-tile-bar {
+  display:       block;
+  width:         100%;
+  height:        5px;
+  border-radius: var(--r-pill);
+  background:    var(--data-track);
+  margin-top:    8px;
+  overflow:      hidden;
+}
+.hub-tile-bar-fill {
+  display:    block;
+  height:     100%;
+  background: var(--action-primary);
+  transition: width var(--motion-calm);
+}
+
+/* ── "Aufgaben": helle Karte mit den drei nächsten Punkten ── */
+.hub-task-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
+}
+
+.hub-task-row {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  width:       100%;
+  padding:     13px 18px;
+  border:      none;
+  border-top:  1px solid var(--surface-page);
+  background:  none;
+  text-align:  left;
+  min-height:  var(--touch-target);
+}
+.hub-task-row:first-child { border-top: none; }
+
+.hub-task-check {
+  width:         21px;
+  height:        21px;
+  border-radius: 7px;
+  border:        1.8px solid var(--border-strong);
+  background:    none;
+  flex-shrink:   0;
+  cursor:        pointer;
+  padding:       0;
+}
+
+.hub-task-title {
+  flex:          1;
+  font-size:     14px;
+  font-weight:   600;
+  color:         var(--text-primary);
+  cursor:        pointer;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+}
+
+.hub-task-status {
+  font-size:   11px;
+  font-weight: 800;
+  color:       var(--text-muted);
+  flex-shrink: 0;
+}
+.hub-task-status--critical { color: var(--status-critical); }
+
+.hub-task-add { cursor: pointer; }
+.hub-task-add-plus {
+  width:           21px;
+  font-size:       19px;
+  font-weight:     700;
+  line-height:     1;
+  color:           var(--action-primary);
+  text-align:      center;
+  flex-shrink:     0;
+}
+.hub-task-add .hub-task-title { color: var(--action-primary); font-weight: 700; }
+
+.hub-task-empty {
+  padding:     18px;
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text-muted);
+  text-align:  center;
+}
+
+/* Textlink am Fuß eines Hub-Bereichs ("Alle Gewohnheiten verwalten ›") */
+.hub-area-link {
+  display:     block;
+  width:       100%;
+  margin-top:  18px;
+  padding:     13px;
+  border:      none;
+  background:  none;
+  font-size:   13px;
+  font-weight: 700;
+  color:       var(--action-primary);
+  cursor:      pointer;
+  text-align:  center;
+  min-height:  var(--touch-target);
+}
