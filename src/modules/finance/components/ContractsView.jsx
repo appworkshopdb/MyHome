@@ -7,6 +7,8 @@ import {
   formatDate,
   getContractStatus,
   getContractEndDate,
+  getTemplateStatus,
+  getTemplateEndDate,
   intervalLabel,
   monthlyAmount,
   INTERVALS,
@@ -37,40 +39,10 @@ function IntervalHint({ item }) {
   );
 }
 
-// -----------------------------------------------------------------------
-// Status/Enddatum eines FixTemplates (analog zu Contract-Logik)
-// -----------------------------------------------------------------------
-function getTemplateStatus(t) {
-  if (t.is_open || (!t.end_date && !t.contract_duration_months)) return 'active';
-  let endDate = t.end_date ? new Date(t.end_date) : null;
-  if (!endDate && t.contract_duration_months && t.start_date) {
-    const s = new Date(t.start_date);
-    if (!isNaN(s)) {
-      endDate = new Date(s);
-      endDate.setMonth(endDate.getMonth() + Number(t.contract_duration_months));
-    }
-  }
-  if (!endDate || isNaN(endDate)) return 'active';
-  const now = new Date();
-  const diff = (endDate - now) / (1000 * 60 * 60 * 24);
-  if (diff < 0) return 'expired';
-  if (diff <= 30) return 'expiring';
-  return 'active';
-}
-
-function getTemplateEndDate(t) {
-  if (t.is_open) return null;
-  if (t.end_date) return new Date(t.end_date);
-  if (t.contract_duration_months && t.start_date) {
-    const s = new Date(t.start_date);
-    if (!isNaN(s)) {
-      const e = new Date(s);
-      e.setMonth(e.getMonth() + Number(t.contract_duration_months));
-      return e;
-    }
-  }
-  return null;
-}
+// Status/Enddatum eines FixTemplates lagen bis Schritt 6 hier lokal —
+// jetzt in lib/finance.js (getTemplateStatus/getTemplateEndDate), weil
+// die Modul-Übersicht dieselbe Regel für "Verträge (X läuft aus)"
+// braucht. Import siehe oben.
 
 // -----------------------------------------------------------------------
 // Sektion: Einnahmequellen — mit Beginn/Ende/Status

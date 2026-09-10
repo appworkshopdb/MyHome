@@ -28,7 +28,11 @@ function sortByCreated(arr, dir = 'asc') {
   return arr.slice().sort((a, b) => (dir === 'desc' ? k(b) - k(a) : k(a) - k(b)));
 }
 
-export default function MonthsView() {
+// initialFilter: Startwert der Filterzeile. Ohne Angabe wie bisher
+// 'alle' — der Bereich "Offene Posten" (Schritt 6) rendert dieselbe
+// View mit 'offen', statt dafür einen zweiten, fast identischen
+// Screen zu bauen.
+export default function MonthsView({ initialFilter = 'alle' }) {
   const { session } = useAuth();
   const { showToast } = useUi();
   // notifySaved zusätzlich zu version destructured — muss nach JEDER
@@ -42,7 +46,7 @@ export default function MonthsView() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const [filter, setFilter] = useState('alle');
+  const [filter, setFilter] = useState(initialFilter);
 
   const load = useCallback(async () => {
     setLoading(true);
