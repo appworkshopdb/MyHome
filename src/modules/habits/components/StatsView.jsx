@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import {
-  calcStreak, calcLongestStreak, completionRate,
+  calcStreak, calcLongestStreak, completionRate, overallRate,
   getEarnedBadges, BADGES, today, dateRange, isDueOn, isDone,
 } from '../lib/habUtils.js';
 
@@ -171,16 +171,4 @@ export default function StatsView({ habits, entries }) {
       </div>
     </div>
   );
-}
-
-function overallRate(habits, entries, from, to) {
-  if (habits.length === 0) return 0;
-  const rates = habits.map((h) => {
-    const due = dateRange(from, to).filter((d) => isDueOn(h, d));
-    if (due.length === 0) return null;
-    const done = due.filter((d) => isDone(entries, h.id, d, h.target_count)).length;
-    return done / due.length;
-  }).filter((r) => r !== null);
-  if (rates.length === 0) return 0;
-  return rates.reduce((a, b) => a + b, 0) / rates.length;
 }
