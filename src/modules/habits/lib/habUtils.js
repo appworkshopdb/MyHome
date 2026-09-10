@@ -178,6 +178,25 @@ export function todayCompletionRate(habits, entries) {
   return done / due.length;
 }
 
+/**
+ * Durchschnittliche Completion-Rate über alle Habits in einem Zeitraum
+ * (jeder Habit zählt gleich, unabhängig von der Anzahl fälliger Tage).
+ * Verschoben aus StatsView.jsx (war dort lokal definiert) — wird jetzt
+ * auch von OverviewSection.jsx für "X % im Monat" auf der Fokuskarte
+ * gebraucht, damit beide Stellen garantiert dieselbe Zahl zeigen.
+ */
+export function overallRate(habits, entries, from, to) {
+  if (habits.length === 0) return 0;
+  const rates = habits.map((h) => {
+    const due = dateRange(from, to).filter((d) => isDueOn(h, d));
+    if (due.length === 0) return null;
+    const done = due.filter((d) => isDone(entries, h.id, d, h.target_count)).length;
+    return done / due.length;
+  }).filter((r) => r !== null);
+  if (rates.length === 0) return 0;
+  return rates.reduce((a, b) => a + b, 0) / rates.length;
+}
+
 // ─── Heatmap-Daten ────────────────────────────────────────
 
 /**
