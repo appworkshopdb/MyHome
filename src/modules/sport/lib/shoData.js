@@ -4,13 +4,14 @@
 // getSupabase() für alle Abfragen, Soft Delete via deleted_at.
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
+import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID).
 // Analog zu rawAuth.js: kein supabase.auth.getUser(),
 // stattdessen Token selbst dekodieren.
 function getOwnerIdFromToken() {
   try {
-    const token = JSON.parse(localStorage.getItem('zuhause_session') || '{}').access_token;
+    const token = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || '{}').access_token;
     if (!token) throw new Error('Kein Token gefunden');
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub; // sub = user UUID
