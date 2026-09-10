@@ -1657,3 +1657,123 @@
   color: var(--text-muted);
   margin-left: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Modul-Übersicht (OverviewSection.jsx) — UMBAU-PLAN.md Schritt 5
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ring + Status in der Fokuskarte */
+.hab-ring-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.hab-ring {
+  width: 76px;
+  height: 76px;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.hab-ring-inner {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--r-pill);
+  background: var(--surface-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--raw-paper-000);
+}
+.hab-ring-headline {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--raw-paper-000);
+}
+.hab-ring-meta {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--raw-grey-300);
+  margin-top: 3px;
+}
+
+/* "Offen heute"-Zeilen — gleiche Zeilen-Optik wie area-row, aber mit
+   Checkbox statt Chevron (kein Navigations-, sondern Aktionselement) */
+.hab-open-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 18px;
+  border: none;
+  border-top: 1px solid var(--surface-page);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  min-height: var(--touch-target);
+}
+.hab-open-row:first-child { border-top: none; }
+.hab-open-row:disabled { opacity: 0.6; cursor: default; }
+
+.hab-open-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1.8px solid var(--border-strong);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hab-open-check--done {
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+  color: var(--text-on-accent);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hab-open-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.hab-open-row--done .hab-open-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.hab-open-value {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.hab-overview-footer {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 11px 18px;
+  border: none;
+  border-top: 1px solid var(--surface-page);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: var(--touch-target);
+}
+
+.hab-overview-empty {
+  padding: 20px 18px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
