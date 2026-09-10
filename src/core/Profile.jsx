@@ -175,7 +175,7 @@ export default function Profile({ onOpenModule }) {
           <BodyProfileForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} />
         )}
         <p style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          Gilt app-weit — z.&nbsp;B. für Ernährung und künftig Sport.
+          Gilt app-weit — für Ernährung und Sport (Trainingsfokus und Sportarten steuern das Sport-Modul).
         </p>
       </div>
 
