@@ -32,7 +32,7 @@ export default function Login() {
 
   return (
     <div className="auth-screen">
-      <div className="auth-wordmark">ZUHAUSE</div>
+      <div className="auth-wordmark">NESTUA</div>
 
       <form className="auth-card" onSubmit={submit}>
         <div>
