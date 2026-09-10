@@ -4,24 +4,58 @@ import { getMonthSum } from './lib/measurementsData';
 import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
-import ProgressStat from './components/ProgressStat';
+import ModuleTopBar from './components/ModuleTopBar';
+import FocusCard from './components/FocusCard';
+import PageSection from './components/PageSection';
 import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar';
-import { fb } from './lib/feedback'; // NEU
+import { fb } from './lib/feedback';
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 import { awardPoints } from './lib/gamificationData.js';
 import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 
-// v3: enthält jetzt nicht mehr nur Ein-/Ausgaben, sondern den ganzen
-// sichtbaren Hub-Stand. Zweck ist ein sofortiges Bild beim Start —
-// vorher lag der Cache nur als Fehler-Notnagel herum ("Letzten Stand
-// ansehen"), während der Hub bis zum Eintreffen von sechs parallelen
-// Supabase-Abfragen ein Skelett zeigte.
-const CACHE_KEY = 'hub-cache-v3';
+// NEU (UMBAU-PLAN.md Schritt 10): der Hub folgt jetzt derselben Struktur
+// wie die fünf Module — Fokuskarte mit dem Jetzt-Zustand, ein bis zwei
+// helle Karten, alles Weitere auf eigenen Screens. Auf die Hauptansicht
+// passt damit ohne Scrollen: Begrüßung, Saldo-Fokuskarte, "Heute" mit
+// zwei Kacheln, "Aufgaben" mit den drei nächsten Punkten.
+//
+// Verschoben statt entfernt:
+//   HubCalendar                → Bereich "Kalender"     (über "Kalender ›")
+//   abhakbare Habit-Liste      → Bereich "Gewohnheiten" (über die Kachel)
+//   Todo-Filterchips + Liste   → Bereich "Aufgaben"     (über "Alle N ›")
+//   vollständige offene Posten → Finanzen, #/finance/offen (Pille "Ansehen")
+//
+// Die Bereiche laufen NICHT über den Hash: der Hub ist in useRoute.js die
+// Route ohne Modul-Id (#/), ein "#/hub/aufgaben" gäbe es dort nicht und
+// würde außerdem den aktiven Punkt der Bottom-Nav verwirren. Sie liegen
+// deshalb als lokaler `bereich`-Zustand vor — dasselbe Muster, mit dem
+// ShoppingModule seine Artikelansicht öffnet.
+//
+// Habit-Abhaken und Todo-Toggle inklusive awardPoints() bleiben in dieser
+// Datei: laut Gamification.md ist der Hub die einzige Stelle, die für
+// Gewohnheiten und ToDos Punkte vergibt (die Modul-Chats verdrahten
+// awardPoints erst noch). Sie sind nur woanders gerendert.
+//
+// Der Hub rendert seit diesem Schritt seine eigene ModuleTopBar — sonst
+// könnte er auf einem Bereich keinen Zurück-Pfeil zeigen. App.jsx rendert
+// die globale TopBar deshalb nur noch für die Profilseite.
+
+// v4: Struktur geändert — openPosten ist jetzt die vollständige Liste
+// offener Ausgaben statt der auf drei begrenzten Fixkosten, damit die
+// Zahl in der Fokuskarte zu der in Finanzen passt. Ein alter v3-Eintrag
+// würde dort eine zu kleine Zahl zeigen, deshalb neuer Schlüssel.
+const CACHE_KEY = 'hub-cache-v4';
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
 const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+const BEREICH_TITEL = {
+  gewohnheiten: 'Gewohnheiten heute',
+  aufgaben:     'Aufgaben',
+  kalender:     'Diese Woche',
+};
 
 function formatDueDate(dueDateStr, todayStr) {
   if (!dueDateStr) return null;
@@ -30,6 +64,22 @@ function formatDueDate(dueDateStr, todayStr) {
   if (diff === 0) return 'Heute';
   if (diff === 1) return 'Morgen';
   return new Date(dueDateStr).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+// Kurzform für die Statusspalte der Aufgaben-Karte auf der Übersicht
+function todoStatus(todo, todayStr) {
+  if (!todo.due_date) return todo.priority ? 'Wichtig' : null;
+  if (todo.due_date < todayStr)   return 'überfällig';
+  if (todo.due_date === todayStr) return 'Heute';
+  return formatDueDate(todo.due_date, todayStr);
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5)  return 'Gute Nacht';
+  if (h < 11) return 'Guten Morgen';
+  if (h < 18) return 'Guten Tag';
+  return 'Guten Abend';
 }
 
 function readCache({ ignoreAge = false } = {}) {
@@ -60,7 +110,12 @@ async function loadTodaySport() {
   return data ?? [];
 }
 
-async function loadOpenFixCosts() {
+// Offene Posten des laufenden Monats — dieselbe Abgrenzung wie im
+// Finanzen-Modul ("nicht bezahlt, keine Einnahme"), damit Hub und
+// Finanzen nicht zwei verschiedene Zahlen für dasselbe zeigen. Früher
+// waren es nur Fixkosten/Sonstiges, begrenzt auf drei Zeilen — die
+// vollständige Liste steht jetzt ohnehin unter #/finance/offen.
+async function loadOpenPosten() {
   const sb = getSupabase();
   const now = new Date();
   const { data, error } = await sb
@@ -69,10 +124,9 @@ async function loadOpenFixCosts() {
     .eq('year', now.getFullYear())
     .eq('month', now.getMonth() + 1)
     .eq('paid', false)
-    .in('category', ['fixkosten', 'sonstige_ausgaben'])
+    .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
     .is('deleted_at', null)
-    .order('amount', { ascending: false })
-    .limit(3);
+    .order('amount', { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
@@ -86,7 +140,7 @@ function sportLabel(w) {
   return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
-export default function Hub({ onOpenModule }) {
+export default function Hub({ onOpenModule, hasWarnings }) {
   const { session } = useAuth();
 
   // Beim ersten Rendern gleich aus dem Cache füllen (stale-while-revalidate):
@@ -94,10 +148,13 @@ export default function Hub({ onOpenModule }) {
   // Millisekunden später. Nur wenn nichts Brauchbares im Cache liegt, wird
   // das Skelett gezeigt.
   const [initialCache] = useState(() => readCache());
-  const [status, setStatus]     = useState(initialCache ? 'daten' : 'laedt');
-  const [income, setIncome]     = useState(initialCache?.income ?? 0);
-  const [expense, setExpense]   = useState(initialCache?.expense ?? 0);
+  const [status, setStatus]       = useState(initialCache ? 'daten' : 'laedt');
+  const [income, setIncome]       = useState(initialCache?.income ?? 0);
+  const [expense, setExpense]     = useState(initialCache?.expense ?? 0);
   const [cacheZeit, setCacheZeit] = useState(null);
+
+  // Welcher Bereich als Vollbild-Screen offen ist (null = Übersicht)
+  const [bereich, setBereich] = useState(null);
 
   // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
   // Abhaken hier ist sofort im Modul sichtbar und umgekehrt.
@@ -109,7 +166,7 @@ export default function Hub({ onOpenModule }) {
   ).length;
 
   const [todaySport, setTodaySport] = useState(initialCache?.todaySport ?? []);
-  const [openFix, setOpenFix]       = useState(initialCache?.openFix ?? []);
+  const [openPosten, setOpenPosten] = useState(initialCache?.openPosten ?? []);
   const [todos, setTodos]           = useState(initialCache?.todos ?? []);
   const [todoSheet, setTodoSheet]   = useState(false);
   const [editTodo, setEditTodo]     = useState(null);
@@ -122,21 +179,21 @@ export default function Hub({ onOpenModule }) {
     if (!opts.imHintergrund) setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, , sport, fix, todoList] = await Promise.all([
+      const [inc, exp, , sport, posten, todoList] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         // Habits kommen aus dem gemeinsamen Store (force = frischer Stand)
         loadHabitsData({ force: true }).catch(() => null),
         loadTodaySport(),
-        loadOpenFixCosts(),
+        loadOpenPosten(),
         getTodos(session),
       ]);
       setIncome(inc);
       setExpense(exp);
       setTodaySport(sport);
-      setOpenFix(fix);
+      setOpenPosten(posten);
       setTodos(todoList);
-      writeCache({ income: inc, expense: exp, todaySport: sport, openFix: fix, todos: todoList });
+      writeCache({ income: inc, expense: exp, todaySport: sport, openPosten: posten, todos: todoList });
       setCacheZeit(null);
       setStatus(inc > 0 || exp > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
     } catch (e) {
@@ -167,7 +224,7 @@ export default function Hub({ onOpenModule }) {
     setIncome(cached.income ?? 0);
     setExpense(cached.expense ?? 0);
     setTodaySport(cached.todaySport ?? []);
-    setOpenFix(cached.openFix ?? []);
+    setOpenPosten(cached.openPosten ?? []);
     setTodos(cached.todos ?? []);
     setCacheZeit(cached.savedAt);
     setStatus('veraltet');
@@ -175,9 +232,9 @@ export default function Hub({ onOpenModule }) {
 
   const saldo = income - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
-  const habAllDone = habTotal > 0 && habDone === habTotal;
+  const datumLang  = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  // ── Habit-Toggle direkt im Hub ──
+  // ── Habit-Toggle ──
   // Läuft über den gemeinsamen Store — das Habits-Modul sieht die
   // Änderung sofort, ohne Reload.
   async function handleToggleHabit(habit) {
@@ -277,216 +334,135 @@ export default function Hub({ onOpenModule }) {
     todoView === 'erledigt' ? todosErledigt :
     todosAlle;
 
+  // Die drei nächsten Punkte für die Übersicht: fällig zuerst (frühestes
+  // Datum vorn), bei gleichem Datum wichtige zuerst, Undatiertes zuletzt.
+  const naechsteTodos = todosAlle.slice().sort((a, b) => {
+    const da = a.due_date ?? '9999-99-99';
+    const db = b.due_date ?? '9999-99-99';
+    if (da !== db) return da.localeCompare(db);
+    return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
+  }).slice(0, 3);
+
   const restToday    = todaySport.some((w) => w.is_rest);
   const doneToday    = todaySport.filter((w) => !w.is_rest && w.status === 'done');
   const plannedToday = todaySport.filter((w) => !w.is_rest && w.status === 'planned');
+  const sportKachel =
+    restToday               ? { icon: '–', text: 'Restday' } :
+    doneToday.length > 0    ? { icon: '✓', text: sportLabel(doneToday[0]) } :
+    plannedToday.length > 0 ? { icon: '·', text: sportLabel(plannedToday[0]) } :
+                              { icon: '·', text: 'Nichts geplant' };
+
+  const offeneSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
 
   // ---- Ladestate ----
   if (status === 'laedt') {
     return (
-      <div className="hub">
-        <div className="hub-skeleton-block" style={{ width: 112, height: 9 }} />
-        <div className="hub-skeleton-block" style={{ width: 212, height: 38, marginTop: 8 }} />
-        <div style={{ display: 'flex', gap: 14, marginTop: 12 }}>
-          <div className="hub-skeleton-block" style={{ width: 96, height: 11 }} />
-          <div className="hub-skeleton-block" style={{ width: 96, height: 11 }} />
-        </div>
-        <div className="hub-skeleton-block" style={{ width: '100%', height: 10, marginTop: 14 }} />
-        <div className="hub-skeleton-block" style={{ width: 78, height: 10, marginTop: 24 }} />
-        {[0, 1].map((i) => (
-          <div key={i} className="hub-skeleton-row">
-            <div>
-              <div className="hub-skeleton-block" style={{ width: 124, height: 11 }} />
-              <div className="hub-skeleton-block" style={{ width: 80, height: 9, marginTop: 6 }} />
-            </div>
-            <div className="hub-skeleton-block" style={{ width: 62, height: 11 }} />
+      <>
+        <ModuleTopBar hasWarnings={hasWarnings} />
+        <div className="hub with-topbar-space">
+          <div className="hub-skeleton-block" style={{ width: 168, height: 24 }} />
+          <div className="hub-skeleton-block" style={{ width: 132, height: 11, marginTop: 8 }} />
+          <div className="hub-skeleton-block" style={{ width: '100%', height: 150, marginTop: 18, borderRadius: 18 }} />
+          <div style={{ display: 'flex', gap: 12, marginTop: 22 }}>
+            <div className="hub-skeleton-block" style={{ flex: 1, height: 86, borderRadius: 18 }} />
+            <div className="hub-skeleton-block" style={{ flex: 1, height: 86, borderRadius: 18 }} />
           </div>
-        ))}
-      </div>
+          <div className="hub-skeleton-block" style={{ width: '100%', height: 156, marginTop: 22, borderRadius: 18 }} />
+        </div>
+      </>
     );
   }
 
   // ---- Fehlerstate ----
   if (status === 'fehler') {
     return (
-      <div className="hub">
-        <div className="hub-error">
-          <div className="hub-error-headline">{monatsname} lässt sich gerade nicht laden.</div>
-          <p className="hub-error-sub">Keine Verbindung zur Datenbank. Deine Daten sind da — sie kommen hier nur nicht an.</p>
-          <div className="auth-actions" style={{ marginTop: 20 }}>
-            <button className="btn btn-primary btn-block" onClick={load}>Nochmal versuchen</button>
-            {readCache({ ignoreAge: true }) && (
-              <button className="btn-outline-block" onClick={letztenStandAnsehen}>Letzten Stand ansehen</button>
-            )}
-          </div>
-          <div className="hub-empty-note" style={{ marginTop: 18 }}>
-            Liegt's am Gerät? Prüf kurz die Internetverbindung — an den Daten selbst hat sich nichts geändert.
+      <>
+        <ModuleTopBar hasWarnings={hasWarnings} />
+        <div className="hub with-topbar-space">
+          <div className="hub-error">
+            <div className="hub-error-headline">{monatsname} lässt sich gerade nicht laden.</div>
+            <p className="hub-error-sub">Keine Verbindung zur Datenbank. Deine Daten sind da — sie kommen hier nur nicht an.</p>
+            <div className="auth-actions" style={{ marginTop: 20 }}>
+              <button className="btn btn-primary btn-block" onClick={load}>Nochmal versuchen</button>
+              {readCache({ ignoreAge: true }) && (
+                <button className="btn-outline-block" onClick={letztenStandAnsehen}>Letzten Stand ansehen</button>
+              )}
+            </div>
+            <div className="hub-empty-note" style={{ marginTop: 18 }}>
+              Liegt&apos;s am Gerät? Prüf kurz die Internetverbindung — an den Daten selbst hat sich nichts geändert.
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  return (
-    <div className="hub">
-      {status === 'veraltet' && (
-        <div className="hub-stale-bar">
-          <span className="hub-stale-dot" />
-          <span>Stand von {cacheZeit ? new Date(cacheZeit).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'} — gerade nicht aktualisierbar</span>
-          <button className="hub-stale-login" onClick={() => load()}>Neu laden</button>
-        </div>
-      )}
-
-      {status === 'leer' && (
-        <>
-          <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
-          <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
-          <div className="hub-empty-steps">
-            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
-              <div>
-                <div className="hub-empty-step-title">Erste Ausgabe eintragen</div>
-                <div className="hub-empty-step-sub">Betrag, Name, fertig</div>
-              </div>
-              <span className="hub-empty-step-arrow">›</span>
-            </button>
-            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
-              <div>
-                <div className="hub-empty-step-title">Fixkosten anlegen</div>
-                <div className="hub-empty-step-sub">Miete, Handy, Abos — einmal, dann jeden Monat automatisch</div>
-              </div>
-              <span className="hub-empty-step-arrow">›</span>
-            </button>
-            <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
-              <div>
-                <div className="hub-empty-step-title">Alte Daten importieren</div>
-                <div className="hub-empty-step-sub">JSON oder XLSX</div>
-              </div>
-              <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
-            </button>
-          </div>
-          <div className="hub-empty-note">
-            <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
-          </div>
-        </>
-      )}
-
-      {(status === 'daten' || status === 'veraltet') && (
-        <>
-          {/* ── Finanz-Leitzahl ── */}
-          <div className="hub-eyebrow">Saldo {monatsname}</div>
-          <div
-            className="hub-lead-stat"
-            style={{ color: status === 'veraltet' ? 'var(--text-secondary)' : undefined }}
-          >
-            {formatEur(saldo)}
-          </div>
-          <div
-            className="hub-lead-substats"
-            style={{ color: status === 'veraltet' ? 'var(--text-muted)' : undefined }}
-          >
-            <span>Ein <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(income)}</b></span>
-            <span>Aus <b style={status === 'veraltet' ? { color: 'var(--text-secondary)' } : undefined}>{formatEur(expense)}</b></span>
-          </div>
-
-          <div className="hub-divider" />
-
-          {/* ── Kalender ── */}
-          <div className="hub-section-label" style={{ marginTop: 0 }}>Diese Woche</div>
-          <HubCalendar />
-
-          <div className="hub-divider" />
-
-          {/* ── Gewohnheiten ── */}
-          {habTotal > 0 && (
-            <div className="hub-hab-block">
-              <div className="hub-hab-header">
-                <span className="hub-quick-card-label">Gewohnheiten heute</span>
-                <span className="hub-hab-count">{habDone} / {habTotal}</span>
-              </div>
-              <div className="hub-hab-progress">
-                <div
-                  className="hub-hab-bar"
-                  style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
-                />
-              </div>
-              <div className="hub-hab-list">
-                {habHabits.map((h) => {
-                  const erledigt = isDone(habEntries, h.id, habTodayStr(), h.target_count);
-                  return (
-                    <button
-                      key={h.id}
-                      className={`hub-hab-row ${erledigt ? 'done' : ''}`}
-                      onClick={() => handleToggleHabit(h)}
-                    >
-                      <span className={`hub-hab-check ${erledigt ? 'checked' : ''}`}>
-                        {erledigt && '✓'}
-                      </span>
-                      <span className="hub-hab-icon">{h.icon}</span>
-                      <span className="hub-hab-name">{h.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
+  // ── Bereich: Gewohnheiten heute (abhakbar, vergibt Punkte) ──────
+  if (bereich === 'gewohnheiten') {
+    return (
+      <>
+        <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.gewohnheiten} hasWarnings={hasWarnings} />
+        <div className="hub with-topbar-space">
+          <div className="hub-hab-block">
+            <div className="hub-hab-header">
+              <span className="hub-quick-card-label">Heute fällig</span>
+              <span className="hub-hab-count">{habDone} / {habTotal}</span>
             </div>
-          )}
-
-          <div className="hub-divider" />
-
-          {/* ── Sport heute ── */}
-          <button className="hub-quick-card" onClick={() => onOpenModule('sport')}>
-            <div className="hub-quick-card-label">Sport heute</div>
-            <div className="hub-quick-card-value">
-              {restToday ? (
-                <span className="hub-quick-muted">Restday</span>
-              ) : doneToday.length > 0 ? (
-                <>
-                  {doneToday.map((w, i) => (
-                    <span key={w.id}>
-                      {i > 0 && <span className="hub-quick-sep"> · </span>}
-                      {sportLabel(w)}
-                      {w.duration_min ? ` ${w.duration_min} min` : ''}
-                      <span className="hub-quick-done"> ✓</span>
-                    </span>
-                  ))}
-                </>
-              ) : plannedToday.length > 0 ? (
-                <>
-                  {plannedToday.map((w, i) => (
-                    <span key={w.id}>
-                      {i > 0 && <span className="hub-quick-sep"> · </span>}
-                      {sportLabel(w)}
-                      {w.duration_min ? ` ${w.duration_min} min` : ''}
-                      <span className="hub-quick-planned"> geplant</span>
-                    </span>
-                  ))}
-                </>
-              ) : (
-                <span className="hub-quick-muted">Restday</span>
+            <div className="hub-hab-progress">
+              <div
+                className="hub-hab-bar"
+                style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
+              />
+            </div>
+            <div className="hub-hab-list">
+              {habHabits.length === 0 && (
+                <div className="hub-todo-empty">Heute ist keine Gewohnheit fällig.</div>
               )}
+              {habHabits.map((h) => {
+                const erledigt = isDone(habEntries, h.id, habTodayStr(), h.target_count);
+                return (
+                  <button
+                    key={h.id}
+                    className={`hub-hab-row ${erledigt ? 'done' : ''}`}
+                    onClick={() => handleToggleHabit(h)}
+                  >
+                    <span className={`hub-hab-check ${erledigt ? 'checked' : ''}`}>
+                      {erledigt && '✓'}
+                    </span>
+                    <span className="hub-hab-icon">{h.icon}</span>
+                    <span className="hub-hab-name">{h.name}</span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          <button className="hub-area-link" onClick={() => onOpenModule('habits')}>
+            Alle Gewohnheiten verwalten ›
           </button>
+        </div>
+      </>
+    );
+  }
 
-          <div className="hub-divider" />
+  // ── Bereich: Kalender ───────────────────────────────────────────
+  if (bereich === 'kalender') {
+    return (
+      <>
+        <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.kalender} hasWarnings={hasWarnings} />
+        <div className="hub with-topbar-space">
+          <HubCalendar />
+        </div>
+      </>
+    );
+  }
 
-          {/* ── Offene Fixkosten ── */}
-          {openFix.length > 0 && (
-            <>
-              <button className="hub-quick-card" onClick={() => onOpenModule('finance')}>
-                <div className="hub-quick-card-label">Offen diesen Monat</div>
-                {openFix.map((f) => (
-                  <div key={f.id} className="hub-fix-row">
-                    <span className="hub-fix-name">{f.name}</span>
-                    <span className="hub-fix-amount">{formatEur(f.amount)}</span>
-                  </div>
-                ))}
-              </button>
-              <div className="hub-divider" />
-            </>
-          )}
-
-          {/* ── Aufgaben ── */}
-          <div className="hub-section-label" style={{ marginTop: 0 }}>Aufgaben</div>
-
+  // ── Bereich: Aufgaben (Filterchips + vollständige Liste) ────────
+  if (bereich === 'aufgaben') {
+    return (
+      <>
+        <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.aufgaben} hasWarnings={hasWarnings} />
+        <div className="hub with-topbar-space">
           <div className="hub-todo-chips">
             {[
               { key: 'alle',     label: 'Alle',     count: todosAlle.length     },
@@ -580,8 +556,156 @@ export default function Hub({ onOpenModule }) {
               )}
             </div>
           )}
-        </>
-      )}
+        </div>
+
+        {todoSheet && (
+          <TodoSheet
+            onClose={() => setTodoSheet(false)}
+            onSaved={handleTodoSaved}
+            editTodo={editTodo}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ── Übersicht ───────────────────────────────────────────────────
+  return (
+    <>
+      <ModuleTopBar hasWarnings={hasWarnings} />
+      <div className="hub with-topbar-space">
+        {status === 'veraltet' && (
+          <div className="hub-stale-bar">
+            <span className="hub-stale-dot" />
+            <span>Stand von {cacheZeit ? new Date(cacheZeit).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'} — gerade nicht aktualisierbar</span>
+            <button className="hub-stale-login" onClick={() => load()}>Neu laden</button>
+          </div>
+        )}
+
+        {status === 'leer' && (
+          <>
+            <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
+            <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
+            <div className="hub-empty-steps">
+              <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
+                <div>
+                  <div className="hub-empty-step-title">Erste Ausgabe eintragen</div>
+                  <div className="hub-empty-step-sub">Betrag, Name, fertig</div>
+                </div>
+                <span className="hub-empty-step-arrow">›</span>
+              </button>
+              <button className="hub-empty-step" onClick={() => onOpenModule('finance/vertraege')}>
+                <div>
+                  <div className="hub-empty-step-title">Fixkosten anlegen</div>
+                  <div className="hub-empty-step-sub">Miete, Handy, Abos — einmal, dann jeden Monat automatisch</div>
+                </div>
+                <span className="hub-empty-step-arrow">›</span>
+              </button>
+              <button className="hub-empty-step" onClick={() => onOpenModule('finance/einstellungen')}>
+                <div>
+                  <div className="hub-empty-step-title">Alte Daten importieren</div>
+                  <div className="hub-empty-step-sub">JSON oder XLSX</div>
+                </div>
+                <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
+              </button>
+            </div>
+            <div className="hub-empty-note">
+              <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
+            </div>
+          </>
+        )}
+
+        {(status === 'daten' || status === 'veraltet') && (
+          <>
+            <h1 className="overview-page-title">{greeting()}</h1>
+            <div className="hub-date">{datumLang}</div>
+
+            {/* Fokuskarte: Saldo des laufenden Monats */}
+            <FocusCard>
+              <FocusCard.Eyebrow>Saldo {monatsname}</FocusCard.Eyebrow>
+              <FocusCard.Value>{formatEur(saldo)}</FocusCard.Value>
+              <FocusCard.Meta>
+                <span>Ein <b>{formatEur(income)}</b></span>
+                <span>Aus <b>{formatEur(expense)}</b></span>
+              </FocusCard.Meta>
+              {openPosten.length > 0 && (
+                <FocusCard.Footer>
+                  <span>{openPosten.length} offene Posten · {formatEur(offeneSumme)}</span>
+                  <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
+                </FocusCard.Footer>
+              )}
+            </FocusCard>
+
+            {/* Heute — zwei Kacheln */}
+            <PageSection
+              title="Heute"
+              action={{ label: 'Kalender ›', onPress: () => setBereich('kalender') }}
+            >
+              <div className="hub-tiles">
+                <button className="hub-tile" onClick={() => setBereich('gewohnheiten')}>
+                  <span className="hub-tile-value">
+                    {habTotal > 0 ? `${habDone}/${habTotal}` : '–'}
+                  </span>
+                  <span className="hub-tile-label">Gewohnheiten</span>
+                  <span className="hub-tile-bar">
+                    <span
+                      className="hub-tile-bar-fill"
+                      style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
+                    />
+                  </span>
+                </button>
+
+                <button className="hub-tile" onClick={() => onOpenModule('sport')}>
+                  <span className={`hub-tile-value ${sportKachel.icon === '✓' ? 'hub-tile-value--done' : ''}`}>
+                    {sportKachel.icon}
+                  </span>
+                  <span className="hub-tile-label">Training</span>
+                  <span className="hub-tile-sub">{sportKachel.text}</span>
+                </button>
+              </div>
+            </PageSection>
+
+            {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
+            <PageSection
+              title="Aufgaben"
+              action={todosAlle.length > 0
+                ? { label: `Alle ${todosAlle.length} ›`, onPress: () => setBereich('aufgaben') }
+                : undefined}
+            >
+              <div className="hub-task-card">
+                {naechsteTodos.length === 0 && (
+                  <div className="hub-task-empty">Keine offenen Aufgaben.</div>
+                )}
+                {naechsteTodos.map((todo) => {
+                  const label = todoStatus(todo, todayStr);
+                  const kritisch = Boolean(todo.due_date && todo.due_date < todayStr);
+                  return (
+                    <div key={todo.id} className="hub-task-row">
+                      <button
+                        className="hub-task-check"
+                        onClick={() => handleToggleTodo(todo.id, todo.done)}
+                        aria-label="Erledigt"
+                      />
+                      <span className="hub-task-title" onClick={() => openEditTodo(todo)}>
+                        {todo.title}
+                      </span>
+                      {label && (
+                        <span className={`hub-task-status ${kritisch ? 'hub-task-status--critical' : ''}`}>
+                          {label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                <button className="hub-task-row hub-task-add" onClick={openNewTodo}>
+                  <span className="hub-task-add-plus">+</span>
+                  <span className="hub-task-title">Neue Aufgabe</span>
+                </button>
+              </div>
+            </PageSection>
+          </>
+        )}
+      </div>
 
       {todoSheet && (
         <TodoSheet
@@ -590,6 +714,6 @@ export default function Hub({ onOpenModule }) {
           editTodo={editTodo}
         />
       )}
-    </div>
+    </>
   );
 }
