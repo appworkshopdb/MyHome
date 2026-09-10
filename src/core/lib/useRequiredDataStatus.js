@@ -24,8 +24,8 @@ export function useRequiredDataStatus(session) {
   // Meldung bis zum nächsten vollständigen Neuladen der App stehen.
   useEffect(() => {
     function onDataChanged() { refresh(); }
-    window.addEventListener('zuhause:required-data-refresh', onDataChanged);
-    return () => window.removeEventListener('zuhause:required-data-refresh', onDataChanged);
+    window.addEventListener('nestua:required-data-refresh', onDataChanged);
+    return () => window.removeEventListener('nestua:required-data-refresh', onDataChanged);
   }, [session]);
 
   return { warnings, refresh };

@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { getSupabase } from './supabaseClient.js';
+import { SESSION_STORAGE_KEY } from './rawAuth.js';
 
 // ─── Interner State ───────────────────────────────────────────
 
@@ -36,7 +37,7 @@ function setState(patch) {
 // stattdessen Token selbst dekodieren.
 function getOwnerIdFromToken() {
   try {
-    const token = JSON.parse(localStorage.getItem('zuhause_session') || '{}').access_token;
+    const token = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) || '{}').access_token;
     if (!token) throw new Error('Kein Token');
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub;

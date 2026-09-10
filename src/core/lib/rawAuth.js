@@ -1,6 +1,25 @@
 import { supabaseUrl, supabaseAnonKey, setAccessToken } from './supabaseClient';
 
-const STORAGE_KEY = 'zuhause_session';
+// Der Schlüssel, unter dem die Sitzung im localStorage liegt. Wird von
+// mehreren Modulen gelesen, die den owner_id-Claim aus dem Token ziehen
+// (habData.js, shoData.js, habitsStore.js, gamificationData.js) — deshalb
+// exportiert statt in jeder Datei als Zeichenkette wiederholt.
+export const SESSION_STORAGE_KEY = 'nestua_session';
+const STORAGE_KEY = SESSION_STORAGE_KEY;
+
+// Umbenennung "Zuhause" → "Nestua": auf Geräten, die die App vorher schon
+// benutzt haben, liegt die Sitzung noch unter dem alten Schlüssel. Einmalig
+// umkopieren, sonst wäre nach dem Deploy jeder ausgeloggt. Läuft beim Import
+// dieses Moduls, also bevor irgendjemand den Schlüssel liest.
+// Kann entfernt werden, sobald alle Geräte die App einmal geöffnet hatten.
+const LEGACY_STORAGE_KEY = 'zuhause_session';
+try {
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    const alt = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (alt) localStorage.setItem(STORAGE_KEY, alt);
+  }
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+} catch { /* localStorage nicht verfügbar — dann gibt es auch nichts zu migrieren */ }
 
 // Sicherheitsabstand: Token gilt intern schon "abgelaufen", wenn es
 // weniger als 60s bis zum echten Ablauf sind. Verhindert, dass ein

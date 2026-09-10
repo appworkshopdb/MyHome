@@ -60,5 +60,5 @@ export async function saveBodyProfile(session, profile) {
   // das auf dieses Event hört. Body-Daten sind der einzige aktuell
   // registrierte Pflichtdaten-Fall; künftige Checks gegen andere Daten
   // sollten nach demselben Muster ihr eigenes "gespeichert"-Event senden.
-  window.dispatchEvent(new Event('zuhause:required-data-refresh'));
+  window.dispatchEvent(new Event('nestua:required-data-refresh'));
 }

@@ -1,10 +1,21 @@
 // src/core/lib/feedback.js
-// Haptik + Sound für die Zuhause-App.
+// Haptik + Sound für die Nestua-App.
 // Sounds liegen als Dateien in public/sounds/ und werden per Audio-API abgespielt.
 // Einstellungen liegen in localStorage, kein React-Context nötig.
 // Einfach importieren und aufrufen: import { fb } from '../lib/feedback';
 
-const STORAGE_KEY = 'zuhause_feedback';
+const STORAGE_KEY = 'nestua_feedback';
+
+// Umbenennung "Zuhause" → "Nestua": bestehende Ton-/Haptik-Einstellung
+// einmalig übernehmen, sonst stünde sie nach dem Deploy still wieder auf
+// Standard. Gleiche Mechanik wie in rawAuth.js.
+try {
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    const alt = localStorage.getItem('zuhause_feedback');
+    if (alt) localStorage.setItem(STORAGE_KEY, alt);
+  }
+  localStorage.removeItem('zuhause_feedback');
+} catch { /* localStorage nicht verfügbar */ }
 
 // ── Einstellungen ─────────────────────────────────────────────────────────────
 
