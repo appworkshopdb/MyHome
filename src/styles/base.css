@@ -5,6 +5,51 @@
    Schritt 1 des Umbaus (UMBAU.md).
    ============================================================ */
 
+/* ── Nunito lokal (DSGVO-konform, kein Google-Request) ───────
+   Dateien liegen in public/fonts/. font-display: swap sorgt
+   dafür dass der Text sofort mit Fallback-Schrift erscheint
+   und beim Laden von Nunito ohne Layout-Sprung wechselt.    */
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Ebene 1: Rohwerte ───────────────────────────────────────
    Kontextfrei. Nie direkt in Komponenten verwenden.          */
 
