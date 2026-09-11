@@ -25,15 +25,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Nestua" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Nunito = --font (base.css, "Kompakte Tiefe") — rundere Punzen,
-         weichere Endungen als die vorherige Plus Jakarta Sans. 800 wird
-         für .t-display/.t-value gebraucht. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+
+    <!-- Nunito lokal eingebunden — kein Google-Request, DSGVO-konform.
+         Dateien liegen in public/fonts/, werden vom eigenen Server ausgeliefert.
+         preload auf Regular + Bold damit die wichtigsten Schnitte sofort da sind. -->
+    <link rel="preload" href="./fonts/Nunito-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/Nunito-Bold.woff2" as="font" type="font/woff2" crossorigin />
+
     <title>Nestua</title>
     <script>
       // Hell/Dunkel vor dem ersten Paint setzen (kein Aufblitzen des falschen Modus)
