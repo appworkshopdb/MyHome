@@ -17,7 +17,7 @@ const QUICK_CATEGORIES = [
   { key: 'sonstige_ausgaben',  label: 'Sonstige'  },
 ];
 
-const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein'];
+const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 
 function FinanceWizard({ onClose }) {
   const { session }     = useAuth();
@@ -74,10 +74,9 @@ function FinanceWizard({ onClose }) {
         name:     name.trim(),
         payment:  payment || 'Bank',
         amount:   amountNum,
-        // Bar und Sparschwein sind sofort "beglichen" — bei Sparschwein
-        // kommt das Geld aus der bereits vorhandenen Rücklage, es steht
-        // keine zukünftige Abbuchung mehr aus.
-        paid:     ['Bar', 'Sparschwein'].includes(payment || 'Bank'),
+        // Bar, Sparschwein und Gutschein sind sofort "beglichen" —
+        // kein zukünftiger Geldfluss mehr ausstehend.
+        paid:     ['Bar', 'Sparschwein', 'Gutschein'].includes(payment || 'Bank'),
         year:     now.getFullYear(),
         month:    now.getMonth() + 1,
         due_date: dueDate || null,
