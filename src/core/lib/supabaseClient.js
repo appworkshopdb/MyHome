@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 export const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 export const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
-const urlLooksValid = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(supabaseUrl);
+const urlLooksValid = /^https:\/\/[a-z0-9.-]+\.(supabase\.co|nestua\.de)\/?$/.test(supabaseUrl);
 export const supabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && urlLooksValid);
 
 if (!supabaseConfigured) {
