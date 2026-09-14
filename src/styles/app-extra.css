@@ -3690,26 +3690,20 @@
   font-weight: 700;
 }
 
-/* ── Monatsnavigation: Pfeile immer sichtbar ────────────────────── */
-.fin-month-nav .month-nav-btn {
-  flex-shrink: 0;   /* verhindert, dass die Buttons auf 0 schrumpfen */
-  min-width:   34px;
-}
-
-/* ── Filter: abgerundete Pills — gleichmäßige Breite ───────────── */
+/* ── Filter: abgerundete Pills ──────────────────────────────────── */
 .fin-filter-pills {
-  display:       flex;
-  gap:           var(--space-2);
-  margin-bottom: var(--space-5);
+  display:         flex;
+  gap:             var(--space-2);
+  margin-bottom:   var(--space-5);
+  overflow-x:      auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.fin-filter-pills::-webkit-scrollbar { display: none; }
 
-/* Jede Pill nimmt exakt 1/4 der verfügbaren Breite ein —
-   gleichmäßig, unabhängig vom Text */
 .fin-filter-pill {
-  flex:          1 1 0;      /* gleiche Basis-Breite für alle */
-  min-width:     0;          /* kein implizites content-Minimum */
-  padding:       7px 0;      /* nur vertikal, horizontal zentriert */
-  text-align:    center;
+  flex-shrink:   0;
+  padding:       7px 16px;
   border-radius: var(--r-pill);
   border:        1.5px solid var(--border-hairline);
   background:    var(--surface-raised);
@@ -3717,9 +3711,9 @@
   font-size:     13px;
   font-weight:   600;
   cursor:        pointer;
-  white-space:   nowrap;
   transition:    background var(--motion-fast), color var(--motion-fast),
                  border-color var(--motion-fast);
+  white-space:   nowrap;
 }
 
 .fin-filter-pill.active {
@@ -3831,6 +3825,14 @@
 .fin-split-seg--d   { background: var(--data-3); opacity: 0.55; }
 .fin-split-dot--d   { background: var(--data-3); opacity: 0.7;  }
 
+/* Tap-Hinweis unter der Legende */
+.fin-split-tap-hint {
+  margin-top: var(--space-3);
+  color:      var(--text-muted);
+  text-align: right;
+  font-weight: 600;
+}
+
 /* ── Verträge: Trennlinie + Total-Zeile ─────────────────────────── */
 .contracts-total-row {
   display:         flex;
@@ -3890,4 +3892,76 @@
   align-items: center;
   padding:     var(--space-4) var(--space-5) var(--space-5);
   border-top:  1px solid var(--border-hairline);
+}
+
+/* ── Verträge: neue Zeilen-Struktur (ersetzt Tabelle) ───────────── */
+.contracts-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-3);
+  padding:         12px var(--space-4);
+  border-bottom:   1px solid var(--border-hairline);
+  cursor:          pointer;
+  transition:      background var(--motion-fast);
+}
+
+.contracts-row:last-of-type { border-bottom: none; }
+.contracts-row:active        { background: var(--surface-sunken); }
+.contracts-row--faded        { opacity: 0.5; }
+
+.contracts-row-main {
+  flex:           1;
+  min-width:      0;
+  display:        flex;
+  flex-direction: column;
+  gap:            3px;
+}
+
+.contracts-row-right {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+  flex-shrink: 0;
+  text-align:  right;
+}
+
+/* Abgelaufene-Klapp-Button */
+.contracts-expired-toggle {
+  margin-top: var(--space-3);
+}
+
+.contracts-expired-btn {
+  background:  none;
+  border:      none;
+  cursor:      pointer;
+  color:       var(--text-muted);
+  font-weight: 600;
+  padding:     var(--space-2) 0;
+  width:       100%;
+  text-align:  left;
+}
+
+/* Modal: 2-spaltig nebeneinander (Betrag + Fällig am) */
+.modal-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+/* Checkbox-Label mit modernem Stil */
+.modal-checkbox-label {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  cursor:      pointer;
+  color:       var(--text-primary);
+}
+
+.modal-checkbox-label input[type="checkbox"] {
+  width:        18px;
+  height:       18px;
+  accent-color: var(--action-primary);
+  flex-shrink:  0;
 }
