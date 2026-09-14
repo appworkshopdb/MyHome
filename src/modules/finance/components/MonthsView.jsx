@@ -29,31 +29,96 @@ function sortByCreated(arr, dir = 'asc') {
 }
 
 // ── Aufklappbare Kategorie-Sektion ───────────────────────────────────────────
-function CollapseSection({ col, entries, filter, onOpenModal }) {
+// Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
+function EntryRow({ e, onOpenModal, onTogglePaid }) {
+  const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
+  return (
+    <div
+      key={e.id}
+      className="fin-row"
+      onClick={() => onOpenModal({ entry: e, defaultCategory: e.category })}
+    >
+      {!isIncome && (
+        // Häkchen-Bereich: stopPropagation verhindert, dass der Zeilen-Tap
+        // (Modal öffnen) ausgelöst wird — nur Abhaken passiert hier.
+        <div
+          className={`fin-row-check ${e.paid ? 'checked' : ''}`}
+          onClick={(ev) => { ev.stopPropagation(); onTogglePaid(e); }}
+          role="checkbox"
+          aria-checked={e.paid}
+        >
+          {e.paid && '✓'}
+        </div>
+      )}
+      <div className="fin-row-info">
+        <div className={`fin-row-name ${e.paid ? 'paid' : ''}`}>{e.name}</div>
+        <div className="fin-row-meta">
+          {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+        </div>
+        {e.note && <div className="fin-row-note">{e.note}</div>}
+      </div>
+      <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>
+        {formatEur(e.amount).replace('€', '').trim()}
+      </div>
+    </div>
+  );
+}
+
+// Flache Offen-Liste — keine Dropdowns, direkte Auflistung aller offenen
+// Ausgaben-Einträge mit Gesamtbetrag oben und Abhak-Funktion.
+function OffenList({ entries, onOpenModal, onTogglePaid }) {
+  const offene = entries.filter(
+    (e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen'
+  );
+  const gesamtOffen = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const sorted = sortByCreated(offene, 'asc');
+
+  if (offene.length === 0) {
+    return (
+      <div className="fin-offen-empty">
+        <span className="t-body" style={{ color: 'var(--status-positive)' }}>✓ Alles bezahlt</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fin-offen-list">
+      {/* Gesamtbetrag */}
+      <div className="fin-offen-header">
+        <span className="t-meta" style={{ color: 'var(--text-muted)' }}>
+          {offene.length} offene Posten
+        </span>
+        <span className="t-body" style={{ fontWeight: 700, color: 'var(--status-critical)' }}>
+          {formatEur(gesamtOffen)}
+        </span>
+      </div>
+      {/* Einträge direkt, keine Dropdowns */}
+      {sorted.map((e) => (
+        <EntryRow
+          key={e.id}
+          e={e}
+          onOpenModal={onOpenModal}
+          onTogglePaid={onTogglePaid}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Aufklappbare Kategorie-Sektion (für alle anderen Filter)
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
   const [open, setOpen] = useState(false);
 
-  const colEntries = entries.filter((e) => col.cats.includes(e.category));
-  const visible    = filter === 'offen'
-    ? colEntries.filter((e) => !e.paid)
-    : colEntries;
-
-  // Bei Filter "offen": leere Kategorien komplett ausblenden
-  if (filter === 'offen' && visible.length === 0) return null;
+  const visible = entries.filter((e) => col.cats.includes(e.category));
+  if (visible.length === 0) return null;
 
   const total  = visible.reduce((s, e) => s + Number(e.amount || 0), 0);
   const sorted = col.cats.length > 1
     ? sortByCreated(visible, 'asc')
     : sortByCreated(visible, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc');
 
-  function togglePaidInline(e, entry) {
-    // Weitergeleitet an Parent via onOpenModal nicht nötig —
-    // Abhaken läuft über den Modal. Tap auf die Zeile öffnet Modal.
-    e.stopPropagation();
-  }
-
   return (
     <div className="fin-collapse">
-      {/* Kopfzeile — immer sichtbar, antippbar */}
       <button
         className={`fin-collapse-header ${open ? 'open' : ''}`}
         onClick={() => setOpen((o) => !o)}
@@ -67,38 +132,16 @@ function CollapseSection({ col, entries, filter, onOpenModal }) {
         </div>
       </button>
 
-      {/* Aufgeklappter Inhalt */}
       {open && (
         <div className="fin-collapse-body">
-          {sorted.map((e) => {
-            const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
-            return (
-              <div
-                key={e.id}
-                className="fin-row"
-                onClick={() => onOpenModal({ entry: e, defaultCategory: e.category })}
-              >
-                {!isIncome && (
-                  <div className={`fin-row-check ${e.paid ? 'checked' : ''}`}>
-                    {e.paid && '✓'}
-                  </div>
-                )}
-                <div className="fin-row-info">
-                  <div className={`fin-row-name ${e.paid ? 'paid' : ''}`}>{e.name}</div>
-                  <div className="fin-row-meta">
-                    {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
-                  </div>
-                  {e.note && <div className="fin-row-note">{e.note}</div>}
-                </div>
-                <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>
-                  {formatEur(e.amount).replace('€', '').trim()}
-                </div>
-              </div>
-            );
-          })}
-          {visible.length === 0 && (
-            <div className="fin-row-empty">Keine Einträge</div>
-          )}
+          {sorted.map((e) => (
+            <EntryRow
+              key={e.id}
+              e={e}
+              onOpenModal={onOpenModal}
+              onTogglePaid={onTogglePaid}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -152,6 +195,13 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     await db.deleteEntry(id);
     setModal(null);
     showToast('Eintrag gelöscht');
+    load();
+    notifySaved();
+  }
+
+  async function handleTogglePaid(entry) {
+    await db.togglePaid(entry.id, !entry.paid);
+    showToast(!entry.paid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
     load();
     notifySaved();
   }
@@ -220,9 +270,15 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         ))}
       </div>
 
-      {/* Aufklappbare Kategorie-Sektionen */}
+      {/* Inhaltsbereich: Offen-Filter → flache Liste, sonst Dropdowns */}
       {loading ? (
         <div className="loading-note">Lädt…</div>
+      ) : filter === 'offen' ? (
+        <OffenList
+          entries={entries}
+          onOpenModal={setModal}
+          onTogglePaid={handleTogglePaid}
+        />
       ) : (
         <div className="fin-collapse-list">
           {visibleColumns().map((col) => (
@@ -230,8 +286,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
               key={col.key}
               col={col}
               entries={entries}
-              filter={filter}
               onOpenModal={setModal}
+              onTogglePaid={handleTogglePaid}
             />
           ))}
         </div>
