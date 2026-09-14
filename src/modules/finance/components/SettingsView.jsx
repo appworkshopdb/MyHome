@@ -5,25 +5,26 @@ import * as db from '../lib/finData';
 import GoalsSection from '../../../core/components/GoalsSection';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
 
-// SheetJS erst bei Bedarf nachladen (wie im Original) — spart Ladezeit,
-// solange niemand die XLSX-Migration nutzt.
+// SheetJS erst bei Bedarf nachladen — spart Ladezeit solange niemand
+// die XLSX-Migration nutzt.
 function loadSheetJS() {
   return new Promise((resolve, reject) => {
     if (window.XLSX) return resolve(window.XLSX);
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js';
-    s.onload = () => resolve(window.XLSX);
+    s.onload  = () => resolve(window.XLSX);
     s.onerror = () => reject(new Error('SheetJS konnte nicht geladen werden'));
     document.head.appendChild(s);
   });
 }
 
 export default function SettingsView() {
-  const { session } = useAuth();
+  const { session }   = useAuth();
   const { showToast } = useUi();
+
   const [importStatus, setImportStatus] = useState(null);
-  const [xlsxStatus, setXlsxStatus] = useState(null);
-  const [xlsxPreview, setXlsxPreview] = useState(null);
+  const [xlsxStatus,   setXlsxStatus]   = useState(null);
+  const [xlsxPreview,  setXlsxPreview]  = useState(null);
 
   const now = new Date();
 
@@ -31,9 +32,9 @@ export default function SettingsView() {
     try {
       const data = await db.exportAllData(session);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
       a.download = `finanzen-backup-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
@@ -69,8 +70,8 @@ export default function SettingsView() {
     if (!file) return;
     setXlsxStatus({ type: '', text: 'Wird gelesen…' });
     try {
-      const XLSX = await loadSheetJS();
-      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const XLSX   = await loadSheetJS();
+      const wb     = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const parsed = db.parseXlsxWorkbook(XLSX, wb, now.getFullYear());
       setXlsxPreview(parsed);
       setXlsxStatus({ type: 'ok', text: '✓ Datei gelesen' });
@@ -110,62 +111,72 @@ export default function SettingsView() {
       {/* Darstellung */}
       <div className="card">
         <div className="card-title">Darstellung</div>
-        <p style={{ fontSize: '0.9rem' }}>
-          Hell/Dunkel/System gilt app-weit — umschaltbar oben im Menü.
+        <p className="t-body" style={{ color: 'var(--text-secondary)' }}>
+          Hell/Dunkel/System gilt app-weit — umschaltbar oben im Menü (Zahnrad-Symbol).
         </p>
       </div>
 
       {/* Export */}
       <div className="card">
         <div className="card-title">Daten exportieren</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>
+        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
           Exportiert alle Einträge, Ersparnisse und Verträge als JSON-Datei — als
-          zusätzliches Backup. Die eigentliche Synchronisation zwischen deinen
-          Geräten läuft automatisch über die Cloud.
+          zusätzliches Backup. Die Synchronisation zwischen deinen Geräten läuft
+          automatisch über die Cloud.
         </p>
-        <button className="btn btn-primary" onClick={exportJSON}><IconDownload /> JSON exportieren</button>
+        <button className="btn btn-primary" onClick={exportJSON}>
+          <IconDownload /> JSON exportieren
+        </button>
       </div>
 
       {/* Import */}
       <div className="card">
         <div className="card-title">Daten importieren</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>
+        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
           Importiert eine zuvor exportierte JSON-Datei — auch aus der alten,
           lokalen Version der App. Bestehende Einträge mit gleicher ID werden
           überschrieben, neue hinzugefügt.
         </p>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-            <IconUpload /> JSON importieren
-            <input type="file" accept=".json" onChange={importJSON} style={{ display: 'none' }} />
-          </label>
-        </div>
-        {importStatus && <div className={`status-note ${importStatus.type}`}>{importStatus.text}</div>}
+        <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <IconUpload /> JSON importieren
+          <input type="file" accept=".json" onChange={importJSON} style={{ display: 'none' }} />
+        </label>
+        {importStatus && (
+          <div className={`status-note ${importStatus.type}`} style={{ marginTop: 10 }}>
+            {importStatus.text}
+          </div>
+        )}
       </div>
 
       {/* XLSX */}
       <div className="card">
         <div className="card-title">XLSX Migration</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>
+        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
           Importiere deine bestehende Google Sheets / Excel-Datei einmalig in die App.
         </p>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-            <IconFile /> XLSX importieren
-            <input type="file" accept=".xlsx,.xls" onChange={readXLSX} style={{ display: 'none' }} />
-          </label>
-        </div>
-        {xlsxStatus && <div className={`status-note ${xlsxStatus.type}`}>{xlsxStatus.text}</div>}
+        <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <IconFile /> XLSX importieren
+          <input type="file" accept=".xlsx,.xls" onChange={readXLSX} style={{ display: 'none' }} />
+        </label>
+        {xlsxStatus && (
+          <div className={`status-note ${xlsxStatus.type}`} style={{ marginTop: 10 }}>
+            {xlsxStatus.text}
+          </div>
+        )}
 
         {xlsxPreview && (
-          <div style={{ marginTop: 14, background: 'var(--accent-light)', borderRadius: 'var(--radius-sm)', padding: 14, fontSize: '0.88rem' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--accent)' }}>Vorschau — gefundene Daten</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, color: 'var(--text-secondary)' }}>
-              <span>Einträge:</span><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{xlsxPreview.entries.length}</span>
-              <span>Ersparnisse:</span><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{xlsxPreview.savings.length} Monate</span>
+          <div className="settings-xlsx-preview">
+            <div className="t-body" style={{ fontWeight: 700, marginBottom: 8, color: 'var(--action-primary)' }}>
+              Vorschau — gefundene Daten
+            </div>
+            <div className="settings-xlsx-grid t-body" style={{ color: 'var(--text-secondary)' }}>
+              <span>Einträge:</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{xlsxPreview.entries.length}</span>
+              <span>Ersparnisse:</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{xlsxPreview.savings.length} Monate</span>
             </div>
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={confirmXLSX}>Jetzt importieren</button>
+              <button className="btn btn-primary"   onClick={confirmXLSX}>Jetzt importieren</button>
               <button className="btn btn-secondary" onClick={() => setXlsxPreview(null)}>Abbrechen</button>
             </div>
           </div>
@@ -174,19 +185,19 @@ export default function SettingsView() {
 
       {/* Daten löschen */}
       <div className="card">
-        <div className="card-title" style={{ color: 'var(--danger)' }}>Daten löschen</div>
-        <p style={{ marginBottom: 14, fontSize: '0.9rem' }}>
+        <div className="card-title" style={{ color: 'var(--status-critical)' }}>Daten löschen</div>
+        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
           Löscht alle gespeicherten Daten unwiderruflich aus deinem Konto — auch
           auf allen anderen Geräten.
         </p>
         <button className="btn btn-danger" onClick={clearAll}>Alle Daten löschen</button>
       </div>
 
-      <p style={{ textAlign: 'center', margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+      <p className="t-meta" style={{ textAlign: 'center', margin: '4px 0 0', color: 'var(--text-muted)' }}>
         Konto, Passwort und Abmelden findest du im Profil-Menü oben rechts.
       </p>
 
-      <div style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+      <div className="t-meta" style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)' }}>
         Nestua · Finanzen-Modul · Cloud-Sync über Supabase
       </div>
     </>
