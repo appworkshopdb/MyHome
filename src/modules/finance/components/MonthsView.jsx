@@ -32,18 +32,26 @@ function sortByCreated(arr, dir = 'asc') {
 // Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
 function EntryRow({ e, onOpenModal, onTogglePaid }) {
   const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
+  // Lokaler Animations-State: kurz "flash" nach Abhaken, unabhängig vom
+  // globalen Reload. Verhindert Flackern/Kollabieren der Dropdowns.
+  const [flashing, setFlashing] = useState(false);
+
+  function handleCheck(ev) {
+    ev.stopPropagation();
+    setFlashing(true);
+    setTimeout(() => setFlashing(false), 400);
+    onTogglePaid(e);
+  }
+
   return (
     <div
-      key={e.id}
       className="fin-row"
       onClick={() => onOpenModal({ entry: e, defaultCategory: e.category })}
     >
       {!isIncome && (
-        // Häkchen-Bereich: stopPropagation verhindert, dass der Zeilen-Tap
-        // (Modal öffnen) ausgelöst wird — nur Abhaken passiert hier.
         <div
-          className={`fin-row-check ${e.paid ? 'checked' : ''}`}
-          onClick={(ev) => { ev.stopPropagation(); onTogglePaid(e); }}
+          className={`fin-row-check ${e.paid ? 'checked' : ''} ${flashing ? 'flash' : ''}`}
+          onClick={handleCheck}
           role="checkbox"
           aria-checked={e.paid}
         >
@@ -200,10 +208,23 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   }
 
   async function handleTogglePaid(entry) {
-    await db.togglePaid(entry.id, !entry.paid);
-    showToast(!entry.paid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
-    load();
-    notifySaved();
+    // Optimistischer Update: entries direkt im State umschalten,
+    // OHNE load() zu rufen — Dropdowns bleiben offen, kein Flackern.
+    const newPaid = !entry.paid;
+    setEntries((prev) =>
+      prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e)
+    );
+    showToast(newPaid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
+    // DB-Schreiben + Hintergrund-Sync (kein await → blockiert UI nicht)
+    db.togglePaid(entry.id, newPaid)
+      .then(() => notifySaved())
+      .catch(() => {
+        // Bei Fehler: State zurückrollen und Toast
+        setEntries((prev) =>
+          prev.map((e) => e.id === entry.id ? { ...e, paid: entry.paid } : e)
+        );
+        showToast('Fehler beim Speichern');
+      });
   }
 
   // Kennzahlen für die Saldo-Karte
