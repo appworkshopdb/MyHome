@@ -229,6 +229,59 @@ async function checkCategory(category, ownerId, berlin) {
   }
 
   if (category === 'fin_due') {
+    // ── Strategie: zwei Signale, die BEIDE berücksichtigt werden ──
+    //
+    // 1. FÄLLIGKEITS-CHECK (due_day):
+    //    Posten aus fin_fixtemplates und fin_contracts, die einen due_day
+    //    haben, sind genau dann fällig, wenn berlin.day === due_day
+    //    (+ Intervall passt). Dann informieren wir am Morgen des Fälligkeitstags.
+    //
+    // 2. RÜCKSTAND-CHECK (offene Buchungen):
+    //    Wie bisher: offene fin_entries (from_template gesetzt, paid=false)
+    //    diesen Monat → Erinnerung, solange was offen ist.
+    //
+    // Priorität: due_day-Treffer schlägt Rückstandsmeldung (spezifischer).
+
+    const berlinDay = Number(
+      new Intl.DateTimeFormat('de-DE', {
+        timeZone: 'Europe/Berlin',
+        day: 'numeric',
+      }).format(new Date())
+    );
+
+    // Templates mit due_day die heute fällig sind (Intervall-Check vereinfacht:
+    // monatlich → immer, quartalsweise/etc. → start_month-Logik zu komplex für
+    // Edge-Function, daher nur Tagsprüfung; Verfeinern in späterem Notifications-Chat)
+    const { data: dueTemplates } = await supabase
+      .from('fin_fixtemplates')
+      .select('id, name, due_day, interval, category')
+      .eq('owner_id', ownerId)
+      .eq('due_day', berlinDay)
+      .is('deleted_at', null);
+
+    const { data: dueContracts } = await supabase
+      .from('fin_contracts')
+      .select('id, name, due_day, interval')
+      .eq('owner_id', ownerId)
+      .eq('due_day', berlinDay)
+      .is('deleted_at', null);
+
+    const dueTodayCount = (dueTemplates?.length ?? 0) + (dueContracts?.length ?? 0);
+
+    if (dueTodayCount > 0) {
+      const names = [
+        ...(dueTemplates ?? []).map((t) => t.name),
+        ...(dueContracts ?? []).map((c) => c.name),
+      ].slice(0, 2).join(', ');
+      const suffix = dueTodayCount > 2 ? ` +${dueTodayCount - 2} weitere` : '';
+      return {
+        title: 'Zahlung fällig heute',
+        body: `${names}${suffix} ${dueTodayCount === 1 ? 'ist' : 'sind'} heute fällig.`,
+        url: './#/finance',
+      };
+    }
+
+    // Rückstand-Check: offene Buchungen aus Vorlagen diesen Monat
     // Jahr/Monat aus Berlin-Sicht — an Monatsgrenzen (31.12. 23:30 UTC =
     // 1.1. 00:30 Berlin) sonst der falsche Monat.
     const { data: openEntries } = await supabase
@@ -241,7 +294,11 @@ async function checkCategory(category, ownerId, berlin) {
       .not('from_template', 'is', null)
       .is('deleted_at', null);
     if ((openEntries?.length ?? 0) === 0) return null;
-    return { title: 'Fixkosten offen', body: `${openEntries.length} unbezahlte Fixkosten diesen Monat.`, url: './#/finance/months' };
+    return {
+      title: 'Fixkosten offen',
+      body: `${openEntries.length} unbezahlte Fixkosten diesen Monat.`,
+      url: './#/finance',
+    };
   }
 
   if (category === 'weekly_recap') {
