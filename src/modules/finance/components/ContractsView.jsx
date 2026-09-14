@@ -19,37 +19,47 @@ import FixTemplateModal from './FixTemplateModal';
 import PaymentBadge from './PaymentBadge';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 
+// Status-Tokens auf das neue Drei-Ebenen-System gemappt
 const STATUS_MAP = {
-  active:   { label: 'Aktiv',      bg: 'var(--success-light)', fg: 'var(--success)' },
-  expiring: { label: 'Läuft aus',  bg: 'var(--warning-light)', fg: 'var(--warning)' },
-  expired:  { label: 'Abgelaufen', bg: 'var(--danger-light)',  fg: 'var(--danger)'  },
+  active:   { label: 'Aktiv',      bg: 'var(--status-positive-bg)', fg: 'var(--status-positive)' },
+  expiring: { label: 'Läuft aus',  bg: 'var(--status-caution-bg)',  fg: 'var(--status-caution)'  },
+  expired:  { label: 'Abgelaufen', bg: 'var(--status-critical-bg)', fg: 'var(--status-critical)' },
 };
 
-// -----------------------------------------------------------------------
-// Hilfsfunktion: Intervall-Unterzeile für FixTemplates
-// -----------------------------------------------------------------------
 function IntervalHint({ item }) {
   const iv = item.interval ?? (item.quarterly ? 'quarterly' : 'monthly');
   if (iv === 'monthly') return null;
   const ivMonths = INTERVALS[iv]?.months ?? 1;
   return (
-    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>
+    <span className="t-meta" style={{ color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
       alle {ivMonths} Monate ab {MONTHS_DE[(item.start_month || 1) - 1]}
     </span>
   );
 }
 
-// Status/Enddatum eines FixTemplates lagen bis Schritt 6 hier lokal —
-// jetzt in lib/finance.js (getTemplateStatus/getTemplateEndDate), weil
-// die Modul-Übersicht dieselbe Regel für "Verträge (X läuft aus)"
-// braucht. Import siehe oben.
+function StatusBadge({ status }) {
+  const s = STATUS_MAP[status] || STATUS_MAP.active;
+  return (
+    <span
+      className="t-chip"
+      style={{
+        background: s.bg,
+        color: s.fg,
+        padding: '2px 7px',
+        borderRadius: 'var(--r-pill)',
+        whiteSpace: 'nowrap',
+        display: 'inline-block',
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
 
-// -----------------------------------------------------------------------
-// Sektion: Einnahmequellen — mit Beginn/Ende/Status
-// -----------------------------------------------------------------------
+// ── Einnahmequellen ──────────────────────────────────────────────────────────
 function EinnahmequellenSection({ templates, onEdit, onAdd, onApply }) {
-  const items  = templates.filter((t) => t.category === 'fixeinnahmen');
-  const active = items.filter((t) => getTemplateStatus(t) !== 'expired');
+  const items   = templates.filter((t) => t.category === 'fixeinnahmen');
+  const active  = items.filter((t) => getTemplateStatus(t) !== 'expired');
   const expired = items.filter((t) => getTemplateStatus(t) === 'expired');
 
   const totalMonthly = active.reduce((s, t) => {
@@ -58,46 +68,48 @@ function EinnahmequellenSection({ templates, onEdit, onAdd, onApply }) {
   }, 0);
 
   function renderRow(t) {
-    const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
+    const iv      = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
     const monthly = monthlyAmount(t.amount, iv);
-    const st = getTemplateStatus(t);
+    const st      = getTemplateStatus(t);
     const endDate = getTemplateEndDate(t);
 
     return (
-      <tr key={t.id} className="entry-row"
+      <tr
+        key={t.id}
+        className="entry-row"
         style={{ cursor: 'pointer', opacity: st === 'expired' ? 0.5 : 1 }}
-        onClick={() => onEdit(t)}>
+        onClick={() => onEdit(t)}
+      >
         <td>
-          <div style={{ fontWeight: 500 }}>{t.name}</div>
+          <div className="t-body" style={{ fontWeight: 500 }}>{t.name}</div>
           <IntervalHint item={t} />
         </td>
-        <td style={{ fontSize: '0.85rem' }}>
+        <td className="t-meta" style={{ color: 'var(--text-secondary)' }}>
           {t.start_date ? formatDate(t.start_date) : '—'}
         </td>
-        <td style={{ fontSize: '0.85rem' }}>
+        <td className="t-meta" style={{ color: 'var(--text-secondary)' }}>
           {t.is_open
             ? <span style={{ color: 'var(--text-muted)' }}>unbefristet</span>
             : endDate ? formatDate(endDate) : '—'}
         </td>
         <td>
           {(t.start_date || t.end_date || t.contract_duration_months || t.is_open) && (
-            <span className="badge"
-              style={{ background: STATUS_MAP[st].bg, color: STATUS_MAP[st].fg, whiteSpace: 'nowrap' }}>
-              {STATUS_MAP[st].label}
-            </span>
+            <StatusBadge status={st} />
           )}
         </td>
         <td><PaymentBadge payment={t.payment} /></td>
-        <td className="amount">
-          <div>{formatEur(t.amount)}</div>
+        <td style={{ textAlign: 'right' }}>
+          <div className="t-body" style={{ fontWeight: 700 }}>{formatEur(t.amount)}</div>
           {iv !== 'monthly' && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>
               ≈ {formatEur(monthly)}/Mo.
             </div>
           )}
         </td>
         <td className="actions" onClick={(e) => e.stopPropagation()}>
-          <button className="btn-icon" title="Bearbeiten" onClick={() => onEdit(t)}><IconEdit /></button>
+          <button className="btn-icon" title="Bearbeiten" onClick={() => onEdit(t)}>
+            <IconEdit />
+          </button>
         </td>
       </tr>
     );
@@ -106,12 +118,13 @@ function EinnahmequellenSection({ templates, onEdit, onAdd, onApply }) {
   function renderTable(rows) {
     if (rows.length === 0) return null;
     return (
-      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div className="table-wrap">
         <table className="entry-table">
           <thead>
             <tr>
-              <th>Name</th><th>Beginn</th><th>Ende</th><th>Status</th>
-              <th>Zahlung</th><th style={{ textAlign: 'right' }}>Betrag</th><th></th>
+              <th>Name</th><th>Beginn</th><th>Ende</th>
+              <th>Status</th><th>Zahlung</th>
+              <th style={{ textAlign: 'right' }}>Betrag</th><th />
             </tr>
           </thead>
           <tbody>{rows.map(renderRow)}</tbody>
@@ -123,50 +136,45 @@ function EinnahmequellenSection({ templates, onEdit, onAdd, onApply }) {
   return (
     <div className="card">
       <div className="card-title">Einnahmequellen</div>
-      <p style={{ marginBottom: 14, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+      <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
         Feste Einnahmen — werden automatisch in jeden neuen Monat übernommen.
       </p>
 
       {items.length === 0 ? (
-        <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '6px 0 10px' }}>
+        <p className="t-body" style={{ color: 'var(--text-muted)', padding: '6px 0 10px' }}>
           Noch keine Einnahmequellen angelegt.
-        </div>
+        </p>
       ) : (
         <>
           {renderTable(active)}
           {active.length > 0 && (
-            <div style={{
-              marginTop: 8, paddingTop: 8,
-              borderTop: '1px solid var(--border)',
-              fontSize: '0.85rem', color: 'var(--text-secondary)',
-              display: 'flex', justifyContent: 'space-between',
-            }}>
-              <span>Gesamt/Monat (aktiv)</span>
-              <span style={{ color: 'var(--success)', fontWeight: 600 }}>{formatEur(totalMonthly)}</span>
+            <div className="contracts-total-row">
+              <span className="t-meta">Gesamt/Monat (aktiv)</span>
+              <span className="t-body" style={{ color: 'var(--status-positive)', fontWeight: 700 }}>
+                {formatEur(totalMonthly)}
+              </span>
             </div>
           )}
           {expired.length > 0 && (
             <>
-              <div style={{ marginTop: 16, marginBottom: 6, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              <p className="t-meta" style={{ color: 'var(--text-muted)', fontWeight: 600, marginTop: 16, marginBottom: 6 }}>
                 Abgelaufen ({expired.length})
-              </div>
+              </p>
               {renderTable(expired)}
             </>
           )}
         </>
       )}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-        <button className="btn btn-primary" onClick={onAdd}>+ Hinzufügen</button>
+      <div className="contracts-btn-row">
+        <button className="btn btn-primary"   onClick={onAdd}>+ Hinzufügen</button>
         <button className="btn btn-secondary" onClick={onApply}>Auf aktuellen Monat anwenden</button>
       </div>
     </div>
   );
 }
 
-// -----------------------------------------------------------------------
-// Sektion: Fixkosten & Verträge — FixTemplates (fixkosten) + fin_contracts
-// -----------------------------------------------------------------------
+// ── Fixkosten & Verträge ─────────────────────────────────────────────────────
 function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate, onApply, onEditContract, onAddContract, onDeleteContract }) {
   const fixItems = templates.filter((t) => t.category === 'fixkosten');
 
@@ -193,57 +201,57 @@ function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate,
 
   function renderRow(x) {
     const isContract = x._src === 'contract';
-    const iv  = x.interval ?? (x.quarterly ? 'quarterly' : 'monthly');
-    const monthly = monthlyAmount(x.amount, iv);
-    const st  = isContract ? getContractStatus(x) : getTemplateStatus(x);
-    const endDate = isContract ? getContractEndDate(x) : getTemplateEndDate(x);
-    const isOpen  = x.is_open || x.is_monthly;
+    const iv       = x.interval ?? (x.quarterly ? 'quarterly' : 'monthly');
+    const monthly  = monthlyAmount(x.amount, iv);
+    const st       = isContract ? getContractStatus(x) : getTemplateStatus(x);
+    const endDate  = isContract ? getContractEndDate(x) : getTemplateEndDate(x);
+    const isOpen   = x.is_open || x.is_monthly;
 
     return (
       <tr key={`${x._src}-${x.id}`} style={{ opacity: st === 'expired' ? 0.5 : 1 }}>
         <td>
-          <div style={{ fontWeight: 500 }}>{x.name}</div>
+          <div className="t-body" style={{ fontWeight: 500 }}>{x.name}</div>
           {x.notes && (
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{x.notes}</div>
-          )}
-          {iv !== 'monthly' && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              {isContract ? intervalLabel(iv) : null}
-            </div>
+            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>{x.notes}</div>
           )}
           {!isContract && <IntervalHint item={x} />}
+          {isContract && iv !== 'monthly' && (
+            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>{intervalLabel(iv)}</div>
+          )}
         </td>
-        <td style={{ fontSize: '0.85rem' }}>
+        <td className="t-meta" style={{ color: 'var(--text-secondary)' }}>
           {x.start_date ? formatDate(x.start_date) : '—'}
         </td>
-        <td style={{ fontSize: '0.85rem' }}>
+        <td className="t-meta" style={{ color: 'var(--text-secondary)' }}>
           {isOpen
             ? <span style={{ color: 'var(--text-muted)' }}>unbefristet</span>
             : endDate ? formatDate(endDate) : '—'}
         </td>
         <td><PaymentBadge payment={x.payment} /></td>
-        <td style={{ whiteSpace: 'nowrap' }}>
-          <div style={{ fontWeight: 600 }}>{formatEur(x.amount)}</div>
+        <td style={{ textAlign: 'right' }}>
+          <div className="t-body" style={{ fontWeight: 700 }}>{formatEur(x.amount)}</div>
           {iv !== 'monthly' && (
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>
               ≈ {formatEur(monthly)}/Mo.
             </div>
           )}
         </td>
-        <td>
-          <span className="badge"
-            style={{ background: STATUS_MAP[st].bg, color: STATUS_MAP[st].fg, whiteSpace: 'nowrap' }}>
-            {STATUS_MAP[st].label}
-          </span>
-        </td>
+        <td><StatusBadge status={st} /></td>
         <td className="actions">
-          <button className="btn-icon" title="Bearbeiten"
-            onClick={() => isContract ? onEditContract(x) : onEditTemplate(x)}>
+          <button
+            className="btn-icon"
+            title="Bearbeiten"
+            onClick={() => isContract ? onEditContract(x) : onEditTemplate(x)}
+          >
             <IconEdit />
           </button>
           {isContract && (
-            <button className="btn-icon" title="Löschen" style={{ color: 'var(--danger)' }}
-              onClick={() => onDeleteContract(x.id)}>
+            <button
+              className="btn-icon"
+              title="Löschen"
+              style={{ color: 'var(--status-critical)' }}
+              onClick={() => onDeleteContract(x.id)}
+            >
               <IconTrash />
             </button>
           )}
@@ -255,12 +263,13 @@ function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate,
   function renderTable(rows) {
     if (rows.length === 0) return null;
     return (
-      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div className="table-wrap">
         <table className="entry-table">
           <thead>
             <tr>
               <th>Name</th><th>Beginn</th><th>Ende</th>
-              <th>Zahlung</th><th>Betrag</th><th>Status</th><th></th>
+              <th>Zahlung</th><th style={{ textAlign: 'right' }}>Betrag</th>
+              <th>Status</th><th />
             </tr>
           </thead>
           <tbody>{rows.map(renderRow)}</tbody>
@@ -272,7 +281,7 @@ function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate,
   return (
     <div className="card">
       <div className="card-title">Fixkosten &amp; Verträge</div>
-      <p style={{ marginBottom: 14, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+      <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
         Feste Ausgaben und Verträge — mit Laufzeit, Ablauf-Status und monatlicher Kostenrechnung.
       </p>
 
@@ -300,36 +309,33 @@ function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate,
       )}
 
       {allItems.length === 0 ? (
-        <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', padding: '6px 0 10px' }}>
+        <p className="t-body" style={{ color: 'var(--text-muted)', padding: '6px 0 10px' }}>
           Noch keine Einträge angelegt.
-        </div>
+        </p>
       ) : (
         <>
           {renderTable(active)}
           {active.length > 0 && (
-            <div style={{
-              marginTop: 8, paddingTop: 8,
-              borderTop: '1px solid var(--border)',
-              fontSize: '0.85rem', color: 'var(--text-secondary)',
-              display: 'flex', justifyContent: 'space-between',
-            }}>
-              <span>Gesamt monatlich (aktiv)</span>
-              <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatEur(totalMonthly)}</span>
+            <div className="contracts-total-row">
+              <span className="t-meta">Gesamt monatlich (aktiv)</span>
+              <span className="t-body" style={{ color: 'var(--status-critical)', fontWeight: 700 }}>
+                {formatEur(totalMonthly)}
+              </span>
             </div>
           )}
           {expired.length > 0 && (
             <>
-              <div style={{ marginTop: 16, marginBottom: 6, fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              <p className="t-meta" style={{ color: 'var(--text-muted)', fontWeight: 600, marginTop: 16, marginBottom: 6 }}>
                 Abgelaufen ({expired.length})
-              </div>
+              </p>
               {renderTable(expired)}
             </>
           )}
         </>
       )}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-        <button className="btn btn-primary" onClick={onAddTemplate}>+ Fixkosten</button>
+      <div className="contracts-btn-row">
+        <button className="btn btn-primary"   onClick={onAddTemplate}>+ Fixkosten</button>
         <button className="btn btn-secondary" onClick={onAddContract}>+ Vertrag</button>
         <button className="btn btn-secondary" onClick={onApply}>Auf aktuellen Monat anwenden</button>
       </div>
@@ -337,16 +343,14 @@ function FixkostenSection({ templates, contracts, onEditTemplate, onAddTemplate,
   );
 }
 
-// -----------------------------------------------------------------------
-// Hauptkomponente
-// -----------------------------------------------------------------------
+// ── Hauptkomponente ──────────────────────────────────────────────────────────
 export default function ContractsView() {
-  const { session } = useAuth();
+  const { session }   = useAuth();
   const { showToast } = useUi();
 
   const [templates, setTemplates] = useState([]);
   const [contracts, setContracts] = useState([]);
-  const [modal, setModal] = useState(null);
+  const [modal,     setModal]     = useState(null);
 
   const now = new Date();
 
@@ -364,8 +368,6 @@ export default function ContractsView() {
 
   async function handleSaveTemplate(tpl) {
     const isNew = !tpl.id;
-    // _src und andere Join-Felder aus ContractsView entfernen
-    // bevor sie an die DB weitergegeben werden
     // eslint-disable-next-line no-unused-vars
     const { _src, ...cleanTpl } = tpl;
     const saved = await db.saveFixTemplate(session, cleanTpl);
@@ -406,7 +408,7 @@ export default function ContractsView() {
     <>
       <EinnahmequellenSection
         templates={templates}
-        onEdit={(t) => setModal({ type: 'template', tpl: t, category: 'fixeinnahmen' })}
+        onEdit={(t)  => setModal({ type: 'template', tpl: t, category: 'fixeinnahmen' })}
         onAdd={() => setModal({ type: 'template', tpl: null, category: 'fixeinnahmen' })}
         onApply={applyToCurrentMonth}
       />
@@ -446,4 +448,3 @@ export default function ContractsView() {
     </>
   );
 }
-

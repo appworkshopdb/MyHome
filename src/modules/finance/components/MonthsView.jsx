@@ -8,19 +8,18 @@ import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
-// Spaltenaufteilung wie im Original
 const COLUMNS = [
-  { key: 'einnahmen', label: 'Einnahmen', cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
-  { key: 'fixkosten', label: 'Fixkosten', cats: ['fixkosten'] },
-  { key: 'variable', label: 'Variable Kosten', cats: ['variable_kosten'] },
-  { key: 'sonstige', label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
+  { key: 'einnahmen', label: 'Einnahmen',        cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
+  { key: 'fixkosten', label: 'Fixkosten',         cats: ['fixkosten'] },
+  { key: 'variable',  label: 'Variable Kosten',   cats: ['variable_kosten'] },
+  { key: 'sonstige',  label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
 ];
 
 const FILTERS = [
-  { key: 'alle', label: 'Alle' },
+  { key: 'alle',  label: 'Alle'  },
   { key: 'offen', label: 'Offen' },
-  { key: 'fix', label: 'Fix' },
-  { key: 'ein', label: 'Ein' },
+  { key: 'fix',   label: 'Fix'   },
+  { key: 'ein',   label: 'Ein'   },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -28,25 +27,18 @@ function sortByCreated(arr, dir = 'asc') {
   return arr.slice().sort((a, b) => (dir === 'desc' ? k(b) - k(a) : k(a) - k(b)));
 }
 
-// initialFilter: Startwert der Filterzeile. Ohne Angabe wie bisher
-// 'alle' — der Bereich "Offene Posten" (Schritt 6) rendert dieselbe
-// View mit 'offen', statt dafür einen zweiten, fast identischen
-// Screen zu bauen.
 export default function MonthsView({ initialFilter = 'alle' }) {
-  const { session } = useAuth();
+  const { session }  = useAuth();
   const { showToast } = useUi();
-  // notifySaved zusätzlich zu version destructured — muss nach JEDER
-  // Änderung (Speichern/Löschen/Abhaken) aufgerufen werden, damit andere
-  // Verbraucher des globalen Contexts (z.B. der Sparschwein-Button)
-  // ebenfalls neu laden, statt erst nach einem kompletten Seiten-Reload.
   const { version, notifySaved } = useEntrySheet();
+
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
+  const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
-  const [filter, setFilter] = useState(initialFilter);
+  const [modal,   setModal]   = useState(null);
+  const [filter,  setFilter]  = useState(initialFilter);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,9 +52,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     setLoading(false);
   }, [session, year, month, showToast]);
 
-  // Lädt auch neu, wenn im globalen Erfassen-Sheet (core/components/
-  // EntrySheet.jsx) ein Eintrag für Finanzen gespeichert wurde, ohne
-  // dass das Sheet diese View direkt kennen muss.
   useEffect(() => { load(); }, [load, version]);
 
   function shiftMonth(delta) {
@@ -76,7 +65,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     setModal(null);
     showToast(entry.id ? 'Eintrag aktualisiert' : 'Eintrag hinzugefügt');
     load();
-    notifySaved(); // Sparschwein-Button & andere Views informieren
+    notifySaved();
   }
 
   async function handleDelete(id) {
@@ -96,18 +85,13 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     notifySaved();
   }
 
-  const fixEin = sumCat(entries, 'fixeinnahmen');
-  const sonstEin = sumCat(entries, 'sonstige_einnahmen');
-  const totalEin = fixEin + sonstEin;
-  const totalAus = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
-  const verfuegbar = totalEin - totalAus;
-  const offeneEintraege = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
-  const offeneSumme = offeneEintraege.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const spentRatio = totalEin > 0 ? Math.min(100, (totalAus / totalEin) * 100) : 0;
-  const openRatio = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
-
-  const heuteTag = now.getDate();
-  const istAktuellerMonat = year === now.getFullYear() && month === now.getMonth() + 1;
+  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
+  const totalAus    = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
+  const verfuegbar  = totalEin - totalAus;
+  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
+  const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
+  const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
@@ -122,14 +106,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   }
 
   function entryRow(e) {
-    const showCheck = e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen';
+    const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
     return (
       <div
         key={e.id}
         className="fin-row"
         onClick={() => setModal({ entry: e, defaultCategory: e.category })}
       >
-        {showCheck && (
+        {!isIncome && (
           <div
             className={`fin-row-check ${e.paid ? 'checked' : ''}`}
             onClick={(ev) => togglePaid(e, ev)}
@@ -142,15 +126,18 @@ export default function MonthsView({ initialFilter = 'alle' }) {
           <div className="fin-row-meta">
             {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
           </div>
+          {e.note && <div className="fin-row-note">{e.note}</div>}
         </div>
-        <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>{formatEur(e.amount).replace('€', '').trim()}</div>
+        <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>
+          {formatEur(e.amount).replace('€', '').trim()}
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      {/* Monatsnavigation — volle Breite wie die Tabs darüber */}
+      {/* Monatsnavigation */}
       <div className="fin-month-nav">
         <button className="month-nav-btn" onClick={() => shiftMonth(-1)} aria-label="Vorheriger Monat">
           <IconChevronLeft />
@@ -161,20 +148,24 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         </button>
       </div>
 
-      <div className="fin-lead">
-        <div className="hub-eyebrow">Saldo diesen Monat</div>
-        <div className="hub-lead-stat">{formatEur(verfuegbar)}</div>
-        <div className="hub-lead-substats">
+      {/* Saldo-Kachel */}
+      <div className="fin-summary-card">
+        <div className="fin-summary-eyebrow t-chip">Saldo diesen Monat</div>
+        <div className="fin-summary-value t-display">{loading ? '—' : formatEur(verfuegbar)}</div>
+        <div className="fin-summary-sub">
           <span>Ein <b>{formatEur(totalEin)}</b></span>
           <span>Aus <b>{formatEur(totalAus)}</b></span>
-          {offeneEintraege.length > 0 && <span style={{ color: 'var(--accent)' }}>{offeneEintraege.length} offen</span>}
+          {offene.length > 0 && (
+            <span style={{ color: 'var(--status-critical)' }}>{offene.length} offen</span>
+          )}
         </div>
-        <div className="fin-bar">
+        <div className="fin-bar" role="progressbar" aria-valuenow={Math.round(spentRatio)}>
           <div className="fin-bar-spent" style={{ width: `${spentRatio}%` }} />
-          <div className="fin-bar-open" style={{ width: `${openRatio}%` }} />
+          <div className="fin-bar-open"  style={{ width: `${openRatio}%`  }} />
         </div>
       </div>
 
+      {/* Filter */}
       <div className="fin-filter-row">
         {FILTERS.map((f) => (
           <button
@@ -202,8 +193,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
                 <div>{formatEur(total).replace('€', '').trim()}</div>
               </div>
               {col.cats.length > 1
-                ? sortByCreated(colEntries, 'asc').map((e) => entryRow(e))
-                : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc').map((e) => entryRow(e))}
+                ? sortByCreated(colEntries, 'asc').map(entryRow)
+                : sortByCreated(colEntries, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc').map(entryRow)}
               {colEntries.length === 0 && <div className="fin-row-empty">Keine Einträge</div>}
             </div>
           );
