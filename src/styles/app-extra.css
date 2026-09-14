@@ -3702,3 +3702,105 @@
   border:      1px solid var(--border-hairline);
   border-radius: var(--r-xl);
 }
+
+/* ── Buchungen: Saldo-Kachel (ersetzt .fin-lead / .hub-lead-*) ──── */
+.fin-summary-card {
+  background: var(--surface-raised);
+  border-radius: var(--r-xl);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+
+.fin-summary-eyebrow {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-2);
+}
+
+.fin-summary-value {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.fin-summary-sub {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-summary-sub b {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ── Verträge: Trennlinie + Total-Zeile ─────────────────────────── */
+.contracts-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-hairline);
+}
+
+/* ── Verträge: Button-Reihe ─────────────────────────────────────── */
+.contracts-btn-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+
+/* ── Auswertung: Jahres-Wähler ──────────────────────────────────── */
+.summary-year-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.summary-year-select {
+  width: auto;
+  font-size: 0.9rem;
+  padding: 6px 28px 6px 10px;
+}
+
+/* ── Einstellungen: XLSX-Vorschau-Box ───────────────────────────── */
+.settings-xlsx-preview {
+  margin-top: var(--space-4);
+  background: var(--action-quiet-bg);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+}
+
+.settings-xlsx-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1) var(--space-3);
+}
+
+/* ── EntryModal: Meta-Zeile (Erfassungsdatum) ───────────────────── */
+.entry-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+/* ── EntryModal: Aktionszeile ───────────────────────────────────── */
+.entry-modal-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: 1px solid var(--border-hairline);
+}
