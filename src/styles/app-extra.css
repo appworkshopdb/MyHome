@@ -3901,12 +3901,14 @@
   justify-content: space-between;
   gap:             var(--space-3);
   padding:         12px var(--space-4);
-  border-bottom:   1px solid var(--border-hairline);
+  /* Trennlinie nur oben — verhindert Doppellinie mit card-internen Borders */
+  border-top:      1px solid var(--border-hairline);
   cursor:          pointer;
   transition:      background var(--motion-fast);
 }
 
-.contracts-row:last-of-type { border-bottom: none; }
+/* Erste Zeile braucht keine Linie oben */
+.contracts-row:first-of-type { border-top: none; }
 .contracts-row:active        { background: var(--surface-sunken); }
 .contracts-row--faded        { opacity: 0.5; }
 
@@ -3992,4 +3994,25 @@
 /* fin-row innerhalb offen-list — kein collapse-body-Wrapper nötig */
 .fin-offen-list .fin-row {
   padding: 11px var(--space-4);
+}
+
+/* ── Häkchen: Flash-Animation beim Abhaken ──────────────────────── */
+@keyframes check-flash {
+  0%   { transform: scale(1);    background: var(--action-primary); }
+  40%  { transform: scale(1.25); background: var(--status-positive); }
+  100% { transform: scale(1);    background: var(--action-primary); }
+}
+
+.fin-row-check {
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+
+.fin-row-check.flash {
+  animation: check-flash 400ms ease-out forwards;
+}
+
+/* Bereits bezahlte Häkchen: sanfte Transition beim Einblenden */
+.fin-row-check.checked {
+  transition: background var(--motion-fast), border-color var(--motion-fast),
+              transform 120ms ease-out;
 }
