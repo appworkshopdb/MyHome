@@ -3965,3 +3965,31 @@
   accent-color: var(--action-primary);
   flex-shrink:  0;
 }
+
+/* ── Offene-Posten: flache Liste (kein Dropdown) ────────────────── */
+.fin-offen-list {
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
+  margin-bottom: var(--space-6);
+}
+
+.fin-offen-header {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding:         12px var(--space-4);
+  border-bottom:   1px solid var(--border-hairline);
+}
+
+.fin-offen-empty {
+  display:         flex;
+  justify-content: center;
+  padding:         var(--space-6);
+}
+
+/* fin-row innerhalb offen-list — kein collapse-body-Wrapper nötig */
+.fin-offen-list .fin-row {
+  padding: 11px var(--space-4);
+}
