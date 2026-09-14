@@ -200,9 +200,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
               {offene.length} offen
             </span>
           )}
-          <span style={{ color: 'var(--text-muted)' }}>
-            {entries.length} Buchungen
-          </span>
         </div>
         <div className="fin-bar" role="progressbar" aria-valuenow={Math.round(spentRatio)}>
           <div className="fin-bar-spent" style={{ width: `${spentRatio}%` }} />

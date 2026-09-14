@@ -169,10 +169,7 @@ export default function OverviewSection({ onNavigate }) {
             </div>
           )}
 
-          {/* Tap-Hinweis */}
-          <div className="fin-split-tap-hint t-meta">
-            Alle Buchungen ansehen ›
-          </div>
+
         </button>
       </PageSection>
 
