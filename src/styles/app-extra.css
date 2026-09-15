@@ -4032,3 +4032,38 @@
   border-color: var(--action-primary);
   color:        var(--text-on-accent);
 }
+
+/* ── iOS-Fix: Monatspfeile sichtbar machen ──────────────────────────
+   iOS Safari erbt color nicht zuverlässig in SVG via currentColor
+   wenn der Button kein explizites computed color hat. Explizit setzen. */
+.fin-month-nav .month-nav-btn {
+  flex-shrink: 0;
+  min-width:   34px;
+  color:       var(--text-secondary); /* explizit, nicht inherited */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fin-month-nav .month-nav-btn svg {
+  display: block;          /* kein inline baseline-gap */
+  stroke:  currentColor;   /* explizit für iOS Safari */
+  fill:    none;
+}
+
+/* ── iOS-Fix: flash-Animation mit will-change vorbereiten ───────────
+   Ohne will-change kann iOS die Klasse beim Reflow ignorieren.   */
+.fin-row-check {
+  border-radius: var(--r-sm);
+  will-change:   transform, background;
+  -webkit-transform: translateZ(0); /* GPU-Layer erzwingen */
+}
+
+@keyframes check-flash {
+  0%   { transform: scale(1);    background: var(--action-primary); }
+  40%  { transform: scale(1.22); background: var(--status-positive); }
+  100% { transform: scale(1);    background: var(--action-primary); }
+}
+
+.fin-row-check.flash {
+  animation: check-flash 400ms ease-out forwards;
+  -webkit-animation: check-flash 400ms ease-out forwards;
+}
