@@ -181,9 +181,6 @@ export function todayCompletionRate(habits, entries) {
 /**
  * Durchschnittliche Completion-Rate über alle Habits in einem Zeitraum
  * (jeder Habit zählt gleich, unabhängig von der Anzahl fälliger Tage).
- * Verschoben aus StatsView.jsx (war dort lokal definiert) — wird jetzt
- * auch von OverviewSection.jsx für "X % im Monat" auf der Fokuskarte
- * gebraucht, damit beide Stellen garantiert dieselbe Zahl zeigen.
  */
 export function overallRate(habits, entries, from, to) {
   if (habits.length === 0) return 0;
@@ -286,36 +283,81 @@ export function getEarnedBadges(habits, entries) {
   return BADGES.filter((b) => b.check(stats));
 }
 
+// ─── Time-Slots ───────────────────────────────────────────
+
+/**
+ * Die vier möglichen Tageszeiten für Habits.
+ * Reihenfolge bestimmt die Anzeigereihenfolge in der Übersicht.
+ */
+export const TIME_SLOTS = [
+  { value: 'morning', label: 'Morgens',  emoji: '🌅' },
+  { value: 'midday',  label: 'Tagsüber', emoji: '☀️' },
+  { value: 'evening', label: 'Abends',   emoji: '🌙' },
+  { value: 'anytime', label: 'Jederzeit', emoji: '✨' },
+];
+
+/**
+ * Gruppiert ein Array von Habits nach time_slot.
+ * Habits ohne time_slot (ältere Einträge, DB-Default 'anytime') landen in 'anytime'.
+ * Gibt nur Gruppen zurück, die mindestens einen Habit enthalten.
+ * Die 'anytime'-Gruppe bekommt kein Label (wird unten ohne Überschrift gerendert),
+ * es sei denn es gibt AUCH andere Gruppen — dann bekommt sie das Label "Jederzeit".
+ */
+export function groupBySlot(habits) {
+  const grouped = {};
+  for (const slot of TIME_SLOTS) {
+    grouped[slot.value] = [];
+  }
+  for (const h of habits) {
+    const slot = h.time_slot || 'anytime';
+    if (!grouped[slot]) grouped[slot] = [];
+    grouped[slot].push(h);
+  }
+
+  // Nur nicht-leere Gruppen, in der festgelegten Reihenfolge
+  const result = TIME_SLOTS
+    .map((s) => ({ ...s, habits: grouped[s.value] }))
+    .filter((g) => g.habits.length > 0);
+
+  // Wenn es nur 'anytime'-Habits gibt → kein Label zeigen (wie bisher)
+  const hasOtherSlots = result.some((g) => g.value !== 'anytime');
+  if (!hasOtherSlots && result.length === 1) {
+    result[0].hideLabel = true;
+  }
+
+  return result;
+}
+
 // ─── Bibliothek (Vorlagen) ────────────────────────────────
 
 export const HABIT_LIBRARY = [
   // Gesundheit & Bewegung
-  { name: '30 Min bewegen',              category: 'Bewegung',      icon: '🏃', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Spazieren gehen',             category: 'Bewegung',      icon: '🚶', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Sport / Gym',                 category: 'Bewegung',      icon: '💪', frequency: 'custom',   frequency_days: [0,2,4], target_count: 1, unit: null },
-  { name: 'Dehnen & Stretching',         category: 'Bewegung',      icon: '🧘', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Treppe statt Aufzug',         category: 'Bewegung',      icon: '🪜', frequency: 'weekdays', target_count: 1,  unit: null },
+  { name: '30 Min bewegen',              category: 'Bewegung',      icon: '🏃', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
+  { name: 'Spazieren gehen',             category: 'Bewegung',      icon: '🚶', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
+  { name: 'Sport / Gym',                 category: 'Bewegung',      icon: '💪', frequency: 'custom',   frequency_days: [0,2,4], target_count: 1, unit: null, time_slot: 'midday' },
+  { name: 'Dehnen & Stretching',         category: 'Bewegung',      icon: '🧘', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
+  { name: 'Treppe statt Aufzug',         category: 'Bewegung',      icon: '🪜', frequency: 'weekdays', target_count: 1,  unit: null, time_slot: 'anytime' },
   // Ernährung
-  { name: 'Wasser trinken',              category: 'Ernährung',     icon: '💧', frequency: 'daily',    target_count: 2,  unit: 'L' },
-  { name: 'Gemüse essen',                category: 'Ernährung',     icon: '🥦', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Kein Zucker',                 category: 'Ernährung',     icon: '🚫', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Zu Hause kochen',             category: 'Ernährung',     icon: '🍳', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Wasser trinken',              category: 'Ernährung',     icon: '💧', frequency: 'daily',    target_count: 2,  unit: 'L',  time_slot: 'anytime' },
+  { name: 'Gemüse essen',                category: 'Ernährung',     icon: '🥦', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'anytime' },
+  { name: 'Kein Zucker',                 category: 'Ernährung',     icon: '🚫', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'anytime' },
+  { name: 'Zu Hause kochen',             category: 'Ernährung',     icon: '🍳', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
   // Schlaf
-  { name: 'Vor 23 Uhr ins Bett',         category: 'Schlaf',        icon: '😴', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Kein Handy vor dem Schlafen', category: 'Schlaf',        icon: '📵', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Feste Aufstehzeit',           category: 'Schlaf',        icon: '⏰', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Vor 23 Uhr ins Bett',         category: 'Schlaf',        icon: '😴', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
+  { name: 'Kein Handy vor dem Schlafen', category: 'Schlaf',        icon: '📵', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
+  { name: 'Feste Aufstehzeit',           category: 'Schlaf',        icon: '⏰', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
   // Mental & Achtsamkeit
-  { name: 'Meditieren',                  category: 'Mental',        icon: '🧠', frequency: 'daily',    target_count: 10, unit: 'Min' },
-  { name: 'Dankbarkeit notieren',        category: 'Mental',        icon: '🙏', frequency: 'daily',    target_count: 3,  unit: 'Ding' },
-  { name: 'Journaling',                  category: 'Mental',        icon: '📓', frequency: 'daily',    target_count: 1,  unit: null },
-  { name: 'Digitale Pause',              category: 'Mental',        icon: '🌿', frequency: 'daily',    target_count: 30, unit: 'Min' },
+  { name: 'Meditieren',                  category: 'Mental',        icon: '🧠', frequency: 'daily',    target_count: 10, unit: 'Min', time_slot: 'morning' },
+  { name: 'Dankbarkeit notieren',        category: 'Mental',        icon: '🙏', frequency: 'daily',    target_count: 3,  unit: 'Ding', time_slot: 'evening' },
+  { name: 'Journaling',                  category: 'Mental',        icon: '📓', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
+  { name: 'Digitale Pause',              category: 'Mental',        icon: '🌿', frequency: 'daily',    target_count: 30, unit: 'Min', time_slot: 'evening' },
   // Produktivität
-  { name: 'Tagesplanung machen',         category: 'Produktivität', icon: '📋', frequency: 'weekdays', target_count: 1,  unit: null },
-  { name: 'Kein Handy morgens',          category: 'Produktivität', icon: '📱', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Tagesplanung machen',         category: 'Produktivität', icon: '📋', frequency: 'weekdays', target_count: 1,  unit: null, time_slot: 'morning' },
+  { name: 'Kein Handy morgens',          category: 'Produktivität', icon: '📱', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
   // Lernen
-  { name: 'Lesen',                       category: 'Lernen',        icon: '📚', frequency: 'daily',    target_count: 1,  unit: null },
+  { name: 'Lesen',                       category: 'Lernen',        icon: '📚', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
   // Haushalt
-  { name: 'Bett machen',                 category: 'Haushalt',      icon: '🛏️', frequency: 'daily',   target_count: 1,  unit: null },
+  { name: 'Bett machen',                 category: 'Haushalt',      icon: '🛏️', frequency: 'daily',   target_count: 1,  unit: null, time_slot: 'morning' },
 ];
 
 export const HABIT_CATEGORIES = [

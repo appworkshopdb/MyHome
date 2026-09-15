@@ -49,6 +49,7 @@ export async function saveHabit(habit) {
         target_count:   habit.target_count ?? 1,
         unit:           habit.unit ?? null,
         reminder_time:  habit.reminder_time ?? null,
+        time_slot:      habit.time_slot ?? 'anytime',
         active:         habit.active ?? true,
         sort_order:     habit.sort_order ?? 0,
       })
@@ -72,6 +73,7 @@ export async function saveHabit(habit) {
         target_count:   habit.target_count ?? 1,
         unit:           habit.unit ?? null,
         reminder_time:  habit.reminder_time ?? null,
+        time_slot:      habit.time_slot ?? 'anytime',
         active:         true,
         sort_order:     habit.sort_order ?? 0,
       })
