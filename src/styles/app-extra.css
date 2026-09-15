@@ -4150,3 +4150,17 @@
   border-color: var(--action-primary);
   color:        var(--action-primary);
 }
+
+/* ── sheet-scroll: Android + iOS vollständig absichern ─────────────
+   Überschreibt den Basis-Block aus app-extra.css.
+   - overscroll-behavior: contain → Android verhindert Hintergrund-Scroll
+     wenn das Sheet-Ende erreicht ist (kein "bounce" auf den Body).
+   - touch-action: pan-y → iOS/Android: nur vertikales Scrollen.
+   - overflow-x: hidden → kein horizontales Ausbrechen.  */
+.sheet-scroll {
+  overflow-y:           auto;
+  overflow-x:           hidden;
+  -webkit-overflow-scrolling: touch; /* iOS Momentum-Scroll */
+  overscroll-behavior:  contain;     /* Android: kein Body-Scroll-Bleed */
+  touch-action:         pan-y;       /* iOS+Android: nur vertikal */
+}
