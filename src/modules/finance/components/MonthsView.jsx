@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
@@ -32,14 +32,22 @@ function sortByCreated(arr, dir = 'asc') {
 // Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
 function EntryRow({ e, onOpenModal, onTogglePaid }) {
   const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
-  // Lokaler Animations-State: kurz "flash" nach Abhaken, unabhängig vom
-  // globalen Reload. Verhindert Flackern/Kollabieren der Dropdowns.
-  const [flashing, setFlashing] = useState(false);
+  // Ref auf das Häkchen-Element — Animation direkt über classList statt
+  // React-State, weil iOS Safari setState+rAF zu einem einzigen Paint
+  // zusammenfasst und der false→true-Toggle nie gerendert wird.
+  const checkRef = useRef(null);
 
   function handleCheck(ev) {
     ev.stopPropagation();
-    setFlashing(true);
-    setTimeout(() => setFlashing(false), 400);
+    const el = checkRef.current;
+    if (el) {
+      // Klasse kurz entfernen und sofort wieder setzen — zwingt iOS
+      // Safari zu einem echten Reflow vor der Animation.
+      el.classList.remove('flash');
+      void el.offsetWidth; // Reflow erzwingen
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 420);
+    }
     onTogglePaid(e);
   }
 
@@ -50,7 +58,8 @@ function EntryRow({ e, onOpenModal, onTogglePaid }) {
     >
       {!isIncome && (
         <div
-          className={`fin-row-check ${e.paid ? 'checked' : ''} ${flashing ? 'flash' : ''}`}
+          ref={checkRef}
+          className={`fin-row-check ${e.paid ? 'checked' : ''}`}
           onClick={handleCheck}
           role="checkbox"
           aria-checked={e.paid}
@@ -170,7 +179,11 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const [modal,   setModal]   = useState(null);
   const [filter,  setFilter]  = useState(initialFilter);
 
-  const load = useCallback(async () => {
+  // load als stabiler Ref — verhindert dass session-Objekt-Referenz-
+  // Wechsel bei jedem Render einen useCallback-Neustart und damit
+  // einen ungewollten Reload auslöst.
+  const loadRef = useRef(null);
+  loadRef.current = async () => {
     setLoading(true);
     try {
       await db.applyMissingFixTemplates(session, year, month);
@@ -180,9 +193,18 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       console.error(e);
     }
     setLoading(false);
-  }, [session, year, month, showToast]);
+  };
 
-  useEffect(() => { load(); }, [load, version]);
+  const load = useCallback(() => loadRef.current?.(), []);
+
+  // Monat/Jahr-Wechsel: neu laden
+  useEffect(() => { load(); }, [year, month]); // eslint-disable-line
+
+  // version-Änderung (neuer Eintrag von außen): neu laden
+  // Bewusst separater Effect — reagiert NUR auf version, nicht auf load
+  useEffect(() => {
+    if (version > 0) load();
+  }, [version]); // eslint-disable-line
 
   function shiftMonth(delta) {
     let m = month + delta, y = year;
