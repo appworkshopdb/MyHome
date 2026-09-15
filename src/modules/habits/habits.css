@@ -1895,7 +1895,10 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 4px;
-  width: 220px;
+  width: 280px;
+  max-height: 240px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hwiz-icon-option {
