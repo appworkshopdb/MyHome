@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { saveHabit } from '../../modules/habits/lib/habData';
 import { HABIT_CATEGORIES, HABIT_ICONS, TIME_SLOTS } from '../../modules/habits/lib/habUtils';
+import { loadHabitsData } from '../lib/habitsStore';
 import SheetShell from './SheetShell';
 
 const FREQ_OPTIONS = [
@@ -100,6 +101,7 @@ export default function HabitQuickSheet({ onClose, onSaved }) {
         sort_order:  0,
       });
       onSaved?.(saved);
+      await loadHabitsData({ force: true });
       onClose();
     } catch {
       setError('Speichern fehlgeschlagen. Bitte erneut versuchen.');
