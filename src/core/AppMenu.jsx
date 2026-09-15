@@ -7,40 +7,51 @@ import {
   getNotificationPrefs, saveNotificationPrefs,
 } from './lib/pushNotifications';
 
-// V2 — Neue Kategoriennamen + Texte nach NESTUA-BENACHRICHTIGUNGEN-V1.md.
-// Wunschstunde und Ruhezeiten entfernt — feste Produktlogik in der Edge Function.
 const NOTIFICATION_CATEGORIES = [
   {
-    key:  'tasks_habits',
+    key:   'tasks_habits',
     label: 'Aufgaben & Gewohnheiten',
     hint:  'Abends, wenn noch etwas offen ist',
   },
   {
-    key:  'finance',
+    key:   'finance',
     label: 'Finanzen',
     hint:  'Hinweise auf fällige und offene Zahlungen',
   },
   {
-    key:  'profile',
+    key:   'profile',
     label: 'Profil & Fortschritt',
     hint:  'Wenn wichtige Angaben fehlen',
   },
   {
-    key:  'weekly_recap',
+    key:   'weekly_recap',
     label: 'Wochenrückblick',
     hint:  'Deine persönliche Zusammenfassung der Woche',
   },
 ];
 
-// Konto/Profil (Avatar-Button rechts) und Module (Bottom-Nav) sind hier
-// bewusst raus — dieses Dropdown ist für app-weite Einstellungen da:
-// Design und Benachrichtigungen. Der rechte Avatar-Bereich (Profile.jsx)
-// bleibt dagegen auf Konto/Körperdaten/Ziele beschränkt.
+// Kleiner Toggle-Switch — kein natives Checkbox-Element, rein per CSS
+// gestylt. Setzt voraus, dass .notif-toggle-* in app-extra.css definiert ist.
+function NotifToggle({ checked, onChange, label, hint }) {
+  return (
+    <div className="notif-toggle-row" onClick={onChange} role="switch" aria-checked={checked} tabIndex={0}
+      onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && onChange()}>
+      <div className="notif-toggle-text">
+        <span className="notif-toggle-label">{label}</span>
+        <span className="notif-toggle-hint">{hint}</span>
+      </div>
+      <div className={`notif-toggle-track ${checked ? 'on' : ''}`}>
+        <div className="notif-toggle-thumb" />
+      </div>
+    </div>
+  );
+}
+
 export default function AppMenu() {
   const { session } = useAuth();
   const { mode, setMode, showToast } = useUi();
 
-  const [pushStatus, setPushStatus] = useState('laedt'); // laedt|unsupported|denied|unsubscribed|subscribed
+  const [pushStatus, setPushStatus] = useState('laedt');
   const [pushBusy, setPushBusy] = useState(false);
   const [prefs, setPrefs] = useState(null);
 
@@ -95,7 +106,7 @@ export default function AppMenu() {
     try {
       await saveNotificationPrefs(session, next);
     } catch (e) {
-      setPrefs(prefs); // Rollback bei Fehler
+      setPrefs(prefs);
       showToast('Konnte nicht gespeichert werden');
       console.error(e);
     }
@@ -119,20 +130,17 @@ export default function AppMenu() {
       {pushStatus === 'laedt' && (
         <div className="status-note">Wird geladen…</div>
       )}
-
       {pushStatus === 'unsupported' && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
           Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone:
           erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.
         </p>
       )}
-
       {pushStatus === 'denied' && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
           Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.
         </p>
       )}
-
       {pushStatus === 'unsubscribed' && (
         <>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
@@ -146,26 +154,21 @@ export default function AppMenu() {
 
       {pushStatus === 'subscribed' && prefs && (
         <>
-          {NOTIFICATION_CATEGORIES.map((c) => (
-            <label key={c.key} className="goal-milestone" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
-              <input
-                type="checkbox"
+          <div className="notif-toggle-list">
+            {NOTIFICATION_CATEGORIES.map((c) => (
+              <NotifToggle
+                key={c.key}
                 checked={!!prefs[c.key]}
                 onChange={() => toggleCategory(c.key)}
-                style={{ marginTop: 2 }}
+                label={c.label}
+                hint={c.hint}
               />
-              <span>
-                {c.label}
-                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  {c.hint}
-                </span>
-              </span>
-            </label>
-          ))}
+            ))}
+          </div>
 
           <button
             className="btn btn-secondary"
-            style={{ marginTop: 14 }}
+            style={{ marginTop: 14, width: '100%' }}
             disabled={pushBusy}
             onClick={handleDisablePush}
           >
