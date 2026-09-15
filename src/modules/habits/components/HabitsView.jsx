@@ -58,6 +58,7 @@ const EMPTY_HABIT = {
   name:           '',
   description:    '',
   category:       'Gesundheit',
+  categories:     [],
   icon:           '⭐',
   frequency:      'daily',
   frequency_days: [0, 1, 2, 3, 4],
@@ -129,6 +130,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       name:           habit.name,
       description:    habit.description ?? '',
       category:       habit.category,
+      categories:     habit.categories ?? (habit.category ? [habit.category] : []),
       icon:           habit.icon,
       frequency:      habit.frequency,
       frequency_days: habit.frequency_days ?? [0,1,2,3,4],
@@ -186,6 +188,15 @@ export default function HabitsView({ habits, onHabitsChange }) {
     });
   }
 
+
+  function toggleCategory(cat) {
+    setForm((f) => ({
+      ...f,
+      categories: (f.categories ?? []).includes(cat)
+        ? (f.categories ?? []).filter((c) => c !== cat)
+        : [...(f.categories ?? []), cat],
+    }));
+  }
   async function handleSave() {
     if (!form.name.trim()) { setError('Name ist erforderlich.'); return; }
     setSaving(true);
@@ -198,6 +209,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
         description:    form.description.trim() || null,
         reminder_time:  form.reminder_time || null,
         time_slot:      form.time_slot || 'anytime',
+        categories:     form.categories ?? [],
+        category:       form.categories?.[0] ?? form.category ?? 'Sonstiges',
         target_count:   Math.max(1, Number(form.target_count)),
         frequency_days: form.frequency === 'custom' ? form.frequency_days : null,
         sort_order:     editHabit ? editHabit.sort_order : activeHabits.length,
@@ -412,18 +425,21 @@ export default function HabitsView({ habits, onHabitsChange }) {
             />
           </div>
 
-          {/* Kategorie */}
+          {/* Kategorien — Multi-Select Tags */}
           <div className="hab-form-field">
-            <label className="form-label">Kategorie</label>
-            <select
-              className="form-input"
-              value={form.category}
-              onChange={(e) => setField('category', e.target.value)}
-            >
-              {HABIT_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+            <label className="form-label">Kategorien</label>
+            <div className="hwiz-cat-grid">
+              {HABIT_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`hwiz-cat-tag ${(form.categories ?? []).includes(cat) ? 'active' : ''}`}
+                  onClick={() => toggleCategory(cat)}
+                >
+                  {cat}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Frequenz */}
