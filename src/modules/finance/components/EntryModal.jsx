@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useUi } from '../../../core/lib/UiContext';
-import { CATEGORIES, PAYMENTS, formatDateTime } from '../lib/finance';
+import { CATEGORIES, PAYMENTS, formatDateTime, isInstantPaid } from '../lib/finance';
+import PaymentsEditor from '../../../core/components/PaymentsEditor';
 import { IconCalendarSmall, IconTrash } from '../../../core/components/Icons';
 import SheetShell from '../../../core/components/SheetShell';
-
-// paid-Logik: Bar, Sparschwein und Gutschein gelten als sofort beglichen.
-const INSTANT_PAID = new Set(['Bar', 'Sparschwein', 'Gutschein']);
 
 export default function EntryModal({ entry, defaultCategory, onSave, onDelete, onClose, showToast }) {
   const { isDarkActive } = useUi();
@@ -21,15 +19,27 @@ export default function EntryModal({ entry, defaultCategory, onSave, onDelete, o
     if (!name.trim()) return showToast('Bitte Name eingeben');
     const amt = parseFloat(String(amount).replace(',', '.'));
     if (isNaN(amt) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
-    const paid = INSTANT_PAID.has(payment) ? true : entry?.paid || false;
+
+    // Payments auflösen: letzter Eintrag = Rest
+    const resolvedPayments = payments.length === 1
+      ? [{ method: payments[0].method, amount: amt }]
+      : payments.map((p, idx) => {
+          if (idx === payments.length - 1) {
+            const sumOthers = payments.slice(0, -1).reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
+            return { method: p.method, amount: Math.max(0, amt - sumOthers) };
+          }
+          return { method: p.method, amount: parseFloat(p.amount) || 0 };
+        });
+
     onSave({
       ...(entry || {}),
       category,
-      name: name.trim(),
-      payment,
-      amount: amt,
-      paid,
-      note: note.trim() || null,
+      name:     name.trim(),
+      payments: resolvedPayments,
+      payment:  resolvedPayments[0].method, // Abwärtskompatibilität
+      amount:   amt,
+      paid:     isInstantPaid(resolvedPayments),
+      note:     note.trim() || null,
       due_date: dueDate || null,
     });
   }
@@ -102,19 +112,13 @@ export default function EntryModal({ entry, defaultCategory, onSave, onDelete, o
           </div>
         </div>
 
-        {/* Zahlungsart — Pills wie im Wizard */}
+        {/* Zahlungsart — Multi-Zahlungsart-Editor */}
         <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
-        <div className="wiz-pay-row">
-          {PAYMENTS.map((p) => (
-            <button
-              key={p}
-              className={`wiz-pay ${payment === p ? 'active' : ''}`}
-              onClick={() => setPayment(p)}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        <PaymentsEditor
+          payments={payments}
+          onChange={setPayments}
+          totalAmount={amount}
+        />
 
         {/* Fälligkeit (optional) */}
         <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>
