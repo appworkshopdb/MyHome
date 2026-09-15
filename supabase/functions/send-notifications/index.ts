@@ -246,7 +246,7 @@ async function checkCategory(category, ownerId, berlin) {
       return {
         title: dueTodayNames.length === 1 ? 'Zahlung fällig — heute' : 'Zahlungen fällig — heute',
         body:  `${shown}${rest} ${dueTodayNames.length === 1 ? 'muss' : 'müssen'} heute beglichen werden.`,
-        url:   './#/finance',
+        url:   './#/finance/buchungen',
         skipThrottle: true, // Fall A überspringt den Kategorie-Throttle
       };
     }
@@ -279,7 +279,7 @@ async function checkCategory(category, ownerId, berlin) {
           body:  `${openEntries.length} ${openEntries.length === 1 ? 'Posten steht' : 'Posten stehen'} diesen Monat noch aus.`,
         },
       ]),
-      url:   './#/finance',
+      url:   './#/finance/buchungen',
     };
   }
 
