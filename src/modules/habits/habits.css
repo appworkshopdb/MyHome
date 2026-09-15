@@ -1658,11 +1658,11 @@
   margin-left: 2px;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════
-   Modul-Übersicht (OverviewSection.jsx) — UMBAU-PLAN.md Schritt 5
+   Modul-Übersicht (OverviewSection.jsx)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Ring + Status in der Fokuskarte */
 .hab-ring-row {
   display: flex;
   align-items: center;
@@ -1703,8 +1703,7 @@
   margin-top: 3px;
 }
 
-/* "Offen heute"-Zeilen — gleiche Zeilen-Optik wie area-row, aber mit
-   Checkbox statt Chevron (kein Navigations-, sondern Aktionselement) */
+/* Heute-Zeilen */
 .hab-open-row {
   display: flex;
   align-items: center;
@@ -1749,26 +1748,31 @@
   text-decoration: line-through;
   color: var(--text-muted);
 }
+
+/* Rechte Seite — Wert + Slot-Badge */
+.hab-open-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
 .hab-open-value {
   font-size: 11px;
   font-weight: 800;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
-.hab-overview-footer {
-  display: block;
-  width: 100%;
-  text-align: center;
-  padding: 11px 18px;
-  border: none;
-  border-top: 1px solid var(--surface-page);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-size: 12px;
+/* Slot-Badge */
+.hab-slot-badge {
+  font-size: 10px;
   font-weight: 700;
-  cursor: pointer;
-  min-height: var(--touch-target);
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.hab-slot-badge--done {
+  opacity: 0.5;
 }
 
 .hab-overview-empty {
@@ -1778,181 +1782,385 @@
   font-size: 13px;
 }
 
-// modules/habits/components/OverviewSection.jsx
-// "Offen heute": alle Habits (offen + erledigt) in einer flachen Liste,
-// jeder Habit zeigt ein kleines Slot-Badge (🌅 Morgens etc.).
-// Erledigte Habits bleiben immer sichtbar — motivierender Fortschrittsblick.
+/* ═══════════════════════════════════════════════════════════════
+   HabitQuickSheet — 3-Schritt-Wizard
+   ═══════════════════════════════════════════════════════════════ */
 
-import { getDueToday, toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
-import { isDone, getEntry, today, isDueOn, overallRate } from '../lib/habUtils.js';
-import { useGamificationStore } from '../../../core/lib/gamificationStore.js';
-import { fb } from '../../../core/lib/feedback.js';
-import { useState } from 'react';
-import FocusCard from '../../../core/components/FocusCard.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
-import AreaList from '../../../core/components/AreaList.jsx';
-import AreaRow from '../../../core/components/AreaRow.jsx';
-
-function isoDaysAgo(n) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
+/* Fortschrittsbalken */
+.hwiz-progress {
+  display: flex;
+  gap: 6px;
+  padding: 0 16px 16px;
+}
+.hwiz-progress-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--border-hairline);
+  transition: background var(--motion-calm);
+}
+.hwiz-progress-seg.active {
+  background: var(--action-primary);
+  opacity: 0.5;
+}
+.hwiz-progress-seg.done {
+  background: var(--action-primary);
+  opacity: 1;
 }
 
-// Slot-Badge-Text (kurz, passt in eine kleine Pille)
-const SLOT_BADGE = {
-  morning: { emoji: '🌅', label: 'Morgens'  },
-  midday:  { emoji: '☀️', label: 'Tagsüber' },
-  evening: { emoji: '🌙', label: 'Abends'   },
-  anytime: null, // kein Badge für "Jederzeit" — wäre bei fast allen Habits redundant
-};
+/* Body */
+.hwiz-body {
+  padding: 0 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-export default function OverviewSection({ habits, entries, onNavigate }) {
-  const { current_streak } = useGamificationStore();
-  const todayStr = today();
+.hwiz-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
 
-  const activeHabits = habits.filter((h) => h.active && !h.deleted_at);
-  const dueToday      = getDueToday(activeHabits, entries);
-  const doneToday     = dueToday.filter((h) => isDone(entries, h.id, todayStr, h.target_count));
-  const openToday     = dueToday.filter((h) => !isDone(entries, h.id, todayStr, h.target_count));
-  const totalDue  = dueToday.length;
-  const totalDone = doneToday.length;
-  const ringDeg   = totalDue > 0 ? Math.round((totalDone / totalDue) * 360) : 0;
+/* Preview */
+.hwiz-preview {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.hwiz-preview-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.hwiz-preview-cat {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
+}
 
-  const monthFrom = isoDaysAgo(29);
-  const monthRate = overallRate(activeHabits, entries, monthFrom, todayStr);
+/* Schritt 1 — Name + Icon */
+.hwiz-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
 
-  const last7 = Array.from({ length: 7 }, (_, i) => isoDaysAgo(6 - i));
-  const perfectDays = last7.filter((d) => {
-    const due = activeHabits.filter((h) => isDueOn(h, d));
-    return due.length > 0 && due.every((h) => isDone(entries, h.id, d, h.target_count));
-  }).length;
+.hwiz-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
 
-  const [busyId, setBusyId] = useState(null);
+.hwiz-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  min-height: var(--touch-target);
+  min-width: 60px;
+  justify-content: center;
+}
+.hwiz-icon-current {
+  font-size: 22px;
+  line-height: 1;
+}
+.hwiz-icon-caret {
+  font-size: 9px;
+  color: var(--text-muted);
+}
 
-  async function handleToggle(habit) {
-    if (busyId) return;
-    setBusyId(habit.id);
-    try {
-      const entry   = getEntry(entries, habit.id, todayStr);
-      const wasDone = entry && !entry.deleted_at && entry.count >= habit.target_count;
-      if (!wasDone && habit.target_count > 1) await setHabitCount(habit, habit.target_count, todayStr);
-      else await toggleHabitOn(habit, todayStr);
-      if (!wasDone) {
-        const nowDone = totalDone + 1;
-        if (nowDone === totalDue) fb.habitAllDone();
-        else fb.habitCheck();
-      }
-    } catch {
-      fb.error();
-    } finally {
-      setBusyId(null);
-    }
-  }
+.hwiz-icon-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-float);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  width: 220px;
+}
 
-  return (
-    <>
-      <h1 className="overview-page-title">Gewohnheiten</h1>
+.hwiz-icon-option {
+  font-size: 20px;
+  padding: 6px;
+  border-radius: var(--r-md);
+  border: 1.5px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+.hwiz-icon-option:active,
+.hwiz-icon-option.active {
+  background: var(--action-quiet-bg);
+  border-color: var(--action-primary);
+}
 
-      {/* Fokuskarte */}
-      <FocusCard>
-        <div className="hab-ring-row">
-          <div
-            className="hab-ring"
-            style={{ background: `conic-gradient(#FFFFFF 0deg ${ringDeg}deg, var(--raw-navy-600) ${ringDeg}deg 360deg)` }}
-          >
-            <div className="hab-ring-inner">{totalDone}/{totalDue}</div>
-          </div>
-          <div className="hab-ring-text">
-            <div className="hab-ring-headline">
-              {totalDue === 0 ? 'Nichts fällig heute'
-                : totalDue - totalDone === 0 ? 'Alles erledigt 🎉'
-                : `${totalDue - totalDone} noch offen`}
-            </div>
-            <div className="hab-ring-meta">
-              Serie: {current_streak} {current_streak === 1 ? 'Tag' : 'Tage'} · {Math.round(monthRate * 100)} % im Monat
-            </div>
-          </div>
-        </div>
-      </FocusCard>
+.hwiz-name-input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font);
+  min-height: var(--touch-target);
+  outline: none;
+}
+.hwiz-name-input:focus {
+  border-color: var(--action-primary);
+}
+.hwiz-name-input::placeholder {
+  color: var(--text-muted);
+}
 
-      {/* Heute — offen + erledigt, flach, immer sichtbar */}
-      <PageSection
-        title="Heute"
-        action={{ label: `Alle ${activeHabits.length} ›`, onPress: () => onNavigate('gewohnheiten') }}
-      >
-        <AreaList>
-          {totalDue === 0 && (
-            <div className="hab-overview-empty">Keine Gewohnheiten für heute.</div>
-          )}
+/* Schritt 2 — Labels + Segmented + Tage + Slot + Kategorien */
+.hwiz-field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  margin-top: 4px;
+}
 
-          {/* Offene Habits */}
-          {openToday.map((h) => {
-            const badge = SLOT_BADGE[h.time_slot || 'anytime'];
-            return (
-              <button
-                key={h.id}
-                className="hab-open-row"
-                onClick={() => handleToggle(h)}
-                disabled={busyId === h.id}
-              >
-                <span className="hab-open-check" aria-hidden="true" />
-                <span className="hab-open-name">{h.name}</span>
-                <span className="hab-open-right">
-                  {h.target_count > 1 && (
-                    <span className="hab-open-value">{h.target_count} {h.unit}</span>
-                  )}
-                  {badge && (
-                    <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
+/* Segmented Häufigkeit */
+.hwiz-seg {
+  display: flex;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.hwiz-seg-btn {
+  flex: 1;
+  padding: 10px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border: none;
+  border-right: 1px solid var(--border-hairline);
+  cursor: pointer;
+  transition: background var(--motion-fast), color var(--motion-fast);
+  min-height: var(--touch-target);
+}
+.hwiz-seg-btn:last-child { border-right: none; }
+.hwiz-seg-btn.active {
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+}
 
-          {/* Erledigte Habits — immer sichtbar, motivierender Fortschrittsblick */}
-          {doneToday.map((h) => {
-            const badge = SLOT_BADGE[h.time_slot || 'anytime'];
-            return (
-              <button
-                key={h.id}
-                className="hab-open-row hab-open-row--done"
-                onClick={() => handleToggle(h)}
-                disabled={busyId === h.id}
-              >
-                <span className="hab-open-check hab-open-check--done" aria-hidden="true">✓</span>
-                <span className="hab-open-name">{h.name}</span>
-                <span className="hab-open-right">
-                  {badge && (
-                    <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
-        </AreaList>
-      </PageSection>
+/* Wochentage */
+.hwiz-day-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.hwiz-day-btn {
+  flex: 1;
+  min-width: 36px;
+  padding: 8px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  cursor: pointer;
+  min-height: 40px;
+  transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+}
+.hwiz-day-btn.active {
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+  color: var(--text-on-accent);
+}
 
-      {/* Bereiche */}
-      <PageSection title="Bereiche">
-        <AreaList fabClearance>
-          <AreaRow
-            label="Meine Gewohnheiten"
-            value={`${activeHabits.length} aktiv`}
-            onPress={() => onNavigate('gewohnheiten')}
-          />
-          <AreaRow
-            label="Verlauf"
-            value={`${perfectDays} von 7 Tagen`}
-            onPress={() => onNavigate('verlauf')}
-          />
-          <AreaRow
-            label="Auswertung"
-            value={`${Math.round(monthRate * 100)} %`}
-            onPress={() => onNavigate('auswertung')}
-          />
-        </AreaList>
-      </PageSection>
-    </>
-  );
+/* Tageszeit-Slot */
+.hwiz-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.hwiz-slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  cursor: pointer;
+  min-height: var(--touch-target);
+  transition: border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast);
+}
+.hwiz-slot-btn.active {
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
+}
+.hwiz-slot-emoji { font-size: 18px; line-height: 1; }
+.hwiz-slot-label { font-size: 10px; font-weight: 700; }
+
+/* Kategorien Multi-Select */
+.hwiz-cat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.hwiz-cat-tag {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast);
+  min-height: 34px;
+}
+.hwiz-cat-tag.active {
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
+}
+.hwiz-cat-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Schritt 3 — Textarea + Erinnerung */
+.hwiz-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font);
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+.hwiz-textarea:focus { border-color: var(--action-primary); }
+.hwiz-textarea::placeholder { color: var(--text-muted); }
+
+.hwiz-reminder-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hwiz-time-input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: max(16px, 1rem);
+  font-family: var(--font);
+  outline: none;
+  min-height: var(--touch-target);
+}
+.hwiz-time-input:focus { border-color: var(--action-primary); }
+.hwiz-reminder-clear {
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  min-height: var(--touch-target);
+}
+.hwiz-reminder-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Buttons */
+.hwiz-next {
+  margin-top: 20px;
+  width: 100%;
+}
+.hwiz-btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.hwiz-back { flex-shrink: 0; }
+.hwiz-next-flex { flex: 1; }
+
+.hwiz-error {
+  font-size: 13px;
+  color: var(--status-critical);
+  background: var(--status-critical-bg);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+/* Formular (HabitsView) — Slot-Auswahl */
+.hab-slot-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.hab-slot-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast);
+  min-height: var(--touch-target);
+}
+.hab-slot-tab:active { opacity: 0.8; }
+.hab-slot-tab.active {
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
 }
