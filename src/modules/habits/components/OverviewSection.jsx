@@ -1,14 +1,13 @@
 // modules/habits/components/OverviewSection.jsx
-// Modul-Übersicht für Gewohnheiten — passt ohne Scrollen auf einen Screen.
-// "Offen heute" ist nach time_slot gruppiert (Morgens / Tagsüber / Abends / Jederzeit).
-// Habits ohne time_slot (DB-Default 'anytime') landen in 'anytime'.
-// Wenn alle offenen Habits denselben Slot haben → kein Gruppen-Label nötig.
+// "Offen heute": alle Habits (offen + erledigt) in einer flachen Liste,
+// jeder Habit zeigt ein kleines Slot-Badge (🌅 Morgens etc.).
+// Erledigte Habits bleiben immer sichtbar — motivierender Fortschrittsblick.
 
-import { useState } from 'react';
 import { getDueToday, toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
-import { isDone, getEntry, today, isDueOn, overallRate, groupBySlot } from '../lib/habUtils.js';
+import { isDone, getEntry, today, isDueOn, overallRate } from '../lib/habUtils.js';
 import { useGamificationStore } from '../../../core/lib/gamificationStore.js';
 import { fb } from '../../../core/lib/feedback.js';
+import { useState } from 'react';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
@@ -19,6 +18,14 @@ function isoDaysAgo(n) {
   d.setDate(d.getDate() - n);
   return d.toISOString().split('T')[0];
 }
+
+// Slot-Badge-Text (kurz, passt in eine kleine Pille)
+const SLOT_BADGE = {
+  morning: { emoji: '🌅', label: 'Morgens'  },
+  midday:  { emoji: '☀️', label: 'Tagsüber' },
+  evening: { emoji: '🌙', label: 'Abends'   },
+  anytime: null, // kein Badge für "Jederzeit" — wäre bei fast allen Habits redundant
+};
 
 export default function OverviewSection({ habits, entries, onNavigate }) {
   const { current_streak } = useGamificationStore();
@@ -32,22 +39,16 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
   const totalDone = doneToday.length;
   const ringDeg   = totalDue > 0 ? Math.round((totalDone / totalDue) * 360) : 0;
 
-  // Monatsrate (letzte 30 Tage) — dieselbe Funktion wie in StatsView
   const monthFrom = isoDaysAgo(29);
   const monthRate = overallRate(activeHabits, entries, monthFrom, todayStr);
 
-  // "Verlauf": perfekte Tage der letzten 7 Tage
   const last7 = Array.from({ length: 7 }, (_, i) => isoDaysAgo(6 - i));
   const perfectDays = last7.filter((d) => {
     const due = activeHabits.filter((h) => isDueOn(h, d));
     return due.length > 0 && due.every((h) => isDone(entries, h.id, d, h.target_count));
   }).length;
 
-  const [showDone, setShowDone] = useState(false);
-  const [busyId, setBusyId]     = useState(null);
-
-  // Offene Habits nach Slot gruppieren
-  const openGroups = groupBySlot(openToday);
+  const [busyId, setBusyId] = useState(null);
 
   async function handleToggle(habit) {
     if (busyId) return;
@@ -73,7 +74,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
     <>
       <h1 className="overview-page-title">Gewohnheiten</h1>
 
-      {/* Fokuskarte: Ring + Status */}
+      {/* Fokuskarte */}
       <FocusCard>
         <div className="hab-ring-row">
           <div
@@ -85,7 +86,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
           <div className="hab-ring-text">
             <div className="hab-ring-headline">
               {totalDue === 0 ? 'Nichts fällig heute'
-                : totalDue - totalDone === 0 ? 'Alles erledigt'
+                : totalDue - totalDone === 0 ? 'Alles erledigt 🎉'
                 : `${totalDue - totalDone} noch offen`}
             </div>
             <div className="hab-ring-meta">
@@ -95,70 +96,60 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
         </div>
       </FocusCard>
 
-      {/* Offen heute — nach Slot gruppiert */}
+      {/* Heute — offen + erledigt, flach, immer sichtbar */}
       <PageSection
-        title="Offen heute"
+        title="Heute"
         action={{ label: `Alle ${activeHabits.length} ›`, onPress: () => onNavigate('gewohnheiten') }}
       >
         <AreaList>
-          {/* Leer-Zustand */}
-          {openToday.length === 0 && doneToday.length === 0 && (
+          {totalDue === 0 && (
             <div className="hab-overview-empty">Keine Gewohnheiten für heute.</div>
           )}
 
-          {/* Alle erledigt */}
-          {openToday.length === 0 && doneToday.length > 0 && (
-            <div className="hab-overview-empty hab-overview-all-done">
-              ✓ Alle für heute erledigt
-            </div>
-          )}
-
-          {/* Offene Habits — in Slot-Gruppen */}
-          {openGroups.map((group) => (
-            <div key={group.value} className="hab-slot-group">
-              {/* Gruppen-Label nur zeigen wenn nötig (d.h. mehr als eine Gruppe
-                  ODER die Gruppe hat ein explizites Label) */}
-              {!group.hideLabel && (
-                <div className="hab-slot-label">
-                  {group.emoji} {group.label}
-                </div>
-              )}
-              {group.habits.map((h) => (
-                <button
-                  key={h.id}
-                  className="hab-open-row"
-                  onClick={() => handleToggle(h)}
-                  disabled={busyId === h.id}
-                >
-                  <span className="hab-open-check" aria-hidden="true" />
-                  <span className="hab-open-name">{h.name}</span>
+          {/* Offene Habits */}
+          {openToday.map((h) => {
+            const badge = SLOT_BADGE[h.time_slot || 'anytime'];
+            return (
+              <button
+                key={h.id}
+                className="hab-open-row"
+                onClick={() => handleToggle(h)}
+                disabled={busyId === h.id}
+              >
+                <span className="hab-open-check" aria-hidden="true" />
+                <span className="hab-open-name">{h.name}</span>
+                <span className="hab-open-right">
                   {h.target_count > 1 && (
                     <span className="hab-open-value">{h.target_count} {h.unit}</span>
                   )}
-                </button>
-              ))}
-            </div>
-          ))}
+                  {badge && (
+                    <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
 
-          {/* Erledigte ein-/ausblenden */}
-          {showDone && doneToday.map((h) => (
-            <button
-              key={h.id}
-              className="hab-open-row hab-open-row--done"
-              onClick={() => handleToggle(h)}
-              disabled={busyId === h.id}
-            >
-              <span className="hab-open-check hab-open-check--done" aria-hidden="true">✓</span>
-              <span className="hab-open-name">{h.name}</span>
-            </button>
-          ))}
-          {doneToday.length > 0 && (
-            <button className="hab-overview-footer" onClick={() => setShowDone((v) => !v)}>
-              {showDone
-                ? `${doneToday.length} erledigte ausblenden`
-                : `${doneToday.length} erledigte einblenden`}
-            </button>
-          )}
+          {/* Erledigte Habits — immer sichtbar, motivierender Fortschrittsblick */}
+          {doneToday.map((h) => {
+            const badge = SLOT_BADGE[h.time_slot || 'anytime'];
+            return (
+              <button
+                key={h.id}
+                className="hab-open-row hab-open-row--done"
+                onClick={() => handleToggle(h)}
+                disabled={busyId === h.id}
+              >
+                <span className="hab-open-check hab-open-check--done" aria-hidden="true">✓</span>
+                <span className="hab-open-name">{h.name}</span>
+                <span className="hab-open-right">
+                  {badge && (
+                    <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </AreaList>
       </PageSection>
 
