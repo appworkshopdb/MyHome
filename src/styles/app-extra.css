@@ -4164,3 +4164,82 @@
   overscroll-behavior:  contain;     /* Android: kein Body-Scroll-Bleed */
   touch-action:         pan-y;       /* iOS+Android: nur vertikal */
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Benachrichtigungs-Toggle-Switches (AppMenu.jsx)
+   ═══════════════════════════════════════════════════════════════ */
+
+.notif-toggle-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  margin-bottom:  4px;
+}
+
+/* Eine Zeile: Text links, Track rechts */
+.notif-toggle-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  padding:         11px 0;
+  border-top:      1px solid var(--border-hairline);
+  cursor:          pointer;
+  min-height:      var(--touch-target);
+  user-select:     none;
+  -webkit-user-select: none;
+}
+.notif-toggle-row:first-child { border-top: none; }
+.notif-toggle-row:focus-visible {
+  outline:        2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius:  var(--r-sm);
+}
+
+.notif-toggle-text {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  flex:           1;
+  min-width:      0;
+}
+.notif-toggle-label {
+  font-size:   13px;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.notif-toggle-hint {
+  font-size:   11px;
+  font-weight: 500;
+  color:       var(--text-muted);
+}
+
+/* Track (Hintergrund) */
+.notif-toggle-track {
+  position:      relative;
+  width:         44px;
+  height:        26px;
+  border-radius: var(--r-pill);
+  background:    var(--border-strong);
+  flex-shrink:   0;
+  transition:    background var(--motion-fast);
+}
+.notif-toggle-track.on {
+  background: var(--action-primary);
+}
+
+/* Thumb (weißer Knopf) */
+.notif-toggle-thumb {
+  position:      absolute;
+  top:           3px;
+  left:          3px;
+  width:         20px;
+  height:        20px;
+  border-radius: 50%;
+  background:    var(--raw-paper-000);
+  box-shadow:    0 1px 3px rgba(0,0,0,0.18);
+  transition:    transform var(--motion-fast);
+}
+.notif-toggle-track.on .notif-toggle-thumb {
+  transform: translateX(18px);
+}
