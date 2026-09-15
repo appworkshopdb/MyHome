@@ -207,24 +207,24 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     notifySaved();
   }
 
-  async function handleTogglePaid(entry) {
-    // Optimistischer Update: entries direkt im State umschalten,
-    // OHNE load() zu rufen — Dropdowns bleiben offen, kein Flackern.
+  function handleTogglePaid(entry) {
+    // Optimistischer Update: entries sofort lokal umschalten.
+    // KEIN notifySaved() — das würde version erhöhen → useEffect →
+    // load() → kompletter State-Reset → Dropdowns klappen zu.
+    // paid/unpaid ist eine rein lokale Änderung, andere Views
+    // (OverviewSection, SparschweinFab) müssen das nicht wissen.
     const newPaid = !entry.paid;
     setEntries((prev) =>
       prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e)
     );
     showToast(newPaid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
-    // DB-Schreiben + Hintergrund-Sync (kein await → blockiert UI nicht)
-    db.togglePaid(entry.id, newPaid)
-      .then(() => notifySaved())
-      .catch(() => {
-        // Bei Fehler: State zurückrollen und Toast
-        setEntries((prev) =>
-          prev.map((e) => e.id === entry.id ? { ...e, paid: entry.paid } : e)
-        );
-        showToast('Fehler beim Speichern');
-      });
+    // DB-Schreiben im Hintergrund — bei Fehler State zurückrollen
+    db.togglePaid(entry.id, newPaid).catch(() => {
+      setEntries((prev) =>
+        prev.map((e) => e.id === entry.id ? { ...e, paid: entry.paid } : e)
+      );
+      showToast('Fehler beim Speichern');
+    });
   }
 
   // Kennzahlen für die Saldo-Karte
