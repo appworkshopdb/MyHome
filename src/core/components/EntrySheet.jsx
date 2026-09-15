@@ -4,12 +4,10 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
-import { SPARSCHWEIN_DEPOSIT_NAME } from '../../modules/finance/lib/finance';
+import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
+import PaymentsEditor from './PaymentsEditor';
+import SheetShell from './SheetShell';
 
-// Kategorien — bewusst OHNE Statusfarben-Token. Aktive Auswahl wird
-// ausschließlich über die CSS-Klasse .wiz-cat.active gesteuert (Rahmen +
-// dunklere Fläche, kein Rot/Grün). NIE wieder per Inline-Style
-// überschreiben — das war schon zweimal ein Bug.
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
   { key: 'fixkosten',          label: 'Fixkosten' },
@@ -17,25 +15,24 @@ const QUICK_CATEGORIES = [
   { key: 'sonstige_ausgaben',  label: 'Sonstige'  },
 ];
 
-const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein'];
+const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 
+// ── Wizard ───────────────────────────────────────────────────────────────────
 function FinanceWizard({ onClose }) {
   const { session }     = useAuth();
   const { showToast }   = useUi();
   const { notifySaved } = useEntrySheet();
 
   const [step, setStep] = useState(1);
-  const [name,    setName]    = useState('');
-  const [amount,  setAmount]  = useState('');
+  const [name,     setName]     = useState('');
+  const [amount,   setAmount]   = useState('');
   const [category, setCategory] = useState('variable_kosten');
-  const [payment,  setPayment]  = useState('');
+  // payments-Array statt einzelnem payment-String
+  const [payments, setPayments] = useState([{ method: 'Bank', amount: null }]);
   const [dueDate,  setDueDate]  = useState('');
   const [note,     setNote]     = useState('');
   const [saving,   setSaving]   = useState(false);
 
-  // Steuert ob die Vorschlagsliste sichtbar ist. Nach Auswahl oder
-  // Verlassen des Feldes wird sie ausgeblendet, damit sie nicht
-  // unnötig stehen bleibt.
   const [showSuggest, setShowSuggest] = useState(false);
   const amountRef = useRef(null);
 
@@ -56,28 +53,58 @@ function FinanceWizard({ onClose }) {
   function pickSuggestion(h) {
     setName(h.name);
     if (h.cat) setCategory(h.cat);
-    if (h.payment) setPayment(h.payment);
+    // Vorherige Zahlungsart(en) aus History wiederherstellen
+    if (h.payments && Array.isArray(h.payments) && h.payments.length > 0) {
+      setPayments(h.payments.map((p) => ({ ...p, amount: null })));
+    } else if (h.payment) {
+      setPayments([{ method: h.payment, amount: null }]);
+    }
     setShowSuggest(false);
-    // Fokus direkt ins Betragsfeld — spart einen Klick
     setTimeout(() => amountRef.current?.focus(), 0);
   }
 
   const amountNum = parseFloat(String(amount).replace(',', '.'));
   const step1Valid = name.trim() && amountNum > 0;
 
+  // Payments für das Speichern aufbereiten:
+  // Bei einer Zahlungsart: kein amount-Feld (ganzer Betrag)
+  // Bei mehreren: amounts ausfüllen, letzter = Rest
+  function resolvePayments() {
+    if (payments.length === 1) {
+      return [{ method: payments[0].method, amount: amountNum }];
+    }
+    const resolved = payments.map((p, idx) => {
+      if (idx === payments.length - 1) {
+        // Rest berechnen
+        const sumOthers = payments
+          .slice(0, -1)
+          .reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
+        return { method: p.method, amount: Math.max(0, amountNum - sumOthers) };
+      }
+      return { method: p.method, amount: parseFloat(p.amount) || 0 };
+    });
+    return resolved;
+  }
+
   async function submit() {
+    const resolvedPayments = resolvePayments();
+    // Validierung: Summe der Teilbeträge darf Gesamtbetrag nicht überschreiten
+    if (payments.length > 1) {
+      const sumPartial = payments.slice(0, -1).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      if (sumPartial > amountNum) {
+        return showToast('Teilbeträge überschreiten den Gesamtbetrag');
+      }
+    }
     setSaving(true);
     try {
       const now = new Date();
       await finData.saveEntry(session, {
         category,
         name:     name.trim(),
-        payment:  payment || 'Bank',
+        payments: resolvedPayments,
+        payment:  resolvedPayments[0].method, // Abwärtskompatibilität
         amount:   amountNum,
-        // Bar und Sparschwein sind sofort "beglichen" — bei Sparschwein
-        // kommt das Geld aus der bereits vorhandenen Rücklage, es steht
-        // keine zukünftige Abbuchung mehr aus.
-        paid:     ['Bar', 'Sparschwein'].includes(payment || 'Bank'),
+        paid:     isInstantPaid(resolvedPayments),
         year:     now.getFullYear(),
         month:    now.getMonth() + 1,
         due_date: dueDate || null,
@@ -97,14 +124,9 @@ function FinanceWizard({ onClose }) {
     if (step === 1 && !step1Valid) {
       return showToast('Bitte Name und Betrag eingeben');
     }
-    // Beim Übergang zu Schritt 2: für "Ersparnisse" IMMER Sparschwein als
-    // Zahlungsart und Variable Kosten als Kategorie vorbelegen — unabhängig
-    // davon, was die Namensvorschlags-Historie zuletzt gespeichert hat
-    // (z.B. alte "Bar"-Einträge). Der Nutzer kann es in Schritt 2 weiterhin
-    // manuell ändern, das hier ist nur die Vorbelegung.
     if (step === 1 && name.trim().toLowerCase() === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase()) {
       setCategory('variable_kosten');
-      setPayment('Sparschwein');
+      setPayments([{ method: 'Sparschwein', amount: null }]);
     }
     if (step < 3) setStep(step + 1);
     else submit();
@@ -112,10 +134,10 @@ function FinanceWizard({ onClose }) {
   function back() { if (step > 1) setStep(step - 1); }
 
   const showSuggestList = showSuggest && suggestions.length > 0;
+  const primaryMethod = payments[0]?.method || '';
 
   return (
     <>
-      {/* Fortschrittsleiste — 3 Segmente (Textlabel bewusst entfernt) */}
       <div className="wiz-progress">
         {[1, 2, 3].map((n) => (
           <div key={n} className={`wiz-seg ${n <= step ? 'done' : ''}`} />
@@ -126,7 +148,6 @@ function FinanceWizard({ onClose }) {
         {step === 1 && (
           <>
             <label className="wiz-label t-meta">Name</label>
-            {/* Name-Feld bleibt fixiert, Liste erscheint darunter */}
             <div className="wiz-name-block">
               <input
                 className="wiz-input wiz-input-name"
@@ -187,18 +208,13 @@ function FinanceWizard({ onClose }) {
                 </button>
               ))}
             </div>
+
             <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
-            <div className="wiz-pay-row">
-              {QUICK_PAYMENTS.map((p) => (
-                <button
-                  key={p}
-                  className={`wiz-pay ${payment === p ? 'active' : ''}`}
-                  onClick={() => setPayment(payment === p ? '' : p)}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+            <PaymentsEditor
+              payments={payments}
+              onChange={setPayments}
+              totalAmount={amount}
+            />
           </>
         )}
 
@@ -223,14 +239,15 @@ function FinanceWizard({ onClose }) {
               <span className="t-meta">
                 {amountNum > 0 ? amountNum.toFixed(2).replace('.', ',') : '0'} € ·{' '}
                 {QUICK_CATEGORIES.find((c) => c.key === category)?.label}
-                {payment ? ` · ${payment}` : ''}
+                {payments.length === 1
+                  ? ` · ${primaryMethod}`
+                  : ` · ${payments.map((p) => p.method).join(' + ')}`}
               </span>
             </div>
           </>
         )}
       </div>
 
-      {/* Navigation */}
       <div className="wiz-nav">
         <button
           className="btn btn-secondary"
@@ -266,17 +283,18 @@ export default function EntrySheet() {
   const { openFor, close } = useEntrySheet();
   if (!openFor) return null;
 
+  // SheetShell liefert: createPortal (kein z-index-Konflikt),
+  // iOS-sicherer Body-Lock (position:fixed statt overflow:hidden),
+  // Grab-Handle zum Wegwischen, sheet-scroll mit touch-action:pan-y.
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && close()}>
-      <div className="sheet">
-        <div className="sheet-header">
-          <div className="sheet-title t-title">Neuer Eintrag</div>
-          <button className="sheet-cancel" onClick={close}>Abbrechen</button>
-        </div>
-        {openFor === 'finance'
-          ? <FinanceWizard onClose={close} />
-          : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
+    <SheetShell onClose={close}>
+      <div className="sheet-header">
+        <div className="sheet-title t-title">Neuer Eintrag</div>
+        <button className="sheet-cancel" onClick={close}>Abbrechen</button>
       </div>
-    </div>
+      {openFor === 'finance'
+        ? <FinanceWizard onClose={close} />
+        : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
+    </SheetShell>
   );
 }

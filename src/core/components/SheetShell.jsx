@@ -25,11 +25,27 @@ export default function SheetShell({ onClose, children, labelledBy }) {
   const startY  = useRef(null);
   const bodyRef = useRef(null);
 
-  // Hintergrund nicht mitscrollen lassen, solange das Sheet offen ist
+  // Hintergrund-Scroll sperren — iOS-sicheres Verfahren.
+  // overflow:hidden auf body wird von iOS Safari ignoriert.
+  // position:fixed + top:-scrollY fixiert die Seite exakt an der
+  // aktuellen Position und verhindert jedes Mitscrollen.
   useEffect(() => {
-    const vorher = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = vorher; };
+    const scrollY = window.scrollY;
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top      = `-${scrollY}px`;
+    body.style.left     = '0';
+    body.style.right    = '0';
+    body.style.overflow = 'hidden';
+    return () => {
+      body.style.position = '';
+      body.style.top      = '';
+      body.style.left     = '';
+      body.style.right    = '';
+      body.style.overflow = '';
+      // Scroll-Position wiederherstellen
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   // Escape schließt
@@ -90,9 +106,10 @@ export default function SheetShell({ onClose, children, labelledBy }) {
         <div
           className="sheet-scroll"
           ref={bodyRef}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
+          // Touch-Events NUR auf dem Griff — nicht auf dem Scroll-Bereich.
+          // iOS: body-lock via position:fixed (im useEffect oben).
+          // Android: overscroll-behavior:contain im CSS verhindert
+          //          Hintergrund-Scroll wenn Sheet-Ende erreicht ist.
         >
           {children}
         </div>
