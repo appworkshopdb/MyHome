@@ -7,11 +7,29 @@ import {
   getNotificationPrefs, saveNotificationPrefs,
 } from './lib/pushNotifications';
 
+// V2 — Neue Kategoriennamen + Texte nach NESTUA-BENACHRICHTIGUNGEN-V1.md.
+// Wunschstunde und Ruhezeiten entfernt — feste Produktlogik in der Edge Function.
 const NOTIFICATION_CATEGORIES = [
-  { key: 'habits', label: 'Gewohnheiten-Erinnerung', hint: 'Abends, falls noch offen' },
-  { key: 'required_data', label: 'Pflichtdaten unvollständig', hint: 'Gelegentlich, falls Angaben fehlen' },
-  { key: 'fin_due', label: 'Fixkosten fällig', hint: 'Wenn unbezahlte Fixkosten offen sind' },
-  { key: 'weekly_recap', label: 'Wochenrückblick', hint: 'Sonntagabend' },
+  {
+    key:  'tasks_habits',
+    label: 'Aufgaben & Gewohnheiten',
+    hint:  'Abends, wenn noch etwas offen ist',
+  },
+  {
+    key:  'finance',
+    label: 'Finanzen',
+    hint:  'Hinweise auf fällige und offene Zahlungen',
+  },
+  {
+    key:  'profile',
+    label: 'Profil & Fortschritt',
+    hint:  'Wenn wichtige Angaben fehlen',
+  },
+  {
+    key:  'weekly_recap',
+    label: 'Wochenrückblick',
+    hint:  'Deine persönliche Zusammenfassung der Woche',
+  },
 ];
 
 // Konto/Profil (Avatar-Button rechts) und Module (Bottom-Nav) sind hier
@@ -77,17 +95,7 @@ export default function AppMenu() {
     try {
       await saveNotificationPrefs(session, next);
     } catch (e) {
-      showToast('Konnte nicht gespeichert werden');
-      console.error(e);
-    }
-  }
-
-  async function updateTiming(field, value) {
-    const next = { ...prefs, [field]: value };
-    setPrefs(next);
-    try {
-      await saveNotificationPrefs(session, next);
-    } catch (e) {
+      setPrefs(prefs); // Rollback bei Fehler
       showToast('Konnte nicht gespeichert werden');
       console.error(e);
     }
@@ -107,18 +115,24 @@ export default function AppMenu() {
       </div>
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
-      {pushStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
+
+      {pushStatus === 'laedt' && (
+        <div className="status-note">Wird geladen…</div>
+      )}
+
       {pushStatus === 'unsupported' && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
           Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone:
-          erst über "Zum Home-Bildschirm" installieren, dann von dort aus öffnen.
+          erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.
         </p>
       )}
+
       {pushStatus === 'denied' && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
           Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.
         </p>
       )}
+
       {pushStatus === 'unsubscribed' && (
         <>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
@@ -129,48 +143,32 @@ export default function AppMenu() {
           </button>
         </>
       )}
+
       {pushStatus === 'subscribed' && prefs && (
         <>
           {NOTIFICATION_CATEGORIES.map((c) => (
             <label key={c.key} className="goal-milestone" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
-              <input type="checkbox" checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} style={{ marginTop: 2 }} />
+              <input
+                type="checkbox"
+                checked={!!prefs[c.key]}
+                onChange={() => toggleCategory(c.key)}
+                style={{ marginTop: 2 }}
+              />
               <span>
                 {c.label}
-                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.hint}</span>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  {c.hint}
+                </span>
               </span>
             </label>
           ))}
 
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-            <div className="form-group" style={{ marginBottom: 10 }}>
-              <label>Wunschstunde</label>
-              <select value={prefs.preferred_hour} onChange={(e) => updateTiming('preferred_hour', Number(e.target.value))}>
-                {Array.from({ length: 24 }, (_, h) => (
-                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00 Uhr</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div className="form-group">
-                <label>Ruhezeit von</label>
-                <select value={prefs.quiet_start} onChange={(e) => updateTiming('quiet_start', Number(e.target.value))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Ruhezeit bis</label>
-                <select value={prefs.quiet_end} onChange={(e) => updateTiming('quiet_end', Number(e.target.value))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <button className="btn btn-secondary" style={{ marginTop: 12 }} disabled={pushBusy} onClick={handleDisablePush}>
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 14 }}
+            disabled={pushBusy}
+            onClick={handleDisablePush}
+          >
             Deaktivieren
           </button>
         </>
