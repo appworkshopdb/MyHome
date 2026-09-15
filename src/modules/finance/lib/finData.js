@@ -1,5 +1,5 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal } from './finance';
+import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantPaid } from './finance';
 
 function ownerId(session) {
   return session.user.id;
@@ -30,9 +30,13 @@ export async function getSparschweinLedger(session) {
   let totalOut = 0;
   const ledger = relevant.map((e) => {
     const isDeposit = isSparschweinDeposit(e);
-    const signedAmount = isDeposit ? Number(e.amount) : -Number(e.amount);
+    // Bei Teilzahlung: nur den Sparschwein-Anteil verbuchen, nicht Gesamtbetrag
+    const effectiveAmount = isDeposit
+      ? Number(e.amount)
+      : getSparschweinWithdrawalAmount(e);
+    const signedAmount = isDeposit ? effectiveAmount : -effectiveAmount;
     running += signedAmount;
-    if (isDeposit) totalIn += Number(e.amount); else totalOut += Number(e.amount);
+    if (isDeposit) totalIn += effectiveAmount; else totalOut += effectiveAmount;
     return {
       id: e.id,
       name: e.name,
@@ -40,10 +44,11 @@ export async function getSparschweinLedger(session) {
       direction: isDeposit ? 'in' : 'out',
       signedAmount,
       balanceAfter: running,
-      amount: Number(e.amount),
+      amount: effectiveAmount,
       year: e.year,
       month: e.month,
       payment: e.payment,
+      payments: e.payments,
       created_at: e.created_at,
     };
   });
@@ -97,13 +102,14 @@ export async function getNameSuggestions(session) {
     const prev = map.get(key);
     const created = e.created_at ? new Date(e.created_at).getTime() : 0;
     if (!prev) {
-      map.set(key, { name: raw, count: 1, cat: e.category, payment: e.payment, lastCreated: created });
+      map.set(key, { name: raw, count: 1, cat: e.category, payment: e.payment, payments: e.payments, lastCreated: created });
     } else {
       prev.count += 1;
       // Kategorie/Zahlungsart vom jüngsten Eintrag übernehmen
       if (created >= prev.lastCreated) {
         prev.cat = e.category;
         prev.payment = e.payment;
+        if (e.payments) prev.payments = e.payments;
         prev.name = raw; // jüngste Schreibweise gewinnt
         prev.lastCreated = created;
       }
@@ -113,7 +119,28 @@ export async function getNameSuggestions(session) {
 }
 
 export async function saveEntry(session, entry) {
-  const payload = { ...entry, owner_id: ownerId(session) };
+  // paid automatisch setzen wenn alle Zahlungsarten "sofort bezahlt" sind
+  // (Bar, Sparschwein, Gutschein) — vorhandenes paid-Flag des Aufrufers
+  // wird nur überschrieben wenn payments gesetzt sind.
+  let resolvedPaid = entry.paid;
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    resolvedPaid = isInstantPaid(entry.payments);
+  }
+
+  // payment-Feld (alter ENUM) für Abwärtskompatibilität:
+  // Bei payments-Array: erste Zahlungsart eintragen damit alte
+  // Code-Pfade (z.B. PaymentBadge) weiterhin funktionieren.
+  let legacyPayment = entry.payment;
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    legacyPayment = entry.payments[0].method;
+  }
+
+  const payload = {
+    ...entry,
+    owner_id: ownerId(session),
+    paid: resolvedPaid,
+    payment: legacyPayment,
+  };
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
   if (error) throw error;
   return data;
