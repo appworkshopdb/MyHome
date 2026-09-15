@@ -90,9 +90,9 @@ export default function SheetShell({ onClose, children, labelledBy }) {
         <div
           className="sheet-scroll"
           ref={bodyRef}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
+          // Touch-Events NUR auf dem Griff auslösen — nicht auf dem
+          // Scroll-Bereich. Sonst blockt der Wisch-Handler das normale
+          // vertikale Scrollen des Inhalts auf iOS.
         >
           {children}
         </div>
