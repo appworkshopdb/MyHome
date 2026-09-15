@@ -1777,3 +1777,73 @@
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* ─── Time-Slot-Gruppierung (OverviewSection "Offen heute") ─── */
+
+.hab-slot-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.hab-slot-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: 2px;
+}
+
+/* Erste Gruppe braucht keinen Abstand nach oben */
+.hab-slot-group:first-child .hab-slot-label {
+  padding-top: 2px;
+}
+
+/* Lücke zwischen den Gruppen */
+.hab-slot-group + .hab-slot-group {
+  margin-top: 4px;
+}
+
+/* "Alles erledigt"-Meldung */
+.hab-overview-all-done {
+  color: var(--status-positive);
+  font-weight: 600;
+  padding: 10px 0;
+}
+
+/* ─── Tageszeit-Auswahl im Formular (HabitsView) ─── */
+
+.hab-slot-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.hab-slot-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast);
+  min-height: var(--touch-target);
+}
+
+.hab-slot-tab:active {
+  opacity: 0.8;
+}
+
+.hab-slot-tab.active {
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
+  color: var(--action-primary);
+}
