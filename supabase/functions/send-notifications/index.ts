@@ -450,7 +450,33 @@ async function checkCategory(category, ownerId, berlin) {
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const testOwnerId = url.searchParams.get('test_owner');
+  const testCategory = url.searchParams.get('test_category');
   if (testOwnerId) {
+    if (testCategory) {
+      // Echten Kategorietext testen — weekdayIndex anpassen damit
+      // weekly_recap (So=6) und profile (Sa=5) nicht geblockt werden.
+      const berlinBase = berlinNow();
+      const berlinTest = {
+        ...berlinBase,
+        weekdayIndex: testCategory === 'weekly_recap' ? 6
+                    : testCategory === 'profile'       ? 5
+                    : berlinBase.weekdayIndex,
+      };
+      const result = await checkCategory(testCategory, testOwnerId, berlinTest);
+      if (result) {
+        await sendToUser(testOwnerId, testCategory, result.title, result.body, result.url);
+        return new Response(JSON.stringify({
+          test: true, category: testCategory, sent: true,
+          title: result.title, body: result.body,
+        }), { headers: { 'Content-Type': 'application/json' } });
+      } else {
+        return new Response(JSON.stringify({
+          test: true, category: testCategory, sent: false,
+          reason: 'Keine Bedingung erfuellt — keine offenen Habits/Todos, Profil vollstaendig, o.ae.',
+        }), { headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+    // Kein test_category → einfacher Verbindungstest
     await sendToUser(testOwnerId, 'test', 'Test-Benachrichtigung', 'Wenn du das siehst, funktioniert die Zustellung.', './');
     return new Response(JSON.stringify({ test: true, ownerId: testOwnerId }), {
       headers: { 'Content-Type': 'application/json' },
