@@ -25,7 +25,7 @@ import {
   restoreHabit, loadDeletedHabits,
 } from '../lib/habData.js';
 import {
-  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY,
+  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY, TIME_SLOTS,
 } from '../lib/habUtils.js';
 
 const FREQ_LABELS = {
@@ -64,6 +64,7 @@ const EMPTY_HABIT = {
   target_count:   1,
   unit:           '',
   reminder_time:  '',
+  time_slot:      'anytime',
   active:         true,
 };
 
@@ -134,6 +135,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       target_count:   habit.target_count ?? 1,
       unit:           habit.unit ?? '',
       reminder_time:  habit.reminder_time ?? '',
+      time_slot:      habit.time_slot ?? 'anytime',
       active:         habit.active,
     });
     setShowForm(true);
@@ -153,6 +155,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       ...template,
       unit:          template.unit ?? '',
       reminder_time: '',
+      time_slot:     template.time_slot ?? 'anytime',
     });
     setShowLibrary(false);
     setShowForm(true);
@@ -194,6 +197,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
         unit:           form.unit.trim() || null,
         description:    form.description.trim() || null,
         reminder_time:  form.reminder_time || null,
+        time_slot:      form.time_slot || 'anytime',
         target_count:   Math.max(1, Number(form.target_count)),
         frequency_days: form.frequency === 'custom' ? form.frequency_days : null,
         sort_order:     editHabit ? editHabit.sort_order : activeHabits.length,
@@ -517,6 +521,23 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 Push-Benachrichtigungen kommen in einem späteren Update.
               </div>
             )}
+          </div>
+
+          {/* Tageszeit-Slot */}
+          <div className="hab-form-field">
+            <label className="form-label">Wann</label>
+            <div className="hab-slot-tabs">
+              {TIME_SLOTS.map((slot) => (
+                <button
+                  key={slot.value}
+                  type="button"
+                  className={`hab-slot-tab ${form.time_slot === slot.value ? 'active' : ''}`}
+                  onClick={() => setField('time_slot', slot.value)}
+                >
+                  {slot.emoji} {slot.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <button

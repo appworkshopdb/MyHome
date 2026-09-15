@@ -1,19 +1,12 @@
 // modules/habits/components/OverviewSection.jsx
-// Modul-Übersicht für Gewohnheiten — passt ohne Scrollen auf einen Screen
-// (siehe UMBAU-PLAN.md Schritt 5). Berechnet alle Kennzahlen aus dem
-// bereits geladenen Modul-State (habits/entries aus habitsStore), kein
-// zusätzlicher Netzwerk-Zugriff.
-//
-// KEIN eigener "Heute"-Bereich mehr: TodayView wird hier nicht mehr als
-// Detail-Screen gerendert — der "Alle X ›"-Ausstieg der "Offen heute"-
-// Karte führt laut Mockup auf "Meine Gewohnheiten" (die Gesamtzahl aktiver
-// Habits), nicht auf eine eigene Heute-Seite. Die Wochenübersicht aus
-// TodayView (Toggle "Wochenübersicht ↓") hat dadurch aktuell keinen
-// Platz mehr — bewusst ausgelassen, siehe Rückmeldung an den Nutzer.
+// Modul-Übersicht für Gewohnheiten — passt ohne Scrollen auf einen Screen.
+// "Offen heute" ist nach time_slot gruppiert (Morgens / Tagsüber / Abends / Jederzeit).
+// Habits ohne time_slot (DB-Default 'anytime') landen in 'anytime'.
+// Wenn alle offenen Habits denselben Slot haben → kein Gruppen-Label nötig.
 
 import { useState } from 'react';
 import { getDueToday, toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
-import { isDone, getEntry, today, isDueOn, overallRate } from '../lib/habUtils.js';
+import { isDone, getEntry, today, isDueOn, overallRate, groupBySlot } from '../lib/habUtils.js';
 import { useGamificationStore } from '../../../core/lib/gamificationStore.js';
 import { fb } from '../../../core/lib/feedback.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
@@ -40,11 +33,10 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
   const ringDeg   = totalDue > 0 ? Math.round((totalDone / totalDue) * 360) : 0;
 
   // Monatsrate (letzte 30 Tage) — dieselbe Funktion wie in StatsView
-  // (habUtils.overallRate), damit Fokuskarte und Auswertung nie auseinanderlaufen.
   const monthFrom = isoDaysAgo(29);
   const monthRate = overallRate(activeHabits, entries, monthFrom, todayStr);
 
-  // "Verlauf": perfekte Tage der letzten 7 Tage (alle fälligen Habits erledigt)
+  // "Verlauf": perfekte Tage der letzten 7 Tage
   const last7 = Array.from({ length: 7 }, (_, i) => isoDaysAgo(6 - i));
   const perfectDays = last7.filter((d) => {
     const due = activeHabits.filter((h) => isDueOn(h, d));
@@ -53,6 +45,9 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
 
   const [showDone, setShowDone] = useState(false);
   const [busyId, setBusyId]     = useState(null);
+
+  // Offene Habits nach Slot gruppieren
+  const openGroups = groupBySlot(openToday);
 
   async function handleToggle(habit) {
     if (busyId) return;
@@ -100,29 +95,52 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
         </div>
       </FocusCard>
 
-      {/* Offen heute */}
+      {/* Offen heute — nach Slot gruppiert */}
       <PageSection
         title="Offen heute"
         action={{ label: `Alle ${activeHabits.length} ›`, onPress: () => onNavigate('gewohnheiten') }}
       >
         <AreaList>
+          {/* Leer-Zustand */}
           {openToday.length === 0 && doneToday.length === 0 && (
             <div className="hab-overview-empty">Keine Gewohnheiten für heute.</div>
           )}
-          {openToday.map((h) => (
-            <button
-              key={h.id}
-              className="hab-open-row"
-              onClick={() => handleToggle(h)}
-              disabled={busyId === h.id}
-            >
-              <span className="hab-open-check" aria-hidden="true" />
-              <span className="hab-open-name">{h.name}</span>
-              {h.target_count > 1 && (
-                <span className="hab-open-value">{h.target_count} {h.unit}</span>
+
+          {/* Alle erledigt */}
+          {openToday.length === 0 && doneToday.length > 0 && (
+            <div className="hab-overview-empty hab-overview-all-done">
+              ✓ Alle für heute erledigt
+            </div>
+          )}
+
+          {/* Offene Habits — in Slot-Gruppen */}
+          {openGroups.map((group) => (
+            <div key={group.value} className="hab-slot-group">
+              {/* Gruppen-Label nur zeigen wenn nötig (d.h. mehr als eine Gruppe
+                  ODER die Gruppe hat ein explizites Label) */}
+              {!group.hideLabel && (
+                <div className="hab-slot-label">
+                  {group.emoji} {group.label}
+                </div>
               )}
-            </button>
+              {group.habits.map((h) => (
+                <button
+                  key={h.id}
+                  className="hab-open-row"
+                  onClick={() => handleToggle(h)}
+                  disabled={busyId === h.id}
+                >
+                  <span className="hab-open-check" aria-hidden="true" />
+                  <span className="hab-open-name">{h.name}</span>
+                  {h.target_count > 1 && (
+                    <span className="hab-open-value">{h.target_count} {h.unit}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           ))}
+
+          {/* Erledigte ein-/ausblenden */}
           {showDone && doneToday.map((h) => (
             <button
               key={h.id}
