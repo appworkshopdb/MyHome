@@ -3692,18 +3692,19 @@
 
 /* ── Filter: abgerundete Pills ──────────────────────────────────── */
 .fin-filter-pills {
-  display:         flex;
-  gap:             var(--space-2);
-  margin-bottom:   var(--space-5);
-  overflow-x:      auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  display:       flex;
+  gap:           var(--space-2);
+  margin-bottom: var(--space-5);
+  /* kein overflow-x: auto — Pills sollen gleichmäßig die volle
+     Breite einnehmen, nicht scrollbar sein */
 }
-.fin-filter-pills::-webkit-scrollbar { display: none; }
 
 .fin-filter-pill {
-  flex-shrink:   0;
-  padding:       7px 16px;
+  flex:          1 1 0;    /* alle gleich breit, Basis 0 */
+  min-width:     0;        /* kein implizites content-Minimum */
+  padding:       7px 0;    /* nur vertikal; horizontal zentriert */
+  text-align:    center;
+  white-space:   nowrap;
   border-radius: var(--r-pill);
   border:        1.5px solid var(--border-hairline);
   background:    var(--surface-raised);
@@ -3713,7 +3714,6 @@
   cursor:        pointer;
   transition:    background var(--motion-fast), color var(--motion-fast),
                  border-color var(--motion-fast);
-  white-space:   nowrap;
 }
 
 .fin-filter-pill.active {
@@ -4004,7 +4004,9 @@
 }
 
 .fin-row-check {
-  transition: background var(--motion-fast), border-color var(--motion-fast);
+  border-radius: var(--r-sm);   /* 6px — abgerundet statt viereckig */
+  transition: background var(--motion-fast), border-color var(--motion-fast),
+              border-radius var(--motion-fast);
 }
 
 .fin-row-check.flash {
@@ -4015,4 +4017,18 @@
 .fin-row-check.checked {
   transition: background var(--motion-fast), border-color var(--motion-fast),
               transform 120ms ease-out;
+}
+
+/* Überschreibt den alten .fin-row-check Block aus app-extra.css:
+   - border-radius abgerundet (r-sm = 6px)
+   - Tokens auf neues System aktualisiert (kein --bg-primary mehr)
+   - checked-Zustand: action-primary statt text-primary */
+.fin-row-check {
+  border-radius: var(--r-sm);
+}
+
+.fin-row-check.checked {
+  background:   var(--action-primary);
+  border-color: var(--action-primary);
+  color:        var(--text-on-accent);
 }
