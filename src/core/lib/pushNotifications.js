@@ -2,17 +2,14 @@ import { getSupabase } from './supabaseClient';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
+// V2 — Neue Kategorienamen nach NESTUA-BENACHRICHTIGUNGEN-V1.md.
+// preferred_hour / quiet_start / quiet_end entfernt — Zeiten sind
+// feste Produktlogik in der Edge Function, nicht vom Nutzer einstellbar.
 const DEFAULT_CATEGORIES = {
-  habits: true,
-  required_data: true,
-  fin_due: true,
+  finance:      true,
+  tasks_habits: true,
+  profile:      true,
   weekly_recap: true,
-};
-
-const DEFAULT_TIMING = {
-  preferred_hour: 20,
-  quiet_start: 0,
-  quiet_end: 6,
 };
 
 function ownerId(session) {
@@ -66,8 +63,8 @@ export async function subscribeToPush(session) {
     {
       owner_id: ownerId(session),
       endpoint: json.endpoint,
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth,
+      p256dh:   json.keys.p256dh,
+      auth:     json.keys.auth,
       user_agent: navigator.userAgent,
     },
     { onConflict: 'endpoint' }
@@ -80,44 +77,43 @@ export async function unsubscribeFromPush(session) {
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
   if (sub) {
-    await getSupabase().from('push_subscriptions').delete().eq('endpoint', sub.endpoint).eq('owner_id', ownerId(session));
+    await getSupabase()
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', sub.endpoint)
+      .eq('owner_id', ownerId(session));
     await sub.unsubscribe();
   }
 }
 
-// Gibt Kategorien UND Timing (Wunschstunde/Quiet Hours) zusammen zurück
-// — die UI (Profile.jsx) behandelt das als ein Einstellungs-Objekt.
+// Gibt nur noch die vier Kategorie-Toggles zurück.
+// preferred_hour / quiet_start / quiet_end werden nicht mehr gelesen
+// oder zurückgegeben — feste Zeiten liegen in der Edge Function.
 export async function getNotificationPrefs(session) {
   const { data, error } = await getSupabase()
     .from('notification_prefs')
-    .select('categories, preferred_hour, quiet_start, quiet_end')
+    .select('categories')
     .eq('owner_id', ownerId(session))
     .maybeSingle();
   if (error) throw error;
   return {
     ...DEFAULT_CATEGORIES,
-    ...(data?.categories || {}),
-    preferred_hour: data?.preferred_hour ?? DEFAULT_TIMING.preferred_hour,
-    quiet_start: data?.quiet_start ?? DEFAULT_TIMING.quiet_start,
-    quiet_end: data?.quiet_end ?? DEFAULT_TIMING.quiet_end,
+    ...(data?.categories ?? {}),
   };
 }
 
-// prefs = komplettes Objekt aus getNotificationPrefs (Kategorien + Timing
-// gemischt) — wird hier wieder in categories-jsonb + die drei separaten
-// Spalten aufgeteilt, wie es notification_prefs erwartet.
+// Speichert ausschließlich die categories-JSONB-Spalte.
+// preferred_hour / quiet_start / quiet_end werden nicht mehr geschrieben.
 export async function saveNotificationPrefs(session, prefs) {
-  const { preferred_hour, quiet_start, quiet_end, ...categories } = prefs;
-  const { error } = await getSupabase().from('notification_prefs').upsert(
-    {
-      owner_id: ownerId(session),
-      categories,
-      preferred_hour,
-      quiet_start,
-      quiet_end,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'owner_id' }
-  );
+  const { error } = await getSupabase()
+    .from('notification_prefs')
+    .upsert(
+      {
+        owner_id:   ownerId(session),
+        categories: prefs,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'owner_id' }
+    );
   if (error) throw error;
 }
