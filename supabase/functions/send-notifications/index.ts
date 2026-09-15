@@ -147,6 +147,11 @@ function isScheduledNow(category, berlin) {
 
 // Wurde diese Kategorie für diesen Nutzer in den letzten `days` Tagen
 // bereits gesendet? days=0 → nie geblockt.
+// Wählt zufällig einen Eintrag aus einem Array — für rotierende Texte.
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 async function alreadySentRecently(ownerId, category, days) {
   if (days <= 0) return false;
   const since = new Date(Date.now() - days * 86400000).toISOString();
@@ -239,8 +244,8 @@ async function checkCategory(category, ownerId, berlin) {
       const shown = dueTodayNames.slice(0, 2).join(', ');
       const rest  = dueTodayNames.length > 2 ? ` +${dueTodayNames.length - 2} weitere` : '';
       return {
-        title: 'Zahlung fällig heute',
-        body:  `${shown}${rest} ${dueTodayNames.length === 1 ? 'ist' : 'sind'} heute fällig.`,
+        title: dueTodayNames.length === 1 ? 'Zahlung fällig — heute' : 'Zahlungen fällig — heute',
+        body:  `${shown}${rest} ${dueTodayNames.length === 1 ? 'muss' : 'müssen'} heute beglichen werden.`,
         url:   './#/finance',
         skipThrottle: true, // Fall A überspringt den Kategorie-Throttle
       };
@@ -260,8 +265,20 @@ async function checkCategory(category, ownerId, berlin) {
 
     if ((openEntries?.length ?? 0) === 0) return null;
     return {
-      title: 'Fixkosten offen',
-      body:  `${openEntries.length} unbezahlte Fixkosten diesen Monat.`,
+      ...pickRandom([
+        {
+          title: 'Offene Posten diesen Monat',
+          body:  `${openEntries.length} ${openEntries.length === 1 ? 'Zahlung ist' : 'Zahlungen sind'} noch offen. Jetzt einen kurzen Blick werfen.`,
+        },
+        {
+          title: 'Noch nicht beglichen',
+          body:  `${openEntries.length} ${openEntries.length === 1 ? 'unbezahlte Buchung' : 'unbezahlte Buchungen'} diesen Monat — bitte prüfen.`,
+        },
+        {
+          title: 'Fixkosten ausstehend',
+          body:  `${openEntries.length} ${openEntries.length === 1 ? 'Posten steht' : 'Posten stehen'} diesen Monat noch aus.`,
+        },
+      ]),
       url:   './#/finance',
     };
   }
@@ -335,9 +352,45 @@ async function checkCategory(category, ownerId, berlin) {
       body = `${openTodos} Aufgabe${openTodos !== 1 ? 'n' : ''} für heute noch offen.`;
     }
 
+    // Titel + Body per Rotation — je nach dem was offen ist
+    let message: { title: string; body: string };
+    if (openHabits > 0 && openTodos > 0) {
+      message = pickRandom([
+        {
+          title: '🌿 Noch nicht fertig',
+          body:  `${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'} und ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} — der Abend gehört dir.`,
+        },
+        {
+          title: '💪 Letzter Schub',
+          body:  `${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'}, ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} — dann kannst du den Tag abhaken.`,
+        },
+      ]);
+    } else if (openHabits > 0) {
+      message = pickRandom([
+        {
+          title: '🌿 Kurz vor dem Ziel',
+          body:  `Noch ${openHabits} von ${dueHabits.length} ${dueHabits.length === 1 ? 'Gewohnheit' : 'Gewohnheiten'} offen.`,
+        },
+        {
+          title: '💪 Fast geschafft',
+          body:  `Noch ${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'} — du bist nah dran.`,
+        },
+      ]);
+    } else {
+      message = pickRandom([
+        {
+          title: '✅ Fast durch',
+          body:  `Noch ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} für heute — dann ist der Tag deiner.`,
+        },
+        {
+          title: '🎯 Fokus für heute',
+          body:  `${openTodos} ${openTodos === 1 ? 'Aufgabe wartet' : 'Aufgaben warten'} noch auf dich.`,
+        },
+      ]);
+    }
+
     return {
-      title: 'Gewohnheiten & Aufgaben',
-      body,
+      ...message,
       url: './#/habits',
     };
   }
@@ -357,8 +410,8 @@ async function checkCategory(category, ownerId, berlin) {
     if (!missing) return null;
 
     return {
-      title: 'Dein Profil ist noch nicht vollständig',
-      body:  'Ergänze deine Angaben für genauere Ergebnisse.',
+      title: 'Dein Profil ist unvollständig',
+      body:  'Einige Angaben fehlen noch — Nestua kann so nicht die besten Ergebnisse liefern.',
       url:   './#/profile',
     };
   }
@@ -369,9 +422,21 @@ async function checkCategory(category, ownerId, berlin) {
   if (category === 'weekly_recap') {
     if (berlin.weekdayIndex !== 6) return null;
     return {
-      title: 'Deine Woche',
-      body:  'Dein Wochenrückblick ist da.',
-      url:   './#/finance/auswertung',
+      ...pickRandom([
+        {
+          title: '✨ Deine Woche',
+          body:  'Schau was du diese Woche alles geschafft hast.',
+        },
+        {
+          title: '🗓 Wochenrückblick',
+          body:  'Eine Woche geschafft — Zeit, kurz zurückzublicken.',
+        },
+        {
+          title: '✨ Gut gemacht',
+          body:  'Deine Woche ist vorbei. Sieh selbst, was du geleistet hast.',
+        },
+      ]),
+      url: './#/finance/auswertung',
     };
   }
 
