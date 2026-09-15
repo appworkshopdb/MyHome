@@ -6,6 +6,7 @@ import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
 import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
 import PaymentsEditor from './PaymentsEditor';
+import SheetShell from './SheetShell';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
@@ -282,17 +283,18 @@ export default function EntrySheet() {
   const { openFor, close } = useEntrySheet();
   if (!openFor) return null;
 
+  // SheetShell liefert: createPortal (kein z-index-Konflikt),
+  // iOS-sicherer Body-Lock (position:fixed statt overflow:hidden),
+  // Grab-Handle zum Wegwischen, sheet-scroll mit touch-action:pan-y.
   return (
-    <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && close()}>
-      <div className="sheet">
-        <div className="sheet-header">
-          <div className="sheet-title t-title">Neuer Eintrag</div>
-          <button className="sheet-cancel" onClick={close}>Abbrechen</button>
-        </div>
-        {openFor === 'finance'
-          ? <FinanceWizard onClose={close} />
-          : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
+    <SheetShell onClose={close}>
+      <div className="sheet-header">
+        <div className="sheet-title t-title">Neuer Eintrag</div>
+        <button className="sheet-cancel" onClick={close}>Abbrechen</button>
       </div>
-    </div>
+      {openFor === 'finance'
+        ? <FinanceWizard onClose={close} />
+        : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
+    </SheetShell>
   );
 }

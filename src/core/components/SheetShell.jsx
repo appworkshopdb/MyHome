@@ -106,9 +106,10 @@ export default function SheetShell({ onClose, children, labelledBy }) {
         <div
           className="sheet-scroll"
           ref={bodyRef}
-          // Touch-Events NUR auf dem Griff auslösen — nicht auf dem
-          // Scroll-Bereich. Sonst blockt der Wisch-Handler das normale
-          // vertikale Scrollen des Inhalts auf iOS.
+          // Touch-Events NUR auf dem Griff — nicht auf dem Scroll-Bereich.
+          // iOS: body-lock via position:fixed (im useEffect oben).
+          // Android: overscroll-behavior:contain im CSS verhindert
+          //          Hintergrund-Scroll wenn Sheet-Ende erreicht ist.
         >
           {children}
         </div>
