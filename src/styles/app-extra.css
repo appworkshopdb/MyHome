@@ -4098,8 +4098,9 @@
 
 .wiz-payment-amount-input {
   flex:      1;
-  font-size: 14px !important;
-  padding:   8px 10px !important;
+  /* min. 16px — verhindert iOS-Zoom beim Fokussieren des Feldes */
+  font-size: max(16px, 1rem);
+  padding:   8px 10px;
   color:     var(--text-muted);  /* ausgegraut — Hint-Charakter */
 }
 
@@ -4149,4 +4150,3 @@
   border-color: var(--action-primary);
   color:        var(--action-primary);
 }
-
