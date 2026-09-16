@@ -162,14 +162,9 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
             onPress={() => onNavigate('gewohnheiten')}
           />
           <AreaRow
-            label="Verlauf"
-            value={`${perfectDays} von 7 Tagen`}
-            onPress={() => onNavigate('verlauf')}
-          />
-          <AreaRow
-            label="Auswertung"
-            value={`${Math.round(monthRate * 100)} %`}
-            onPress={() => onNavigate('auswertung')}
+            label="Statistik"
+            value={`${Math.round(monthRate * 100)} % · ${perfectDays}/7 Tage`}
+            onPress={() => onNavigate('statistik')}
           />
         </AreaList>
       </PageSection>
