@@ -104,14 +104,14 @@
 .hab-progress-bar {
   flex: 1;
   height: 6px;
-  background: var(--border);
+  background: var(--border-hairline);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .hab-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--action-primary);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -122,8 +122,8 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
   font-weight: 700;
   font-size: 0.95rem;
   margin-bottom: 16px;
@@ -147,7 +147,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   transition: opacity 0.15s;
   min-height: var(--touch-target, 44px);
 }
@@ -236,14 +236,14 @@
 }
 
 .hab-check-btn--done {
-  background: var(--accent);
+  background: var(--action-primary);
 }
 
 .hab-check-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  border: 2px solid var(--border-hairline);
+  border-top-color: var(--action-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -260,8 +260,8 @@
 .hab-count-btn {
   width: 32px;
   height: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   color: var(--text-primary);
   font-size: 1.2rem;
   cursor: pointer;
@@ -272,7 +272,7 @@
   flex-shrink: 0;
 }
 
-.hab-count-btn:active { background: var(--border); }
+.hab-count-btn:active { background: var(--border-hairline); }
 .hab-count-btn:disabled { opacity: 0.3; cursor: default; }
 
 .hab-count-ring {
@@ -305,8 +305,8 @@
   align-items: flex-start;
   gap: 8px;
   padding: 12px 14px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--action-primary) 12%, transparent);
+  border-left: 3px solid var(--action-primary);
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -325,7 +325,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .hab-manage-card:last-child { border-bottom: none; }
@@ -379,7 +379,7 @@
 }
 
 .hab-manage-btn:hover { color: var(--text-primary); }
-.hab-manage-btn--del:hover { color: var(--danger); }
+.hab-manage-btn--del:hover { color: var(--status-critical); }
 .hab-manage-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ─── FORMULAR ────────────────────────────────────────────── */
@@ -393,7 +393,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 0 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   margin-bottom: 20px;
 }
 
@@ -438,8 +438,8 @@
   width: 52px;
   height: 52px;
   font-size: 1.6rem;
-  background: var(--bg-card);
-  border: 2px solid var(--border);
+  background: var(--surface-sunken);
+  border: 2px solid var(--border-hairline);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -448,15 +448,15 @@
   transition: border-color 0.15s;
 }
 
-.hab-icon-btn:hover { border-color: var(--accent); }
+.hab-icon-btn:hover { border-color: var(--action-primary); }
 
 .hab-icon-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   padding: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
 }
 
 .hab-icon-option {
@@ -472,14 +472,14 @@
   transition: background 0.1s, border-color 0.1s;
 }
 
-.hab-icon-option:hover { background: var(--border); }
-.hab-icon-option.selected { border-color: var(--accent); background: var(--accent-light); }
+.hab-icon-option:hover { background: var(--border-hairline); }
+.hab-icon-option.selected { border-color: var(--action-primary); background: var(--action-quiet-bg); }
 
 /* Frequenz-Tabs */
 .hab-freq-tabs {
   display: flex;
   gap: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hairline);
   overflow: hidden;
 }
 
@@ -488,9 +488,9 @@
   padding: 8px 4px;
   font-size: 0.82rem;
   font-weight: 600;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border: none;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-hairline);
   cursor: pointer;
   color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
@@ -499,8 +499,8 @@
 
 .hab-freq-tab:last-child { border-right: none; }
 .hab-freq-tab.active {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
 
 /* Wochentag-Picker */
@@ -516,17 +516,17 @@
   height: 38px;
   font-size: 0.78rem;
   font-weight: 700;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   cursor: pointer;
   color: var(--text-secondary);
   transition: background 0.1s, color 0.1s;
 }
 
 .hab-day-btn.active {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  border-color: var(--action-primary);
 }
 
 /* ─── BIBLIOTHEK ──────────────────────────────────────────── */
@@ -538,7 +538,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 0 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   margin-bottom: 8px;
 }
 
@@ -579,14 +579,14 @@
   align-items: center;
   gap: 12px;
   padding: 12px 8px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border: none;
   cursor: pointer;
   text-align: left;
   transition: background 0.1s;
 }
 
-.hab-library-item:hover { background: var(--border); }
+.hab-library-item:hover { background: var(--border-hairline); }
 
 .hab-library-item-icon {
   font-size: 1.3rem;
@@ -631,8 +631,8 @@
 .hab-nav-btn {
   width: 36px;
   height: 36px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   cursor: pointer;
   font-size: 1.2rem;
   color: var(--text-primary);
@@ -642,7 +642,7 @@
   transition: background 0.1s;
 }
 
-.hab-nav-btn:hover:not(:disabled) { background: var(--border); }
+.hab-nav-btn:hover:not(:disabled) { background: var(--border-hairline); }
 .hab-nav-btn:disabled { opacity: 0.3; cursor: default; }
 
 /* Monats-Kachel-Kalender */
@@ -672,7 +672,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   font-size: 0.8rem;
   color: var(--text-primary);
   position: relative;
@@ -681,7 +681,7 @@
 }
 
 .hab-month-day--today {
-  border: 2px solid var(--accent);
+  border: 2px solid var(--action-primary);
 }
 
 .hab-month-day--future {
@@ -697,7 +697,7 @@
 
 .hab-month-day-check {
   font-size: 0.6rem;
-  color: var(--on-accent);
+  color: var(--text-on-accent);
   position: absolute;
   bottom: 2px;
   right: 3px;
@@ -828,7 +828,7 @@
 }
 
 .hab-kpi-card {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
@@ -888,7 +888,7 @@
 
 .hab-week-bar-track {
   width: 100%;
-  background: var(--border);
+  background: var(--border-hairline);
   height: 64px;
   display: flex;
   align-items: flex-end;
@@ -897,15 +897,15 @@
 
 .hab-week-bar-fill {
   width: 100%;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border-top: 2px solid var(--border-strong);
   transition: height 0.4s ease;
   min-height: 0;
 }
 
 .hab-week-bar-fill.today {
-  background: var(--accent);
-  border-top-color: var(--accent-dark);
+  background: var(--action-primary);
+  border-top-color: var(--action-hover);
 }
 
 .hab-week-bar-label {
@@ -917,7 +917,7 @@
 }
 
 .hab-week-bar-label.today {
-  color: var(--accent);
+  color: var(--action-primary);
 }
 
 /* Per-Habit Tabelle */
@@ -932,7 +932,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .hab-stats-row:last-child { border-bottom: none; }
@@ -995,14 +995,14 @@
   align-items: center;
   gap: 6px;
   padding: 14px 8px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   text-align: center;
 }
 
 .hab-badge--earned {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
 }
 
 .hab-badge-icon {
@@ -1073,7 +1073,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--action-primary);
   margin-bottom: 8px;
 }
 
@@ -1095,14 +1095,14 @@
 /* Fortschrittsbalken */
 .hab-wizard-progress {
   height: 4px;
-  background: var(--border);
+  background: var(--border-hairline);
   margin-bottom: 24px;
   overflow: hidden;
 }
 
 .hab-wizard-bar {
   height: 100%;
-  background: var(--accent);
+  background: var(--action-primary);
   transition: width 0.4s ease;
 }
 
@@ -1119,7 +1119,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px 12px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border: 2px solid transparent;
   cursor: pointer;
   text-align: left;
@@ -1128,12 +1128,12 @@
 }
 
 .hab-wizard-focus-item:hover {
-  background: var(--border);
+  background: var(--border-hairline);
 }
 
 .hab-wizard-focus-item.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
 }
 
 .hab-wizard-focus-icon {
@@ -1163,15 +1163,15 @@
 .hab-wizard-check {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--action-primary);
   flex-shrink: 0;
 }
 
 /* Habit-Liste (Schritt 2) */
 .hab-wizard-max-hint {
   padding: 10px 12px;
-  background: var(--accent-light);
-  border-left: 3px solid var(--accent);
+  background: var(--action-quiet-bg);
+  border-left: 3px solid var(--action-primary);
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 12px;
@@ -1189,7 +1189,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px 12px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border: 2px solid transparent;
   cursor: pointer;
   text-align: left;
@@ -1198,12 +1198,12 @@
 }
 
 .hab-wizard-habit-item:hover:not(.disabled) {
-  background: var(--border);
+  background: var(--border-hairline);
 }
 
 .hab-wizard-habit-item.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--action-primary);
+  background: var(--action-quiet-bg);
 }
 
 .hab-wizard-habit-item.disabled {
@@ -1238,7 +1238,7 @@
 .hab-wizard-habit-check {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--action-primary);
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
@@ -1261,8 +1261,8 @@
   align-items: center;
   gap: 12px;
   padding: 14px 12px;
-  background: var(--accent-light);
-  border-left: 3px solid var(--accent);
+  background: var(--action-quiet-bg);
+  border-left: 3px solid var(--action-primary);
 }
 
 .hab-wizard-tip {
@@ -1270,7 +1270,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 12px 14px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.5;
@@ -1322,8 +1322,8 @@
 }
 
 .hab-manage-card--dragging {
-  background: var(--bg-card);
-  border: 1px dashed var(--accent);
+  background: var(--surface-sunken);
+  border: 1px dashed var(--action-primary);
 }
 
 .hab-section-label-hint {
@@ -1353,8 +1353,8 @@
 .hab-reminder-clear {
   width: 36px;
   height: 36px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   cursor: pointer;
   color: var(--text-muted);
   font-size: 0.9rem;
@@ -1366,8 +1366,8 @@
 }
 
 .hab-reminder-clear:hover {
-  color: var(--danger);
-  border-color: var(--danger);
+  color: var(--status-critical);
+  border-color: var(--status-critical);
 }
 
 .hab-reminder-hint {
@@ -1381,7 +1381,7 @@
 .hab-wizard-selection-hint {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--action-primary);
   margin-bottom: 8px;
   letter-spacing: 0.03em;
 }
@@ -1392,7 +1392,7 @@
   transition: opacity 0.15s;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--action-primary);
 }
 .hab-wizard-focus-item .hab-wizard-check.visible {
   opacity: 1;
@@ -1414,7 +1414,7 @@
   text-transform: uppercase;
   color: var(--text-muted);
   padding: 12px 0 6px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-hairline);
 }
 
 .hab-wizard-group:first-child .hab-wizard-group-label {
@@ -1447,7 +1447,7 @@
 .hab-week-toggle:hover { color: var(--text-primary); }
 
 .hab-week-overview {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   padding: 12px;
   margin-bottom: 16px;
   overflow-x: auto;
@@ -1473,7 +1473,7 @@
 }
 
 .hab-week-grid-day-label.today {
-  color: var(--accent);
+  color: var(--action-primary);
 }
 
 .hab-week-grid-row {
@@ -1507,18 +1507,18 @@
   justify-content: center;
   font-size: 0.7rem;
   font-weight: 700;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
+  background: var(--surface-page);
+  border: 1px solid var(--border-hairline);
 }
 
 .hab-week-cell--done {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  border-color: var(--action-primary);
 }
 
 .hab-week-cell--missed {
-  background: var(--bg-primary);
+  background: var(--surface-page);
   color: var(--text-muted);
 }
 
@@ -1530,12 +1530,12 @@
 
 .hab-week-cell--future {
   background: transparent;
-  border-color: var(--border);
+  border-color: var(--border-hairline);
   opacity: 0.3;
 }
 
 .hab-week-cell--today {
-  border-color: var(--accent);
+  border-color: var(--action-primary);
   border-width: 2px;
 }
 
@@ -1562,8 +1562,8 @@
 .hab-archive-btn {
   width: 40px;
   height: 40px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
   cursor: pointer;
   font-size: 1rem;
   display: flex;
@@ -1573,7 +1573,7 @@
   flex-shrink: 0;
 }
 
-.hab-archive-btn:hover { background: var(--border); }
+.hab-archive-btn:hover { background: var(--border-hairline); }
 
 /* ═══════════════════════════════════════════════════════════
    HUB-KACHEL (in src/styles/ ergänzen, hier als Referenz)
@@ -1582,7 +1582,7 @@
 .hub-habits-card {
   display: block;
   width: 100%;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   border: none;
   cursor: pointer;
   padding: 14px;
@@ -1591,11 +1591,11 @@
   transition: background 0.15s;
 }
 
-.hub-habits-card:hover { background: var(--border); }
+.hub-habits-card:hover { background: var(--border-hairline); }
 
 .hub-habits-card--done {
-  background: var(--accent-light);
-  border-left: 3px solid var(--accent);
+  background: var(--action-quiet-bg);
+  border-left: 3px solid var(--action-primary);
 }
 
 .hub-habits-card-top {
@@ -1623,20 +1623,20 @@
   color: var(--text-primary);
 }
 
-.hub-habits-card-done { color: var(--accent); }
+.hub-habits-card-done { color: var(--action-primary); }
 .hub-habits-card-sep  { color: var(--text-muted); margin: 0 2px; font-weight: 400; }
 .hub-habits-card-total { color: var(--text-secondary); }
 
 .hub-habits-bar {
   height: 4px;
-  background: var(--border);
+  background: var(--border-hairline);
   margin-bottom: 10px;
   overflow: hidden;
 }
 
 .hub-habits-bar-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--action-primary);
   transition: width 0.4s ease;
 }
 
