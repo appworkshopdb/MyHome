@@ -8,7 +8,7 @@
 //   4. Einstiegskarte → Unterseite "Jahresrückblick" (Heatmap)
 //   5. Einstiegskarte → Unterseite "Verlauf" (Per-Habit + Badges)
 //
-// Unterseiten über internen subView-State, TopBar bekommt onBack-Prop.
+// Unterseiten werden über URL-Routes gesteuert (HabitsModule).
 
 import { useState, useMemo } from 'react';
 import {
@@ -37,18 +37,7 @@ const INTENSITY_COLORS = [
 
 // ─── Haupt-Export ─────────────────────────────────────────
 
-export default function StatsView({ habits, entries, hasWarnings, onSubViewChange }) {
-  const [subView, setSubView] = useState(null); // null | 'jahresrueckblick' | 'verlauf'
-
-  function openSub(v) {
-    setSubView(v);
-    onSubViewChange?.(v);
-  }
-  function closeSub() {
-    setSubView(null);
-    onSubViewChange?.(null);
-  }
-
+export default function StatsView({ habits, entries, subView, onNavigate }) {
   const activeHabits = habits.filter((h) => h.active && !h.deleted_at);
 
   if (activeHabits.length === 0) {
@@ -63,26 +52,12 @@ export default function StatsView({ habits, entries, hasWarnings, onSubViewChang
     );
   }
 
-  // Unterseiten
+  // Unterseiten — werden von HabitsModule per URL-Route gesteuert
   if (subView === 'jahresrueckblick') {
-    return (
-      <JahresrueckblickScreen
-        habits={activeHabits}
-        entries={entries}
-        hasWarnings={hasWarnings}
-        onBack={closeSub}
-      />
-    );
+    return <JahresrueckblickScreen habits={activeHabits} entries={entries} />;
   }
   if (subView === 'verlauf') {
-    return (
-      <VerlaufScreen
-        habits={activeHabits}
-        entries={entries}
-        hasWarnings={hasWarnings}
-        onBack={closeSub}
-      />
-    );
+    return <VerlaufScreen habits={activeHabits} entries={entries} />;
   }
 
   // Hauptseite
@@ -90,7 +65,7 @@ export default function StatsView({ habits, entries, hasWarnings, onSubViewChang
     <StatistikHauptseite
       habits={activeHabits}
       entries={entries}
-      onOpenSub={openSub}
+      onOpenSub={onNavigate}
     />
   );
 }
@@ -264,8 +239,8 @@ function StatistikHauptseite({ habits, entries, onOpenSub }) {
           <div className="hab-sub-entry-left">
             <span className="hab-sub-entry-icon">🏅</span>
             <div>
-              <div className="hab-sub-entry-title t-body">Verlauf & Badges</div>
-              <div className="hab-sub-entry-meta t-meta">Streak · Rekord · Badges</div>
+              <div className="hab-sub-entry-title t-body">Verlauf</div>
+              <div className="hab-sub-entry-meta t-meta">Streak · Rekord · Badges · Jahresrückblick</div>
             </div>
           </div>
           <span className="hab-sub-entry-chevron">›</span>
@@ -278,7 +253,7 @@ function StatistikHauptseite({ habits, entries, onOpenSub }) {
 
 // ─── Unterseite: Jahresrückblick ──────────────────────────
 
-function JahresrueckblickScreen({ habits, entries, onBack }) {
+function JahresrueckblickScreen({ habits, entries }) {
   const nowDate  = new Date();
   const [year, setYear]               = useState(nowDate.getFullYear());
   const [selectedHabit, setSelected]  = useState('all');
@@ -341,7 +316,7 @@ function JahresrueckblickScreen({ habits, entries, onBack }) {
 
 // ─── Unterseite: Verlauf & Badges ─────────────────────────
 
-function VerlaufScreen({ habits, entries, onBack }) {
+function VerlaufScreen({ habits, entries }) {
   const todayStr = today();
   const nowDate  = new Date(todayStr);
   const weekAgo  = new Date(nowDate); weekAgo.setDate(nowDate.getDate() - 6);
@@ -365,7 +340,7 @@ function VerlaufScreen({ habits, entries, onBack }) {
 
   return (
     <div className="hab-subview">
-      <h1 className="page-header">Verlauf & Badges</h1>
+      <h1 className="page-header">Verlauf</h1>
 
         {/* Per-Habit Tabelle */}
         <div className="hab-stats-section">
