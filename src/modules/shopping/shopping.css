@@ -59,7 +59,7 @@
 }
 
 .sho-list-item-wrap {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .sho-list-item-wrap:last-child {
@@ -173,7 +173,7 @@
   font-family: var(--font);
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--action-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -194,7 +194,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   margin-top: 8px;
 }
 
@@ -216,7 +216,7 @@
 .sho-tmpl-panel {
   margin-top: 16px;
   padding: 16px;
-  background: var(--bg-card);
+  background: var(--surface-sunken);
 }
 
 .sho-tmpl-header {
@@ -230,7 +230,7 @@
 
 .sho-msg-success {
   font-size: 0.85rem;
-  color: var(--success);
+  color: var(--status-positive);
   padding: 8px 0;
   margin-bottom: 8px;
 }
@@ -286,7 +286,7 @@
   align-items: center;
   gap: 10px;
   padding: 11px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   transition: opacity 0.2s;
 }
 
@@ -310,14 +310,14 @@
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  color: var(--on-accent);
+  color: var(--text-on-accent);
   transition: background 0.12s, border-color 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
 
 .sho-item-check.done {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--action-primary);
+  border-color: var(--action-primary);
 }
 
 /* Artikel-Body */
@@ -373,8 +373,8 @@
   bottom: calc(var(--nav-height) + 102px + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border);
+  background: var(--surface-page);
+  border-top: 1px solid var(--border-hairline);
   z-index: 100;
   max-height: 220px;
   overflow-y: auto;
@@ -387,7 +387,7 @@
   width: 100%;
   padding: 12px 16px;
   border: none;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   background: none;
   font-family: var(--font);
   font-size: 0.95rem;
@@ -402,7 +402,7 @@
 }
 
 .sho-suggestion-item:active {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
 }
 
 .sho-suggestion-cat {
@@ -419,8 +419,8 @@
   bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border);
+  background: var(--surface-page);
+  border-top: 1px solid var(--border-hairline);
   padding: 8px 16px 10px;
   display: flex;
   flex-direction: column;
@@ -449,9 +449,9 @@
   flex: 1;
   min-height: 36px;
   font-size: 0.9rem;
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hairline);
   padding: 4px 8px;
   font-family: var(--font);
   cursor: pointer;
@@ -517,7 +517,7 @@
 /* Menge-Badge wenn gesetzt — leicht hervorgehoben */
 .sho-item-meta--qty {
   font-size: 0.78rem;
-  color: var(--accent-dark);
+  color: var(--action-hover);
   font-weight: 500;
 }
 
@@ -563,7 +563,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .sho-freq-item:last-child {
@@ -594,14 +594,14 @@
 .sho-freq-cat {
   font-size: 0.72rem;
   color: var(--text-muted);
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   padding: 1px 6px;
 }
 
 .sho-freq-count {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent-dark);
+  color: var(--action-hover);
 }
 
 .sho-freq-qty {
@@ -625,9 +625,9 @@
 }
 
 .sho-freq-add:active {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  border-color: var(--action-primary);
 }
 
 .sho-freq-add svg {
@@ -701,7 +701,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   padding: 4px 12px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-hairline);
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
@@ -712,7 +712,7 @@
 
 .sho-freq-pill.active {
   background: var(--text-primary);
-  color: var(--bg-primary);
+  color: var(--surface-page);
   border-color: var(--text-primary);
 }
 
@@ -779,9 +779,9 @@
   min-height: 40px;
   font-size: 0.95rem;
   font-family: var(--font);
-  background: var(--bg-input);
+  background: var(--surface-sunken);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hairline);
   padding: 6px 8px;
   width: 100%;
 }
@@ -834,7 +834,7 @@
   font-size: 0.78rem;
   font-weight: 600;
   padding: 4px 10px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-hairline);
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
@@ -845,7 +845,7 @@
 
 .sho-store-pill.active {
   background: var(--text-primary);
-  color: var(--bg-primary);
+  color: var(--surface-page);
   border-color: var(--text-primary);
 }
 
@@ -860,7 +860,7 @@
 /* ─── Laden-Manager ───────────────────────────────────────── */
 
 .sho-store-mgr {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
   padding: 10px 12px 12px;
   margin-bottom: 8px;
   display: flex;
@@ -875,7 +875,7 @@
   font-size: 0.9rem;
   color: var(--text-primary);
   padding: 4px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .sho-store-mgr-add {
@@ -887,7 +887,7 @@
 
 .sho-store-add-hint {
   font-size: 0.8rem;
-  color: var(--accent);
+  color: var(--action-primary);
   font-weight: 600;
   font-family: var(--font);
   background: none;
@@ -903,8 +903,8 @@
 .sho-item-store-label {
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--on-accent);
-  background: var(--accent);
+  color: var(--text-on-accent);
+  background: var(--action-primary);
   padding: 1px 6px;
   letter-spacing: 0.02em;
 }
@@ -938,7 +938,7 @@
   position: absolute;
   right: 0;
   bottom: 32px;
-  background: var(--bg-primary);
+  background: var(--surface-page);
   border: 1.5px solid var(--border-strong);
   z-index: 200;
   min-width: 140px;
@@ -950,7 +950,7 @@
   width: 100%;
   padding: 10px 12px;
   border: none;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-hairline);
   background: none;
   font-family: var(--font);
   font-size: 0.88rem;
@@ -965,13 +965,13 @@
 }
 
 .sho-item-store-opt.active {
-  background: var(--accent-light);
-  color: var(--accent-dark);
+  background: var(--action-quiet-bg);
+  color: var(--action-hover);
   font-weight: 600;
 }
 
 .sho-item-store-opt:active {
-  background: var(--bg-card);
+  background: var(--surface-sunken);
 }
 
 /* ─── Datum inline bearbeiten ─────────────────────────────── */
@@ -1017,7 +1017,7 @@
 }
 
 .sho-date-remove:hover {
-  color: var(--danger);
+  color: var(--status-critical);
 }
 
 .sho-date-add {
