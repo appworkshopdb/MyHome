@@ -33,6 +33,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
 
   const [error,      setError]      = useState(null);
   const [wizardDone, setWizardDone] = useState(false);
+  const [statsSubView, setStatsSubView] = useState(null); // für TopBar-Tausch
 
   useEffect(() => {
     loadHabitsData({ force: true }).catch(() =>
@@ -98,17 +99,26 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     );
   }
 
-  // ── Statistik (inkl. Unterseiten — StatsView rendert eigene TopBar) ──
+  // ── Statistik ──
+  // Unterseiten (Jahresrückblick / Verlauf & Badges) haben eigenen Zurück-Button
+  // der zurück zur Statistik-Hauptseite führt (nicht zur Übersicht).
   if (view === 'statistik') {
+    const onBack = statsSubView
+      ? () => setStatsSubView(null)   // Unterseite → Hauptseite Statistik
+      : backToOverview;               // Hauptseite → Übersicht
     return (
-      <div className="hab-module-content with-topbar-space">
-        {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
-        <StatsView
-          habits={habits}
-          entries={entries}
-          hasWarnings={hasWarnings}
-        />
-      </div>
+      <>
+        <ModuleTopBar onBack={onBack} hasWarnings={hasWarnings} />
+        <div className="hab-module-content with-topbar-space">
+          {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
+          <StatsView
+            habits={habits}
+            entries={entries}
+            hasWarnings={hasWarnings}
+            onSubViewChange={setStatsSubView}
+          />
+        </div>
+      </>
     );
   }
 

@@ -2544,3 +2544,10 @@
   line-height: 1.3;
   text-align: center;
 }
+
+/* Unterseiten in StatsView — kein eigenes with-topbar-space,
+   Abstand kommt vom umschließenden HabitsModule-Container */
+.hab-subview {
+  display: flex;
+  flex-direction: column;
+}
