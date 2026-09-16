@@ -11,7 +11,6 @@
 // Unterseiten über internen subView-State, TopBar bekommt onBack-Prop.
 
 import { useState, useMemo } from 'react';
-import ModuleTopBar from '../../../core/components/ModuleTopBar.jsx';
 import {
   calcStreak, calcLongestStreak, completionRate, overallRate,
   getEarnedBadges, BADGES, today, dateRange, isDueOn, isDone,
@@ -38,8 +37,17 @@ const INTENSITY_COLORS = [
 
 // ─── Haupt-Export ─────────────────────────────────────────
 
-export default function StatsView({ habits, entries, hasWarnings }) {
+export default function StatsView({ habits, entries, hasWarnings, onSubViewChange }) {
   const [subView, setSubView] = useState(null); // null | 'jahresrueckblick' | 'verlauf'
+
+  function openSub(v) {
+    setSubView(v);
+    onSubViewChange?.(v);
+  }
+  function closeSub() {
+    setSubView(null);
+    onSubViewChange?.(null);
+  }
 
   const activeHabits = habits.filter((h) => h.active && !h.deleted_at);
 
@@ -62,7 +70,7 @@ export default function StatsView({ habits, entries, hasWarnings }) {
         habits={activeHabits}
         entries={entries}
         hasWarnings={hasWarnings}
-        onBack={() => setSubView(null)}
+        onBack={closeSub}
       />
     );
   }
@@ -72,7 +80,7 @@ export default function StatsView({ habits, entries, hasWarnings }) {
         habits={activeHabits}
         entries={entries}
         hasWarnings={hasWarnings}
-        onBack={() => setSubView(null)}
+        onBack={closeSub}
       />
     );
   }
@@ -82,7 +90,7 @@ export default function StatsView({ habits, entries, hasWarnings }) {
     <StatistikHauptseite
       habits={activeHabits}
       entries={entries}
-      onOpenSub={setSubView}
+      onOpenSub={openSub}
     />
   );
 }
@@ -270,7 +278,7 @@ function StatistikHauptseite({ habits, entries, onOpenSub }) {
 
 // ─── Unterseite: Jahresrückblick ──────────────────────────
 
-function JahresrueckblickScreen({ habits, entries, hasWarnings, onBack }) {
+function JahresrueckblickScreen({ habits, entries, onBack }) {
   const nowDate  = new Date();
   const [year, setYear]               = useState(nowDate.getFullYear());
   const [selectedHabit, setSelected]  = useState('all');
@@ -285,10 +293,8 @@ function JahresrueckblickScreen({ habits, entries, hasWarnings, onBack }) {
   );
 
   return (
-    <>
-      <ModuleTopBar onBack={onBack} hasWarnings={hasWarnings} />
-      <div className="hab-module-content with-topbar-space">
-        <h1 className="page-header">Jahresrückblick</h1>
+    <div className="hab-subview">
+      <h1 className="page-header">Jahresrückblick</h1>
 
         {/* Habit-Selector */}
         <div className="hab-cal-filter">
@@ -329,14 +335,13 @@ function JahresrueckblickScreen({ habits, entries, hasWarnings, onBack }) {
           ))}
           <span className="hab-legend-label t-meta">Mehr</span>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 
 // ─── Unterseite: Verlauf & Badges ─────────────────────────
 
-function VerlaufScreen({ habits, entries, hasWarnings, onBack }) {
+function VerlaufScreen({ habits, entries, onBack }) {
   const todayStr = today();
   const nowDate  = new Date(todayStr);
   const weekAgo  = new Date(nowDate); weekAgo.setDate(nowDate.getDate() - 6);
@@ -359,10 +364,8 @@ function VerlaufScreen({ habits, entries, hasWarnings, onBack }) {
   );
 
   return (
-    <>
-      <ModuleTopBar onBack={onBack} hasWarnings={hasWarnings} />
-      <div className="hab-module-content with-topbar-space">
-        <h1 className="page-header">Verlauf & Badges</h1>
+    <div className="hab-subview">
+      <h1 className="page-header">Verlauf & Badges</h1>
 
         {/* Per-Habit Tabelle */}
         <div className="hab-stats-section">
@@ -420,8 +423,7 @@ function VerlaufScreen({ habits, entries, hasWarnings, onBack }) {
           )}
         </div>
 
-      </div>
-    </>
+    </div>
   );
 }
 
