@@ -59,9 +59,9 @@ function MusclePreview({ tags }) {
             style={{
               width: 40, height: 40, borderRadius: 999, objectFit: 'cover',
               objectPosition: objectPositionFor(key),
-              border: '2px solid #fff', boxShadow: '0 0 0 1.5px #DDE2EB',
+              border: '2px solid var(--surface-raised)', boxShadow: '0 0 0 1.5px var(--border-strong)',
               marginLeft: i === 0 ? 0 : -14, zIndex: visible.length - i,
-              background: '#EEF1F6',
+              background: 'var(--surface-sunken)',
             }}
             onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
           />
@@ -70,11 +70,11 @@ function MusclePreview({ tags }) {
       {extra > 0 && (
         <div
           style={{
-            width: 40, height: 40, borderRadius: 999, background: '#EEF1F6',
-            border: '2px solid #fff', boxShadow: '0 0 0 1.5px #DDE2EB',
+            width: 40, height: 40, borderRadius: 999, background: 'var(--surface-sunken)',
+            border: '2px solid var(--surface-raised)', boxShadow: '0 0 0 1.5px var(--border-strong)',
             marginLeft: -14, zIndex: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700, color: '#545C6B',
+            fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
           }}
         >
           +{extra}
@@ -88,12 +88,12 @@ function EinheitRow({ title, subtitle, tags, isLast }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-      borderBottom: isLast ? 'none' : '1px solid #EEF1F6',
+      borderBottom: isLast ? 'none' : '1px solid var(--border-hairline)',
     }}>
       <MusclePreview tags={tags} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#131A28' }}>{title}</div>
-        <div style={{ fontSize: 12, color: '#545C6B', marginTop: 2 }}>{subtitle}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{subtitle}</div>
       </div>
     </div>
   );
@@ -102,12 +102,12 @@ function EinheitRow({ title, subtitle, tags, isLast }) {
 function Card({ title, children }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 14, boxShadow: '0 1px 3px rgba(19,26,40,0.07)',
+      background: 'var(--surface-raised)', borderRadius: 14, boxShadow: 'var(--shadow-card)',
       padding: 16, marginBottom: 16,
     }}>
       <div style={{
         fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
-        color: '#545C6B', marginBottom: 8,
+        color: 'var(--text-secondary)', marginBottom: 8,
       }}>
         {title}
       </div>
@@ -133,9 +133,9 @@ export default function EinheitenView({ units, loading }) {
 
       <Card title="Eigene Einheiten">
         {loading ? (
-          <p style={{ color: '#545C6B', margin: 0, fontSize: 13 }}>Lädt…</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>Lädt…</p>
         ) : units.length === 0 ? (
-          <p style={{ color: '#545C6B', margin: 0, fontSize: 13 }}>
+          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>
             Noch keine eigene Einheit — über den Button unten rechts anlegen.
           </p>
         ) : (
