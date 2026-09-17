@@ -2915,21 +2915,18 @@
   flex-shrink: 0;
 }
 
-/* FAB-Freiraum: nur die letzte Zeile bekommt zusätzlichen Platz rechts,
-   damit der schwebende FAB (56px, right:18px) nichts verdeckt.
-   Wichtig: padding-right verschiebt den GESAMTEN Flex-Inhalt (Label,
-   Wert, Chevron) nach links — dadurch stand der Chevron der letzten
-   Zeile sichtbar "eingerückt" im Vergleich zu den Zeilen darüber.
-   Lösung: der Zeileninhalt bleibt unverändert ausgerichtet, stattdessen
-   reserviert ein unsichtbarer Spacer NACH dem Chevron den Freiraum. */
-.area-list--fab-clearance .area-row:last-child {
-  padding-right: 18px; /* wieder normales Padding wie alle anderen Zeilen */
-}
-.area-list--fab-clearance .area-row:last-child::after {
-  content:     '';
-  display:     block;
-  width:       58px; /* 76px Original-Freiraum minus 18px normales Padding */
-  flex-shrink: 0;
+/* FAB-Freiraum: die letzte Zeile jeder Bereiche-Karte hatte bisher
+   padding-right:76px bekommen, damit der schwebende FAB (52px,
+   right:20px) nichts verdeckt. Das Problem: .area-row-label hat flex:1
+   und füllt IMMER den verbleibenden Platz — ob der Freiraum per Padding
+   oder per Spacer-Element reserviert wird, ist rechnerisch identisch,
+   der Chevron der letzten Zeile stand dadurch immer sichtbar weiter
+   links als die Chevrons der Zeilen darüber ("eingerückt").
+   Lösung: kein Eingriff mehr in die Zeile selbst — stattdessen bekommt
+   die GESAMTE Karte unten einen Freiraum, der sie komplett über die
+   FAB-Zone hebt. Alle Zeilen bleiben dadurch identisch ausgerichtet. */
+.area-list--fab-clearance {
+  margin-bottom: 76px;
 }
 
 /* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
