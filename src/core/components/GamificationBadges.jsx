@@ -28,7 +28,7 @@ export default function GamificationBadges() {
         aria-label={`Fortschritt öffnen — Level ${status.level}, Serie ${status.current_streak} Tage`}
       >
         <span className="gami-tapzone__item">
-          <IconBird size={30} />
+          <IconBird size={28} animated />
           <span className="gami-tapzone__label">Lv {status.level}</span>
         </span>
         <span className="gami-tapzone__item gami-tapzone__item--nest">
