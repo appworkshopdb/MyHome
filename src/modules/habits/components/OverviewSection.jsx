@@ -19,12 +19,12 @@ function isoDaysAgo(n) {
   return d.toISOString().split('T')[0];
 }
 
-// Slot-Badge-Text (kurz, passt in eine kleine Pille)
+// Slot-Badge — immer angezeigt, anytime ohne Emoji
 const SLOT_BADGE = {
   morning: { emoji: '🌅', label: 'Morgens'  },
   midday:  { emoji: '☀️', label: 'Tagsüber' },
   evening: { emoji: '🌙', label: 'Abends'   },
-  anytime: null, // kein Badge für "Jederzeit" — wäre bei fast allen Habits redundant
+  anytime: { emoji: '',   label: 'Jederzeit' },
 };
 
 export default function OverviewSection({ habits, entries, onNavigate }) {
@@ -119,12 +119,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 <span className="hab-open-check" aria-hidden="true" />
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  {h.target_count > 1 && (
-                    <span className="hab-open-value">{h.target_count} {h.unit}</span>
-                  )}
-                  {badge && (
-                    <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
-                  )}
+                  <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
                 </span>
               </button>
             );
@@ -143,9 +138,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 <span className="hab-open-check hab-open-check--done" aria-hidden="true">✓</span>
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  {badge && (
-                    <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
-                  )}
+                  <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
                 </span>
               </button>
             );
