@@ -421,150 +421,151 @@
 .hub-todo-toggle { width: 100%; margin-top: 14px; margin-bottom: 0; }
 .hub-todo-toggle button { padding: 5px 0; font-size: 0.74rem; flex: 1; }
 
+/* ── Aufgaben-Bereich: „+ Neue Aufgabe"-Zeile als Card-Element ── */
 .hub-todo-add-bar {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 11px 0;
-  border-bottom: 1.5px solid var(--border);
-  background: none;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  min-height: var(--touch-target);
-}
-.hub-todo-add-bar:active { color: var(--text-primary); }
-.hub-todo-add-plus {
-  font-size: 20px;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--text-muted);
-}
-
-.hub-todo-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 9px;
+  gap:         12px;
+  width:       100%;
+  padding:     13px 18px;
+  border:      none;
+  border-top:  1px solid var(--surface-page);
+  background:  none;
+  color:       var(--action-primary);
+  font-size:   14px;
   font-weight: 700;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  margin-left: 5px;
-  vertical-align: middle;
+  cursor:      pointer;
+  text-align:  left;
+  min-height:  var(--touch-target);
+  transition:  opacity var(--motion-fast);
+}
+.hub-todo-add-bar:active { opacity: 0.65; }
+.hub-todo-add-plus {
+  width:       21px;
+  font-size:   19px;
+  font-weight: 700;
+  line-height: 1;
+  color:       var(--action-primary);
+  text-align:  center;
+  flex-shrink: 0;
 }
 
+/* (hub-todo-badge war unused, entfernt) */
+
+/* Aufgaben-Bereich: vollständige Liste als Card ── */
 .hub-todo-empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 14px 0 8px;
+  padding:     18px;
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text-muted);
+  text-align:  center;
 }
 
-.hub-todo-list { margin-top: 4px; }
+/* Die Liste selbst ist eine Card — gleicher Stil wie .hub-task-card */
+.hub-todo-list {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
+  margin-top:    4px;
+}
 
 .hub-todo-row {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border);
-  min-height: var(--touch-target);
+  gap:         12px;
+  padding:     13px 18px;
+  border:      none;
+  border-top:  1px solid var(--surface-page);
+  min-height:  var(--touch-target);
+  background:  none;
+  width:       100%;
+  text-align:  left;
 }
+.hub-todo-row:first-child { border-top: none; }
 .hub-todo-row.done { opacity: 0.45; }
-.hub-todo-row:last-child { border-bottom: none; }
 
+/* Check-Box: gerundete Ecken, passend zu hub-task-check */
 .hub-todo-check {
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid var(--border-strong);
-  flex-shrink: 0;
-  background: transparent;
-  position: relative;
-  cursor: pointer;
+  width:         21px;
+  height:        21px;
+  border-radius: 7px;
+  border:        1.8px solid var(--border-strong);
+  flex-shrink:   0;
+  background:    transparent;
+  position:      relative;
+  cursor:        pointer;
+  padding:       0;
+  transition:    background var(--motion-fast), border-color var(--motion-fast);
 }
 .hub-todo-check.checked {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  background:   var(--action-primary);
+  border-color: var(--action-primary);
 }
 .hub-todo-check.checked::after {
-  content: '';
-  position: absolute;
-  left: 4px; top: 1px;
-  width: 6px; height: 11px;
-  border: 2px solid var(--bg-primary);
-  border-top: none;
+  content:    '';
+  position:   absolute;
+  left:       5px; top: 2px;
+  width:      6px; height: 10px;
+  border:     2px solid var(--text-on-accent);
+  border-top:  none;
   border-left: none;
-  transform: rotate(40deg);
+  transform:   rotate(40deg);
 }
 
 .hub-todo-content {
-  flex: 1;
+  flex:      1;
   min-width: 0;
-  cursor: pointer;
+  cursor:    pointer;
 }
 .hub-todo-title {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
+  display:       block;
+  font-size:     14px;
+  font-weight:   600;
+  color:         var(--text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
   text-overflow: ellipsis;
 }
 .hub-todo-title.done {
   text-decoration: line-through;
-  color: var(--text-muted);
+  color:           var(--text-muted);
 }
 .hub-todo-title.important { font-weight: 700; }
 .hub-todo-prio {
-  display: inline-block;
-  margin-left: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-secondary);
+  display:        inline-block;
+  margin-left:    5px;
+  font-size:      11px;
+  font-weight:    800;
+  color:          var(--status-caution);
   vertical-align: middle;
-  line-height: 1;
+  line-height:    1;
 }
 .hub-todo-meta {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
+  display:    block;
+  font-size:  11px;
+  color:      var(--text-muted);
   margin-top: 2px;
 }
 
 .hub-todo-delete {
-  width: 28px;
-  height: 28px;
-  display: flex;
+  width:       32px;
+  height:      32px;
+  display:     flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: var(--text-muted);
+  font-size:   18px;
+  color:       var(--text-muted);
   flex-shrink: 0;
-  background: none;
+  background:  none;
+  border-radius: var(--r-md);
+  transition:  color var(--motion-fast);
 }
-.hub-todo-delete:active { color: var(--danger); }
+.hub-todo-delete:active { color: var(--status-critical); }
 
-.hub-todo-done-section {
-  margin-top: 16px;
-}
-.hub-todo-done-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 6px 0;
-  list-style: none;
-}
-.hub-todo-done-label::-webkit-details-marker { display: none; }
-.hub-todo-done-section[open] .hub-todo-done-label { margin-bottom: 4px; }
+/* (hub-todo-done-section / hub-todo-done-label waren <details>-Muster,
+   das im neuen Aufgaben-Bereich nicht mehr existiert — entfernt) */
 
 /* ── TodoSheet ── */
 .todo-sheet-body {
@@ -1419,211 +1420,240 @@
 
 /* ===== Hub-Zustände: laedt / fehler / veraltet (core/Hub.jsx) ===== */
 
+/* ── Lade-Skelett ── */
 .hub-skeleton-block {
-  background: var(--bg-card);
+  background:    var(--surface-sunken);
+  border-radius: var(--r-md);
+  animation:     hub-pulse 1.4s ease-in-out infinite;
 }
-.hub-skeleton-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--border);
+@keyframes hub-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-skeleton-block { animation: none; }
 }
 
+/* ── Fehler-State ── */
 .hub-error {
-  border-left: 3px solid var(--danger);
-  padding-left: 13px;
-  margin-top: 8px;
+  background:    var(--status-critical-bg);
+  border:        1px solid var(--status-critical);
+  border-radius: var(--r-xl);
+  padding:       16px 18px;
+  margin-top:    8px;
 }
 .hub-error-headline {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-size:      22px;
+  font-weight:    800;
+  letter-spacing: -0.02em;
+  line-height:    1.2;
+  color:          var(--text-primary);
 }
 .hub-error-sub {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  margin-top: 10px;
-  max-width: 32ch;
+  font-size:  13px;
+  line-height: 1.55;
+  color:      var(--text-secondary);
+  margin-top: 8px;
+  max-width:  34ch;
 }
 
+/* ── Veraltet-Banner ── */
 .hub-stale-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-card);
-  padding: 10px 12px;
-  margin: 0 -16px 18px;
-  border-bottom: 1px solid var(--border);
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-lg);
+  padding:       9px 14px;
+  margin-bottom: 16px;
+  font-size:     11.5px;
+  font-weight:   500;
+  color:         var(--text-secondary);
+  box-shadow:    var(--shadow-card);
 }
 .hub-stale-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--text-muted);
-  flex-shrink: 0;
+  width:         7px;
+  height:        7px;
+  border-radius: 50%;
+  background:    var(--status-caution);
+  flex-shrink:   0;
 }
 .hub-stale-login {
-  margin-left: auto;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-decoration: underline;
+  margin-left:        auto;
+  font-size:          11.5px;
+  font-weight:        700;
+  color:              var(--action-primary);
+  text-decoration:    underline;
   text-underline-offset: 3px;
-  flex-shrink: 0;
+  flex-shrink:        0;
 }
 
-/* ── Hub Habit-Block ── */
+/* ── Gewohnheiten-Bereich: abhakbare Liste ── */
 .hub-hab-block {
-  background: var(--bg-card);
-  padding: 14px 16px;
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  overflow:      hidden;
   margin-bottom: 10px;
 }
 .hub-hab-header {
-  display: flex;
+  display:        flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  align-items:    center;
+  padding:        14px 18px 0;
 }
 .hub-hab-count {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size:   13px;
+  font-weight: 800;
+  color:       var(--text-primary);
 }
 .hub-hab-progress {
-  height: 3px;
-  background: var(--border);
-  margin-bottom: 10px;
+  height:     4px;
+  background: var(--data-track);
+  margin:     10px 18px 0;
+  border-radius: var(--r-pill);
+  overflow:   hidden;
 }
 .hub-hab-bar {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.25s ease;
+  height:     100%;
+  background: var(--action-primary);
+  border-radius: var(--r-pill);
+  transition: width var(--motion-calm);
 }
 .hub-hab-list {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  gap: 2px;
+  padding:        4px 0;
 }
 .hub-hab-row {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--border);
-  background: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  text-align: left;
-  width: 100%;
-  cursor: pointer;
-  min-height: var(--touch-target);
-  color: var(--text-primary);
+  gap:         12px;
+  padding:     12px 18px;
+  border:      none;
+  border-top:  1px solid var(--surface-page);
+  background:  none;
+  text-align:  left;
+  width:       100%;
+  cursor:      pointer;
+  min-height:  var(--touch-target);
+  color:       var(--text-primary);
+  transition:  opacity var(--motion-fast);
 }
-.hub-hab-row:last-child { border-bottom: none; }
-.hub-hab-row.done { opacity: 0.5; }
+.hub-hab-row:first-child { border-top: none; }
+.hub-hab-row.done  { opacity: 0.45; }
 .hub-hab-row:active { opacity: 0.6; }
 
 .hub-hab-check {
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid var(--border-strong);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
+  width:         21px;
+  height:        21px;
+  border-radius: 7px;
+  border:        1.8px solid var(--border-strong);
+  flex-shrink:   0;
+  display:       flex;
+  align-items:   center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--bg-primary);
+  font-size:     12px;
+  font-weight:   800;
+  color:         var(--text-on-accent);
+  background:    transparent;
+  transition:    background var(--motion-fast), border-color var(--motion-fast);
 }
 .hub-hab-check.checked {
-  background: var(--text-primary);
-  border-color: var(--text-primary);
+  background:   var(--action-primary);
+  border-color: var(--action-primary);
 }
 .hub-hab-icon { font-size: 15px; flex-shrink: 0; }
 .hub-hab-name {
-  font-size: 14px;
-  font-weight: 500;
-  flex: 1;
+  font-size:   14px;
+  font-weight: 600;
+  flex:        1;
+  color:       var(--text-primary);
 }
 .hub-hab-row.done .hub-hab-name { text-decoration: line-through; }
 
 /* ── Hub Wochen-Kalender ── */
 .hub-cal-week {
-  display: grid;
+  display:               grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  margin: 10px 0 4px;
+  gap:                   2px;
+  background:            var(--surface-raised);
+  border:                1px solid var(--border-hairline);
+  border-radius:         var(--r-2xl);
+  box-shadow:            var(--shadow-card);
+  padding:               10px 6px 12px;
+  margin:                10px 0 4px;
 }
 
 .hub-cal-day {
-  display: flex;
+  display:        flex;
   flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  min-height: var(--touch-target);
-  position: relative;
+  align-items:    center;
+  gap:            3px;
+  padding:        6px 2px;
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  min-height:     var(--touch-target);
+  position:       relative;
+  border-radius:  var(--r-lg);
+  transition:     background var(--motion-fast);
 }
-.hub-cal-day:active { opacity: 0.6; }
+.hub-cal-day:active { background: var(--surface-sunken); }
 
 .hub-cal-wd {
-  font-size: 9px;
-  font-weight: 700;
+  font-size:      9px;
+  font-weight:    700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color:          var(--text-muted);
 }
 
 .hub-cal-dd {
-  font-size: 15px;
+  font-size:   15px;
   font-weight: 500;
-  color: var(--text-primary);
-  width: 28px;
-  height: 28px;
-  display: flex;
+  color:       var(--text-primary);
+  width:       30px;
+  height:      30px;
+  display:     flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
 }
 
 .hub-cal-day.today .hub-cal-dd {
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-weight: 700;
+  background:  var(--action-primary);
+  color:       var(--text-on-accent);
+  font-weight: 800;
 }
 
 .hub-cal-dots {
-  display: flex;
-  gap: 3px;
-  height: 6px;
-  align-items: center;
+  display:         flex;
+  gap:             3px;
+  height:          6px;
+  align-items:     center;
   justify-content: center;
 }
 
 .hub-cal-dot {
-  width: 5px;
-  height: 5px;
+  width:         5px;
+  height:        5px;
   border-radius: 50%;
-  flex-shrink: 0;
+  flex-shrink:   0;
 }
-.hub-cal-dot--sport    { background: var(--accent); }
-.hub-cal-dot--shopping { background: var(--success); }
+/* semantische Tokens statt alter Aliase */
+.hub-cal-dot--sport    { background: var(--action-primary); }
+.hub-cal-dot--shopping { background: var(--status-positive); }
 .hub-cal-dot--todo     { background: var(--text-muted); }
-.hub-cal-dot--finance  { background: var(--warning); }
+.hub-cal-dot--finance  { background: var(--status-caution); }
 
 .hub-cal-dot-skeleton {
-  width: 5px;
-  height: 5px;
+  width:         5px;
+  height:        5px;
   border-radius: 50%;
-  background: var(--border);
+  background:    var(--border-hairline);
 }
 
 /* ── DaySheet ── */
@@ -1631,52 +1661,70 @@
   padding: 12px 20px 8px;
 }
 .hub-cal-sheet-empty {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 12px 0;
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--text-muted);
+  padding:     14px 0;
+  text-align:  center;
 }
 .hub-cal-sheet-row {
-  display: flex;
+  display:     flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--border);
-  min-height: var(--touch-target);
+  gap:         12px;
+  padding:     13px 0;
+  border:      none;
+  border-top:  1px solid var(--border-hairline);
+  min-height:  var(--touch-target);
+  background:  none;
+  width:       100%;
+  text-align:  left;
 }
-.hub-cal-sheet-row:last-child { border-bottom: none; }
+.hub-cal-sheet-row:first-child { border-top: none; }
 .hub-cal-sheet-row.done { opacity: 0.45; }
 
 .hub-cal-sheet-icon {
-  font-size: 16px;
-  width: 24px;
-  text-align: center;
+  font-size:   16px;
+  width:       28px;
+  height:      28px;
+  display:     flex;
+  align-items: center;
+  justify-content: center;
+  background:  var(--surface-sunken);
+  border-radius: var(--r-md);
+  text-align:  center;
   flex-shrink: 0;
 }
 .hub-cal-sheet-content {
-  flex: 1;
+  flex:      1;
   min-width: 0;
 }
 .hub-cal-sheet-title {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+  display:       block;
+  font-size:     14px;
+  font-weight:   600;
+  color:         var(--text-primary);
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
 }
 .hub-cal-sheet-row.done .hub-cal-sheet-title {
   text-decoration: line-through;
-  color: var(--text-muted);
+  color:           var(--text-muted);
 }
 .hub-cal-sheet-time {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
+  display:    block;
+  font-size:  11px;
+  color:      var(--text-muted);
   margin-top: 2px;
 }
 .hub-cal-sheet-done {
-  font-size: 13px;
-  color: var(--success);
-  font-weight: 700;
+  font-size:   12px;
+  font-weight: 800;
+  color:       var(--status-positive);
   flex-shrink: 0;
+  background:  var(--status-positive-bg);
+  padding:     3px 8px;
+  border-radius: var(--r-pill);
 }
 -e 
 
@@ -2915,18 +2963,10 @@
   flex-shrink: 0;
 }
 
-/* FAB-Freiraum: die letzte Zeile jeder Bereiche-Karte hatte bisher
-   padding-right:76px bekommen, damit der schwebende FAB (52px,
-   right:20px) nichts verdeckt. Das Problem: .area-row-label hat flex:1
-   und füllt IMMER den verbleibenden Platz — ob der Freiraum per Padding
-   oder per Spacer-Element reserviert wird, ist rechnerisch identisch,
-   der Chevron der letzten Zeile stand dadurch immer sichtbar weiter
-   links als die Chevrons der Zeilen darüber ("eingerückt").
-   Lösung: kein Eingriff mehr in die Zeile selbst — stattdessen bekommt
-   die GESAMTE Karte unten einen Freiraum, der sie komplett über die
-   FAB-Zone hebt. Alle Zeilen bleiben dadurch identisch ausgerichtet. */
-.area-list--fab-clearance {
-  margin-bottom: 76px;
+/* FAB-Freiraum: nur die letzte Zeile bekommt zusätzlichen Platz rechts,
+   damit der schwebende FAB (56px, right:18px) nichts verdeckt. */
+.area-list--fab-clearance .area-row:last-child {
+  padding-right: 76px;
 }
 
 /* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
@@ -3442,19 +3482,25 @@
 
 /* Textlink am Fuß eines Hub-Bereichs ("Alle Gewohnheiten verwalten ›") */
 .hub-area-link {
-  display:     block;
-  width:       100%;
-  margin-top:  18px;
-  padding:     13px;
-  border:      none;
-  background:  none;
-  font-size:   13px;
-  font-weight: 700;
-  color:       var(--action-primary);
-  cursor:      pointer;
-  text-align:  center;
-  min-height:  var(--touch-target);
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  width:         100%;
+  margin-top:    14px;
+  padding:       13px 18px;
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-xl);
+  background:    var(--surface-raised);
+  box-shadow:    var(--shadow-card);
+  font-size:     13px;
+  font-weight:   700;
+  color:         var(--action-primary);
+  cursor:        pointer;
+  text-align:    center;
+  min-height:    var(--touch-target);
+  transition:    opacity var(--motion-fast);
 }
+.hub-area-link:active { opacity: 0.65; }
 
 /* ═══════════════════════════════════════════════════════════════
    Schritte 8 & 9 — Einkauf- und Ernährungs-Übersicht
@@ -3657,597 +3703,145 @@
   border-radius: var(--r-xl);
 }
 
-/* ── Buchungen: Saldo-Kachel ────────────────────────────────────── */
+/* ── Buchungen: Saldo-Kachel (ersetzt .fin-lead / .hub-lead-*) ──── */
 .fin-summary-card {
-  background:    var(--surface-raised);
+  background: var(--surface-raised);
   border-radius: var(--r-xl);
-  padding:       var(--space-5) var(--space-5) var(--space-4);
+  padding: var(--space-5) var(--space-5) var(--space-4);
   margin-bottom: var(--space-5);
-  box-shadow:    var(--shadow-card);
+  box-shadow: var(--shadow-card);
 }
 
 .fin-summary-eyebrow {
-  color:           var(--text-muted);
-  text-transform:  uppercase;
-  letter-spacing:  0.08em;
-  margin-bottom:   var(--space-2);
-  display:         block;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-2);
 }
 
 .fin-summary-value {
-  font-size:            32px;
-  font-weight:          800;
-  letter-spacing:       -0.03em;
-  color:                var(--text-primary);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
-  line-height:          1.1;
+  line-height: 1.1;
 }
 
 .fin-summary-sub {
-  display:              flex;
-  flex-wrap:            wrap;
-  gap:                  var(--space-3) var(--space-4);
-  margin-top:           var(--space-3);
-  font-size:            13px;
-  color:                var(--text-secondary);
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  font-size: 13px;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .fin-summary-sub b {
-  color:       var(--text-primary);
+  color: var(--text-primary);
   font-weight: 700;
-}
-
-/* ── Filter: abgerundete Pills ──────────────────────────────────── */
-.fin-filter-pills {
-  display:       flex;
-  gap:           var(--space-2);
-  margin-bottom: var(--space-5);
-  /* kein overflow-x: auto — Pills sollen gleichmäßig die volle
-     Breite einnehmen, nicht scrollbar sein */
-}
-
-.fin-filter-pill {
-  flex:          1 1 0;    /* alle gleich breit, Basis 0 */
-  min-width:     0;        /* kein implizites content-Minimum */
-  padding:       7px 0;    /* nur vertikal; horizontal zentriert */
-  text-align:    center;
-  white-space:   nowrap;
-  border-radius: var(--r-pill);
-  border:        1.5px solid var(--border-hairline);
-  background:    var(--surface-raised);
-  color:         var(--text-secondary);
-  font-size:     13px;
-  font-weight:   600;
-  cursor:        pointer;
-  transition:    background var(--motion-fast), color var(--motion-fast),
-                 border-color var(--motion-fast);
-}
-
-.fin-filter-pill.active {
-  background:   var(--action-primary);
-  color:        var(--text-on-accent);
-  border-color: var(--action-primary);
-  font-weight:  700;
-}
-
-/* ── Aufklappbare Kategorie-Sektionen ───────────────────────────── */
-.fin-collapse-list {
-  display:       flex;
-  flex-direction: column;
-  gap:           var(--space-2);
-  margin-bottom: var(--space-6);
-}
-
-.fin-collapse {
-  background:    var(--surface-raised);
-  border-radius: var(--r-lg);
-  box-shadow:    var(--shadow-card);
-  overflow:      hidden;
-}
-
-.fin-collapse-header {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  width:           100%;
-  padding:         14px var(--space-4);
-  background:      none;
-  border:          none;
-  cursor:          pointer;
-  text-align:      left;
-  gap:             var(--space-3);
-  transition:      background var(--motion-fast);
-}
-
-.fin-collapse-header:active,
-.fin-collapse-header.open {
-  background: var(--surface-sunken);
-}
-
-.fin-collapse-label {
-  flex:        1;
-  font-weight: 600;
-  color:       var(--text-primary);
-}
-
-.fin-collapse-meta {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-3);
-  flex-shrink: 0;
-}
-
-.fin-collapse-count {
-  color:       var(--text-muted);
-  font-weight: 600;
-}
-
-.fin-collapse-total {
-  font-weight:          700;
-  color:                var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.fin-collapse-chevron {
-  color:      var(--text-muted);
-  font-size:  16px;
-  font-weight: 700;
-  line-height: 1;
-  transition: transform var(--motion-fast);
-  display:    inline-block;
-}
-
-.fin-collapse-chevron.open {
-  transform: rotate(90deg);
-}
-
-.fin-collapse-body {
-  border-top: 1px solid var(--border-hairline);
-}
-
-/* fin-row innerhalb collapse — kein zusätzlicher Hintergrund */
-.fin-collapse-body .fin-row {
-  padding: 11px var(--space-4);
-}
-
-.fin-collapse-body .fin-row:last-child {
-  border-bottom: none;
-}
-
-/* ── Schnellübersicht: antippbare Karte ─────────────────────────── */
-.fin-split-card--tappable {
-  display:    block;
-  width:      100%;
-  text-align: left;
-  border:     none;
-  cursor:     pointer;
-  transition: opacity var(--motion-fast);
-}
-
-.fin-split-card--tappable:active {
-  opacity: 0.8;
-}
-
-/* Einnahmen-Segment (Ton d) — dezentes Navy-400 */
-.fin-split-seg--d   { background: var(--data-3); opacity: 0.55; }
-.fin-split-dot--d   { background: var(--data-3); opacity: 0.7;  }
-
-/* Tap-Hinweis unter der Legende */
-.fin-split-tap-hint {
-  margin-top: var(--space-3);
-  color:      var(--text-muted);
-  text-align: right;
-  font-weight: 600;
 }
 
 /* ── Verträge: Trennlinie + Total-Zeile ─────────────────────────── */
 .contracts-total-row {
-  display:         flex;
+  display: flex;
   justify-content: space-between;
-  align-items:     center;
-  margin-top:      var(--space-2);
-  padding-top:     var(--space-2);
-  border-top:      1px solid var(--border-hairline);
+  align-items: center;
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-hairline);
 }
 
+/* ── Verträge: Button-Reihe ─────────────────────────────────────── */
 .contracts-btn-row {
-  display:    flex;
-  gap:        var(--space-2);
-  flex-wrap:  wrap;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
   margin-top: var(--space-3);
 }
 
 /* ── Auswertung: Jahres-Wähler ──────────────────────────────────── */
 .summary-year-row {
-  display:         flex;
+  display: flex;
   justify-content: flex-end;
-  margin-bottom:   var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .summary-year-select {
-  width:    auto;
+  width: auto;
   font-size: 0.9rem;
-  padding:  6px 28px 6px 10px;
+  padding: 6px 28px 6px 10px;
 }
 
 /* ── Einstellungen: XLSX-Vorschau-Box ───────────────────────────── */
 .settings-xlsx-preview {
-  margin-top:    var(--space-4);
-  background:    var(--action-quiet-bg);
+  margin-top: var(--space-4);
+  background: var(--action-quiet-bg);
   border-radius: var(--r-md);
-  padding:       var(--space-4);
+  padding: var(--space-4);
 }
 
 .settings-xlsx-grid {
-  display:               grid;
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap:                   var(--space-1) var(--space-3);
+  gap: var(--space-1) var(--space-3);
 }
 
-/* ── EntryModal: Meta-Zeile + Aktionszeile ──────────────────────── */
+/* ── EntryModal: Meta-Zeile (Erfassungsdatum) ───────────────────── */
 .entry-modal-meta {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  color:         var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
   margin-bottom: var(--space-4);
 }
 
+/* ── EntryModal: Aktionszeile ───────────────────────────────────── */
 .entry-modal-actions {
-  display:     flex;
-  gap:         var(--space-2);
+  display: flex;
+  gap: var(--space-2);
   align-items: center;
-  padding:     var(--space-4) var(--space-5) var(--space-5);
-  border-top:  1px solid var(--border-hairline);
-}
-
-/* ── Verträge: neue Zeilen-Struktur (ersetzt Tabelle) ───────────── */
-.contracts-row {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  gap:             var(--space-3);
-  padding:         12px var(--space-4);
-  /* Trennlinie nur oben — verhindert Doppellinie mit card-internen Borders */
-  border-top:      1px solid var(--border-hairline);
-  cursor:          pointer;
-  transition:      background var(--motion-fast);
-}
-
-/* Erste Zeile braucht keine Linie oben */
-.contracts-row:first-of-type { border-top: none; }
-.contracts-row:active        { background: var(--surface-sunken); }
-.contracts-row--faded        { opacity: 0.5; }
-
-.contracts-row-main {
-  flex:           1;
-  min-width:      0;
-  display:        flex;
-  flex-direction: column;
-  gap:            3px;
-}
-
-.contracts-row-right {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-3);
-  flex-shrink: 0;
-  text-align:  right;
-}
-
-/* Abgelaufene-Klapp-Button */
-.contracts-expired-toggle {
-  margin-top: var(--space-3);
-}
-
-.contracts-expired-btn {
-  background:  none;
-  border:      none;
-  cursor:      pointer;
-  color:       var(--text-muted);
-  font-weight: 600;
-  padding:     var(--space-2) 0;
-  width:       100%;
-  text-align:  left;
-}
-
-/* Modal: 2-spaltig nebeneinander (Betrag + Fällig am) */
-.modal-row-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
-}
-
-/* Checkbox-Label mit modernem Stil */
-.modal-checkbox-label {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-2);
-  cursor:      pointer;
-  color:       var(--text-primary);
-}
-
-.modal-checkbox-label input[type="checkbox"] {
-  width:        18px;
-  height:       18px;
-  accent-color: var(--action-primary);
-  flex-shrink:  0;
-}
-
-/* ── Offene-Posten: flache Liste (kein Dropdown) ────────────────── */
-.fin-offen-list {
-  background:    var(--surface-raised);
-  border-radius: var(--r-lg);
-  box-shadow:    var(--shadow-card);
-  overflow:      hidden;
-  margin-bottom: var(--space-6);
-}
-
-.fin-offen-header {
-  display:         flex;
-  justify-content: space-between;
-  align-items:     center;
-  padding:         12px var(--space-4);
-  border-bottom:   1px solid var(--border-hairline);
-}
-
-.fin-offen-empty {
-  display:         flex;
-  justify-content: center;
-  padding:         var(--space-6);
-}
-
-/* fin-row innerhalb offen-list — kein collapse-body-Wrapper nötig */
-.fin-offen-list .fin-row {
-  padding: 11px var(--space-4);
-}
-
-/* ── Häkchen: Flash-Animation beim Abhaken ──────────────────────── */
-@keyframes check-flash {
-  0%   { transform: scale(1);    background: var(--action-primary); }
-  40%  { transform: scale(1.25); background: var(--status-positive); }
-  100% { transform: scale(1);    background: var(--action-primary); }
-}
-
-.fin-row-check {
-  border-radius: var(--r-sm);   /* 6px — abgerundet statt viereckig */
-  transition: background var(--motion-fast), border-color var(--motion-fast),
-              border-radius var(--motion-fast);
-}
-
-.fin-row-check.flash {
-  animation: check-flash 400ms ease-out forwards;
-}
-
-/* Bereits bezahlte Häkchen: sanfte Transition beim Einblenden */
-.fin-row-check.checked {
-  transition: background var(--motion-fast), border-color var(--motion-fast),
-              transform 120ms ease-out;
-}
-
-/* Überschreibt den alten .fin-row-check Block aus app-extra.css:
-   - border-radius abgerundet (r-sm = 6px)
-   - Tokens auf neues System aktualisiert (kein --bg-primary mehr)
-   - checked-Zustand: action-primary statt text-primary */
-.fin-row-check {
-  border-radius: var(--r-sm);
-}
-
-.fin-row-check.checked {
-  background:   var(--action-primary);
-  border-color: var(--action-primary);
-  color:        var(--text-on-accent);
-}
-
-/* ── iOS-Fix: Monatspfeile sichtbar machen ──────────────────────────
-   iOS Safari erbt color nicht zuverlässig in SVG via currentColor
-   wenn der Button kein explizites computed color hat. Explizit setzen. */
-.fin-month-nav .month-nav-btn {
-  flex-shrink: 0;
-  min-width:   34px;
-  color:       var(--text-secondary); /* explizit, nicht inherited */
-  -webkit-tap-highlight-color: transparent;
-}
-
-.fin-month-nav .month-nav-btn svg {
-  display: block;          /* kein inline baseline-gap */
-  stroke:  currentColor;   /* explizit für iOS Safari */
-  fill:    none;
-}
-
-/* ── iOS-Fix: flash-Animation mit will-change vorbereiten ───────────
-   Ohne will-change kann iOS die Klasse beim Reflow ignorieren.   */
-.fin-row-check {
-  border-radius: var(--r-sm);
-  will-change:   transform, background;
-  -webkit-transform: translateZ(0); /* GPU-Layer erzwingen */
-}
-
-@keyframes check-flash {
-  0%   { transform: scale(1);    background: var(--action-primary); }
-  40%  { transform: scale(1.22); background: var(--status-positive); }
-  100% { transform: scale(1);    background: var(--action-primary); }
-}
-
-.fin-row-check.flash {
-  animation: check-flash 400ms ease-out forwards;
-  -webkit-animation: check-flash 400ms ease-out forwards;
-}
-
-/* ── Multi-Zahlungsart-Editor ───────────────────────────────────── */
-.wiz-payments {
-  display:        flex;
-  flex-direction: column;
-  gap:            var(--space-4);
-}
-
-.wiz-payment-row {
-  display:        flex;
-  flex-direction: column;
-  gap:            var(--space-2);
-  padding:        var(--space-3) var(--space-3);
-  background:     var(--surface-sunken);
-  border-radius:  var(--r-md);
-}
-
-/* Zweite und folgende Rows optisch leicht abgesetzt */
-.wiz-payment-row + .wiz-payment-row {
+  padding: var(--space-4) var(--space-5) var(--space-5);
   border-top: 1px solid var(--border-hairline);
 }
 
-.wiz-payment-amount-row {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-2);
-  margin-top:  var(--space-1);
+/* ── Vogelkopf-Animation (TopBar) ───────────────────────────────── */
+
+/* Bob: sanftes Wippen + minimale Kippbewegung, 3 s Loop */
+@keyframes bird-bob {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  25%  { transform: translateY(-1.8px) rotate(-1.5deg); }
+  50%  { transform: translateY(0px) rotate(0deg); }
+  75%  { transform: translateY(1.2px) rotate(1.2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
 }
 
-.wiz-payment-amount-input {
-  flex:      1;
-  /* min. 16px — verhindert iOS-Zoom beim Fokussieren des Feldes */
-  font-size: max(16px, 1rem);
-  padding:   8px 10px;
-  color:     var(--text-muted);  /* ausgegraut — Hint-Charakter */
+/* Blinzel: Lid klappt kurz zu (scaleY 0→1→0), alle 5 s */
+@keyframes bird-blink {
+  0%,  82% { transform: scaleY(0); }
+  86%       { transform: scaleY(1); }
+  91%       { transform: scaleY(0); }
+  100%      { transform: scaleY(0); }
 }
 
-.wiz-payment-rest {
-  flex:            1;
-  display:         flex;
-  justify-content: space-between;
-  align-items:     center;
-  padding:         8px 10px;
-  background:      var(--surface-raised);
-  border-radius:   var(--r-sm);
-  border:          1px dashed var(--border-hairline);
+/* Bob auf dem <svg>-Element */
+.bird-head-anim {
+  animation: bird-bob 3s ease-in-out infinite;
+  transform-origin: center bottom;
 }
 
-.wiz-payment-remove {
-  width:         32px;
-  height:        32px;
-  border-radius: var(--r-pill);
-  background:    var(--status-critical-bg);
-  color:         var(--status-critical);
-  font-size:     18px;
-  font-weight:   700;
-  display:       flex;
-  align-items:   center;
-  justify-content: center;
-  flex-shrink:   0;
-  border:        none;
-  cursor:        pointer;
+/* Lider — beide unsichtbar außer beim Blinzel-Frame */
+.bird-lid {
+  transform: scaleY(0);
+  transform-box: fill-box;
+  animation: bird-blink 5s ease-in-out infinite;
 }
+/* Linkes Lid etwas früher, rechtes minimal versetzt → wirkt natürlicher */
+.bird-lid--l { animation-delay: 0s; }
+.bird-lid--r { animation-delay: 0.08s; }
 
-.wiz-payment-add {
-  background:    none;
-  border:        1.5px dashed var(--border-hairline);
-  border-radius: var(--r-md);
-  color:         var(--text-muted);
-  font-size:     13px;
-  font-weight:   600;
-  padding:       10px;
-  cursor:        pointer;
-  width:         100%;
-  text-align:    center;
-  transition:    border-color var(--motion-fast), color var(--motion-fast);
-}
-
-.wiz-payment-add:hover,
-.wiz-payment-add:active {
-  border-color: var(--action-primary);
-  color:        var(--action-primary);
-}
-
-/* ── sheet-scroll: Android + iOS vollständig absichern ─────────────
-   Überschreibt den Basis-Block aus app-extra.css.
-   - overscroll-behavior: contain → Android verhindert Hintergrund-Scroll
-     wenn das Sheet-Ende erreicht ist (kein "bounce" auf den Body).
-   - touch-action: pan-y → iOS/Android: nur vertikales Scrollen.
-   - overflow-x: hidden → kein horizontales Ausbrechen.  */
-.sheet-scroll {
-  overflow-y:           auto;
-  overflow-x:           hidden;
-  -webkit-overflow-scrolling: touch; /* iOS Momentum-Scroll */
-  overscroll-behavior:  contain;     /* Android: kein Body-Scroll-Bleed */
-  touch-action:         pan-y;       /* iOS+Android: nur vertikal */
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Benachrichtigungs-Toggle-Switches (AppMenu.jsx)
-   ═══════════════════════════════════════════════════════════════ */
-
-.notif-toggle-list {
-  display:        flex;
-  flex-direction: column;
-  gap:            2px;
-  margin-bottom:  4px;
-}
-
-/* Eine Zeile: Text links, Track rechts */
-.notif-toggle-row {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  gap:             12px;
-  padding:         11px 0;
-  border-top:      1px solid var(--border-hairline);
-  cursor:          pointer;
-  min-height:      var(--touch-target);
-  user-select:     none;
-  -webkit-user-select: none;
-}
-.notif-toggle-row:first-child { border-top: none; }
-.notif-toggle-row:focus-visible {
-  outline:        2px solid var(--focus-ring);
-  outline-offset: 2px;
-  border-radius:  var(--r-sm);
-}
-
-.notif-toggle-text {
-  display:        flex;
-  flex-direction: column;
-  gap:            2px;
-  flex:           1;
-  min-width:      0;
-}
-.notif-toggle-label {
-  font-size:   13px;
-  font-weight: 700;
-  color:       var(--text-primary);
-}
-.notif-toggle-hint {
-  font-size:   11px;
-  font-weight: 500;
-  color:       var(--text-muted);
-}
-
-/* Track (Hintergrund) */
-.notif-toggle-track {
-  position:      relative;
-  width:         44px;
-  height:        26px;
-  border-radius: var(--r-pill);
-  background:    var(--border-strong);
-  flex-shrink:   0;
-  transition:    background var(--motion-fast);
-}
-.notif-toggle-track.on {
-  background: var(--action-primary);
-}
-
-/* Thumb (weißer Knopf) */
-.notif-toggle-thumb {
-  position:      absolute;
-  top:           3px;
-  left:          3px;
-  width:         20px;
-  height:        20px;
-  border-radius: 50%;
-  background:    var(--raw-paper-000);
-  box-shadow:    0 1px 3px rgba(0,0,0,0.18);
-  transition:    transform var(--motion-fast);
-}
-.notif-toggle-track.on .notif-toggle-thumb {
-  transform: translateX(18px);
+/* Reduced motion: alles still */
+@media (prefers-reduced-motion: reduce) {
+  .bird-head-anim        { animation: none; }
+  .bird-lid              { animation: none; transform: scaleY(0); }
 }
