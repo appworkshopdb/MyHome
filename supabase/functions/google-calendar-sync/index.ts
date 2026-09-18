@@ -81,6 +81,7 @@ async function syncOneUser(connection: { owner_id: string; refresh_token_secret_
       google_start_date: isAllDay ? startDate : null, google_start_datetime: startDateTime, google_start_timezone: item.start?.timeZone ?? null,
       google_end_date: isAllDay ? endDate : null, google_end_datetime: endDateTime, google_end_timezone: item.end?.timeZone ?? null,
       reminder_use_default: useDefault, reminder_overrides_minutes: overrides,
+      updated_at: new Date().toISOString(),
     });
   }
 
