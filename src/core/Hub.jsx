@@ -7,8 +7,11 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import PageSection from './components/PageSection';
+import AreaList from './components/AreaList';
+import AreaRow from './components/AreaRow';
 import TodoSheet from './components/TodoSheet';
-import HubCalendar from './components/HubCalendar';
+import HubCalendar from './components/HubCalendar'; // ⚠️ von bereich 'kalender' abgelöst durch CalendarView (Tag/Woche/Monat) — Datei bewusst nicht gelöscht, falls die Wochenstreifen-Optik nochmal gebraucht wird (analog ModuleTabs.jsx)
+import CalendarView from './components/CalendarView';
 import { fb } from './lib/feedback';
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 import { awardPoints } from './lib/gamificationData.js';
@@ -445,13 +448,13 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     );
   }
 
-  // ── Bereich: Kalender ───────────────────────────────────────────
+  // ── Bereich: Kalender (Tag/Woche/Monat, inkl. Google-Kalender-Termine) ──
   if (bereich === 'kalender') {
     return (
       <>
         <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.kalender} hasWarnings={hasWarnings} />
         <div className="hub with-topbar-space">
-          <HubCalendar />
+          <CalendarView />
         </div>
       </>
     );
@@ -702,6 +705,13 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   <span className="hub-task-title">Neue Aufgabe</span>
                 </button>
               </div>
+            </PageSection>
+
+            {/* Kalender — Tag/Woche/Monat, inkl. Google-Kalender falls verbunden */}
+            <PageSection title="Kalender">
+              <AreaList>
+                <AreaRow label="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
+              </AreaList>
             </PageSection>
           </>
         )}
