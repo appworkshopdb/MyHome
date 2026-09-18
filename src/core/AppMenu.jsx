@@ -6,6 +6,9 @@ import {
   isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush,
   getNotificationPrefs, saveNotificationPrefs,
 } from './lib/pushNotifications';
+import {
+  getGoogleCalendarStatus, connectGoogleCalendar, disconnectGoogleCalendar,
+} from './lib/googleCalendar';
 
 const NOTIFICATION_CATEGORIES = [
   {
@@ -55,6 +58,11 @@ export default function AppMenu() {
   const [pushBusy, setPushBusy] = useState(false);
   const [prefs, setPrefs] = useState(null);
 
+  // Google Calendar
+  const [gcalStatus, setGcalStatus] = useState('laedt'); // laedt|verbunden|nicht-verbunden
+  const [gcalConnection, setGcalConnection] = useState(null); // { google_email, sync_error, ... } | null
+  const [gcalBusy, setGcalBusy] = useState(false);
+
   useEffect(() => {
     let aktiv = true;
     async function loadPush() {
@@ -67,7 +75,19 @@ export default function AppMenu() {
         if (aktiv) setPrefs(p);
       }
     }
+    async function loadGcal() {
+      try {
+        const conn = await getGoogleCalendarStatus(session);
+        if (!aktiv) return;
+        setGcalConnection(conn);
+        setGcalStatus(conn ? 'verbunden' : 'nicht-verbunden');
+      } catch (e) {
+        console.error(e);
+        if (aktiv) setGcalStatus('nicht-verbunden');
+      }
+    }
     loadPush();
+    loadGcal();
     return () => { aktiv = false; };
   }, [session]);
 
@@ -112,6 +132,31 @@ export default function AppMenu() {
     }
   }
 
+  async function handleConnectGoogle() {
+    setGcalBusy(true);
+    try {
+      await connectGoogleCalendar(session); // navigiert weg, kehrt nicht zurück
+    } catch (e) {
+      showToast(e.message || 'Verbindung konnte nicht gestartet werden');
+      setGcalBusy(false);
+    }
+  }
+
+  async function handleDisconnectGoogle() {
+    setGcalBusy(true);
+    try {
+      await disconnectGoogleCalendar(session);
+      setGcalConnection(null);
+      setGcalStatus('nicht-verbunden');
+      showToast('Google Kalender getrennt');
+    } catch (e) {
+      showToast('Trennen fehlgeschlagen');
+      console.error(e);
+    } finally {
+      setGcalBusy(false);
+    }
+  }
+
   return (
     <div className="app-menu">
       <div className="app-menu-heading">Einstellungen</div>
@@ -124,6 +169,34 @@ export default function AppMenu() {
           </button>
         ))}
       </div>
+
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Kalender</div>
+      {gcalStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
+      {gcalStatus === 'nicht-verbunden' && (
+        <>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+            Zeige deine Google-Kalender-Termine zusätzlich im Nestua-Kalender an.
+          </p>
+          <button className="btn btn-secondary" style={{ width: '100%' }} disabled={gcalBusy} onClick={handleConnectGoogle}>
+            {gcalBusy ? 'Einen Moment…' : 'Google Kalender verbinden'}
+          </button>
+        </>
+      )}
+      {gcalStatus === 'verbunden' && gcalConnection && (
+        <>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+            Verbunden mit <strong style={{ color: 'var(--text-primary)' }}>{gcalConnection.google_email}</strong>
+          </p>
+          {gcalConnection.sync_error && (
+            <p style={{ fontSize: '0.78rem', color: 'var(--status-critical)', marginBottom: 10 }}>
+              {gcalConnection.sync_error}
+            </p>
+          )}
+          <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleDisconnectGoogle}>
+            {gcalBusy ? 'Einen Moment…' : gcalConnection.sync_error ? 'Erneut verbinden' : 'Trennen'}
+          </button>
+        </>
+      )}
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
 
@@ -151,7 +224,6 @@ export default function AppMenu() {
           </button>
         </>
       )}
-
       {pushStatus === 'subscribed' && prefs && (
         <>
           <div className="notif-toggle-list">
