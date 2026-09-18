@@ -8,6 +8,7 @@ const MODULE_ICON = {
   shopping: '🛒',
   todo:     '✓',
   finance:  '€',
+  google:   '📅',
 };
 
 // Wochentage Mo–So
