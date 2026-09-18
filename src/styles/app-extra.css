@@ -1648,6 +1648,7 @@
 .hub-cal-dot--shopping { background: var(--status-positive); }
 .hub-cal-dot--todo     { background: var(--text-muted); }
 .hub-cal-dot--finance  { background: var(--status-caution); }
+.hub-cal-dot--google   { background: var(--raw-navy-400, #97A6C2); }
 
 .hub-cal-dot-skeleton {
   width:         5px;
