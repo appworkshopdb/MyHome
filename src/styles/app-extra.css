@@ -3846,3 +3846,280 @@
   .bird-head-anim        { animation: none; }
   .bird-lid              { animation: none; transform: scaleY(0); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CalendarView — Tag/Woche/Monat-Kalender (Hub-Bereich "Kalender")
+   ═══════════════════════════════════════════════════════════════ */
+
+.calview {
+  display:        flex;
+  flex-direction: column;
+  gap:             14px;
+}
+
+/* Tag/Woche/Monat-Umschalter — gleiche Optik wie der Design-Umschalter
+   im AppMenu (Hell/Dunkel/System), eigene Klasse um Kollisionen zu
+   vermeiden. */
+.calview-mode-toggle {
+  display:        flex;
+  background:     var(--surface-sunken);
+  border-radius:  var(--r-lg);
+  padding:        3px;
+  gap:             2px;
+}
+.calview-mode-toggle button {
+  flex:           1;
+  padding:        9px 0;
+  border:         none;
+  border-radius:  calc(var(--r-lg) - 3px);
+  background:     none;
+  font-size:      13px;
+  font-weight:    700;
+  color:          var(--text-secondary);
+  cursor:         pointer;
+  transition:     background var(--motion-fast), color var(--motion-fast);
+}
+.calview-mode-toggle button.active {
+  background:  var(--surface-raised);
+  color:       var(--text-primary);
+  box-shadow:  var(--shadow-card);
+}
+
+/* Navigationszeile: ‹ Label › */
+.calview-nav {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+}
+.calview-nav-arrow {
+  width:          36px;
+  height:         36px;
+  border-radius:  50%;
+  background:     var(--surface-raised);
+  border:         1px solid var(--border-hairline);
+  box-shadow:     var(--shadow-card);
+  font-size:      18px;
+  font-weight:    700;
+  color:          var(--text-primary);
+  display:        flex;
+  align-items:    center;
+  justify-content: center;
+  flex-shrink:    0;
+}
+.calview-nav-arrow:active { opacity: 0.6; }
+.calview-nav-label {
+  flex:        1;
+  text-align:  center;
+  font-size:   14px;
+  font-weight: 800;
+  color:       var(--text-primary);
+  background:  none;
+  border:      none;
+  padding:     8px;
+}
+
+.calview-loading, .calview-empty {
+  padding:     28px 0;
+  text-align:  center;
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--text-muted);
+}
+
+/* ── Tagesliste (genutzt von Tag-, Woche- und Monat-Sheet-Ansicht) ── */
+.calview-day-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+}
+
+.calview-week-group-label {
+  font-size:      11px;
+  font-weight:    800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color:          var(--text-muted);
+  margin:         6px 0 2px;
+}
+
+.calview-event-row {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           12px;
+  padding:       13px 16px;
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-xl);
+  box-shadow:    var(--shadow-card);
+}
+.calview-event-row.done { opacity: 0.5; }
+
+.calview-event-icon {
+  font-size:   16px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.calview-event-content {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  min-width:      0;
+  flex:           1;
+}
+.calview-event-title {
+  font-size:   14px;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.calview-event-tentative {
+  display:       inline-block;
+  margin-left:   6px;
+  padding:       2px 7px;
+  font-size:     10px;
+  font-weight:   800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color:         var(--status-caution);
+  background:    var(--status-caution-bg);
+  border-radius: var(--r-pill);
+  vertical-align: middle;
+}
+.calview-event-time {
+  font-size:   12px;
+  font-weight: 600;
+  color:       var(--text-secondary);
+}
+.calview-event-meta {
+  font-size:   12px;
+  color:       var(--text-muted);
+}
+.calview-event-desc {
+  font-size:   12px;
+  color:       var(--text-muted);
+  margin-top:  2px;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  display:       -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.calview-event-done {
+  font-size:   14px;
+  font-weight: 800;
+  color:       var(--status-positive);
+  flex-shrink: 0;
+}
+
+/* ── Wochenansicht: Streifen mit sieben Tagen (analog Hub-Wochenkalender) ── */
+.calview-week-strip {
+  display:               grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                   2px;
+  background:            var(--surface-raised);
+  border:                1px solid var(--border-hairline);
+  border-radius:         var(--r-2xl);
+  box-shadow:            var(--shadow-card);
+  padding:               10px 6px 12px;
+}
+.calview-week-day {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            3px;
+  padding:        6px 2px;
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  min-height:     var(--touch-target);
+  border-radius:  var(--r-lg);
+}
+.calview-week-day:active { background: var(--surface-sunken); }
+.calview-week-wd {
+  font-size:      9px;
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--text-muted);
+}
+.calview-week-dd {
+  font-size:     15px;
+  font-weight:   500;
+  color:         var(--text-primary);
+  width:         30px;
+  height:        30px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.calview-week-day.today .calview-week-dd {
+  background:  var(--action-primary);
+  color:       var(--text-on-accent);
+  font-weight: 800;
+}
+.calview-week-dots {
+  display:         flex;
+  gap:             3px;
+  height:          6px;
+  align-items:     center;
+  justify-content: center;
+}
+
+/* ── Monatsansicht: 6×7-Gitter ── */
+.calview-month-grid {
+  display:               grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                   2px;
+  background:            var(--surface-raised);
+  border:                1px solid var(--border-hairline);
+  border-radius:         var(--r-2xl);
+  box-shadow:            var(--shadow-card);
+  padding:               10px 6px 12px;
+}
+.calview-month-wd {
+  text-align:     center;
+  font-size:      9px;
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--text-muted);
+  padding-bottom: 4px;
+}
+.calview-month-cell {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            3px;
+  padding:        6px 0;
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  min-height:     44px;
+  border-radius:  var(--r-md);
+}
+.calview-month-cell:active { background: var(--surface-sunken); }
+.calview-month-cell.outside { opacity: 0.35; }
+.calview-month-dd {
+  font-size:     13px;
+  font-weight:   600;
+  color:         var(--text-primary);
+  width:         26px;
+  height:        26px;
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.calview-month-cell.today .calview-month-dd {
+  background:  var(--action-primary);
+  color:       var(--text-on-accent);
+  font-weight: 800;
+}
+.calview-month-dots {
+  display:         flex;
+  gap:             2px;
+  height:          5px;
+  align-items:     center;
+  justify-content: center;
+}
