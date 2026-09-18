@@ -96,6 +96,39 @@ Deno.serve(async (req) => {
       }, { onConflict: 'owner_id' });
     if (connectionError) throw connectionError;
 
+    // Alle Google-Kalender des Nutzers holen (nicht nur "primary") —
+    // Grundlage für den Mehrfach-Kalender-Sync unten UND die künftige
+    // Auswahl-/Filter-UI. Default: neu gefundene Kalender sind
+    // sync_enabled=true; der Nutzer kann später einzelne abwählen.
+    const calendarListItems: Array<{ id: string; summary?: string; summaryOverride?: string; backgroundColor?: string; primary?: boolean }> = [];
+    let clPageToken: string | undefined;
+    do {
+      const clParams = new URLSearchParams({ maxResults: '250' });
+      if (clPageToken) clParams.set('pageToken', clPageToken);
+      const clRes = await fetch(`https://www.googleapis.com/calendar/v3/users/me/calendarList?${clParams}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const clData = await clRes.json();
+      if (!clRes.ok) throw new Error(`Kalenderliste konnte nicht geladen werden: ${clData.error?.message ?? clRes.status}`);
+      calendarListItems.push(...(clData.items ?? []));
+      clPageToken = clData.nextPageToken;
+    } while (clPageToken);
+
+    if (calendarListItems.length > 0) {
+      const calendarRows = calendarListItems.map((c) => ({
+        owner_id: oauthState.owner_id,
+        google_calendar_id: c.id,
+        summary: c.summaryOverride || c.summary || c.id,
+        color: c.backgroundColor ?? null,
+        is_primary: c.primary === true,
+        sync_enabled: true,
+      }));
+      const { error: calListError } = await supabase
+        .from('google_calendars')
+        .upsert(calendarRows, { onConflict: 'owner_id,google_calendar_id' });
+      if (calListError) throw calListError;
+    }
+
     // First import immediately. The sync endpoint only accepts this internal
     // service-role authorization, so it cannot be triggered anonymously.
     const syncRes = await fetch(`${functionsPublicUrl}/functions/v1/google-calendar-sync?test_owner=${encodeURIComponent(oauthState.owner_id)}`, {
