@@ -63,7 +63,7 @@ export default function OverviewSection({
     d.setDate(d.getDate() + i);
     const key = iso(d);
     const dayWorkouts = workouts.filter((w) => w.occurred_on === key);
-    return { key, label: WEEKDAYS_DE[i], state: dayState(dayWorkouts, key === todayIso) };
+    return { key, label: WEEKDAYS_DE[i], dateNum: d.getDate(), state: dayState(dayWorkouts, key === todayIso) };
   });
 
   // ── Bereichs-Kennzahlen ────────────────────────────────────────
@@ -134,7 +134,22 @@ export default function OverviewSection({
               <span className={`spo-week-cell spo-week-cell--${d.state}`}>
                 {d.state === 'done' && '✓'}
                 {d.state === 'rest' && 'Rest'}
-                {d.state === 'planned' && <span className="spo-week-dot" />}
+                {d.state === 'planned' && (
+                  <>
+                    {d.dateNum}
+                    {/* Exakt dieselbe Uhr-Badge wie im Monatskalender
+                        (WorkoutCalendar.jsx CellBadge, type="planned")
+                        — nur hier zusätzlich übernommen, "erledigt"
+                        bleibt bewusst beim großen Haken unverändert. */}
+                    <span className="spo-week-badge" aria-label="Geplant">
+                      <svg width="8" height="8" viewBox="0 0 10 10" fill="none"
+                        stroke="var(--text-on-accent)" strokeWidth="1.5" strokeLinecap="round">
+                        <circle cx="5" cy="5" r="4" />
+                        <polyline points="5 3 5 5 6.5 6" />
+                      </svg>
+                    </span>
+                  </>
+                )}
               </span>
             </div>
           ))}
