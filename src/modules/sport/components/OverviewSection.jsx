@@ -134,6 +134,7 @@ export default function OverviewSection({
               <span className={`spo-week-cell spo-week-cell--${d.state}`}>
                 {d.state === 'done' && '✓'}
                 {d.state === 'rest' && 'Rest'}
+                {d.state === 'planned' && <span className="spo-week-dot" />}
               </span>
             </div>
           ))}
