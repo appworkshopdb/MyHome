@@ -3313,8 +3313,15 @@
   border:     2px solid var(--action-primary);
 }
 .spo-week-cell--planned {
-  background: var(--surface-sunken);
-  border:     1px dashed var(--raw-navy-400);
+  background: var(--action-quiet-bg);
+  border:     1.5px solid var(--action-primary);
+}
+.spo-week-dot {
+  width:         7px;
+  height:        7px;
+  border-radius: 50%;
+  background:    var(--action-primary);
+  display:       block;
 }
 .spo-week-cell--rest {
   background: var(--surface-sunken);
