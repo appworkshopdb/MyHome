@@ -7,15 +7,6 @@ import { PREDEFINED_UNITS } from '../../modules/sport/lib/data/predefinedUnits';
 import PlanDaysEditor from '../../modules/sport/components/PlanDaysEditor';
 import SheetShell from './SheetShell';
 
-// KONZEPT-UMBAU (siehe Chat): "Training" (Einzeleintrag) und "Restday"
-// sind aus der Auswahl entfernt — beides läuft bereits gleichwertig
-// über den Kalender-Tab ("+ Einzelne Einheit"/"+ Trainingsplan" in
-// DayDetail.jsx). Der FAB ist damit reine Bibliotheks-Verwaltung:
-// Einheiten und Pläne ANLEGEN, nicht auf einen Kalendertag eintragen.
-//
-// Visuelles Vorbild: der Finanzen-Wizard (core/components/EntrySheet.jsx,
-// wiz-progress/wiz-body/wiz-label/wiz-input-Klassen aus app-extra.css) —
-// dieselben Klassen werden hier wiederverwendet, nicht neu erfunden.
 const TYPE_GROUPS = [
   { group: 'Kraft',    types: TRAINING_TYPES.filter((t) => t.group === 'Kraft').slice(0, 8) },
   { group: 'Ausdauer', types: TRAINING_TYPES.filter((t) => t.group === 'Ausdauer').slice(0, 6) },
@@ -44,12 +35,10 @@ export default function SportQuickSheet({ onClose }) {
   const { session } = useAuth();
   const { notifySaved } = useEntrySheet();
 
-  // 'choose' | 'einheit' | 'plan' | 'verwalten'
   const [screen, setScreen] = useState('choose');
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
 
-  // --- Neue Einheit (1 Schritt) ---------------------------------------
   const [unitTitle,    setUnitTitle]    = useState('');
   const [unitTypeKey,  setUnitTypeKey]  = useState('');
   const [unitDuration, setUnitDuration] = useState('');
@@ -80,11 +69,10 @@ export default function SportQuickSheet({ onClose }) {
     finally { setSaving(false); }
   }
 
-  // --- Trainingsplan (2 Schritte) --------------------------------------
   const [planStep,  setPlanStep]  = useState(1);
   const [planTitle, setPlanTitle] = useState('');
   const [planNotes, setPlanNotes] = useState('');
-  const [planDays,  setPlanDays]  = useState([{ unit_id: '', title: '', type_key: '', duration_min: '', is_rest: false }]);
+  const [planDays,  setPlanDays]  = useState([{ unit_id: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]);
   const [myUnits,   setMyUnits]   = useState([]);
 
   useEffect(() => {
@@ -121,6 +109,7 @@ export default function SportQuickSheet({ onClose }) {
           title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title,
           type_key: d.is_rest ? null : (d.type_key || null),
           duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
+          muscle_groups: d.is_rest ? [] : (d.muscle_groups ?? []),
           is_rest: d.is_rest,
         }))
       );
@@ -130,7 +119,6 @@ export default function SportQuickSheet({ onClose }) {
     finally { setSaving(false); }
   }
 
-  // --- Verwalten (bestehende eigene Einheiten) -------------------------
   const [manageUnits,   setManageUnits]   = useState([]);
   const [manageLoading, setManageLoading] = useState(false);
   const [selectedId,    setSelectedId]    = useState(null);
@@ -181,8 +169,6 @@ export default function SportQuickSheet({ onClose }) {
         <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
       </div>
 
-      {/* Auswahl: Neue Einheit / Trainingsplan (Training/Restday bewusst
-          entfernt — laufen über den Kalender-Tab, siehe Kommentar oben). */}
       {screen === 'choose' && (
         <div className="wiz-body">
           <div className="wiz-cat-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
@@ -203,7 +189,6 @@ export default function SportQuickSheet({ onClose }) {
         </div>
       )}
 
-      {/* Neue Einheit — ein Schritt */}
       {screen === 'einheit' && (
         <div className="wiz-body">
           <button className="wiz-cat" style={{ marginBottom: 14 }} onClick={() => setShowPresets(!showPresets)}>
@@ -241,7 +226,6 @@ export default function SportQuickSheet({ onClose }) {
         </div>
       )}
 
-      {/* Trainingsplan — zwei Schritte, wie der Finanzen-Wizard */}
       {screen === 'plan' && (
         <>
           <div className="wiz-progress">
@@ -285,7 +269,6 @@ export default function SportQuickSheet({ onClose }) {
         </>
       )}
 
-      {/* Verwalten — bestehende eigene Einheiten bearbeiten/löschen */}
       {screen === 'verwalten' && (
         <div className="wiz-body">
           {!selectedId ? (
