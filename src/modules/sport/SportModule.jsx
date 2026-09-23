@@ -93,12 +93,34 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   }, [session, showToast]);
 
   // Lädt initial UND jedes Mal, wenn der FAB (SportQuickSheet) über
-  // den EntrySheetContext erfolgreich gespeichert hat (version-Änderung)
-  // — ein einziger Effekt statt zwei sich überschneidender.
+  // den EntrySheetContext erfolgreich gespeichert hat (version-Änderung).
   useEffect(() => { load(); }, [load, version]);
 
-  function backToOverview() {
+  // Der Zurück-Pfeil (ModuleTopBar onBack) galt bisher IMMER als "verlasse
+  // den Bereich", unabhängig davon, ob gerade ein Unter-Zustand offen war
+  // (Plan-Editor, Anwenden-Dialog, Kalender-Formular) — dadurch sprang er
+  // z.B. beim Bearbeiten eines Plans direkt zur Modul-Übersicht statt nur
+  // zur Pläne-Liste zurück (zwei Schritte statt einem). Außerdem wurde
+  // editingPlan/applyingPlan beim Verlassen nie zurückgesetzt, wodurch ein
+  // späteres erneutes Aufrufen von "Pläne" wieder denselben Editor zeigte
+  // statt der Liste. handleBack behebt beide Fälle: schließt zuerst den
+  // offenen Unter-Zustand (bleibt auf demselben Bereich), erst wenn nichts
+  // mehr offen ist, verlässt er wirklich zur Übersicht — und räumt dabei
+  // konsequent alle Unter-Zustände auf, damit ein späteres Zurückkehren
+  // immer bei der Liste startet.
+  function handleBack() {
+    if (view === 'plaene' && (editingPlan || applyingPlan)) {
+      setEditingPlan(null);
+      setApplyingPlan(null);
+      return;
+    }
+    if (view === 'kalender' && formInitial !== false) {
+      setFormInitial(false);
+      return;
+    }
     setFormInitial(false);
+    setEditingPlan(null);
+    setApplyingPlan(null);
     onNavigateView(null);
   }
 
@@ -195,7 +217,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   if (view && DETAIL_TITLES[view]) {
     return (
       <>
-        <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={handleBack} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
         <div className="sport-module-content with-topbar-space">
           {view === 'kalender' && (
             <VerlaufView
