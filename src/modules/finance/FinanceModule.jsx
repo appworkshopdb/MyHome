@@ -10,7 +10,6 @@ import OverviewSection from './components/OverviewSection';
 import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
-import './finance.css';
 
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
