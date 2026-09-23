@@ -21,7 +21,12 @@ function resolvePlanMuscleGroups(item, units) {
 }
 
 function PlanUnitImages({ items, units }) {
-  const trainingItems = items.filter((item) => !item.is_rest);
+  // day_index ist die verbindliche Reihenfolge des Plans: Tag 1, Tag 2,
+  // Tag 3 usw. Ruhetage werden komplett entfernt und erzeugen keinen Platz.
+  const trainingItems = items
+    .filter((item) => !item.is_rest)
+    .sort((a, b) => (a.day_index ?? 0) - (b.day_index ?? 0));
+
   if (trainingItems.length === 0) return null;
 
   return (
@@ -36,21 +41,28 @@ function PlanUnitImages({ items, units }) {
         scrollbarWidth: 'none',
       }}
     >
-      {trainingItems.map((item, i) => (
-        <div
-          key={item.id ?? `${item.day_index ?? i}-${item.title}`}
-          title={item.title}
-          aria-label={item.title}
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            minWidth: 40,
-          }}
-        >
-          <MusclePreview tags={resolvePlanMuscleGroups(item, units)} />
-        </div>
-      ))}
+      {trainingItems.map((item, i) => {
+        const tags = resolvePlanMuscleGroups(item, units);
+        // Wenn für einen Tag keine Bilddaten vorhanden sind, darf der
+        // Wrapper ebenfalls keinen Platz reservieren. Genau das verursachte
+        // die sichtbare Lücke im "Wochenplan 1".
+        if (!tags.length) return null;
+
+        return (
+          <div
+            key={item.id ?? `${item.day_index ?? i}-${item.title}`}
+            title={item.title}
+            aria-label={item.title}
+            style={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <MusclePreview tags={tags} />
+          </div>
+        );
+      })}
     </div>
   );
 }
