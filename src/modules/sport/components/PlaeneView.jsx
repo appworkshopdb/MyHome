@@ -4,10 +4,6 @@ import ApplyPlanDialog from './ApplyPlanDialog';
 import { MusclePreview } from './EinheitenListShared';
 import { PREDEFINED_UNITS } from '../lib/data/predefinedUnits';
 
-// Alte Pläne können vor dem Muskel-Snapshot angelegt worden sein und haben
-// deshalb noch muscle_groups: []. In diesem Fall lösen wir die Einheit über
-// ihre unit_id bzw. bei vordefinierten Einheiten über den gespeicherten Titel
-// auf. Neue Pläne verwenden weiterhin ihren Snapshot.
 function resolvePlanMuscleGroups(item, units) {
   if (item.muscle_groups?.length) return item.muscle_groups;
 
@@ -20,9 +16,9 @@ function resolvePlanMuscleGroups(item, units) {
   return predefined?.muscle_groups ?? [];
 }
 
+const DAY_LABELS = ['Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.', 'So.'];
+
 function PlanUnitImages({ items, units }) {
-  // day_index ist die verbindliche Reihenfolge des Plans: Tag 1, Tag 2,
-  // Tag 3 usw. Ruhetage werden komplett entfernt und erzeugen keinen Platz.
   const trainingItems = items
     .filter((item) => !item.is_rest)
     .sort((a, b) => (a.day_index ?? 0) - (b.day_index ?? 0));
@@ -35,7 +31,7 @@ function PlanUnitImages({ items, units }) {
       style={{
         display: 'flex',
         gap: 14,
-        alignItems: 'center',
+        alignItems: 'flex-start',
         overflowX: 'auto',
         padding: '2px 2px 8px',
         scrollbarWidth: 'none',
@@ -43,22 +39,34 @@ function PlanUnitImages({ items, units }) {
     >
       {trainingItems.map((item, i) => {
         const tags = resolvePlanMuscleGroups(item, units);
-        // Wenn für einen Tag keine Bilddaten vorhanden sind, darf der
-        // Wrapper ebenfalls keinen Platz reservieren. Genau das verursachte
-        // die sichtbare Lücke im "Wochenplan 1".
         if (!tags.length) return null;
+
+        const dayIndex = Number.isInteger(item.day_index) ? item.day_index : i;
+        const dayLabel = DAY_LABELS[dayIndex] ?? `Tag ${dayIndex + 1}`;
 
         return (
           <div
             key={item.id ?? `${item.day_index ?? i}-${item.title}`}
             title={item.title}
-            aria-label={item.title}
+            aria-label={`${item.title}, ${dayLabel}`}
             style={{
               flexShrink: 0,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
+              gap: 3,
             }}
           >
+            <span
+              style={{
+                fontSize: '0.68rem',
+                lineHeight: 1,
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {dayLabel}
+            </span>
             <MusclePreview tags={tags} />
           </div>
         );
