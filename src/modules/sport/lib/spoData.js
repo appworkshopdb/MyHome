@@ -177,6 +177,7 @@ export async function savePlan(session, plan, items) {
         title: item.title,
         type_key: item.type_key ?? null,
         duration_min: item.duration_min ?? null,
+        muscle_groups: item.muscle_groups ?? [],
         is_rest: item.is_rest ?? false,
         notes: item.notes ?? null,
       })));
