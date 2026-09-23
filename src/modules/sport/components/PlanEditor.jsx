@@ -1,23 +1,30 @@
 import { useState } from 'react';
 import PlanDaysEditor from './PlanDaysEditor';
+import { PREDEFINED_UNITS } from '../lib/data/predefinedUnits';
 
-// Baukasten für eine Mehrtages-Vorlage — für das nachträgliche
-// Bearbeiten eines bereits angelegten Plans (Pläne-Liste → "Bearbeiten").
-// Das eigentliche Neuanlegen läuft über den FAB (SportQuickSheet.jsx,
-// Schritt 2 nutzt dieselbe PlanDaysEditor-Komponente) — beide teilen
-// sich damit dieselbe Einheiten-Auswahl UND denselben Muskel-Snapshot.
+function selectedUnitKey(item, units) {
+  if (item.unit_id) return item.unit_id;
+  const predefined = PREDEFINED_UNITS.find((u) => u.title === item.title);
+  if (predefined) return predefined.key;
+  const personal = units.find((u) => u.title === item.title);
+  return personal?.id ?? '';
+}
+
 export default function PlanEditor({ initialPlan, units = [], onSave, onCancel, showToast }) {
   const [title, setTitle] = useState(initialPlan?.title ?? '');
   const [notes, setNotes] = useState(initialPlan?.notes ?? '');
   const [days, setDays] = useState(
     initialPlan?.items?.length
       ? initialPlan.items.map((i) => ({
-          unit_id: i.unit_id ?? '', title: i.title ?? '', type_key: i.type_key ?? '',
+          unit_id: i.unit_id ?? '',
+          _selectedUnitKey: i.is_rest ? '' : selectedUnitKey(i, units),
+          title: i.title ?? '',
+          type_key: i.type_key ?? '',
           duration_min: i.duration_min != null ? String(i.duration_min) : '',
           muscle_groups: i.muscle_groups ?? [],
           is_rest: i.is_rest,
         }))
-      : [{ unit_id: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]
+      : [{ unit_id: '', _selectedUnitKey: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]
   );
 
   function submit() {
