@@ -34,11 +34,6 @@ export async function saveWorkout(session, workout) {
   const payload = {
     ...workout,
     owner_id: ownerId(session),
-    // status kommt jetzt vom Aufrufer: 'done' beim direkten Eintragen,
-    // 'planned' beim Vorausplanen im Kalender. Der DB-Trigger
-    // (spo_workouts_to_measurement) schreibt die Hub-/Auswertungs-
-    // Kennzahlen NUR bei 'done' — geplante Einheiten tauchen also
-    // korrekterweise noch nicht in der Auswertung auf.
     status: workout.status ?? 'done',
   };
   const { data, error } = await getSupabase().from('spo_workouts').upsert(payload).select().single();
@@ -46,10 +41,6 @@ export async function saveWorkout(session, workout) {
   return data;
 }
 
-// Abhaken/Zurücksetzen direkt aus der Tagesansicht. Der Statuswechsel
-// allein genügt — der DB-Trigger legt die measurements-Zeilen an bzw.
-// räumt sie beim Zurücksetzen wieder ab (er löscht am Anfang immer
-// erst alles zu dieser source_ref_id).
 export async function setWorkoutStatus(id, done) {
   const { error } = await getSupabase()
     .from('spo_workouts')
@@ -62,10 +53,6 @@ export async function setWorkoutStatus(id, done) {
 }
 
 export async function deleteWorkout(id) {
-  // Soft delete, damit Sync zwischen Geräten konsistent bleibt. Der
-  // Measurement-Trigger reagiert auf AFTER INSERT OR UPDATE und prüft
-  // deleted_at selbst — die zugehörigen measurements-Zeilen werden also
-  // automatisch entfernt, sobald deleted_at hier gesetzt wird.
   const { error } = await getSupabase()
     .from('spo_workouts')
     .update({ deleted_at: new Date().toISOString() })
@@ -132,8 +119,6 @@ export async function getPlans(session) {
     .order('created_at', { ascending: false });
   if (error) throw error;
 
-  // Gelöschte Tage filtern und sortieren — der eingebettete Select
-  // kennt weder unsere Soft-Delete-Konvention noch die Reihenfolge.
   return (data ?? []).map((plan) => ({
     ...plan,
     items: (plan.items ?? [])
@@ -142,10 +127,50 @@ export async function getPlans(session) {
   }));
 }
 
+function planItemComparable(item) {
+  return {
+    day_index: item.day_index,
+    unit_id: item.unit_id ?? null,
+    title: item.title ?? '',
+    type_key: item.type_key ?? null,
+    duration_min: item.duration_min ?? null,
+    muscle_groups: item.muscle_groups ?? [],
+    is_rest: item.is_rest ?? false,
+    notes: item.notes ?? null,
+  };
+}
+
+function samePlanItems(existingItems, nextItems) {
+  if (existingItems.length !== nextItems.length) return false;
+  return nextItems.every((item, index) => {
+    const a = planItemComparable(existingItems[index]);
+    const b = planItemComparable({ ...item, day_index: index });
+    return JSON.stringify(a) === JSON.stringify(b);
+  });
+}
+
 export async function savePlan(session, plan, items) {
   const owner = ownerId(session);
+  const supabase = getSupabase();
 
-  const { data: savedPlan, error: planError } = await getSupabase()
+  // Bei einem bestehenden Plan laden wir die aktuellen Tage vorab.
+  // Das ist wichtig für reine Metadatenänderungen (z.B. nur den Namen):
+  // In diesem Fall müssen die Plan-Tage überhaupt nicht gelöscht und
+  // neu angelegt werden. Dadurch vermeiden wir unnötige RLS-/FK-Probleme
+  // und erhalten die bestehenden Einträge unverändert.
+  let existingItems = [];
+  if (plan.id) {
+    const { data, error } = await supabase
+      .from('spo_plan_items')
+      .select('*')
+      .eq('plan_id', plan.id)
+      .is('deleted_at', null)
+      .order('day_index', { ascending: true });
+    if (error) throw error;
+    existingItems = data ?? [];
+  }
+
+  const { data: savedPlan, error: planError } = await supabase
     .from('spo_plans')
     .upsert({
       ...(plan.id ? { id: plan.id } : {}),
@@ -157,17 +182,23 @@ export async function savePlan(session, plan, items) {
     .single();
   if (planError) throw planError;
 
-  // Tage komplett ersetzen statt einzeln zu diffen: eine Vorlage ist
-  // klein (meist < 10 Zeilen), und Einfügen/Löschen/Umsortieren von
-  // Tagen wäre sonst deutlich fehleranfälliger als ein sauberer Neuaufbau.
-  const { error: delError } = await getSupabase()
+  // Bei unveränderten Tagen (typisch beim Umbenennen eines Plans) ist
+  // nach dem Plan-Upsert nichts weiter zu tun.
+  if (plan.id && samePlanItems(existingItems, items)) {
+    return savedPlan;
+  }
+
+  // Wenn sich die Tage tatsächlich geändert haben, ersetzen wir die
+  // Vorlage weiterhin komplett. Eine Vorlage ist klein und dadurch sind
+  // Einfügen/Löschen/Umsortieren zuverlässig abgedeckt.
+  const { error: delError } = await supabase
     .from('spo_plan_items')
     .delete()
     .eq('plan_id', savedPlan.id);
   if (delError) throw delError;
 
   if (items.length > 0) {
-    const { error: itemError } = await getSupabase()
+    const { error: itemError } = await supabase
       .from('spo_plan_items')
       .insert(items.map((item, index) => ({
         owner_id: owner,
@@ -195,20 +226,8 @@ export async function deletePlan(id) {
   if (error) throw error;
 }
 
-// Überträgt eine Vorlage ab startDate in den Kalender: day_index 0 liegt
-// auf startDate, day_index 3 drei Tage später usw. Ruhetage erzeugen
-// bewusst KEINE Einheit — sie verschieben nur die Folgetage, damit ein
-// 5-Tage-Plan mit Ruhetag am dritten Tag korrekt über 5 Kalendertage
-// läuft. Bestehende Einträge bleiben unangetastet, deshalb lassen sich
-// ein Wochenplan und einzelne Sport-Einheiten am selben Tag kombinieren.
 export async function applyPlan(session, plan, startDate) {
   const start = new Date(`${startDate}T00:00:00`);
-
-  // Ruhetage werden jetzt MIT angelegt (is_rest: true), damit der
-  // Kalender sie markieren kann — sie verschieben weiterhin nur die
-  // Folgetage (day_index bleibt unverändert), zählen aber wegen
-  // is_rest weder in der Auswertung noch im Hub als Training (siehe
-  // DB-Trigger, der bei is_rest keine measurements schreibt).
   const rows = plan.items.map((item) => {
     const date = new Date(start);
     date.setDate(date.getDate() + item.day_index);
@@ -216,8 +235,6 @@ export async function applyPlan(session, plan, startDate) {
     return {
       owner_id: ownerId(session),
       occurred_on: iso,
-      // Ein Ruhetag hat nichts zu erledigen — 'done' statt 'planned',
-      // damit er nicht wie eine offene Aufgabe wirkt.
       status: item.is_rest ? 'done' : 'planned',
       is_rest: item.is_rest,
       type_key: item.is_rest ? null : (item.type_key || 'sonstiges'),
@@ -225,16 +242,11 @@ export async function applyPlan(session, plan, startDate) {
       duration_min: item.duration_min ?? null,
       notes: item.notes ?? null,
       plan_id: plan.id,
-      // Speichert die Position in der Vorlage direkt mit — sonst ließe
-      // sich "Tag X von Y" später nicht mehr zuverlässig rekonstruieren,
-      // vor allem wenn derselbe Plan mehrfach zu unterschiedlichen
-      // Terminen eingetragen wird (dann wäre plan_id allein mehrdeutig).
       plan_day_index: item.day_index,
     };
   });
 
   if (rows.length === 0) return 0;
-
   const { error } = await getSupabase().from('spo_workouts').insert(rows);
   if (error) throw error;
   return rows.length;
