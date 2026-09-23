@@ -28,10 +28,13 @@ function objectPositionFor(key) {
 // App-eigenen Design-Tokens (Editorial Bold: scharfe Kanten, keine
 // Schatten, Instrument Sans). Das ist eine Abweichung vom sonstigen
 // Look der App, die der Design-Auftrag hier ausdrücklich so vorgibt.
-export function MusclePreview({ tags }) {
+export function MusclePreview({ tags, size = 40 }) {
   if (!tags || tags.length === 0) return null;
   const visible = tags.slice(0, 3);
   const extra = tags.length - 3;
+  const overlap = Math.round(size * 0.35);
+  const border = size <= 30 ? 1.5 : 2;
+  const fontSize = size <= 30 ? 9 : 11;
 
   return (
     <div style={{ display: 'flex', flexShrink: 0 }}>
@@ -43,15 +46,15 @@ export function MusclePreview({ tags }) {
             key={key}
             src={muscleImagePath(m)}
             alt=""
-            width={40}
-            height={40}
+            width={size}
+            height={size}
             loading="lazy"
             decoding="async"
             style={{
-              width: 40, height: 40, borderRadius: 999, objectFit: 'cover',
+              width: size, height: size, borderRadius: 999, objectFit: 'cover',
               objectPosition: objectPositionFor(key),
-              border: '2px solid #fff', boxShadow: '0 0 0 1.5px #DDE2EB',
-              marginLeft: i === 0 ? 0 : -14, zIndex: visible.length - i,
+              border: `${border}px solid #fff`, boxShadow: '0 0 0 1.5px #DDE2EB',
+              marginLeft: i === 0 ? 0 : -overlap, zIndex: visible.length - i,
               background: '#EEF1F6',
             }}
             onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
@@ -61,11 +64,11 @@ export function MusclePreview({ tags }) {
       {extra > 0 && (
         <div
           style={{
-            width: 40, height: 40, borderRadius: 999, background: '#EEF1F6',
-            border: '2px solid #fff', boxShadow: '0 0 0 1.5px #DDE2EB',
-            marginLeft: -14, zIndex: 0,
+            width: size, height: size, borderRadius: 999, background: '#EEF1F6',
+            border: `${border}px solid #fff`, boxShadow: '0 0 0 1.5px #DDE2EB',
+            marginLeft: -overlap, zIndex: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700, color: '#545C6B',
+            fontSize, fontWeight: 700, color: '#545C6B',
           }}
         >
           +{extra}
