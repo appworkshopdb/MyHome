@@ -10,6 +10,7 @@ import './styles/themes.css';
 import './styles/layout.css';
 import './styles/components.css';
 import './styles/app-extra.css';
+import './modules/finance/finance.css';
 
 // Früh registrieren (nicht erst beim Klick auf "Aktivieren" in Profile.jsx)
 // — der Worker muss laufen, bevor überhaupt ein Push-Abo möglich ist.
