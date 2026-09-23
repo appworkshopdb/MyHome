@@ -9,17 +9,17 @@ import EntryModal from './EntryModal';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
 const COLUMNS = [
-  { key: 'einnahmen', label: 'Einnahmen',        cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
-  { key: 'fixkosten', label: 'Fixkosten',         cats: ['fixkosten'] },
-  { key: 'variable',  label: 'Variable Kosten',   cats: ['variable_kosten'] },
-  { key: 'sonstige',  label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
+  { key: 'einnahmen', label: 'Einnahmen', cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
+  { key: 'fixkosten', label: 'Fixkosten', cats: ['fixkosten'] },
+  { key: 'variable', label: 'Variable Kosten', cats: ['variable_kosten'] },
+  { key: 'sonstige', label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
 ];
 
 const FILTERS = [
-  { key: 'alle',  label: 'Alle'  },
+  { key: 'alle', label: 'Alle' },
   { key: 'offen', label: 'Offen' },
-  { key: 'fix',   label: 'Fix'   },
-  { key: 'ein',   label: 'Ein'   },
+  { key: 'fix', label: 'Fix' },
+  { key: 'ein', label: 'Ein' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -64,11 +64,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
   const offene = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
   const gesamtOffen = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
   const sorted = sortByCreated(offene, 'asc');
-
-  if (offene.length === 0) {
-    return <div className="fin-offen-empty"><span className="t-body" style={{ color: 'var(--status-positive)' }}>✓ Alles bezahlt</span></div>;
-  }
-
+  if (offene.length === 0) return <div className="fin-offen-empty"><span className="t-body" style={{ color: 'var(--status-positive)' }}>✓ Alles bezahlt</span></div>;
   return (
     <div className="fin-offen-list">
       <div className="fin-offen-header">
@@ -84,12 +80,8 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
   const [open, setOpen] = useState(false);
   const visible = entries.filter((e) => col.cats.includes(e.category));
   if (visible.length === 0) return null;
-
-  const total  = visible.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const sorted = col.cats.length > 1
-    ? sortByCreated(visible, 'asc')
-    : sortByCreated(visible, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc');
-
+  const total = visible.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const sorted = col.cats.length > 1 ? sortByCreated(visible, 'asc') : sortByCreated(visible, (col.key === 'sonstige' || col.key === 'variable') ? 'desc' : 'asc');
   return (
     <div className="fin-collapse">
       <button className={`fin-collapse-header ${open ? 'open' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
@@ -100,31 +92,23 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
           <span className={`fin-collapse-chevron ${open ? 'open' : ''}`}>›</span>
         </div>
       </button>
-      {open && (
-        <div className="fin-collapse-body">
-          {sorted.map((e) => <EntryRow key={e.id} e={e} onOpenModal={onOpenModal} onTogglePaid={onTogglePaid} />)}
-        </div>
-      )}
+      {open && <div className="fin-collapse-body">{sorted.map((e) => <EntryRow key={e.id} e={e} onOpenModal={onOpenModal} onTogglePaid={onTogglePaid} />)}</div>}
     </div>
   );
 }
 
 export default function MonthsView({ initialFilter = 'alle' }) {
-  const { session }  = useAuth();
+  const { session } = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved, setFinancePeriod } = useEntrySheet();
-
   const now = new Date();
-  const [year,  setYear]  = useState(now.getFullYear());
+  const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal,   setModal]   = useState(null);
-  const [filter,  setFilter]  = useState(initialFilter);
+  const [modal, setModal] = useState(null);
+  const [filter, setFilter] = useState(initialFilter);
 
-  // Der globale + Button soll immer den Monat erfassen, den der Nutzer
-  // gerade in diesem Buchungen-Screen betrachtet (z.B. August oder Oktober),
-  // nicht pauschal den aktuellen Systemmonat.
   useEffect(() => {
     setFinancePeriod(year, month);
   }, [year, month, setFinancePeriod]);
@@ -141,19 +125,18 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     }
     setLoading(false);
   };
-
   const load = useCallback(() => loadRef.current?.(), []);
-
   useEffect(() => { load(); }, [year, month]); // eslint-disable-line
-
-  useEffect(() => {
-    if (version > 0) load();
-  }, [version]); // eslint-disable-line
+  useEffect(() => { if (version > 0) load(); }, [version]); // eslint-disable-line
 
   function shiftMonth(delta) {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
-    setMonth(m); setYear(y);
+    // Sofort synchronisieren, damit ein direkt danach geöffnetes globales
+    // Erfassen-Sheet garantiert den neu ausgewählten Monat verwendet.
+    setFinancePeriod(y, m);
+    setMonth(m);
+    setYear(y);
   }
 
   async function handleSave(entry) {
@@ -163,7 +146,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     load();
     notifySaved();
   }
-
   async function handleDelete(id) {
     if (!confirm('Eintrag löschen?')) return;
     await db.deleteEntry(id);
@@ -172,7 +154,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     load();
     notifySaved();
   }
-
   function handleTogglePaid(entry) {
     const newPaid = !entry.paid;
     setEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e));
@@ -183,13 +164,13 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     });
   }
 
-  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
-  const totalAus    = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
-  const verfuegbar  = totalEin - totalAus;
-  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
+  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
+  const totalAus = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
+  const verfuegbar = totalEin - totalAus;
+  const offene = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
   const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
-  const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
+  const spentRatio = totalEin > 0 ? Math.min(100, (totalAus / totalEin) * 100) : 0;
+  const openRatio = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
@@ -204,7 +185,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         <span className="fin-month-label">{MONTHS_DE[month - 1]} {year}</span>
         <button className="month-nav-btn" onClick={() => shiftMonth(1)} aria-label="Nächster Monat"><IconChevronRight /></button>
       </div>
-
       <div className="fin-summary-card">
         <div className="fin-summary-eyebrow t-chip">Saldo diesen Monat</div>
         <div className="fin-summary-value t-display">{loading ? '—' : formatEur(verfuegbar)}</div>
@@ -218,33 +198,11 @@ export default function MonthsView({ initialFilter = 'alle' }) {
           <div className="fin-bar-open" style={{ width: `${openRatio}%` }} />
         </div>
       </div>
-
       <div className="fin-filter-pills">
-        {FILTERS.map((f) => (
-          <button key={f.key} className={`fin-filter-pill ${filter === f.key ? 'active' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>
-        ))}
+        {FILTERS.map((f) => <button key={f.key} className={`fin-filter-pill ${filter === f.key ? 'active' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>)}
       </div>
-
-      {loading ? (
-        <div className="loading-note">Lädt…</div>
-      ) : filter === 'offen' ? (
-        <OffenList entries={entries} onOpenModal={setModal} onTogglePaid={handleTogglePaid} />
-      ) : (
-        <div className="fin-collapse-list">
-          {visibleColumns().map((col) => <CollapseSection key={col.key} col={col} entries={entries} onOpenModal={setModal} onTogglePaid={handleTogglePaid} />)}
-        </div>
-      )}
-
-      {modal && (
-        <EntryModal
-          entry={modal.entry}
-          defaultCategory={modal.defaultCategory}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          onClose={() => setModal(null)}
-          showToast={showToast}
-        />
-      )}
+      {loading ? <div className="loading-note">Lädt…</div> : filter === 'offen' ? <OffenList entries={entries} onOpenModal={setModal} onTogglePaid={handleTogglePaid} /> : <div className="fin-collapse-list">{visibleColumns().map((col) => <CollapseSection key={col.key} col={col} entries={entries} onOpenModal={setModal} onTogglePaid={handleTogglePaid} />)}</div>}
+      {modal && <EntryModal entry={modal.entry} defaultCategory={modal.defaultCategory} onSave={handleSave} onDelete={handleDelete} onClose={() => setModal(null)} showToast={showToast} />}
     </>
   );
 }
