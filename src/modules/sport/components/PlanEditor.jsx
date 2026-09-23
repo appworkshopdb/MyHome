@@ -2,10 +2,10 @@ import { useState } from 'react';
 import PlanDaysEditor from './PlanDaysEditor';
 
 // Baukasten für eine Mehrtages-Vorlage — für das nachträgliche
-// Bearbeiten eines bereits angelegten Plans (Pläne-Tab → "Bearbeiten").
-// Das eigentliche Neuanlegen läuft seit dem Wizard-Umbau über den FAB
-// (SportQuickSheet.jsx, Schritt 2 nutzt dieselbe PlanDaysEditor-
-// Komponente) — beide teilen sich damit dieselbe Einheiten-Auswahl.
+// Bearbeiten eines bereits angelegten Plans (Pläne-Liste → "Bearbeiten").
+// Das eigentliche Neuanlegen läuft über den FAB (SportQuickSheet.jsx,
+// Schritt 2 nutzt dieselbe PlanDaysEditor-Komponente) — beide teilen
+// sich damit dieselbe Einheiten-Auswahl UND denselben Muskel-Snapshot.
 export default function PlanEditor({ initialPlan, units = [], onSave, onCancel, showToast }) {
   const [title, setTitle] = useState(initialPlan?.title ?? '');
   const [notes, setNotes] = useState(initialPlan?.notes ?? '');
@@ -14,9 +14,10 @@ export default function PlanEditor({ initialPlan, units = [], onSave, onCancel, 
       ? initialPlan.items.map((i) => ({
           unit_id: i.unit_id ?? '', title: i.title ?? '', type_key: i.type_key ?? '',
           duration_min: i.duration_min != null ? String(i.duration_min) : '',
+          muscle_groups: i.muscle_groups ?? [],
           is_rest: i.is_rest,
         }))
-      : [{ unit_id: '', title: '', type_key: '', duration_min: '', is_rest: false }]
+      : [{ unit_id: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]
   );
 
   function submit() {
@@ -33,6 +34,7 @@ export default function PlanEditor({ initialPlan, units = [], onSave, onCancel, 
         title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title,
         type_key: d.is_rest ? null : (d.type_key || null),
         duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
+        muscle_groups: d.is_rest ? [] : (d.muscle_groups ?? []),
         is_rest: d.is_rest,
       }))
     );

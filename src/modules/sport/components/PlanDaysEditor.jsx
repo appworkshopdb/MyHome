@@ -5,8 +5,8 @@ import { PREDEFINED_UNITS } from '../lib/data/predefinedUnits';
 // wie "pre.push") — spo_plan_items.unit_id hat aber einen echten
 // Fremdschlüssel auf spo_units(id). Ausgewählte vordefinierte Einheiten
 // bekommen deshalb unit_id: null (kein Verweis möglich), Titel/Typ/
-// Dauer werden trotzdem als Snapshot übernommen — exakt dasselbe Prinzip
-// wie bei eigenen Einheiten, nur ohne Rückverweis.
+// Dauer/Muskeln werden trotzdem als Snapshot übernommen — dasselbe
+// Prinzip wie bei eigenen Einheiten, nur ohne Rückverweis.
 function isPredefinedId(id) {
   return typeof id === 'string' && id.startsWith('pre.');
 }
@@ -18,8 +18,8 @@ function findAnyUnit(id, personalUnits) {
 
 // Baukasten für die Tage-Liste einer Mehrtages-Vorlage — genutzt sowohl
 // vom bestehenden PlanEditor.jsx (Bearbeiten eines fertigen Plans) als
-// auch von Schritt 2 des neuen Anlege-Wizards (SportQuickSheet.jsx),
-// damit die Einheiten-Auswahl an GENAU EINER Stelle gepflegt wird.
+// auch von Schritt 2 des Anlege-Wizards (SportQuickSheet.jsx), damit
+// die Einheiten-Auswahl an GENAU EINER Stelle gepflegt wird.
 export default function PlanDaysEditor({ days, onChange, units = [] }) {
   function updateDay(index, patch) {
     onChange(days.map((d, i) => (i === index ? { ...d, ...patch } : d)));
@@ -32,6 +32,12 @@ export default function PlanDaysEditor({ days, onChange, units = [] }) {
       title: unit?.title ?? '',
       type_key: unit?.type_key ?? '',
       duration_min: unit?.duration_min != null ? String(unit.duration_min) : '',
+      // Snapshot wie Titel/Typ/Dauer — damit die Pläne-Liste dieselbe
+      // Bild-Vorschau zeigen kann wie die Einheiten-Liste, ohne bei
+      // jeder Anzeige neu nachschlagen zu müssen, und ohne dass ein
+      // späteres Bearbeiten der Einheit rückwirkend die Bilder in
+      // bereits gespeicherten Plänen ändert.
+      muscle_groups: unit?.muscle_groups ?? [],
       // Für den Dropdown selbst merken wir uns den gewählten Wert
       // separat (auch bei vordefiniert), damit die Auswahl im <select>
       // sichtbar bleibt, obwohl unit_id bei Vordefinierten null ist.
@@ -40,7 +46,10 @@ export default function PlanDaysEditor({ days, onChange, units = [] }) {
   }
 
   function addDay(isRest) {
-    onChange([...days, { unit_id: '', _selectedUnitKey: '', title: isRest ? 'Ruhetag' : '', type_key: '', duration_min: '', is_rest: isRest }]);
+    onChange([...days, {
+      unit_id: '', _selectedUnitKey: '', title: isRest ? 'Ruhetag' : '',
+      type_key: '', duration_min: '', muscle_groups: [], is_rest: isRest,
+    }]);
   }
 
   function removeDay(index) {
