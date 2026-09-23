@@ -21,13 +21,12 @@ const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein'
 function FinanceWizard({ onClose }) {
   const { session }     = useAuth();
   const { showToast }   = useUi();
-  const { notifySaved } = useEntrySheet();
+  const { notifySaved, financePeriod } = useEntrySheet();
 
   const [step, setStep] = useState(1);
   const [name,     setName]     = useState('');
   const [amount,   setAmount]   = useState('');
   const [category, setCategory] = useState('variable_kosten');
-  // payments-Array statt einzelnem payment-String
   const [payments, setPayments] = useState([{ method: 'Bank', amount: null }]);
   const [dueDate,  setDueDate]  = useState('');
   const [note,     setNote]     = useState('');
@@ -53,7 +52,6 @@ function FinanceWizard({ onClose }) {
   function pickSuggestion(h) {
     setName(h.name);
     if (h.cat) setCategory(h.cat);
-    // Vorherige Zahlungsart(en) aus History wiederherstellen
     if (h.payments && Array.isArray(h.payments) && h.payments.length > 0) {
       setPayments(h.payments.map((p) => ({ ...p, amount: null })));
     } else if (h.payment) {
@@ -66,16 +64,12 @@ function FinanceWizard({ onClose }) {
   const amountNum = parseFloat(String(amount).replace(',', '.'));
   const step1Valid = name.trim() && amountNum > 0;
 
-  // Payments für das Speichern aufbereiten:
-  // Bei einer Zahlungsart: kein amount-Feld (ganzer Betrag)
-  // Bei mehreren: amounts ausfüllen, letzter = Rest
   function resolvePayments() {
     if (payments.length === 1) {
       return [{ method: payments[0].method, amount: amountNum }];
     }
     const resolved = payments.map((p, idx) => {
       if (idx === payments.length - 1) {
-        // Rest berechnen
         const sumOthers = payments
           .slice(0, -1)
           .reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
@@ -88,7 +82,6 @@ function FinanceWizard({ onClose }) {
 
   async function submit() {
     const resolvedPayments = resolvePayments();
-    // Validierung: Summe der Teilbeträge darf Gesamtbetrag nicht überschreiten
     if (payments.length > 1) {
       const sumPartial = payments.slice(0, -1).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
       if (sumPartial > amountNum) {
@@ -98,15 +91,17 @@ function FinanceWizard({ onClose }) {
     setSaving(true);
     try {
       const now = new Date();
+      const targetYear = financePeriod?.year ?? now.getFullYear();
+      const targetMonth = financePeriod?.month ?? (now.getMonth() + 1);
       await finData.saveEntry(session, {
         category,
         name:     name.trim(),
         payments: resolvedPayments,
-        payment:  resolvedPayments[0].method, // Abwärtskompatibilität
+        payment:  resolvedPayments[0].method,
         amount:   amountNum,
         paid:     isInstantPaid(resolvedPayments),
-        year:     now.getFullYear(),
-        month:    now.getMonth() + 1,
+        year:     targetYear,
+        month:    targetMonth,
         due_date: dueDate || null,
         note:     note.trim() || null,
       });
@@ -162,12 +157,7 @@ function FinanceWizard({ onClose }) {
               {showSuggestList && (
                 <div className="wiz-suggest">
                   {suggestions.map((h) => (
-                    <button
-                      key={h.name}
-                      type="button"
-                      className="wiz-suggest-item"
-                      onClick={() => pickSuggestion(h)}
-                    >
+                    <button key={h.name} type="button" className="wiz-suggest-item" onClick={() => pickSuggestion(h)}>
                       {h.name}
                     </button>
                   ))}
@@ -193,55 +183,33 @@ function FinanceWizard({ onClose }) {
 
         {step === 2 && (
           <>
-            <div className="wiz-hint t-meta">
-              Aus „{name || '—'}" erkannt — du kannst es ändern.
-            </div>
+            <div className="wiz-hint t-meta">Aus „{name || '—'}" erkannt — du kannst es ändern.</div>
             <label className="wiz-label t-meta">Kategorie</label>
             <div className="wiz-cat-grid">
               {QUICK_CATEGORIES.map((c) => (
-                <button
-                  key={c.key}
-                  className={`wiz-cat ${category === c.key ? 'active' : ''}`}
-                  onClick={() => setCategory(c.key)}
-                >
+                <button key={c.key} className={`wiz-cat ${category === c.key ? 'active' : ''}`} onClick={() => setCategory(c.key)}>
                   {c.label}
                 </button>
               ))}
             </div>
 
             <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
-            <PaymentsEditor
-              payments={payments}
-              onChange={setPayments}
-              totalAmount={amount}
-            />
+            <PaymentsEditor payments={payments} onChange={setPayments} totalAmount={amount} />
           </>
         )}
 
         {step === 3 && (
           <>
             <label className="wiz-label t-meta">Fällig am <span className="wiz-optional">optional</span></label>
-            <input
-              className="wiz-input"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
+            <input className="wiz-input" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Notiz <span className="wiz-optional">optional</span></label>
-            <textarea
-              className="wiz-input wiz-textarea"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Zusatzinfo…"
-            />
+            <textarea className="wiz-input wiz-textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Zusatzinfo…" />
             <div className="wiz-summary">
               <span className="t-body" style={{ fontWeight: 700 }}>{name || '—'}</span>
               <span className="t-meta">
                 {amountNum > 0 ? amountNum.toFixed(2).replace('.', ',') : '0'} € ·{' '}
                 {QUICK_CATEGORIES.find((c) => c.key === category)?.label}
-                {payments.length === 1
-                  ? ` · ${primaryMethod}`
-                  : ` · ${payments.map((p) => p.method).join(' + ')}`}
+                {payments.length === 1 ? ` · ${primaryMethod}` : ` · ${payments.map((p) => p.method).join(' + ')}`}
               </span>
             </div>
           </>
@@ -249,19 +217,8 @@ function FinanceWizard({ onClose }) {
       </div>
 
       <div className="wiz-nav">
-        <button
-          className="btn btn-secondary"
-          onClick={back}
-          style={{ flex: 1, visibility: step === 1 ? 'hidden' : 'visible' }}
-        >
-          Zurück
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={next}
-          disabled={saving}
-          style={{ flex: 1 }}
-        >
+        <button className="btn btn-secondary" onClick={back} style={{ flex: 1, visibility: step === 1 ? 'hidden' : 'visible' }}>Zurück</button>
+        <button className="btn btn-primary" onClick={next} disabled={saving} style={{ flex: 1 }}>
           {step === 3 ? (saving ? 'Speichert…' : 'Speichern') : 'Weiter'}
         </button>
       </div>
@@ -283,9 +240,6 @@ export default function EntrySheet() {
   const { openFor, close } = useEntrySheet();
   if (!openFor) return null;
 
-  // SheetShell liefert: createPortal (kein z-index-Konflikt),
-  // iOS-sicherer Body-Lock (position:fixed statt overflow:hidden),
-  // Grab-Handle zum Wegwischen, sheet-scroll mit touch-action:pan-y.
   return (
     <SheetShell onClose={close}>
       <div className="sheet-header">
