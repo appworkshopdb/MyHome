@@ -1,23 +1,27 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 
 // Steuert das globale Erfassen-Sheet (siehe core/components/EntrySheet.jsx).
-// Der FAB in der Bottom-Nav jedes Moduls (core/components/ModuleBottomNav.jsx)
-// ruft open(moduleId) auf — das Sheet entscheidet selbst, welchen Inhalt es
-// für dieses Modul zeigt. "version" wird nach jedem erfolgreichen Speichern
-// hochgezählt, damit offene Views (z.B. MonthsView) bei Bedarf neu laden
-// können, ohne dass das Sheet die Views direkt kennen muss.
+// Finance-Views können zusätzlich den aktuell angezeigten Buchungsmonat
+// hinterlegen. Der globale + Button übernimmt dann genau diesen Monat,
+// statt immer den Systemmonat zu verwenden.
 const EntrySheetContext = createContext(null);
 
 export function EntrySheetProvider({ children }) {
   const [openFor, setOpenFor] = useState(null);
   const [version, setVersion] = useState(0);
+  const [financePeriod, setFinancePeriodState] = useState(null);
 
   const open = useCallback((moduleId) => setOpenFor(moduleId), []);
   const close = useCallback(() => setOpenFor(null), []);
   const notifySaved = useCallback(() => setVersion((v) => v + 1), []);
+  const setFinancePeriod = useCallback((year, month) => {
+    setFinancePeriodState({ year, month });
+  }, []);
 
   return (
-    <EntrySheetContext.Provider value={{ openFor, open, close, version, notifySaved }}>
+    <EntrySheetContext.Provider
+      value={{ openFor, open, close, version, notifySaved, financePeriod, setFinancePeriod }}
+    >
       {children}
     </EntrySheetContext.Provider>
   );
