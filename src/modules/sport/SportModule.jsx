@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
+import { useEntrySheet } from '../../core/lib/EntrySheetContext';
 import { getBodyProfile } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
@@ -47,6 +48,10 @@ const DETAIL_TITLES = {
 export default function SportModule({ view, onNavigateView, hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
+  // version zählt hoch, sobald der FAB (SportQuickSheet) erfolgreich
+  // gespeichert hat — ersetzt das frühere eigene window-Event, jetzt
+  // dasselbe etablierte Muster wie bei Finanzen (EntrySheetContext).
+  const { version } = useEntrySheet();
 
   const [workouts, setWorkouts] = useState([]);
   const [units, setUnits] = useState([]);
@@ -87,15 +92,10 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }, [session, showToast]);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Der FAB (GlobalFab → SportQuickSheet) sitzt außerhalb dieses Moduls
-  // in App.jsx und legt/ändert Einheiten/Workouts/Pläne direkt in der DB
-  // an — ohne dieses Event würde SportModule davon nichts mitbekommen.
-  useEffect(() => {
-    window.addEventListener('sport:data-changed', load);
-    return () => window.removeEventListener('sport:data-changed', load);
-  }, [load]);
+  // Lädt initial UND jedes Mal, wenn der FAB (SportQuickSheet) über
+  // den EntrySheetContext erfolgreich gespeichert hat (version-Änderung)
+  // — ein einziger Effekt statt zwei sich überschneidender.
+  useEffect(() => { load(); }, [load, version]);
 
   function backToOverview() {
     setFormInitial(false);
