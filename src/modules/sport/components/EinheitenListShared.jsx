@@ -1,14 +1,5 @@
 import { getMuscleVisual, muscleImagePath } from '../lib/data/muscleGroups';
 
-// Design-Handoff "Sport Einheiten Mockups", Variante 1a — ausgelagert
-// aus EinheitenView.jsx, damit die Pläne-Liste (jeder Tag zeigt dieselbe
-// Vorschau wie die zugehörige Einheit) dieselben Bausteine nutzt statt
-// sie zu duplizieren.
-//
-// object-position ist nur für die 9 im Design-Handoff getesteten Keys
-// exakt abgestimmt — alle anderen (Einzelmuskeln wie "Latissimus")
-// fallen auf eine zentrierte Platzierung zurück, bis dafür eigene
-// Werte vorliegen.
 const MUSCLE_OBJECT_POSITION = {
   'brust-ganz': '50% 26%',
   'ruecken-ganz': '50% 30%',
@@ -24,10 +15,6 @@ function objectPositionFor(key) {
   return MUSCLE_OBJECT_POSITION[key] ?? '50% 50%';
 }
 
-// Pixelgenau nach Handoff — bewusst mit literalen Werten statt den
-// App-eigenen Design-Tokens (Editorial Bold: scharfe Kanten, keine
-// Schatten, Instrument Sans). Das ist eine Abweichung vom sonstigen
-// Look der App, die der Design-Auftrag hier ausdrücklich so vorgibt.
 export function MusclePreview({ tags, size = 40 }) {
   if (!tags || tags.length === 0) return null;
   const visible = tags.slice(0, 3);

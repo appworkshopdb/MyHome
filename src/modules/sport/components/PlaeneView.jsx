@@ -3,10 +3,6 @@ import PlanEditor from './PlanEditor';
 import ApplyPlanDialog from './ApplyPlanDialog';
 import { MusclePreview } from './EinheitenListShared';
 
-// Pläne zeigen die Einheiten als kompakte Bildvorschau — exakt dieselbe
-// runde Vorschau wie in der Einheiten-Bibliothek. Die gespeicherten
-// muscle_groups sind bewusst der Snapshot des Plans und bleiben damit
-// stabil, wenn eine eigene Einheit später geändert wird.
 function PlanUnitImages({ items }) {
   const trainingItems = items.filter((item) => !item.is_rest);
   if (trainingItems.length === 0) return null;
@@ -42,9 +38,6 @@ function PlanUnitImages({ items }) {
   );
 }
 
-// Drei Zustände: Liste (Standard), Editor (Vorlage bauen/bearbeiten),
-// Anwenden-Dialog. Neuanlegen läuft über den FAB (SportQuickSheet,
-// Modus "Trainingsplan") — "Bearbeiten" bestehender Pläne bleibt hier.
 export default function PlaeneView({
   session, plans, units, loading, userSports,
   editing, applying,
