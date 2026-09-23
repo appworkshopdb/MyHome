@@ -3,8 +3,8 @@ import PlanEditor from './PlanEditor';
 import ApplyPlanDialog from './ApplyPlanDialog';
 import { MusclePreview } from './EinheitenListShared';
 
-// Pläne zeigen die Einheiten als kompakte Bildvorschau — dieselben
-// Muskelbilder wie in der Einheiten-Bibliothek. Die gespeicherten
+// Pläne zeigen die Einheiten als kompakte Bildvorschau — exakt dieselbe
+// runde Vorschau wie in der Einheiten-Bibliothek. Die gespeicherten
 // muscle_groups sind bewusst der Snapshot des Plans und bleiben damit
 // stabil, wenn eine eigene Einheit später geändert wird.
 function PlanUnitImages({ items }) {
@@ -16,10 +16,10 @@ function PlanUnitImages({ items }) {
       aria-label={`${trainingItems.length} Trainingseinheiten`}
       style={{
         display: 'flex',
-        gap: 8,
+        gap: 14,
         alignItems: 'center',
         overflowX: 'auto',
-        padding: '4px 2px 8px',
+        padding: '2px 2px 8px',
         scrollbarWidth: 'none',
       }}
     >
@@ -29,19 +29,13 @@ function PlanUnitImages({ items }) {
           title={item.title}
           aria-label={item.title}
           style={{
-            width: 64,
-            height: 64,
-            minWidth: 64,
-            borderRadius: 12,
-            background: '#fff',
-            border: '1px solid #EEF1F6',
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
+            minWidth: 40,
           }}
         >
-          <MusclePreview tags={item.muscle_groups} size={28} />
+          <MusclePreview tags={item.muscle_groups} />
         </div>
       ))}
     </div>
