@@ -7,16 +7,7 @@ function ownerId(session) {
 // ---------------------------------------------------------------------
 // Trainingseinheiten (spo_workouts)
 // ---------------------------------------------------------------------
-// Bewusst nur diese eine Tabelle im Zugriff: eine Einheit wird als
-// Ganzes erfasst (Datum, Typ, Dauer, Notiz), nicht Satz für Satz.
-// spo_entries existiert in der DB weiterhin, wird hier aber nicht
-// beschrieben. Eine Einheit kann 'planned' (im Kalender vorausgeplant)
-// oder 'done' (abgehakt/direkt eingetragen) sein — der Wechsel läuft
-// über setWorkoutStatus().
 
-// Limit großzügig: der Kalender blättert durch Monate und die Auswertung
-// rechnet über mehrere Monate — bei 50 Zeilen würden ältere Monate
-// unbemerkt leer wirken.
 export async function getWorkouts(session, limit = 500) {
   const { data, error } = await getSupabase()
     .from('spo_workouts')
@@ -63,9 +54,6 @@ export async function deleteWorkout(id) {
 // ---------------------------------------------------------------------
 // Einheiten-Bibliothek (spo_units)
 // ---------------------------------------------------------------------
-// Wiederverwendbare einzelne Trainingseinheiten (z.B. "Arme", "Legday")
-// — nicht zu verwechseln mit spo_plans, das jetzt MEHRERE Einheiten zu
-// einer Mehrtages-Vorlage zusammensetzt.
 
 export async function getUnits(session) {
   const { data, error } = await getSupabase()
@@ -103,12 +91,10 @@ export async function deleteUnit(id) {
 // ---------------------------------------------------------------------
 // Trainingsplan-Vorlagen (spo_plans + spo_plan_items)
 // ---------------------------------------------------------------------
-// Eine Vorlage ist eine Folge von TAGEN beliebiger Länge (day_index 0..n),
-// jeder Tag entweder eine Einheit (referenziert per unit_id, Titel/Typ/
-// Dauer zusätzlich als Snapshot — ein späteres Bearbeiten der Einheit
-// verändert dadurch keine bereits gespeicherten Pläne) oder ein
-// Ruhetag. Die Länge ergibt sich aus der Anzahl der Tage, nicht aus
-// einer festen Wochenstruktur.
+// spo_plan_items speichert die Referenz auf die Einheit und deren
+// Text-/Typ-/Dauerwerte. Muskelgruppen gehören zu spo_units und werden
+// für die Planvorschau dort aufgelöst. Es gibt in spo_plan_items keine
+// muscle_groups-Spalte.
 
 export async function getPlans(session) {
   const { data, error } = await getSupabase()
@@ -134,7 +120,6 @@ function planItemComparable(item) {
     title: item.title ?? '',
     type_key: item.type_key ?? null,
     duration_min: item.duration_min ?? null,
-    muscle_groups: item.muscle_groups ?? [],
     is_rest: item.is_rest ?? false,
     notes: item.notes ?? null,
   };
@@ -153,11 +138,6 @@ export async function savePlan(session, plan, items) {
   const owner = ownerId(session);
   const supabase = getSupabase();
 
-  // Bei einem bestehenden Plan laden wir die aktuellen Tage vorab.
-  // Das ist wichtig für reine Metadatenänderungen (z.B. nur den Namen):
-  // In diesem Fall müssen die Plan-Tage überhaupt nicht gelöscht und
-  // neu angelegt werden. Dadurch vermeiden wir unnötige RLS-/FK-Probleme
-  // und erhalten die bestehenden Einträge unverändert.
   let existingItems = [];
   if (plan.id) {
     const { data, error } = await supabase
@@ -182,15 +162,11 @@ export async function savePlan(session, plan, items) {
     .single();
   if (planError) throw planError;
 
-  // Bei unveränderten Tagen (typisch beim Umbenennen eines Plans) ist
-  // nach dem Plan-Upsert nichts weiter zu tun.
+  // Reine Namens-/Notizänderungen müssen die Plan-Tage nicht anfassen.
   if (plan.id && samePlanItems(existingItems, items)) {
     return savedPlan;
   }
 
-  // Wenn sich die Tage tatsächlich geändert haben, ersetzen wir die
-  // Vorlage weiterhin komplett. Eine Vorlage ist klein und dadurch sind
-  // Einfügen/Löschen/Umsortieren zuverlässig abgedeckt.
   const { error: delError } = await supabase
     .from('spo_plan_items')
     .delete()
@@ -208,7 +184,6 @@ export async function savePlan(session, plan, items) {
         title: item.title,
         type_key: item.type_key ?? null,
         duration_min: item.duration_min ?? null,
-        muscle_groups: item.muscle_groups ?? [],
         is_rest: item.is_rest ?? false,
         notes: item.notes ?? null,
       })));
