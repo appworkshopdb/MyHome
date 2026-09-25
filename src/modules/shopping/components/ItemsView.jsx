@@ -5,9 +5,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
-  saveListAsTemplate,
+  saveListAsTemplate, loadPayments, savePayment, deletePayment,
 } from '../lib/shoData.js';
+import { PAYMENT_METHODS } from '../lib/data/stores.js';
 import { fb } from '../../../core/lib/feedback';
+import { formatEur } from '../../../core/lib/format.js';
 
 // ─── Kategorie-Zuordnung ──────────────────────────────────────────────
 const CATEGORY_MAP = {
@@ -171,6 +173,16 @@ export default function ItemsView({ list, onBack }) {
   const addBtnRef   = useRef(null);
   const [flyAnim,   setFlyAnim] = useState(null);
 
+  // ─── Zahlungen ────────────────────────────────────────────
+  const [payments,          setPayments]          = useState([]);
+  const [showPaymentForm,   setShowPaymentForm]   = useState(false);
+  const [editingPaymentId,  setEditingPaymentId]  = useState(null);
+  const [paymentAmount,     setPaymentAmount]     = useState('');
+  const [paymentMethod,     setPaymentMethod]     = useState('Bar');
+  const [paymentStore,      setPaymentStore]      = useState('');
+  const [paymentNote,       setPaymentNote]       = useState('');
+  const [savingPayment,     setSavingPayment]     = useState(false);
+
   const fetchItems = useCallback(async () => {
     try {
       const data = await loadItems(list.id);
@@ -180,9 +192,18 @@ export default function ItemsView({ list, onBack }) {
     }
   }, [list.id]);
 
+  const fetchPayments = useCallback(async () => {
+    try {
+      const data = await loadPayments(list.id);
+      setPayments(data);
+    } catch (e) {
+      setError('Zahlungen konnten nicht geladen werden.');
+    }
+  }, [list.id]);
+
   useEffect(() => {
-    fetchItems().finally(() => setLoading(false));
-  }, [fetchItems]);
+    Promise.all([fetchItems(), fetchPayments()]).finally(() => setLoading(false));
+  }, [fetchItems, fetchPayments]);
 
   function handleInputChange(val) {
     setInput(val);
@@ -310,6 +331,65 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
+  function openNewPaymentForm() {
+    setEditingPaymentId(null);
+    setPaymentAmount('');
+    setPaymentMethod('Bar');
+    setPaymentStore(activeStore || '');
+    setPaymentNote('');
+    setShowPaymentForm(true);
+  }
+
+  function openEditPayment(p) {
+    setEditingPaymentId(p.id);
+    setPaymentAmount(p.amount != null ? String(p.amount).replace('.', ',') : '');
+    setPaymentMethod(p.payment || 'Bar');
+    setPaymentStore(p.store_name || '');
+    setPaymentNote(p.note || '');
+    setShowPaymentForm(true);
+  }
+
+  function closePaymentForm() {
+    setShowPaymentForm(false);
+    setEditingPaymentId(null);
+  }
+
+  async function handleSavePayment() {
+    const amount = parseFloat(paymentAmount.replace(',', '.'));
+    if (!amount || amount <= 0) {
+      setError('Bitte einen gültigen Betrag eingeben.');
+      return;
+    }
+    setSavingPayment(true);
+    setError(null);
+    try {
+      await savePayment({
+        id:         editingPaymentId || undefined,
+        list_id:    list.id,
+        store_name: paymentStore.trim() || null,
+        amount,
+        payment:    paymentMethod,
+        note:       paymentNote.trim() || null,
+      });
+      await fetchPayments();
+      closePaymentForm();
+      fb.paymentCheck?.();
+    } catch (e) {
+      setError('Zahlung konnte nicht gespeichert werden.');
+    } finally {
+      setSavingPayment(false);
+    }
+  }
+
+  async function handleDeletePayment(id) {
+    try {
+      await deletePayment(id);
+      setPayments((prev) => prev.filter((p) => p.id !== id));
+    } catch (e) {
+      setError('Zahlung konnte nicht gelöscht werden.');
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
     if (e.key === 'Escape') { setSuggestions([]); }
@@ -331,6 +411,8 @@ export default function ItemsView({ list, onBack }) {
   const openItems  = visibleItems.filter((i) => !i.done);
   const doneItems  = visibleItems.filter((i) => i.done);
   const openGroups = groupByCategory(openItems);
+
+  const paymentsTotal = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   return (
     <div className="sho-items-wrap">
@@ -386,6 +468,115 @@ export default function ItemsView({ list, onBack }) {
           )}
         </div>
       )}
+
+      {/* Zahlungen */}
+      <div className="sho-payments-section">
+        <div className="sho-payments-header">
+          <span className="sho-payments-title">Zahlungen</span>
+          {payments.length > 0 && (
+            <span className="sho-payments-total">{formatEur(paymentsTotal)}</span>
+          )}
+        </div>
+
+        {payments.length > 0 && (
+          <div className="sho-payments-list">
+            {payments.map((p) => (
+              <div key={p.id} className="sho-payment-row">
+                <div className="sho-payment-row-main">
+                  <span className="sho-payment-amount">{formatEur(p.amount)}</span>
+                  <span className="sho-payment-meta">
+                    {p.payment}
+                    {p.store_name ? ` · ${p.store_name}` : ''}
+                  </span>
+                  {p.note && <span className="sho-payment-note">{p.note}</span>}
+                </div>
+                <div className="sho-payment-row-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => openEditPayment(p)}
+                    aria-label="Zahlung bearbeiten"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="btn-icon"
+                    onClick={() => handleDeletePayment(p.id)}
+                    aria-label="Zahlung löschen"
+                  >
+                    <IconTrash size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!showPaymentForm && (
+          <button className="btn btn-secondary sho-action-btn" onClick={openNewPaymentForm}>
+            + Zahlung
+          </button>
+        )}
+
+        {showPaymentForm && (
+          <div className="sho-payment-form">
+            <div className="sho-payment-form-row">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Betrag (€)"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                className="sho-qty-input"
+                min="0"
+                step="any"
+                autoFocus
+              />
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="sho-unit-select"
+              >
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="sho-payment-form-row">
+              <input
+                type="text"
+                placeholder="Laden (optional)"
+                value={paymentStore}
+                onChange={(e) => setPaymentStore(e.target.value)}
+                list="sho-payment-store-suggestions"
+                maxLength={60}
+              />
+              <datalist id="sho-payment-store-suggestions">
+                {storeNames.map((n) => <option key={n} value={n} />)}
+                {STORE_NAMES.filter((n) => !storeNames.includes(n)).map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
+            </div>
+            <input
+              type="text"
+              placeholder="Notiz (optional)"
+              value={paymentNote}
+              onChange={(e) => setPaymentNote(e.target.value)}
+              maxLength={140}
+            />
+            <div className="sho-new-list-actions">
+              <button className="btn btn-secondary" onClick={closePaymentForm}>
+                Abbrechen
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSavePayment}
+                disabled={savingPayment}
+              >
+                {savingPayment ? 'Speichern …' : 'Speichern'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Vorlage-Formular */}
       {showTemplateForm && (
