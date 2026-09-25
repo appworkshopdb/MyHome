@@ -6,10 +6,13 @@ import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.j
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
   saveListAsTemplate, loadPayments, savePayment, deletePayment,
+  updateListStatus, linkListFinEntry,
 } from '../lib/shoData.js';
 import { PAYMENT_METHODS } from '../lib/data/stores.js';
 import { fb } from '../../../core/lib/feedback';
 import { formatEur } from '../../../core/lib/format.js';
+import SheetShell from '../../../core/components/SheetShell.jsx';
+import { createShoppingExpense } from '../../../core/lib/financeBridge.js';
 
 // ─── Kategorie-Zuordnung ──────────────────────────────────────────────
 const CATEGORY_MAP = {
@@ -182,6 +185,12 @@ export default function ItemsView({ list, onBack }) {
   const [paymentStore,      setPaymentStore]      = useState('');
   const [paymentNote,       setPaymentNote]       = useState('');
   const [savingPayment,     setSavingPayment]     = useState(false);
+
+  // ─── Abschluss-Wizard ─────────────────────────────────────
+  const [showCompleteWizard, setShowCompleteWizard] = useState(false);
+  const [bookingName,        setBookingName]        = useState('');
+  const [bookingPayment,     setBookingPayment]     = useState('Bar');
+  const [completing,         setCompleting]         = useState(false);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -390,6 +399,68 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
+  // Zahlungsart der Sammelbuchung: die Methode mit dem höchsten Anteil.
+  // Ohne Zahlungen: 'Bar' als sinnvoller Default.
+  function dominantPaymentMethod(list) {
+    if (!list.length) return 'Bar';
+    const sums = {};
+    for (const p of list) sums[p.payment] = (sums[p.payment] || 0) + (Number(p.amount) || 0);
+    return Object.entries(sums).sort((a, b) => b[1] - a[1])[0][0];
+  }
+
+  function openCompleteWizard() {
+    closePaymentForm();
+    setBookingName(list.name);
+    setBookingPayment(dominantPaymentMethod(payments));
+    setShowCompleteWizard(true);
+  }
+
+  // Bei mehreren Teilzahlungen wird die Aufschlüsselung als Notiz an der
+  // Sammelbuchung im Finanzmodul hinterlegt (Nutzer-Entscheidung #2).
+  function buildBreakdownNote() {
+    if (payments.length < 2) return null;
+    return payments
+      .map((p) => `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`)
+      .join(' · ');
+  }
+
+  async function handleCompleteWithBooking() {
+    setCompleting(true);
+    setError(null);
+    try {
+      const entry = await createShoppingExpense({
+        name:    bookingName.trim() || list.name,
+        amount:  paymentsTotal,
+        payment: bookingPayment,
+        note:    buildBreakdownNote(),
+      });
+      await linkListFinEntry(list.id, entry.id);
+      await updateListStatus(list.id, 'erledigt');
+      fb.listStatusCycle?.();
+      setShowCompleteWizard(false);
+      onBack();
+    } catch (e) {
+      setError('Buchung konnte nicht erstellt werden.');
+    } finally {
+      setCompleting(false);
+    }
+  }
+
+  async function handleCompleteWithoutBooking() {
+    setCompleting(true);
+    setError(null);
+    try {
+      await updateListStatus(list.id, 'erledigt');
+      fb.listStatusCycle?.();
+      setShowCompleteWizard(false);
+      onBack();
+    } catch (e) {
+      setError('Liste konnte nicht abgeschlossen werden.');
+    } finally {
+      setCompleting(false);
+    }
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') { handleAdd(); setSuggestions([]); }
     if (e.key === 'Escape') { setSuggestions([]); }
@@ -413,6 +484,69 @@ export default function ItemsView({ list, onBack }) {
   const openGroups = groupByCategory(openItems);
 
   const paymentsTotal = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  // Zahlungs-Formular — wird sowohl im normalen Zahlungen-Bereich als auch
+  // im Abschluss-Wizard verwendet (dieselbe State/Handler-Instanz, daher
+  // als gemeinsames Fragment statt zweimal geschrieben).
+  const paymentFormEl = showPaymentForm && (
+    <div className="sho-payment-form">
+      <div className="sho-payment-form-row">
+        <input
+          type="number"
+          inputMode="decimal"
+          placeholder="Betrag (€)"
+          value={paymentAmount}
+          onChange={(e) => setPaymentAmount(e.target.value)}
+          className="sho-qty-input"
+          min="0"
+          step="any"
+          autoFocus
+        />
+        <select
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value)}
+          className="sho-unit-select"
+        >
+          {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+      <div className="sho-payment-form-row">
+        <input
+          type="text"
+          placeholder="Laden (optional)"
+          value={paymentStore}
+          onChange={(e) => setPaymentStore(e.target.value)}
+          list="sho-payment-store-suggestions"
+          maxLength={60}
+        />
+        <datalist id="sho-payment-store-suggestions">
+          {storeNames.map((n) => <option key={n} value={n} />)}
+          {STORE_NAMES.filter((n) => !storeNames.includes(n)).map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
+      </div>
+      <input
+        type="text"
+        placeholder="Notiz (optional)"
+        value={paymentNote}
+        onChange={(e) => setPaymentNote(e.target.value)}
+        maxLength={140}
+      />
+      <div className="sho-new-list-actions">
+        <button className="btn btn-secondary" onClick={closePaymentForm}>
+          Abbrechen
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handleSavePayment}
+          disabled={savingPayment}
+        >
+          {savingPayment ? 'Speichern …' : 'Speichern'}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="sho-items-wrap">
@@ -517,66 +651,18 @@ export default function ItemsView({ list, onBack }) {
           </button>
         )}
 
-        {showPaymentForm && (
-          <div className="sho-payment-form">
-            <div className="sho-payment-form-row">
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="Betrag (€)"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                className="sho-qty-input"
-                min="0"
-                step="any"
-                autoFocus
-              />
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="sho-unit-select"
-              >
-                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div className="sho-payment-form-row">
-              <input
-                type="text"
-                placeholder="Laden (optional)"
-                value={paymentStore}
-                onChange={(e) => setPaymentStore(e.target.value)}
-                list="sho-payment-store-suggestions"
-                maxLength={60}
-              />
-              <datalist id="sho-payment-store-suggestions">
-                {storeNames.map((n) => <option key={n} value={n} />)}
-                {STORE_NAMES.filter((n) => !storeNames.includes(n)).map((n) => (
-                  <option key={n} value={n} />
-                ))}
-              </datalist>
-            </div>
-            <input
-              type="text"
-              placeholder="Notiz (optional)"
-              value={paymentNote}
-              onChange={(e) => setPaymentNote(e.target.value)}
-              maxLength={140}
-            />
-            <div className="sho-new-list-actions">
-              <button className="btn btn-secondary" onClick={closePaymentForm}>
-                Abbrechen
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSavePayment}
-                disabled={savingPayment}
-              >
-                {savingPayment ? 'Speichern …' : 'Speichern'}
-              </button>
-            </div>
-          </div>
-        )}
+        {paymentFormEl}
       </div>
+
+      {/* Einkauf abschließen — bewusst unabhängig vom Status-Zyklus in
+          ListView. Öffnen/Bearbeiten einer Liste bleibt jederzeit möglich,
+          unabhängig davon ob/wie sie abgeschlossen wird. */}
+      <button
+        className="btn btn-primary sho-complete-btn"
+        onClick={openCompleteWizard}
+      >
+        ✓ Einkauf abschließen
+      </button>
 
       {/* Vorlage-Formular */}
       {showTemplateForm && (
@@ -752,6 +838,95 @@ export default function ItemsView({ list, onBack }) {
           </button>
         </div>
       </div>
+
+      {/* Abschluss-Wizard */}
+      {showCompleteWizard && (
+        <SheetShell onClose={() => setShowCompleteWizard(false)} labelledBy="sho-complete-title">
+          <div className="sho-complete-wizard">
+            <h3 id="sho-complete-title" className="sho-complete-title">Einkauf abschließen</h3>
+            <p className="sho-complete-sub">{list.name}</p>
+
+            {error && (
+              <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
+            )}
+
+            {payments.length > 0 ? (
+              <div className="sho-payments-list">
+                {payments.map((p) => (
+                  <div key={p.id} className="sho-payment-row">
+                    <div className="sho-payment-row-main">
+                      <span className="sho-payment-amount">{formatEur(p.amount)}</span>
+                      <span className="sho-payment-meta">
+                        {p.payment}
+                        {p.store_name ? ` · ${p.store_name}` : ''}
+                      </span>
+                    </div>
+                    <div className="sho-payment-row-actions">
+                      <button className="btn-icon" onClick={() => openEditPayment(p)} aria-label="Zahlung bearbeiten">
+                        ✏️
+                      </button>
+                      <button className="btn-icon" onClick={() => handleDeletePayment(p.id)} aria-label="Zahlung löschen">
+                        <IconTrash size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="sho-complete-hint">Noch keine Zahlung erfasst.</p>
+            )}
+
+            {!showPaymentForm && (
+              <button className="btn btn-secondary sho-action-btn" onClick={openNewPaymentForm}>
+                + Zahlung
+              </button>
+            )}
+            {paymentFormEl}
+
+            <div className="sho-complete-total-row">
+              <span>Gesamt</span>
+              <strong>{formatEur(paymentsTotal)}</strong>
+            </div>
+
+            {paymentsTotal > 0 && (
+              <div className="sho-payment-form-row">
+                <input
+                  type="text"
+                  placeholder="Bezeichnung"
+                  value={bookingName}
+                  onChange={(e) => setBookingName(e.target.value)}
+                  maxLength={80}
+                />
+                <select
+                  value={bookingPayment}
+                  onChange={(e) => setBookingPayment(e.target.value)}
+                  className="sho-unit-select"
+                >
+                  {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            )}
+            {paymentsTotal > 0 && payments.length > 1 && (
+              <p className="sho-complete-hint">
+                Mehrere Zahlungen — die Aufschlüsselung wird als Notiz an der Buchung hinterlegt.
+              </p>
+            )}
+
+            <div className="sho-new-list-actions" style={{ marginTop: 8 }}>
+              <button className="btn btn-secondary" onClick={handleCompleteWithoutBooking} disabled={completing}>
+                Ohne Buchung abschließen
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleCompleteWithBooking}
+                disabled={completing || paymentsTotal <= 0}
+              >
+                {completing ? 'Buchen …' : 'Buchen & abschließen'}
+              </button>
+            </div>
+          </div>
+        </SheetShell>
+      )}
     </div>
   );
 }
