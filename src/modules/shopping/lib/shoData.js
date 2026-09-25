@@ -93,6 +93,18 @@ export async function saveList(list) {
   }
 }
 
+// Verknüpft eine Liste mit der beim Abschließen erzeugten Sammelbuchung
+// im Finanzmodul (fin_entries.id). Wird für ein künftiges Stornieren
+// gebraucht, falls eine "erledigt"-Liste wieder geöffnet wird (Deploy 3).
+export async function linkListFinEntry(listId, finEntryId) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_lists')
+    .update({ fin_entry_id: finEntryId })
+    .eq('id', listId);
+  if (error) throw error;
+}
+
 export async function deleteList(listId) {
   const sb = getSupabase();
   const { error } = await sb
