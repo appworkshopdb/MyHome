@@ -330,6 +330,48 @@
   min-width: 0;
 }
 
+/* ─── Einkauf abschließen ─────────────────────────────────── */
+
+.sho-complete-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 16px;
+}
+
+.sho-complete-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 24px;
+}
+
+.sho-complete-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sho-complete-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -6px 0 4px;
+}
+
+.sho-complete-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.sho-complete-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 1rem;
+}
+
 /* ─── Items-Wrapper ───────────────────────────────────────── */
 
 .sho-items-wrap {
