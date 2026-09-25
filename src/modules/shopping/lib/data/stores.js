@@ -48,3 +48,9 @@ export const DAY_PARTS = [
   { value: 'nachmittags',  icon: '🌤️', label: 'Nachmittags' },
   { value: 'abends',       icon: '🌙', label: 'Abends' },
 ];
+
+// Zahlungsarten für Einkaufs-Zahlungen. Bewusst identisch zu den
+// fin_payment-Werten des Finanzmoduls (PAYMENTS in finance.js), damit
+// die Sammelbuchung beim Abschließen einen gültigen Wert übergibt —
+// aber hier lokal gehalten, weil Module nicht voneinander importieren.
+export const PAYMENT_METHODS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
