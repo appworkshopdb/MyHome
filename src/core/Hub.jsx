@@ -102,7 +102,8 @@ function writeCache(data) {
 
 async function loadTodaySport() {
   const sb = getSupabase();
-  const todayStr = new Date().toISOString().split('T')[0];
+  // kein toISOString() für lokale Kalendertage — s. habitsStore.js localDateStr()
+  const todayStr = habTodayStr();
   const { data, error } = await sb
     .from('spo_workouts')
     .select('id, type_key, title, duration_min, status, is_rest')
@@ -323,7 +324,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     });
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // kein toISOString() für lokale Kalendertage — s. habitsStore.js localDateStr()
+  const todayStr = habTodayStr();
   const todosHeute = todos.filter((t) => !t.done && (
     (t.due_date && t.due_date <= todayStr) ||
     (!t.due_date && t.priority)
