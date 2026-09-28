@@ -363,6 +363,31 @@
   margin: 0;
 }
 
+.sho-complete-split {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sho-complete-split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.sho-complete-split-paid {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.sho-complete-split-open {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
 .sho-complete-total-row {
   display: flex;
   align-items: center;
