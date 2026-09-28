@@ -48,14 +48,24 @@ function getOwnerIdFromToken() {
 
 // ─── Hilfsfunktionen (Fälligkeit / Erledigt-Status) ───────────
 
+// WICHTIG: kein toISOString() für lokale Kalendertage — das rechnet in UTC
+// um. Bei Berlin (UTC+1/+2) kippt das z.B. kurz nach Mitternacht oder bei
+// Terminen auf den falschen Tag. Immer lokale Date-Komponenten verwenden.
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr(new Date());
 }
 
 // Ist der Habit an diesem Datum fällig?
 export function isDueOn(habit, dateStr) {
   if (!habit.active || habit.deleted_at) return false;
-  const created = new Date(habit.created_at).toISOString().split('T')[0];
+  const created = localDateStr(new Date(habit.created_at));
   if (created > dateStr) return false;
   const wd = (new Date(dateStr + 'T12:00:00').getDay() + 6) % 7; // 0 = Montag
   if (habit.frequency === 'daily')    return true;
