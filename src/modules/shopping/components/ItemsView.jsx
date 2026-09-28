@@ -474,7 +474,16 @@ export default function ItemsView({ list, onBack }) {
         openEntryId = entry.id;
       }
 
-      await linkListFinEntry(list.id, paidEntryId, openEntryId);
+      // Verknüpfung ist "nice to have" (für ein künftiges Stornieren beim
+      // Wiedereröffnen) — die Buchung(en) existieren zu diesem Zeitpunkt
+      // bereits. Ein Fehler hier (z.B. fehlende Migration) darf den
+      // Abschluss der Liste nicht mehr verhindern.
+      try {
+        await linkListFinEntry(list.id, paidEntryId, openEntryId);
+      } catch (linkErr) {
+        console.warn('Verknüpfung Liste↔Buchung fehlgeschlagen:', linkErr);
+      }
+
       await updateListStatus(list.id, 'erledigt');
       fb.listStatusCycle?.();
       setShowCompleteWizard(false);
