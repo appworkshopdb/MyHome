@@ -19,8 +19,16 @@ const MONTH_NAMES = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
 ];
 
+// WICHTIG: NICHT d.toISOString() verwenden — das rechnet in UTC um.
+// Bei einem lokalen Date-Objekt (z.B. Mitternacht Berlin-Zeit) verschiebt
+// die UTC-Umrechnung bei UTC+2 auf den Vortag, wodurch Termine im
+// falschen Tages-Bucket landen (Sonntag-Termin erscheint unter Montag).
+// Deshalb Jahr/Monat/Tag direkt aus den lokalen Date-Komponenten bauen.
 function toDateStr(d) {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 function startOfWeek(date) {
   const d = new Date(date);

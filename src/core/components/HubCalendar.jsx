@@ -26,8 +26,12 @@ function getWeekDates() {
   });
 }
 
+// s. CalendarView.jsx: kein toISOString() für lokale Datumsangaben (UTC-Shift-Bug).
 function toDateStr(d) {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 // Sheet: Events eines Tages
