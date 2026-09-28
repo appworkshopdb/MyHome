@@ -26,20 +26,24 @@ function getOwnerIdFromToken() {
 }
 
 /**
- * Erstellt eine Sammelbuchung im Finanzmodul, Kategorie "Sonstige Ausgaben".
- * Wird vom Einkauf-Modul beim Abschließen einer Liste aufgerufen — IMMER
- * eine einzige Buchung pro Liste, auch wenn mehrere Teilzahlungen erfasst
- * wurden (deren Aufschlüsselung kommt dann in `note`).
+ * Erstellt eine Buchung im Finanzmodul, Kategorie "Sonstige Ausgaben".
+ * Wird vom Einkauf-Modul beim Abschließen einer Liste aufgerufen. Meist
+ * eine einzige Sammelbuchung pro Liste — nur wenn die Zahlungen gemischt
+ * "sofort bezahlt" (Bar/Gutschein) und "noch offen" (Bank/Paypal/SEPA/
+ * Klarna) enthalten, ruft ItemsView.jsx diese Funktion zweimal auf (einmal
+ * mit paid:true, einmal mit paid:false), da fin_entries pro Zeile nur
+ * einen einzigen paid-Status kennt.
  *
  * @param {object} opts
  *   name    {string}       Bezeichnung der Buchung (z.B. Listenname)
- *   amount  {number}       Gesamtbetrag
+ *   amount  {number}       Betrag dieser Teil-Buchung
  *   payment {string}       Zahlungsart (gültiger fin_payment-Wert)
  *   note    {string|null}  Notiz, z.B. Aufschlüsselung mehrerer Zahlungen
+ *   paid    {boolean}      Ob dieser Anteil bereits beglichen ist (Default: true)
  *   date    {Date}         Für Jahr/Monat der Buchung (Default: jetzt)
  * @returns {Promise<object>} die erzeugte fin_entries-Zeile (inkl. id)
  */
-export async function createShoppingExpense({ name, amount, payment, note, date }) {
+export async function createShoppingExpense({ name, amount, payment, note, paid = true, date }) {
   const owner_id = getOwnerIdFromToken();
   const session   = { user: { id: owner_id } }; // reicht saveEntry()/ownerId() aus
   const d = date instanceof Date ? date : new Date();
@@ -49,7 +53,7 @@ export async function createShoppingExpense({ name, amount, payment, note, date 
     name,
     payment,
     amount,
-    paid:  true,
+    paid,
     year:  d.getFullYear(),
     month: d.getMonth() + 1,
     note:  note || null,
