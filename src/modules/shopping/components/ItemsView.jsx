@@ -8,7 +8,7 @@ import {
   saveListAsTemplate, loadPayments, savePayment, deletePayment,
   updateListStatus, linkListFinEntry,
 } from '../lib/shoData.js';
-import { PAYMENT_METHODS } from '../lib/data/stores.js';
+import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
 import { fb } from '../../../core/lib/feedback';
 import { formatEur } from '../../../core/lib/format.js';
 import SheetShell from '../../../core/components/SheetShell.jsx';
@@ -121,6 +121,12 @@ const CATEGORY_ORDER = [
   'Vorrat', 'Getränke', 'Snacks & Süßes', 'Drogerie', 'Sonstiges',
 ];
 
+// Rundet auf volle Cent — verhindert Fließkomma-Reste (0.1 + 0.2 = 0.300…04)
+// beim Summieren mehrerer Teilzahlungen.
+function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
 function getCategory(name) {
   if (!name) return 'Sonstiges';
   const exact = CATEGORY_MAP[name.trim()];
@@ -189,7 +195,6 @@ export default function ItemsView({ list, onBack }) {
   // ─── Abschluss-Wizard ─────────────────────────────────────
   const [showCompleteWizard, setShowCompleteWizard] = useState(false);
   const [bookingName,        setBookingName]        = useState('');
-  const [bookingPayment,     setBookingPayment]     = useState('Bar');
   const [completing,         setCompleting]         = useState(false);
 
   const fetchItems = useCallback(async () => {
@@ -364,7 +369,7 @@ export default function ItemsView({ list, onBack }) {
   }
 
   async function handleSavePayment() {
-    const amount = parseFloat(paymentAmount.replace(',', '.'));
+    const amount = round2(parseFloat(paymentAmount.replace(',', '.')));
     if (!amount || amount <= 0) {
       setError('Bitte einen gültigen Betrag eingeben.');
       return;
@@ -399,8 +404,8 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
-  // Zahlungsart der Sammelbuchung: die Methode mit dem höchsten Anteil.
-  // Ohne Zahlungen: 'Bar' als sinnvoller Default.
+  // Zahlungsart einer Buchung: die Methode mit dem höchsten Anteil
+  // innerhalb der übergebenen Teilliste. Ohne Zahlungen: 'Bar' als Default.
   function dominantPaymentMethod(list) {
     if (!list.length) return 'Bar';
     const sums = {};
@@ -408,33 +413,68 @@ export default function ItemsView({ list, onBack }) {
     return Object.entries(sums).sort((a, b) => b[1] - a[1])[0][0];
   }
 
+  // Nur Bar/Gutschein gelten als sofort beglichen (Nutzer-Entscheidung).
+  // Alles andere (Bank, Paypal, SEPA, Klarna) gilt als noch offen.
+  function splitPaymentsByInstant(list) {
+    const instant = list.filter((p) => INSTANT_PAYMENT_METHODS.includes(p.payment));
+    const pending = list.filter((p) => !INSTANT_PAYMENT_METHODS.includes(p.payment));
+    return { instant, pending };
+  }
+
+  function sumAmounts(list) {
+    return round2(list.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
+  }
+
+  // Bei mehreren Teilzahlungen innerhalb einer Gruppe wird die
+  // Aufschlüsselung als Notiz an der jeweiligen Buchung hinterlegt.
+  function breakdownNote(list) {
+    if (list.length < 2) return null;
+    return list
+      .map((p) => `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`)
+      .join(' · ');
+  }
+
   function openCompleteWizard() {
     closePaymentForm();
     setBookingName(list.name);
-    setBookingPayment(dominantPaymentMethod(payments));
     setShowCompleteWizard(true);
-  }
-
-  // Bei mehreren Teilzahlungen wird die Aufschlüsselung als Notiz an der
-  // Sammelbuchung im Finanzmodul hinterlegt (Nutzer-Entscheidung #2).
-  function buildBreakdownNote() {
-    if (payments.length < 2) return null;
-    return payments
-      .map((p) => `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`)
-      .join(' · ');
   }
 
   async function handleCompleteWithBooking() {
     setCompleting(true);
     setError(null);
     try {
-      const entry = await createShoppingExpense({
-        name:    bookingName.trim() || list.name,
-        amount:  paymentsTotal,
-        payment: bookingPayment,
-        note:    buildBreakdownNote(),
-      });
-      await linkListFinEntry(list.id, entry.id);
+      const { instant, pending } = splitPaymentsByInstant(payments);
+      const instantSum = sumAmounts(instant);
+      const pendingSum = sumAmounts(pending);
+      const baseName   = bookingName.trim() || list.name;
+      const mixed      = instantSum > 0 && pendingSum > 0;
+
+      let paidEntryId = null;
+      let openEntryId = null;
+
+      if (instantSum > 0) {
+        const entry = await createShoppingExpense({
+          name:    baseName,
+          amount:  instantSum,
+          payment: dominantPaymentMethod(instant),
+          note:    breakdownNote(instant),
+          paid:    true,
+        });
+        paidEntryId = entry.id;
+      }
+      if (pendingSum > 0) {
+        const entry = await createShoppingExpense({
+          name:    mixed ? `${baseName} (offen)` : baseName,
+          amount:  pendingSum,
+          payment: dominantPaymentMethod(pending),
+          note:    breakdownNote(pending),
+          paid:    false,
+        });
+        openEntryId = entry.id;
+      }
+
+      await linkListFinEntry(list.id, paidEntryId, openEntryId);
       await updateListStatus(list.id, 'erledigt');
       fb.listStatusCycle?.();
       setShowCompleteWizard(false);
@@ -483,7 +523,10 @@ export default function ItemsView({ list, onBack }) {
   const doneItems  = visibleItems.filter((i) => i.done);
   const openGroups = groupByCategory(openItems);
 
-  const paymentsTotal = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const paymentsTotal = round2(payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
+  const { instant: instantPayments, pending: pendingPayments } = splitPaymentsByInstant(payments);
+  const instantSum = sumAmounts(instantPayments);
+  const pendingSum = sumAmounts(pendingPayments);
 
   // Zahlungs-Formular — wird sowohl im normalen Zahlungen-Bereich als auch
   // im Abschluss-Wizard verwendet (dieselbe State/Handler-Instanz, daher
@@ -889,24 +932,41 @@ export default function ItemsView({ list, onBack }) {
             </div>
 
             {paymentsTotal > 0 && (
-              <div className="sho-payment-form-row">
-                <input
-                  type="text"
-                  placeholder="Bezeichnung"
-                  value={bookingName}
-                  onChange={(e) => setBookingName(e.target.value)}
-                  maxLength={80}
-                />
-                <select
-                  value={bookingPayment}
-                  onChange={(e) => setBookingPayment(e.target.value)}
-                  className="sho-unit-select"
-                >
-                  {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
+              <input
+                type="text"
+                placeholder="Bezeichnung"
+                value={bookingName}
+                onChange={(e) => setBookingName(e.target.value)}
+                maxLength={80}
+              />
+            )}
+
+            {paymentsTotal > 0 && (
+              <div className="sho-complete-split">
+                {instantSum > 0 && (
+                  <div className="sho-complete-split-row sho-complete-split-paid">
+                    <span>✓ Sofort bezahlt ({dominantPaymentMethod(instantPayments)}{
+                      new Set(instantPayments.map((p) => p.payment)).size > 1 ? ' u.a.' : ''
+                    })</span>
+                    <strong>{formatEur(instantSum)}</strong>
+                  </div>
+                )}
+                {pendingSum > 0 && (
+                  <div className="sho-complete-split-row sho-complete-split-open">
+                    <span>Teil offen ({[...new Set(pendingPayments.map((p) => p.payment))].join(', ')})</span>
+                    <strong>{formatEur(pendingSum)}</strong>
+                  </div>
+                )}
               </div>
             )}
-            {paymentsTotal > 0 && payments.length > 1 && (
+            {pendingSum > 0 && (
+              <p className="sho-complete-hint">
+                {instantSum > 0
+                  ? 'Es werden zwei Buchungen angelegt: eine bezahlte und eine offene über den Restbetrag.'
+                  : 'Die Buchung wird als offen angelegt, bis du sie im Finanzmodul abhakst.'}
+              </p>
+            )}
+            {pendingSum === 0 && payments.length > 1 && (
               <p className="sho-complete-hint">
                 Mehrere Zahlungen — die Aufschlüsselung wird als Notiz an der Buchung hinterlegt.
               </p>
