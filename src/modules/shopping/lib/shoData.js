@@ -93,14 +93,20 @@ export async function saveList(list) {
   }
 }
 
-// Verknüpft eine Liste mit der beim Abschließen erzeugten Sammelbuchung
-// im Finanzmodul (fin_entries.id). Wird für ein künftiges Stornieren
-// gebraucht, falls eine "erledigt"-Liste wieder geöffnet wird (Deploy 3).
-export async function linkListFinEntry(listId, finEntryId) {
+// Verknüpft eine Liste mit der/den beim Abschließen erzeugten Buchung(en)
+// im Finanzmodul. Normalerweise nur fin_entry_id (eine Sammelbuchung);
+// bei gemischten Zahlungsarten (teils sofort bezahlt, teils offen) kommt
+// zusätzlich fin_entry_id_open dazu (siehe ItemsView.jsx). Wird für ein
+// künftiges Stornieren gebraucht, falls eine "erledigt"-Liste wieder
+// geöffnet wird (Deploy 3).
+export async function linkListFinEntry(listId, finEntryId, finEntryIdOpen) {
   const sb = getSupabase();
   const { error } = await sb
     .from('sho_lists')
-    .update({ fin_entry_id: finEntryId })
+    .update({
+      fin_entry_id:      finEntryId ?? null,
+      fin_entry_id_open: finEntryIdOpen ?? null,
+    })
     .eq('id', listId);
   if (error) throw error;
 }
