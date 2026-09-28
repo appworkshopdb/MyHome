@@ -425,12 +425,18 @@ export default function ItemsView({ list, onBack }) {
     return round2(list.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
   }
 
-  // Bei mehreren Teilzahlungen innerhalb einer Gruppe wird die
-  // Aufschlüsselung als Notiz an der jeweiligen Buchung hinterlegt.
-  function breakdownNote(list) {
-    if (list.length < 2) return null;
+  // Notiz für die Buchung einer Gruppe (sofort bezahlt / offen):
+  // - Eine einzelne Zahlung: ihre eigene Notiz wird 1:1 übernommen.
+  // - Mehrere Zahlungen: Aufschlüsselung mit Betrag/Zahlungsart/Laden,
+  //   inkl. der jeweils eigenen Notiz pro Zahlung (falls vorhanden).
+  function buildNoteForGroup(list) {
+    if (list.length === 0) return null;
+    if (list.length === 1) return list[0].note || null;
     return list
-      .map((p) => `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`)
+      .map((p) => {
+        const base = `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`;
+        return p.note ? `${base} – ${p.note}` : base;
+      })
       .join(' · ');
   }
 
@@ -458,7 +464,7 @@ export default function ItemsView({ list, onBack }) {
           name:    baseName,
           amount:  instantSum,
           payment: dominantPaymentMethod(instant),
-          note:    breakdownNote(instant),
+          note:    buildNoteForGroup(instant),
           paid:    true,
         });
         paidEntryId = entry.id;
@@ -468,7 +474,7 @@ export default function ItemsView({ list, onBack }) {
           name:    mixed ? `${baseName} (offen)` : baseName,
           amount:  pendingSum,
           payment: dominantPaymentMethod(pending),
-          note:    breakdownNote(pending),
+          note:    buildNoteForGroup(pending),
           paid:    false,
         });
         openEntryId = entry.id;
