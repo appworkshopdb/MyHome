@@ -3805,3 +3805,300 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
   border-top: 1px solid var(--border-hairline);
 }
+
+/* ── Kalender: Tag/Woche/Monat-Ansicht (CalendarView.jsx) ─────────
+   Fehlte bisher komplett in dieser Datei — Ursache für "CSS greift
+   nicht" auf der Kalenderseite. Nutzt dieselben semantischen Tokens
+   wie der Rest der App. ────────────────────────────────────────── */
+.calview {
+  padding: var(--space-4) var(--space-5) var(--space-8);
+}
+
+.calview-mode-toggle {
+  display:      flex;
+  gap:          4px;
+  background:   var(--surface-sunken);
+  border-radius: var(--r-lg);
+  padding:      4px;
+  margin-bottom: var(--space-4);
+}
+.calview-mode-toggle button {
+  flex:          1;
+  border:        none;
+  background:    transparent;
+  padding:       8px 0;
+  font-size:     0.85rem;
+  font-weight:   600;
+  color:         var(--text-secondary);
+  border-radius: var(--r-md);
+  cursor:        pointer;
+  transition:    background 0.15s ease, color 0.15s ease;
+}
+.calview-mode-toggle button.active {
+  background: var(--surface-raised);
+  color:      var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.calview-nav {
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  margin-bottom:  var(--space-4);
+}
+.calview-nav-arrow {
+  width:         36px;
+  height:        36px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-pill);
+  font-size:     1.1rem;
+  color:         var(--text-primary);
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.calview-nav-label {
+  border:      none;
+  background:  transparent;
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--text-primary);
+  cursor:      pointer;
+  text-align:  center;
+  flex:        1;
+}
+
+.calview-day-list {
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-2);
+}
+.calview-loading,
+.calview-empty {
+  text-align:  center;
+  font-size:   0.85rem;
+  font-weight: 500;
+  color:       var(--text-muted);
+  padding:     var(--space-6) 0;
+}
+
+.calview-event-row {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           var(--space-3);
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-3) var(--space-4);
+  box-shadow:    var(--shadow-card);
+}
+.calview-event-row.done {
+  opacity: 0.55;
+}
+.calview-event-icon {
+  font-size:  1rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.calview-event-content {
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+  min-width:     0;
+}
+.calview-event-title {
+  display:      flex;
+  align-items:  center;
+  gap:          6px;
+  font-size:    0.92rem;
+  font-weight:  600;
+  color:        var(--text-primary);
+}
+.calview-event-row.done .calview-event-title {
+  text-decoration: line-through;
+}
+.calview-event-tentative {
+  font-size:     0.68rem;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color:         var(--status-caution);
+  background:    var(--status-caution-bg);
+  border-radius: var(--r-sm);
+  padding:       2px 6px;
+}
+.calview-event-time {
+  font-size:   0.78rem;
+  font-weight: 500;
+  color:       var(--text-secondary);
+}
+.calview-event-meta {
+  font-size: 0.78rem;
+  color:     var(--text-muted);
+}
+.calview-event-desc {
+  font-size: 0.8rem;
+  color:     var(--text-secondary);
+}
+.calview-event-done {
+  font-size:  0.95rem;
+  color:      var(--status-positive);
+  flex-shrink: 0;
+}
+
+.calview-week-strip {
+  display:              grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                  4px;
+  margin-bottom:        var(--space-5);
+}
+.calview-week-day {
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  gap:           4px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-2) 2px;
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.calview-week-day.today {
+  background: var(--action-primary);
+}
+.calview-week-day.today .calview-week-wd,
+.calview-week-day.today .calview-week-dd {
+  color: var(--text-on-accent);
+}
+.calview-week-wd {
+  font-size:   0.68rem;
+  font-weight: 600;
+  color:       var(--text-muted);
+}
+.calview-week-dd {
+  font-size:   0.95rem;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.calview-week-dots {
+  display: flex;
+  gap:     2px;
+  height:  5px;
+}
+
+.calview-week-group {
+  margin-bottom: var(--space-4);
+}
+.calview-week-group-label {
+  font-size:     0.75rem;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color:         var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+.calview-week-group .calview-event-row + .calview-event-row {
+  margin-top: var(--space-2);
+}
+
+.calview-month-grid {
+  display:              grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                  4px;
+}
+.calview-month-wd {
+  text-align:  center;
+  font-size:   0.68rem;
+  font-weight: 600;
+  color:       var(--text-muted);
+  padding-bottom: 4px;
+}
+.calview-month-cell {
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  gap:           3px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-md);
+  aspect-ratio:  1;
+  cursor:        pointer;
+}
+.calview-month-cell.outside {
+  background: var(--surface-sunken);
+  opacity:    0.5;
+}
+.calview-month-cell.today {
+  background: var(--action-primary);
+}
+.calview-month-cell.today .calview-month-dd {
+  color: var(--text-on-accent);
+}
+.calview-month-dd {
+  font-size:   0.82rem;
+  font-weight: 600;
+  color:       var(--text-primary);
+}
+.calview-month-dots {
+  display: flex;
+  gap:     2px;
+  height:  5px;
+}
+
+/* ── Benachrichtigungen: Toggle-Switches (AppMenu.jsx NotifToggle) ─
+   Fehlte ebenfalls komplett — Toggles wurden ohne eigenes CSS
+   ausgeliefert und fielen auf unstyled Divs zurück. ─────────────── */
+.notif-toggle-list {
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-2);
+}
+.notif-toggle-row {
+  display:       flex;
+  align-items:   center;
+  justify-content: space-between;
+  gap:           var(--space-3);
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-3) var(--space-4);
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.notif-toggle-text {
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+  min-width:     0;
+}
+.notif-toggle-label {
+  font-size:   0.9rem;
+  font-weight: 600;
+  color:       var(--text-primary);
+}
+.notif-toggle-hint {
+  font-size: 0.76rem;
+  color:     var(--text-muted);
+}
+.notif-toggle-track {
+  flex-shrink:   0;
+  width:         44px;
+  height:        26px;
+  border-radius: var(--r-pill);
+  background:    var(--border-hairline);
+  padding:       3px;
+  transition:    background 0.15s ease;
+}
+.notif-toggle-track.on {
+  background: var(--action-primary);
+}
+.notif-toggle-thumb {
+  width:         20px;
+  height:        20px;
+  border-radius: 50%;
+  background:    var(--surface-raised);
+  box-shadow:    var(--shadow-card);
+  transition:    transform 0.15s ease;
+}
+.notif-toggle-track.on .notif-toggle-thumb {
+  transform: translateX(18px);
+}
