@@ -269,7 +269,10 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     .filter((e) => isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0);
   const verfuegbar  = totalEin - totalAus - totalGespart;
-  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
+  // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
+  // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
+  // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
+  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e));
   const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
   const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
   const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
