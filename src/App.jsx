@@ -23,6 +23,7 @@ import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
+import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
 import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
@@ -83,37 +84,45 @@ export default function App() {
 
   return (
     <EntrySheetProvider>
-      {showGlobalTopBar && (
-        <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
-      )}
+      {/* FinanceMonthProvider umschließt sowohl <main> (MonthsView schreibt
+          den aktiven Monat rein) als auch GlobalFab (SparschweinFab liest
+          ihn raus). Beide MÜSSEN unter derselben Provider-Instanz hängen,
+          sonst bekommt der FAB nur den Default-Wert (aktueller Kalender-
+          monat) und bucht immer in den heutigen Monat statt in den, der
+          gerade in den Buchungen angezeigt wird. */}
+      <FinanceMonthProvider>
+        {showGlobalTopBar && (
+          <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
+        )}
 
-      <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
-        {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
-        {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
-        {mod && (ModuleComponent ? (
-          // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
-          // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
-          // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
-          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
-            <ModuleComponent
-              module={mod}
-              view={view}
-              hasWarnings={hasWarnings}
-              onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
-            />
-          </Suspense>
-        ) : (
-          <LockedModule module={mod} />
-        ))}
-      </main>
+        <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
+          {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
+          {mod && (ModuleComponent ? (
+            // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
+            // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
+            // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
+            <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+              <ModuleComponent
+                module={mod}
+                view={view}
+                hasWarnings={hasWarnings}
+                onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
+              />
+            </Suspense>
+          ) : (
+            <LockedModule module={mod} />
+          ))}
+        </main>
 
-      <RequiredDataToast warnings={warnings} onFix={navigate} />
-      <EntrySheet />
-      <GlobalFab activeModule={activeModule} />
-      <ModuleBottomNav
-        active={activeModule === null ? '' : activeModule}
-        onChange={navigate}
-      />
+        <RequiredDataToast warnings={warnings} onFix={navigate} />
+        <EntrySheet />
+        <GlobalFab activeModule={activeModule} />
+        <ModuleBottomNav
+          active={activeModule === null ? '' : activeModule}
+          onChange={navigate}
+        />
+      </FinanceMonthProvider>
     </EntrySheetProvider>
   );
 }
