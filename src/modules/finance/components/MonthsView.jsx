@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import { MONTHS_DE, formatEur, sumCat, isSparschweinDeposit } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
@@ -168,6 +169,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const { session }  = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved } = useEntrySheet();
+  const { setActiveMonth: setGlobalActiveMonth } = useFinanceMonth();
 
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
@@ -201,7 +203,19 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
     setMonth(m); setYear(y);
+    setGlobalActiveMonth(y, m); // SparschweinFab weiß, in welchem Monat wir sind
   }
+
+  // Beim ersten Mount den initialen Monat in den Context schreiben
+  useEffect(() => {
+    setGlobalActiveMonth(year, month);
+    // Reset beim Verlassen: zurück auf aktuellen Kalendermonat
+    return () => {
+      const n = new Date();
+      setGlobalActiveMonth(n.getFullYear(), n.getMonth() + 1);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSave(entry) {
     await db.saveEntry(session, { ...entry, year, month });
