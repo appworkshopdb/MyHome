@@ -251,7 +251,10 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const totalAus    = entries
     .filter((e) => ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'].includes(e.category) && !isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const verfuegbar  = totalEin - totalAus;
+  const totalGespart = entries
+    .filter((e) => isSparschweinDeposit(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const verfuegbar  = totalEin - totalAus - totalGespart;
   const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
   const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
   const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;

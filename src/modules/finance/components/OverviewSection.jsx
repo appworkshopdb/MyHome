@@ -76,7 +76,10 @@ export default function OverviewSection({ onNavigate }) {
       .reduce((s, e) => s + Number(e.amount || 0), 0),
   }));
   const totalAus   = spend.reduce((s, c) => s + c.value, 0);
-  const saldo      = totalEin - totalAus;
+  const totalGespart = entries
+    .filter((e) => isSparschweinDeposit(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const saldo      = totalEin - totalAus - totalGespart;
   const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
 
   const offene = entries.filter(
