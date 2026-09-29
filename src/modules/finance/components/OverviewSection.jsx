@@ -82,8 +82,11 @@ export default function OverviewSection({ onNavigate }) {
   const saldo      = totalEin - totalAus - totalGespart;
   const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
 
+  // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
+  // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
+  // offene Posten auf (Übersicht + "Offene Posten"-Bereich).
   const offene = entries.filter(
-    (e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen'
+    (e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e)
   );
   const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
 
