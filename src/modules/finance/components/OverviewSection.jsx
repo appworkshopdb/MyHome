@@ -14,6 +14,7 @@ import {
   getContractStatus,
   getTemplateStatus,
   isSparschweinDeposit,
+  isSparschweinDirectWithdrawal,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -68,7 +69,12 @@ export default function OverviewSection({ onNavigate }) {
 
   // ── Kennzahlen ──────────────────────────────────────────────────────
   // Sparschwein-Einlagen ("Ersparnisse") nicht als normale Ausgabe werten
-  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
+  // Sparschwein-Entnahmen ("Sparschwein"-Einnahme) sind keine echte
+  // Einnahme — aus totalEin herausrechnen und mit Gespart verrechnen.
+  const totalEntnommen = entries
+    .filter((e) => isSparschweinDirectWithdrawal(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
   const spend    = SPEND_CATS.map((c) => ({
     ...c,
     value: entries
@@ -78,7 +84,7 @@ export default function OverviewSection({ onNavigate }) {
   const totalAus   = spend.reduce((s, c) => s + c.value, 0);
   const totalGespart = entries
     .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
+    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
   const saldo      = totalEin - totalAus - totalGespart;
   const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
 

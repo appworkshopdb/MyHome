@@ -3,7 +3,7 @@ import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
-import { MONTHS_DE, formatEur, sumCat, isSparschweinDeposit } from '../lib/finance';
+import { MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
@@ -124,7 +124,9 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
   // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
   const visible = entries.filter(
-    (e) => col.cats.includes(e.category) && !isSparschweinDeposit(e)
+    (e) => col.cats.includes(e.category)
+      && !isSparschweinDeposit(e)          // Einzahlung raus (Ausgaben-Spalten)
+      && !isSparschweinDirectWithdrawal(e) // Entnahme raus (Einnahmen-Spalte)
   );
   if (visible.length === 0) return null;
 
@@ -261,13 +263,19 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Kennzahlen für die Saldo-Karte
   // Sparschwein-Einlagen nicht als normale Ausgabe mitzählen —
   // sie sind Transfers zum Sparschwein, keine Ausgaben.
-  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
+  // Sparschwein-Entnahmen ("Sparschwein"-Einnahme) sind KEINE echte
+  // Einnahme — sie werden aus totalEin herausgerechnet und stattdessen
+  // mit dem Gespart-Betrag verrechnet: Gespart = Einzahlungen − Entnahmen.
+  const totalEntnommen = entries
+    .filter((e) => isSparschweinDirectWithdrawal(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
   const totalAus    = entries
     .filter((e) => ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'].includes(e.category) && !isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalGespart = entries
     .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
+    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
   const verfuegbar  = totalEin - totalAus - totalGespart;
   // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
   // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
