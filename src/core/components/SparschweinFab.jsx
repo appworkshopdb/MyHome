@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useEntrySheet } from '../lib/EntrySheetContext';
 import * as finData from '../../modules/finance/lib/finData';
 import { formatEur, formatDate, MONTHS_DE } from '../../modules/finance/lib/finance';
+import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
 import SheetShell from './SheetShell';
 
 // Schwebender Sparschwein-Button, sitzt über dem globalen "+"-FAB.
@@ -15,6 +16,7 @@ import SheetShell from './SheetShell';
 export default function SparschweinFab() {
   const { session } = useAuth();
   const { version, notifySaved } = useEntrySheet();
+  const { activeYear, activeMonth } = useFinanceMonth(); // Monat aus MonthsView (oder aktuell)
   const [balance, setBalance] = useState(null);
   const [ledger,  setLedger]  = useState([]);
   const [totals,  setTotals]  = useState({ totalIn: 0, totalOut: 0 });
@@ -43,11 +45,10 @@ export default function SparschweinFab() {
       setSavingStatus({ type: 'error', text: 'Bitte gültigen Betrag eingeben' });
       return;
     }
-    const now = new Date();
     try {
       await finData.saveEntry(sessionRef.current, {
-        year:     now.getFullYear(),
-        month:    now.getMonth() + 1,
+        year:     activeYear,   // Monat aus MonthsView — nicht immer "heute"
+        month:    activeMonth,
         category: 'variable_kosten', // Ausgaben-Kategorie — wird von isSparschweinDeposit erkannt
         name:     'Ersparnisse',     // Genauer Name — Erkennungsmerkmal
         payment:  'Bank',
