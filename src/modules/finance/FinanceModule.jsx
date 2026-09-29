@@ -13,6 +13,10 @@
 // Neue Einträge laufen weiterhin ausschließlich über den globalen FAB
 // (EntrySheet); die "+Fixkosten"/"+Vertrag"-Buttons in ContractsView
 // legen etwas anderes an (wiederkehrende Vorlagen) und bleiben dort.
+//
+// HINWEIS: FinanceMonthProvider hängt NICHT hier, sondern in App.jsx —
+// er muss auch GlobalFab/SparschweinFab umschließen, das außerhalb des
+// Moduls gerendert wird.
 
 import { lazy, Suspense } from 'react';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
@@ -20,7 +24,6 @@ import OverviewSection from './components/OverviewSection';
 import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
-import { FinanceMonthProvider } from './lib/FinanceMonthContext';
 
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
@@ -39,7 +42,7 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
   // ── Detail-Screens: ein Bereich pro Screen ──
   if (view && DETAIL_TITLES[view]) {
     return (
-      <FinanceMonthProvider>
+      <>
         <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
         <div className="fin-module-content with-topbar-space">
           {/* "Buchungen" und "Offene Posten" sind derselbe Screen mit
@@ -58,17 +61,17 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
 
           {view === 'einstellungen' && <SettingsView />}
         </div>
-      </FinanceMonthProvider>
+      </>
     );
   }
 
   // ── Übersicht ──
   return (
-    <FinanceMonthProvider>
+    <>
       <ModuleTopBar hasWarnings={hasWarnings} />
       <div className="fin-module-content with-topbar-space">
         <OverviewSection onNavigate={onNavigateView} />
       </div>
-    </FinanceMonthProvider>
+    </>
   );
 }
