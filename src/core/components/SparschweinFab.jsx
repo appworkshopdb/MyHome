@@ -25,6 +25,10 @@ export default function SparschweinFab() {
   const [saving,  setSaving]  = useState(false);  // true = Einzahlungs-Sheet offen
   const [amount,  setAmount]  = useState('');
   const [saving_status, setSavingStatus] = useState(null);
+  // Entnahme-Formular
+  const [taking,  setTaking]  = useState(false);  // true = Entnahme-Sheet offen
+  const [takeAmount, setTakeAmount] = useState('');
+  const [take_status, setTakeStatus] = useState(null);
 
   const sessionRef = useRef(session);
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -68,6 +72,42 @@ export default function SparschweinFab() {
     }
   }
 
+  // Direkte Entnahme aus dem Sparschwein — Gegenstück zur Einzahlung.
+  // Legt eine Einnahme "Sparschwein" im aktiven Monat an: Geld fließt
+  // aus dem Sparschwein zurück ins Monatsbudget (erhöht den Saldo),
+  // OHNE dass eine Ausgabe mit Zahlungsart "Sparschwein" nötig ist.
+  async function handleSaveWithdrawal() {
+    const amt = parseFloat(String(takeAmount).replace(',', '.'));
+    if (isNaN(amt) || amt <= 0) {
+      setTakeStatus({ type: 'error', text: 'Bitte gültigen Betrag eingeben' });
+      return;
+    }
+    if (amt > balance) {
+      setTakeStatus({ type: 'error', text: `Nur ${formatEur(balance)} im Sparschwein` });
+      return;
+    }
+    try {
+      await finData.saveEntry(sessionRef.current, {
+        year:     activeYear,   // Monat aus MonthsView — nicht immer "heute"
+        month:    activeMonth,
+        category: 'sonstige_einnahmen', // Einnahme-Kategorie — von isSparschweinDirectWithdrawal erkannt
+        name:     'Sparschwein',        // Genauer Name — Erkennungsmerkmal
+        payment:  'Bank',
+        payments: [{ method: 'Bank', amount: amt }],
+        amount:   amt,
+        paid:     true,
+      });
+      setTakeStatus({ type: 'ok', text: `✓ ${formatEur(amt)} entnommen` });
+      setTakeAmount('');
+      notifySaved();
+      await load();
+      setTimeout(() => { setTaking(false); setTakeStatus(null); }, 1200);
+    } catch (e) {
+      setTakeStatus({ type: 'error', text: '✗ Fehler beim Speichern' });
+      console.error(e);
+    }
+  }
+
   if (balance === null) return null;
 
   return (
@@ -105,16 +145,26 @@ export default function SparschweinFab() {
               </div>
             </div>
 
-            {/* Einzahlen-Button */}
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', marginTop: 'var(--space-4)' }}
-              onClick={() => { setSaving(true); setOpen(false); }}
-            >
-              + Betrag sparen
-            </button>
+            {/* Einzahlen / Entnehmen */}
+            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+                onClick={() => { setSaving(true); setOpen(false); }}
+              >
+                + Betrag sparen
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => { setTaking(true); setOpen(false); }}
+                disabled={balance <= 0}
+              >
+                − Entnehmen
+              </button>
+            </div>
             <p className="t-meta" style={{ color: 'var(--text-muted)', marginTop: 'var(--space-2)', textAlign: 'center' }}>
-              Entnahme: beim Buchen einer Ausgabe die Zahlungsart „Sparschwein" wählen
+              Entnahme fließt zurück in den Monat. Alternativ: bei einer Ausgabe die Zahlungsart „Sparschwein" wählen.
             </p>
 
             <div className="t-meta" style={{ color: 'var(--text-muted)', margin: 'var(--space-5) 0 var(--space-2)' }}>
@@ -202,6 +252,61 @@ export default function SparschweinFab() {
             </button>
             <button className="btn btn-primary" onClick={handleSaveDeposit}>
               Sparen
+            </button>
+          </div>
+        </SheetShell>
+      )}
+
+      {/* ── Entnahme-Sheet ── */}
+      {taking && (
+        <SheetShell onClose={() => { setTaking(false); setTakeStatus(null); setTakeAmount(''); }}>
+          <div className="sheet-header">
+            <div className="sheet-title t-title">Betrag entnehmen</div>
+            <button className="sheet-cancel" onClick={() => { setTaking(false); setTakeStatus(null); setTakeAmount(''); }}>
+              Abbrechen
+            </button>
+          </div>
+
+          <div className="wiz-body">
+            <p className="t-body" style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+              Der Betrag wird aus dem Sparschwein entnommen und fließt zurück
+              in den Saldo dieses Monats — ohne einen neuen Ausgaben-Posten.
+            </p>
+
+            <label className="wiz-label t-meta">Betrag (€)</label>
+            <input
+              className="wiz-input"
+              type="number"
+              inputMode="decimal"
+              value={takeAmount}
+              onChange={(e) => setTakeAmount(e.target.value)}
+              placeholder="0,00"
+              min="0.01"
+              step="0.01"
+              max={balance}
+              autoFocus
+              style={{ fontSize: 'max(16px, 1rem)' }}
+            />
+            <p className="t-meta" style={{ color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+              Verfügbar: {formatEur(balance)}
+            </p>
+
+            {take_status && (
+              <div className={`status-note ${take_status.type}`} style={{ marginTop: 'var(--space-3)' }}>
+                {take_status.text}
+              </div>
+            )}
+          </div>
+
+          <div className="entry-modal-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => { setTaking(false); setTakeStatus(null); setTakeAmount(''); }}
+            >
+              Abbrechen
+            </button>
+            <button className="btn btn-primary" onClick={handleSaveWithdrawal}>
+              Entnehmen
             </button>
           </div>
         </SheetShell>
