@@ -59,10 +59,15 @@ export function isSparschweinDeposit(entry) {
 // sein kann, selbst wenn versehentlich payment=Sparschwein gewählt wurde.
 export function isSparschweinWithdrawal(entry) {
   if (isSparschweinDeposit(entry)) return false;
+  // Neues payments-Array: mind. ein Eintrag mit method 'Sparschwein'
+  const viaPayments = Array.isArray(entry.payments) &&
+    EXPENSE_CATEGORIES.has(entry.category) &&
+    entry.payments.some((p) => p.method === 'Sparschwein');
+  // Altes payment-Feld (Abwärtskompatibilität)
   const viaPayment = EXPENSE_CATEGORIES.has(entry.category) && entry.payment === 'Sparschwein';
   const viaIncomeName = INCOME_CATEGORIES.has(entry.category) &&
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
-  return viaPayment || viaIncomeName;
+  return viaPayments || viaPayment || viaIncomeName;
 }
 
 export function isSparschweinEntry(entry) {
@@ -75,11 +80,52 @@ export function isSparschweinEntry(entry) {
 // zählen. Wird (wie die Einzahlung) aus der Einnahmen-Anzeige und dem
 // Einnahmen-Total herausgefiltert und stattdessen mit dem Gespart-
 // Betrag verrechnet (Gespart = Einzahlungen − Entnahmen).
-// Der ältere Weg "Ausgabe mit Zahlungsart Sparschwein" bleibt davon
-// unberührt — das sind echte Ausgaben, die im Monat sichtbar bleiben.
+// Der Weg "Ausgabe mit Zahlungsart Sparschwein" bleibt davon unberührt —
+// das sind echte Ausgaben, die im Monat sichtbar bleiben.
 export function isSparschweinDirectWithdrawal(entry) {
   return INCOME_CATEGORIES.has(entry.category) &&
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
+}
+
+// Gibt den Betrag zurück der tatsächlich aus dem Sparschwein entnommen wird.
+// Bei Teilzahlung (payments-Array) nur den Sparschwein-Anteil, nicht Gesamtbetrag.
+export function getSparschweinWithdrawalAmount(entry) {
+  if (!isSparschweinWithdrawal(entry)) return 0;
+  if (Array.isArray(entry.payments)) {
+    const schweinPart = entry.payments.find((p) => p.method === 'Sparschwein');
+    if (schweinPart?.amount != null) return Number(schweinPart.amount);
+  }
+  // Altes System oder Sparschwein als einzige Zahlungsart: Gesamtbetrag
+  return Number(entry.amount);
+}
+
+// Liest die primäre Zahlungsart eines Eintrags (für Anzeige/Badge).
+// Bei mehreren: erste Zahlungsart, bei alter payment-Spalte: diese direkt.
+export function getPrimaryPayment(entry) {
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    return entry.payments[0].method;
+  }
+  return entry.payment || '';
+}
+
+// Formatiert Zahlungsarten für die Anzeige in Eintragszeilen.
+// 1 Zahlungsart: "Bank" | Mehrere: "Bank · Bar"
+export function formatPayments(entry) {
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    return entry.payments.map((p) => p.method).join(' · ');
+  }
+  return entry.payment || '';
+}
+
+// Gibt true wenn der Eintrag sofort als bezahlt gilt:
+// Alle Zahlungsarten müssen in INSTANT_PAID sein.
+const INSTANT_PAID_SET = new Set(['Bar', 'Sparschwein', 'Gutschein']);
+export function isInstantPaid(paymentsOrMethod) {
+  if (Array.isArray(paymentsOrMethod)) {
+    return paymentsOrMethod.length > 0 &&
+      paymentsOrMethod.every((p) => INSTANT_PAID_SET.has(p.method));
+  }
+  return INSTANT_PAID_SET.has(paymentsOrMethod);
 }
 
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
