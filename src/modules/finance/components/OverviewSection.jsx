@@ -1,6 +1,9 @@
 // modules/finance/components/OverviewSection.jsx
+// Modul-Übersicht für Finanzen — passt ohne Scrollen auf einen Screen.
+// Monatsnavigation entfernt — Übersicht zeigt immer den aktuellen Monat.
+// Navigation durch vergangene Monate nur noch in Buchungen (MonthsView).
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import * as db from '../lib/finData';
@@ -10,16 +13,13 @@ import {
   sumCat,
   getContractStatus,
   getTemplateStatus,
+  isSparschweinDeposit,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
-import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
-// Alle 4 Kategorien für die Schnellübersicht — Einnahmen zuerst, dann
-// die drei Ausgabenblöcke. Tone d = data-4 (weiß/hell, für Einnahmen
-// auf der Balken-Karte wird Einnahmen separat behandelt).
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
   { key: 'variable_kosten',   label: 'Variable Kosten', tone: 'b' },
@@ -30,23 +30,29 @@ export default function OverviewSection({ onNavigate }) {
   const { session } = useAuth();
   const { version } = useEntrySheet();
 
-  const now = new Date();
-  const [year,  setYear]  = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  // Immer aktueller Monat — kein State nötig
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
 
   const [entries,   setEntries]   = useState([]);
   const [templates, setTemplates] = useState([]);
   const [contracts, setContracts] = useState([]);
   const [loading,   setLoading]   = useState(true);
 
+  // useRef-Muster: session-Objekt ändert sich nicht pro Render → load bleibt stabil
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      await db.applyMissingFixTemplates(session, year, month);
+      const s = sessionRef.current;
+      await db.applyMissingFixTemplates(s, year, month);
       const [es, ts, cs] = await Promise.all([
-        db.getEntriesByMonth(session, year, month),
-        db.getFixTemplates(session),
-        db.getContracts(session),
+        db.getEntriesByMonth(s, year, month),
+        db.getFixTemplates(s),
+        db.getContracts(s),
       ]);
       setEntries(es);
       setTemplates(ts);
@@ -56,19 +62,19 @@ export default function OverviewSection({ onNavigate }) {
     } finally {
       setLoading(false);
     }
-  }, [session, year, month]);
+  }, [year, month]);
 
   useEffect(() => { load(); }, [load, version]);
 
-  function shiftMonth(delta) {
-    let m = month + delta, y = year;
-    if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
-    setMonth(m); setYear(y);
-  }
-
   // ── Kennzahlen ──────────────────────────────────────────────────────
-  const totalEin   = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
-  const spend      = SPEND_CATS.map((c) => ({ ...c, value: sumCat(entries, c.key) }));
+  // Sparschwein-Einlagen ("Ersparnisse") nicht als normale Ausgabe werten
+  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
+  const spend    = SPEND_CATS.map((c) => ({
+    ...c,
+    value: entries
+      .filter((e) => e.category === c.key && !isSparschweinDeposit(e))
+      .reduce((s, e) => s + Number(e.amount || 0), 0),
+  }));
   const totalAus   = spend.reduce((s, c) => s + c.value, 0);
   const saldo      = totalEin - totalAus;
   const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
@@ -85,24 +91,16 @@ export default function OverviewSection({ onNavigate }) {
     templates.filter((t) => getTemplateStatus(t) !== 'expired').length +
     contracts.filter((c) => getContractStatus(c) !== 'expired').length;
 
-  // Gesamtbetrag für den Balken (Ein + Aus, damit Einnahmen-Segment
-  // proportional zur Ausgabenseite dargestellt wird)
   const barTotal = Math.max(totalEin, totalAus) || 1;
 
   return (
     <>
-      {/* Kopfzeile: Titel + Monatswechsler */}
+      {/* Kopfzeile: Titel + Monat als Text (kein Wechsler mehr) */}
       <div className="fin-overview-head">
         <h1 className="overview-page-title">Finanzen</h1>
-        <div className="fin-month-pill">
-          <button onClick={() => shiftMonth(-1)} aria-label="Vorheriger Monat">
-            <IconChevronLeft />
-          </button>
-          <span>{MONTHS_DE[month - 1]}</span>
-          <button onClick={() => shiftMonth(1)} aria-label="Nächster Monat">
-            <IconChevronRight />
-          </button>
-        </div>
+        <span className="t-meta" style={{ color: 'var(--text-muted)', alignSelf: 'center' }}>
+          {MONTHS_DE[month - 1]} {year}
+        </span>
       </div>
 
       {/* Fokuskarte: Saldo */}
@@ -173,9 +171,14 @@ export default function OverviewSection({ onNavigate }) {
         </button>
       </PageSection>
 
-      {/* ── Bereiche (ohne "Buchungen" — der ist jetzt in Schnellübersicht) */}
+      {/* ── Bereiche */}
       <PageSection title="Bereiche">
         <AreaList fabClearance>
+          <AreaRow
+            label="Buchungen"
+            value={`${entries.length} im Monat`}
+            onPress={() => onNavigate('buchungen')}
+          />
           <AreaRow
             label="Offene Posten"
             value={offene.length > 0 ? `${offene.length} · ${formatEur(offeneSumme)}` : 'alles bezahlt'}
