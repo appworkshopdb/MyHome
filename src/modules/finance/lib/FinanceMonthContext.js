@@ -6,8 +6,10 @@
 // SparschweinFab liest beim Einzahlen raus.
 // Solange MonthsView nicht gemountet ist (Übersicht, andere Screens)
 // bleibt der Wert auf dem echten aktuellen Monat.
+//
+// Kein JSX — bleibt .js-kompatibel (createElement statt JSX-Syntax).
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, createElement, useContext, useState } from 'react';
 
 const now = new Date();
 
@@ -27,10 +29,10 @@ export function FinanceMonthProvider({ children }) {
     setActiveMonth_(month);
   }
 
-  return (
-    <FinanceMonthContext.Provider value={{ activeYear, activeMonth, setActiveMonth }}>
-      {children}
-    </FinanceMonthContext.Provider>
+  return createElement(
+    FinanceMonthContext.Provider,
+    { value: { activeYear, activeMonth, setActiveMonth } },
+    children
   );
 }
 
