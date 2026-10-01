@@ -26,6 +26,24 @@ function loadFilter() {
   }
 }
 
+// Pfeil-Icons (SVG, erben die Textfarbe) statt Textzeichen wie ‹ › oder ->.
+function Arrow({ dir, size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === 'left' ? <path d="M19 12H5M11 6l-6 6 6 6" /> : <path d="M5 12h14M13 6l6 6-6 6" />}
+    </svg>
+  );
+}
+function Chevron({ dir }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={dir === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} />
+    </svg>
+  );
+}
+
 // Punkte pro Tag (Wochenstreifen): gefüllt = App, Ring = Google.
 function EventDots({ events, calMap }) {
   const seen = new Map();
@@ -176,10 +194,18 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
     else setRefDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
   }
   function goToday() { setRefDate(new Date()); setSelDay(todayStr); }
+  // Richtung zu „heute“: Liegt der Zeitraum in der Zukunft, steht der Button
+  // links vom Datum (Pfeil nach links), in der Vergangenheit rechts.
   const now = new Date();
-  const awayFromToday = mode === 'woche'
-    ? toDateStr(startOfWeek(refDate)) !== toDateStr(startOfWeek(now))
-    : mode === 'monat' && (refDate.getMonth() !== now.getMonth() || refDate.getFullYear() !== now.getFullYear());
+  let todayDir = null; // 'left' | 'right' | null
+  if (mode === 'woche') {
+    const cur = toDateStr(startOfWeek(refDate)), nowWeek = toDateStr(startOfWeek(now));
+    todayDir = cur > nowWeek ? 'left' : cur < nowWeek ? 'right' : null;
+  } else if (mode === 'monat') {
+    const cur = refDate.getFullYear() * 12 + refDate.getMonth();
+    const nowM = now.getFullYear() * 12 + now.getMonth();
+    todayDir = cur > nowM ? 'left' : cur < nowM ? 'right' : null;
+  }
 
   function switchMode(key) {
     setMode(key);
@@ -210,8 +236,13 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
 
       {mode !== 'agenda' && (
         <div className="calview-nav">
-          <button className="calview-nav-arrow" onClick={() => navigate(-1)} aria-label="Zurück">‹</button>
+          <button className="calview-nav-arrow" onClick={() => navigate(-1)} aria-label="Zurück"><Chevron dir="left" /></button>
           <div className="calview-nav-center">
+            <div className="calview-nav-slot left">
+              {todayDir === 'left' && (
+                <button className="calview-today-btn" onClick={goToday}><Arrow dir="left" />zu heute</button>
+              )}
+            </div>
             <span className="calview-nav-label">
               {mode === 'woche' && (() => {
                 const s = weekDays[0], e = weekDays[6];
@@ -219,9 +250,13 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
               })()}
               {mode === 'monat' && `${MONTH_NAMES[refDate.getMonth()]} ${refDate.getFullYear()}`}
             </span>
-            {awayFromToday && <button className="calview-today-btn" onClick={goToday}>Heute</button>}
+            <div className="calview-nav-slot right">
+              {todayDir === 'right' && (
+                <button className="calview-today-btn" onClick={goToday}>zu heute<Arrow dir="right" /></button>
+              )}
+            </div>
           </div>
-          <button className="calview-nav-arrow" onClick={() => navigate(1)} aria-label="Weiter">›</button>
+          <button className="calview-nav-arrow" onClick={() => navigate(1)} aria-label="Weiter"><Chevron dir="right" /></button>
         </div>
       )}
 
