@@ -4102,3 +4102,251 @@
 .notif-toggle-track.on .notif-toggle-thumb {
   transform: translateX(18px);
 }
+
+/* ── Tagesplan (Hub) ─────────────────────────────────────────── */
+.dayplan-popup {
+  position:      fixed;
+  right:         0;
+  top:           38%;
+  z-index:       210;
+  display:       flex;
+  align-items:   stretch;
+  background:    var(--action-primary);
+  color:         var(--text-on-accent);
+  border-radius: var(--r-2xl) 0 0 var(--r-2xl);
+  box-shadow:    var(--shadow-float);
+  max-width:     220px;
+}
+.dayplan-popup-main {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            2px;
+  padding:        12px 8px 12px 16px;
+  background:     none;
+  border:         none;
+  color:          inherit;
+  text-align:     left;
+  cursor:         pointer;
+}
+.dayplan-popup-title { font-size: 14px; font-weight: 800; }
+.dayplan-popup-sub   { font-size: 12px; font-weight: 600; opacity: 0.85; }
+.dayplan-popup-close {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 18px; padding: 0 12px 0 6px; opacity: 0.8;
+}
+
+.dayplan-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       14px 18px 6px;
+}
+.dayplan-head  { margin-bottom: 8px; }
+.dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
+.dayplan-bar {
+  height: 5px; border-radius: var(--r-pill); background: var(--data-track);
+  margin-top: 8px; overflow: hidden;
+}
+.dayplan-bar-fill { height: 100%; background: var(--action-primary); transition: width var(--motion-calm); }
+.dayplan-empty { padding: 12px 0; font-size: 14px; color: var(--text-muted); }
+.dayplan-group { padding: 8px 0 4px; }
+.dayplan-group-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;
+}
+.dayplan-row {
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--touch-target); border-top: 1px solid var(--surface-page);
+}
+.dayplan-group .dayplan-row:first-of-type { border-top: none; }
+.dayplan-check {
+  width: 21px; height: 21px; border-radius: 7px; flex-shrink: 0; padding: 0;
+  border: 1.8px solid var(--border-strong); background: none; cursor: pointer;
+  color: var(--text-on-accent); font-size: 13px; line-height: 1;
+}
+.dayplan-check.checked { background: var(--action-primary); border-color: var(--action-primary); }
+.dayplan-icon { flex-shrink: 0; }
+.dayplan-time { font-size: 12px; font-weight: 800; color: var(--text-muted); min-width: 48px; flex-shrink: 0; }
+.dayplan-row-title {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
+.dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
+.dayplan-meta.critical { color: var(--status-critical); }
+.dayplan-link {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  border-top: 1px solid var(--surface-page); padding: 13px 0; margin-top: 4px;
+  font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
+}
+
+/* ── Kalender: Quelle erkennbar (App vs. Google) + Filter ─────────── */
+.calview-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--dot-color, var(--text-muted));
+  display: inline-block;
+}
+.calview-dot--google {            /* Ring = Google, gefüllt = App */
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--dot-color);
+}
+
+.calview-event-row { border-left: 4px solid var(--ev-color, var(--border-hairline)); }
+.calview-event-row.is-google { background: color-mix(in srgb, var(--ev-color) 7%, var(--surface-raised)); }
+
+.calview-source-badge {
+  align-self: flex-start;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: var(--r-pill);
+  margin-bottom: 2px;
+}
+.calview-source-badge.app {
+  background: var(--surface-sunken); color: var(--text-secondary);
+}
+.calview-source-badge.google {
+  background: color-mix(in srgb, var(--ev-color) 18%, transparent);
+  color: var(--text-primary);
+}
+
+.calview-filter { margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.calview-source-toggle {
+  display: flex; gap: 4px; background: var(--surface-sunken);
+  border-radius: var(--r-lg); padding: 4px;
+}
+.calview-source-toggle button {
+  flex: 1; border: none; background: transparent; padding: 6px 0;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+  border-radius: var(--r-md); cursor: pointer;
+}
+.calview-source-toggle button.active {
+  background: var(--surface-raised); color: var(--text-primary); box-shadow: var(--shadow-card);
+}
+.calview-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.calview-chips::-webkit-scrollbar { display: none; }
+.calview-chip, .calview-chip-reset {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  border: 1px solid var(--border-hairline); background: var(--surface-raised);
+  color: var(--text-primary); font-size: 0.78rem; font-weight: 600;
+  padding: 5px 10px; border-radius: var(--r-pill); cursor: pointer;
+}
+.calview-chip.off { opacity: 0.45; text-decoration: line-through; background: transparent; }
+.calview-chip-reset { border-style: dashed; color: var(--text-secondary); }
+
+/* ── Kalender v2: Agenda, Check, Monats-Chips, Detail-Sheet ──────── */
+.calview-nav-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.calview-nav-center .calview-nav-label { flex: 0 1 auto; }
+.calview-today-btn {
+  border: none; background: var(--action-primary); color: var(--text-on-accent);
+  font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); cursor: pointer;
+}
+
+.calview-event-row { cursor: pointer; align-items: center; }
+.calview-event-row:focus-visible { outline: 2px solid var(--action-primary); outline-offset: 2px; }
+.calview-event-chevron { color: var(--text-muted); font-size: 1.2rem; flex-shrink: 0; }
+.calview-check {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid var(--text-muted); background: transparent;
+  color: var(--text-on-accent); font-size: 0.8rem; font-weight: 800; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.calview-check.checked { background: var(--status-positive); border-color: var(--status-positive); }
+.calview-event-row.done .calview-event-title { text-decoration: line-through; }
+
+.calview-week-group { scroll-margin-top: 84px; }
+.calview-week-group-label.today { color: var(--action-primary); }
+.calview-group-empty { font-size: 0.8rem; color: var(--text-muted); padding: 2px 0 4px; }
+.calview-week-day.selected:not(.today) { box-shadow: inset 0 0 0 2px var(--action-primary); }
+.calview-more-btn {
+  border: 1px dashed var(--border-hairline); background: transparent; color: var(--text-secondary);
+  font-size: 0.82rem; font-weight: 600; padding: 10px; border-radius: var(--r-lg); cursor: pointer;
+  margin-top: var(--space-2);
+}
+
+/* Monatsraster mit Titel-Chips (Google-Stil) */
+.calview-month-cell {
+  aspect-ratio: auto; min-height: 84px; align-items: stretch;
+  padding: 4px 3px; overflow: hidden; gap: 2px;
+}
+.calview-month-cell .calview-month-dd { align-self: center; }
+.calview-month-chips { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.calview-mchip {
+  display: block; font-size: 0.6rem; font-weight: 600; line-height: 1.25;
+  padding: 1px 3px; border-radius: 3px; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.calview-mchip.app { background: var(--ev-color); color: var(--text-on-accent); }
+.calview-mchip.google {
+  background: color-mix(in srgb, var(--ev-color) 20%, var(--surface-raised));
+  color: var(--text-primary); box-shadow: inset 2px 0 0 var(--ev-color);
+}
+.calview-mchip.done { opacity: 0.5; text-decoration: line-through; }
+.calview-mchip-more { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-align: left; padding-left: 3px; }
+.calview-month-cell.today .calview-mchip-more { color: var(--text-on-accent); }
+
+/* Detail-Sheet */
+.calview-detail { padding: 0 20px 24px; display: flex; flex-direction: column; gap: var(--space-2); }
+.calview-detail-title { margin: 4px 0 var(--space-2); font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.calview-detail-title.done { text-decoration: line-through; opacity: 0.6; }
+.calview-detail-list { display: grid; grid-template-columns: 90px 1fr; gap: 8px var(--space-3); margin: 0; font-size: 0.88rem; }
+.calview-detail-list dt { color: var(--text-muted); font-weight: 600; }
+.calview-detail-list dd { margin: 0; color: var(--text-primary); }
+.calview-detail-desc { white-space: pre-wrap; }
+.calview-detail-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.calview-btn {
+  flex: 1; border: 1px solid var(--border-hairline); background: var(--surface-raised); color: var(--text-primary);
+  font-size: 0.88rem; font-weight: 700; padding: 11px; border-radius: var(--r-lg); cursor: pointer;
+}
+.calview-btn.primary { background: var(--action-primary); border-color: var(--action-primary); color: var(--text-on-accent); }
+
+/* „zu heute“-Button: links vom Datum bei Zukunft, rechts bei Vergangenheit */
+.calview-nav-center { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-2); }
+.calview-nav-slot { display: flex; min-width: 0; }
+.calview-nav-slot.left { justify-content: flex-end; }
+.calview-nav-slot.right { justify-content: flex-start; }
+.calview-nav-center .calview-nav-label { white-space: nowrap; }
+.calview-today-btn {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  background: var(--surface-raised); color: var(--action-primary);
+  border: 1px solid var(--action-primary); font-size: 0.72rem; padding: 3px 8px;
+}
+.calview-nav-arrow { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+/* Korrektur: „zu heute“ in eigener Zeile unter der Navigation (kein Überlappen) */
+.calview-nav-center { display: flex; justify-content: center; min-width: 0; }
+.calview-nav-arrow { flex-shrink: 0; }
+.calview-today-row { display: flex; margin: calc(var(--space-2) * -1) 0 var(--space-3); }
+.calview-today-row.left { justify-content: flex-start; }
+.calview-today-row.right { justify-content: flex-end; }
+.calview-today-btn { padding: 5px 12px; font-size: 0.78rem; font-weight: 700; border-radius: var(--r-pill); cursor: pointer; }
+
+/* ── Kalender: Tage klar trennen (Agenda + Woche) ───────────────── */
+.calview-day-list:has(.calview-day-group) { gap: 0; }
+.calview-day-group {
+  display: grid; grid-template-columns: 52px 1fr; gap: var(--space-3);
+  padding: var(--space-4) 0; scroll-margin-top: 84px;
+  border-top: 1px solid var(--border-hairline);
+}
+.calview-day-group:first-child { border-top: none; }
+.calview-day-date {
+  display: flex; flex-direction: column; align-items: center; align-self: start;
+  padding: 6px 0; border-radius: var(--r-md);
+  color: var(--text-secondary); line-height: 1.15;
+}
+.calview-day-wd { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.calview-day-num { font-size: 1.45rem; font-weight: 800; color: var(--text-primary); }
+.calview-day-mon { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
+.calview-day-group.weekend .calview-day-wd { color: var(--action-primary); }
+.calview-day-group.today .calview-day-date { background: var(--action-primary); }
+.calview-day-group.today .calview-day-wd,
+.calview-day-group.today .calview-day-num,
+.calview-day-group.today .calview-day-mon { color: var(--text-on-accent); }
+.calview-day-events { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.calview-day-events .calview-event-row { margin: 0; }
+.calview-group-empty { font-size: 0.82rem; color: var(--text-muted); padding: 10px 0; }
+
+/* Monat: Zellen mit feiner Kontur, Wochenende leicht abgesetzt */
+.calview-month-cell { box-shadow: inset 0 0 0 1px var(--border-hairline); }
+.calview-month-cell:nth-child(7n+6), .calview-month-cell:nth-child(7n) { background: var(--surface-sunken); }
+.calview-month-cell.today, .calview-month-cell.today:nth-child(n) { box-shadow: none; background: var(--action-primary); }

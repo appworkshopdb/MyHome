@@ -4,6 +4,9 @@ import { getMonthSum } from './lib/measurementsData';
 import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
+import { getCalendarEvents } from './lib/calendarData';
+import { buildDayPlan, setWorkoutDone, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
+import { DayPlanPopup, DayPlanSection } from './components/DayPlan';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import PageSection from './components/PageSection';
@@ -175,6 +178,17 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   const [todoSheet, setTodoSheet]   = useState(false);
   const [editTodo, setEditTodo]     = useState(null);
   const [todoView, setTodoView]     = useState('alle');
+  const [events, setEvents]         = useState([]);
+  // Plan sichtbar, sobald er heute einmal geöffnet wurde (bleibt dann den Tag über)
+  const [planOpen, setPlanOpen]     = useState(() => wasOpenedToday());
+  const [popupAus, setPopupAus]     = useState(false);
+
+  // Heutige Termine separat und fehlertolerant: ein Kalenderfehler darf
+  // den Hub nicht in den Fehlerzustand schicken.
+  useEffect(() => {
+    const t = habTodayStr();
+    getCalendarEvents(t, t).then((m) => setEvents(m[t] ?? [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async (opts = {}) => {
     // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
@@ -300,6 +314,23 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
 
+  // Training abhaken — gleiche Zeile wie im Sport-Modul (spo_workouts.status)
+  async function handleToggleWorkout(workout) {
+    const wirdErledigt = workout.status !== 'done';
+    const setStatus_ = (st) => setTodaySport((prev) => prev.map((w) => w.id === workout.id ? { ...w, status: st } : w));
+    setStatus_(wirdErledigt ? 'done' : 'planned');
+    try {
+      await setWorkoutDone(workout.id, wirdErledigt);
+      if (wirdErledigt) fb.workoutDone();
+    } catch (e) {
+      console.error('[Hub] Training-Toggle fehlgeschlagen:', e);
+      setStatus_(workout.status);
+    }
+  }
+
+  function openDayPlan() { markOpenedToday(); setPlanOpen(true); }
+  function dismissPopup() { markDismissedThisSession(); setPopupAus(true); }
+
   async function handleDeleteTodo(id) {
     setTodos((prev) => prev.filter((t) => t.id !== id));
     try { await deleteTodo(id); }
@@ -358,6 +389,11 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                               { icon: '·', text: 'Nichts geplant' };
 
   const offeneSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+  const dayPlan = buildDayPlan({
+    todos, habits: habHabits, habEntries, workouts: todaySport, events, openPosten, today: todayStr,
+  });
+  const zeigePopup = !planOpen && !popupAus && !dayPlan.isEmpty && shouldOfferPopup();
 
   // ---- Ladestate ----
   if (status === 'laedt') {
@@ -456,8 +492,16 @@ export default function Hub({ onOpenModule, hasWarnings }) {
       <>
         <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.kalender} hasWarnings={hasWarnings} />
         <div className="hub with-topbar-space">
-          <CalendarView />
+          <CalendarView todos={todos} onToggleTodo={handleToggleTodo} onEditTodo={openEditTodo} />
         </div>
+
+        {todoSheet && (
+          <TodoSheet
+            onClose={() => setTodoSheet(false)}
+            onSaved={handleTodoSaved}
+            editTodo={editTodo}
+          />
+        )}
       </>
     );
   }
@@ -641,7 +685,21 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               )}
             </FocusCard>
 
-            {/* Heute — zwei Kacheln */}
+            {/* Tagesplan — erscheint, sobald das Popup heute geöffnet wurde */}
+            {planOpen && (
+              <PageSection title="Dein Tagesplan">
+                <DayPlanSection
+                  plan={dayPlan}
+                  onToggleTodo={handleToggleTodo}
+                  onToggleWorkout={handleToggleWorkout}
+                  onToggleHabit={handleToggleHabit}
+                  onOpenFinance={() => onOpenModule('finance/offen')}
+                />
+              </PageSection>
+            )}
+
+            {/* Heute — zwei Kacheln; entfallen, sobald der Tagesplan offen ist (zeigt dasselbe) */}
+            {!planOpen && (
             <PageSection
               title="Heute"
               action={{ label: 'Kalender ›', onPress: () => setBereich('kalender') }}
@@ -669,6 +727,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 </button>
               </div>
             </PageSection>
+            )}
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
             <PageSection
@@ -718,6 +777,10 @@ export default function Hub({ onOpenModule, hasWarnings }) {
           </>
         )}
       </div>
+
+      {zeigePopup && (status === 'daten' || status === 'veraltet') && (
+        <DayPlanPopup plan={dayPlan} onOpen={openDayPlan} onDismiss={dismissPopup} />
+      )}
 
       {todoSheet && (
         <TodoSheet

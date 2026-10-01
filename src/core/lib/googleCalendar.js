@@ -38,3 +38,14 @@ export async function disconnectGoogleCalendar(session) {
   });
   if (!res.ok) throw new Error('Trennen fehlgeschlagen');
 }
+
+// Liste der Google-Kalender des Users (für Namen/Farben/Filter im Hub).
+// Fehler werden bewusst geschluckt: ohne Liste fällt die Ansicht auf
+// "Google" ohne Kalendernamen zurück.
+export async function getGoogleCalendars() {
+  const { data, error } = await getSupabase()
+    .from('google_calendars')
+    .select('google_calendar_id, summary, color');
+  if (error) throw error;
+  return data ?? [];
+}
