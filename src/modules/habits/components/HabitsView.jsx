@@ -574,13 +574,13 @@ export default function HabitsView({ habits, onHabitsChange }) {
     <div className="hab-habits-view">
 
       <div className="hab-habits-actions">
-        <button className="btn btn-secondary" onClick={openLibrary}>Vorlagen</button>
-        <button className="hab-archive-btn" onClick={openArchive} title="Archiv">📦</button>
+        <button className="hab-pill-btn" onClick={openLibrary}>Vorlagen</button>
+        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv">📦</button>
       </div>
 
       {showOverloadWarning && (
         <div className="hab-overload-warning">
-          <span>💡</span>
+          <span className="hab-overload-icon">💡</span>
           <span>Du hast {activeHabits.length} aktive Gewohnheiten. Für nachhaltigen Erfolg empfehlen Experten max. 3–5.</span>
         </div>
       )}
@@ -684,34 +684,47 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
       {/* Drag-Handle */}
       {!noSort && (
         <div className="hab-drag-handle" {...attributes} {...listeners} title="Ziehen zum Sortieren">
-          ⠿
+          <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true">
+            <circle cx="4" cy="3" r="1.5" /><circle cx="10" cy="3" r="1.5" />
+            <circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" />
+            <circle cx="4" cy="15" r="1.5" /><circle cx="10" cy="15" r="1.5" />
+          </svg>
         </div>
       )}
 
       <div className="hab-manage-card-left">
-        <span className="hab-item-icon">{habit.icon}</span>
-        <div>
+        <span className="hab-item-icon hab-item-icon--tile">{habit.icon}</span>
+        <div className="hab-manage-text">
           <div className="hab-manage-name">{habit.name}</div>
           <div className="hab-manage-meta">
             {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
             {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit ?? ''}`}
-            {habit.reminder_time && ` · ⏰ ${habit.reminder_time}`}
+            {habit.reminder_time && ` · ${habit.reminder_time} Uhr`}
           </div>
         </div>
       </div>
 
       <div className="hab-manage-card-right">
-        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'}>
-          {paused ? '▶' : '⏸'}
+        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'} aria-label={paused ? 'Aktivieren' : 'Pausieren'}>
+          {paused ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+          )}
         </button>
-        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten">✏️</button>
+        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten" aria-label="Bearbeiten">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+        </button>
         <button
           className="hab-manage-btn hab-manage-btn--del"
           onClick={onDelete}
           disabled={deleting}
           title="Löschen"
+          aria-label="Löschen"
         >
-          {deleting ? '…' : '🗑'}
+          {deleting ? '…' : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
+          )}
         </button>
       </div>
     </div>
