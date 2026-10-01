@@ -52,7 +52,7 @@ function memberSince(isoDate) {
 // aktuell bewusst keine eigene Ziele-Funktion (siehe Projektkontext.md).
 export default function Profile({ onOpenModule, hasWarnings }) {
   const { view, navigate } = useRoute();
-  const section = PROFILE_SECTIONS.some((s) => s.key === view) ? view : 'konto';
+  const section = PROFILE_SECTIONS.some((s) => s.key === view) ? view : 'profil';
   const sectionTitle = PROFILE_SECTIONS.find((s) => s.key === section).label;
   const { session, setSession } = useAuth();
   const { showToast } = useUi();
@@ -135,7 +135,7 @@ export default function Profile({ onOpenModule, hasWarnings }) {
     <div className="hub with-topbar-space">
       <ModuleTopBar title={sectionTitle} hasWarnings={hasWarnings} onBack={() => navigate('')} />
 
-      {section === 'konto' && (
+      {section === 'profil' && (
       <div className="card">
         <div className="card-title">Konto</div>
         <p style={{ fontSize: '0.9rem', marginBottom: 2 }}>{session.user.email}</p>
@@ -174,31 +174,31 @@ export default function Profile({ onOpenModule, hasWarnings }) {
       )}
 
       {/* Körperdaten */}
-      {section === 'koerperdaten' && (
+      {section === 'profil' && (
         <div className="card">
           {loading || !bodyProfile ? (
             <div className="status-note">Wird geladen…</div>
           ) : (
-            <BodyDataForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />
+            <BodyDataForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle />
           )}
           <p className="profile-section-hint">Gilt app-weit — für Ernährung und Sport.</p>
         </div>
       )}
 
       {/* Aktivität & Ziel */}
-      {section === 'aktivitaet' && (
+      {section === 'ziele' && (
         <div className="card">
           {loading || !bodyProfile ? (
             <div className="status-note">Wird geladen…</div>
           ) : (
-            <ActivityGoalForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />
+            <ActivityGoalForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle />
           )}
           <p className="profile-section-hint">Trainingsfokus und Sportarten steuern das Sport-Modul.</p>
         </div>
       )}
 
       {/* Ernährungsform (aus dem Ernährungs-Modul migriert) */}
-      {section === 'ernaehrung' && !loading && dietProfile && (
+      {section === 'ziele' && !loading && dietProfile && (
         <div className="card">
           <div className="card-title">Ernährungsform</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
@@ -229,12 +229,12 @@ export default function Profile({ onOpenModule, hasWarnings }) {
 
       {/* BMI/Kalorien-Ergebnis (aus dem Ernährungs-Modul migriert, um
           Fett-/KH-Ziel und Idealgewicht-Bereich ergänzt) */}
-      {section === 'ergebnis' && !loading && (
+      {section === 'werte' && !loading && (
         <div className="card">
-          <div className="card-title">Dein Ergebnis</div>
+          <div className="card-title">Deine Werte</div>
           {!body ? (
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Trag unter „Körperdaten“ Alter, Größe und Gewicht ein, um dein Ergebnis zu sehen.
+              Trag im Profil Alter, Größe und Gewicht ein, um dein Ergebnis zu sehen.
             </p>
           ) : (
             <>
@@ -258,7 +258,7 @@ export default function Profile({ onOpenModule, hasWarnings }) {
       )}
 
       {/* Ziele-Vorschau je Modul */}
-      {section === 'aktivitaet' && (<>
+      {section === 'ziele' && (<>
       <div className="hub-activity-label">Ziele &amp; Meilensteine</div>
       <div className="card hub-activity-card">
         {!loading && modulesWithGoals.length === 0 && (

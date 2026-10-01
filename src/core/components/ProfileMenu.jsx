@@ -1,11 +1,9 @@
 // Dropdown am Profil-Avatar (ModuleTopBar). Jeder Punkt führt in einen
 // eigenen Bereich der Profilseite (#/profile/<key>), siehe core/Profile.jsx.
 export const PROFILE_SECTIONS = [
-  { key: 'konto', label: 'Konto' },
-  { key: 'koerperdaten', label: 'Körperdaten' },
-  { key: 'aktivitaet', label: 'Aktivität & Ziel' },
-  { key: 'ernaehrung', label: 'Ernährungsform' },
-  { key: 'ergebnis', label: 'Dein Ergebnis' },
+  { key: 'profil', label: 'Profil' },             // Konto + Körperdaten
+  { key: 'ziele', label: 'Ziele & Ernährung' },   // Aktivität & Ziel + Ernährungsform
+  { key: 'werte', label: 'Deine Werte' },         // berechnetes Ergebnis (BMI, Kalorien …)
 ];
 
 export default function ProfileMenu({ active, hasWarnings, onSelect, onClose }) {
@@ -21,7 +19,7 @@ export default function ProfileMenu({ active, hasWarnings, onSelect, onClose }) 
             onClick={() => onSelect(s.key)}
           >
             {s.label}
-            {hasWarnings && (s.key === 'koerperdaten' || s.key === 'aktivitaet') && (
+            {hasWarnings && (s.key === 'profil' || s.key === 'ziele') && (
               <span className="warn-dot-inline" aria-label="Angaben fehlen" />
             )}
           </button>
