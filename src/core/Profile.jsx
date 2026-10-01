@@ -8,6 +8,7 @@ import { computeBody, GOAL_NOTE, METRIC_INFO } from './lib/bodyCalc';
 import { getGoals } from './lib/goalsData';
 import { BodyDataForm, ActivityGoalForm } from './components/BodyProfileForm';
 import { PROFILE_SECTIONS } from './components/ProfileMenu';
+import { fileToAvatarDataUrl, saveAvatar, useAvatar } from './lib/avatarData';
 import { useRoute } from './lib/useRoute';
 import ModuleTopBar from './components/ModuleTopBar';
 import Modal from './components/Modal';
@@ -63,6 +64,8 @@ export default function Profile({ onOpenModule, hasWarnings }) {
   const [loading, setLoading] = useState(true);
   const [infoKey, setInfoKey] = useState(null); // welches Info-Modal offen ist
 
+  const avatar = useAvatar(session);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [pwForm, setPwForm] = useState(false);
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
@@ -116,6 +119,22 @@ export default function Profile({ onOpenModule, hasWarnings }) {
     }
   }
 
+  async function handleAvatarFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAvatarBusy(true);
+    try {
+      await saveAvatar(session, await fileToAvatarDataUrl(file));
+      showToast('Profilbild gespeichert');
+    } catch (err) {
+      showToast('Profilbild konnte nicht gespeichert werden');
+      console.error(err);
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
   async function changePassword() {
     if (pw1.length < 6) { setPwStatus({ type: 'error', text: 'Mindestens 6 Zeichen.' }); return; }
     if (pw1 !== pw2) { setPwStatus({ type: 'error', text: 'Passwörter stimmen nicht überein.' }); return; }
@@ -138,6 +157,15 @@ export default function Profile({ onOpenModule, hasWarnings }) {
       {section === 'profil' && (
       <div className="card">
         <div className="card-title">Konto</div>
+        <div className="profile-avatar-row">
+          <label className="profile-avatar-pick" aria-label="Profilbild ändern">
+            <span className="profile-avatar">
+              {avatar ? <img src={avatar} alt="" /> : (session.user.email?.[0]?.toUpperCase() || '?')}
+            </span>
+            <input type="file" accept="image/*" hidden disabled={avatarBusy} onChange={handleAvatarFile} />
+          </label>
+          <span className="profile-avatar-hint">{avatarBusy ? 'Wird gespeichert…' : avatar ? 'Profilbild ändern' : 'Profilbild hinzufügen'}</span>
+        </div>
         <p style={{ fontSize: '0.9rem', marginBottom: 2 }}>{session.user.email}</p>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 14 }}>
           {memberSince(session.user.created_at)}

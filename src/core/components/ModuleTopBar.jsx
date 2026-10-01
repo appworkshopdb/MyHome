@@ -35,6 +35,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useRoute } from '../lib/useRoute';
 import AppMenu from '../AppMenu';
 import GamificationBadges from './GamificationBadges.jsx';
+import { useAvatar } from '../lib/avatarData';
 import ProfileMenu from './ProfileMenu.jsx';
 
 // Zahnrad-Icon — 20px, 1.8px Stroke, stroke-linecap: round
@@ -63,6 +64,7 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
   const { module: routeModule, view: routeView, navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const avatar = useAvatar(session);
   const initial = session?.user?.email?.[0]?.toUpperCase() || '?';
 
   return (
@@ -116,7 +118,7 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
             }
           >
             <span className="chrome-top-avatar">
-              {initial}
+              {avatar ? <img className="chrome-top-avatar-img" src={avatar} alt="" /> : initial}
               {hasWarnings && (
                 <span className="warn-dot" aria-hidden="true" />
               )}
