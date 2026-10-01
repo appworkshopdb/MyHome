@@ -238,11 +238,6 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
         <div className="calview-nav">
           <button className="calview-nav-arrow" onClick={() => navigate(-1)} aria-label="Zurück"><Chevron dir="left" /></button>
           <div className="calview-nav-center">
-            <div className="calview-nav-slot left">
-              {todayDir === 'left' && (
-                <button className="calview-today-btn" onClick={goToday}><Arrow dir="left" />zu heute</button>
-              )}
-            </div>
             <span className="calview-nav-label">
               {mode === 'woche' && (() => {
                 const s = weekDays[0], e = weekDays[6];
@@ -250,13 +245,16 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
               })()}
               {mode === 'monat' && `${MONTH_NAMES[refDate.getMonth()]} ${refDate.getFullYear()}`}
             </span>
-            <div className="calview-nav-slot right">
-              {todayDir === 'right' && (
-                <button className="calview-today-btn" onClick={goToday}>zu heute<Arrow dir="right" /></button>
-              )}
-            </div>
           </div>
           <button className="calview-nav-arrow" onClick={() => navigate(1)} aria-label="Weiter"><Chevron dir="right" /></button>
+        </div>
+      )}
+
+      {todayDir && (
+        <div className={`calview-today-row ${todayDir}`}>
+          <button className="calview-today-btn" onClick={goToday}>
+            {todayDir === 'left' ? <><Arrow dir="left" />zu heute</> : <>zu heute<Arrow dir="right" /></>}
+          </button>
         </div>
       )}
 

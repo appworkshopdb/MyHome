@@ -4312,3 +4312,11 @@
   border: 1px solid var(--action-primary); font-size: 0.72rem; padding: 3px 8px;
 }
 .calview-nav-arrow { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+/* Korrektur: „zu heute“ in eigener Zeile unter der Navigation (kein Überlappen) */
+.calview-nav-center { display: flex; justify-content: center; min-width: 0; }
+.calview-nav-arrow { flex-shrink: 0; }
+.calview-today-row { display: flex; margin: calc(var(--space-2) * -1) 0 var(--space-3); }
+.calview-today-row.left { justify-content: flex-start; }
+.calview-today-row.right { justify-content: flex-end; }
+.calview-today-btn { padding: 5px 12px; font-size: 0.78rem; font-weight: 700; border-radius: var(--r-pill); cursor: pointer; }
