@@ -4102,3 +4102,82 @@
 .notif-toggle-track.on .notif-toggle-thumb {
   transform: translateX(18px);
 }
+
+/* ── Tagesplan (Hub) ─────────────────────────────────────────── */
+.dayplan-popup {
+  position:      fixed;
+  right:         0;
+  top:           38%;
+  z-index:       210;
+  display:       flex;
+  align-items:   stretch;
+  background:    var(--action-primary);
+  color:         var(--text-on-accent);
+  border-radius: var(--r-2xl) 0 0 var(--r-2xl);
+  box-shadow:    var(--shadow-float);
+  max-width:     220px;
+}
+.dayplan-popup-main {
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            2px;
+  padding:        12px 8px 12px 16px;
+  background:     none;
+  border:         none;
+  color:          inherit;
+  text-align:     left;
+  cursor:         pointer;
+}
+.dayplan-popup-title { font-size: 14px; font-weight: 800; }
+.dayplan-popup-sub   { font-size: 12px; font-weight: 600; opacity: 0.85; }
+.dayplan-popup-close {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 18px; padding: 0 12px 0 6px; opacity: 0.8;
+}
+
+.dayplan-card {
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow:    var(--shadow-card);
+  padding:       14px 18px 6px;
+}
+.dayplan-head  { margin-bottom: 8px; }
+.dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
+.dayplan-bar {
+  height: 5px; border-radius: var(--r-pill); background: var(--data-track);
+  margin-top: 8px; overflow: hidden;
+}
+.dayplan-bar-fill { height: 100%; background: var(--action-primary); transition: width var(--motion-calm); }
+.dayplan-empty { padding: 12px 0; font-size: 14px; color: var(--text-muted); }
+.dayplan-group { padding: 8px 0 4px; }
+.dayplan-group-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;
+}
+.dayplan-row {
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--touch-target); border-top: 1px solid var(--surface-page);
+}
+.dayplan-group .dayplan-row:first-of-type { border-top: none; }
+.dayplan-check {
+  width: 21px; height: 21px; border-radius: 7px; flex-shrink: 0; padding: 0;
+  border: 1.8px solid var(--border-strong); background: none; cursor: pointer;
+  color: var(--text-on-accent); font-size: 13px; line-height: 1;
+}
+.dayplan-check.checked { background: var(--action-primary); border-color: var(--action-primary); }
+.dayplan-icon { flex-shrink: 0; }
+.dayplan-time { font-size: 12px; font-weight: 800; color: var(--text-muted); min-width: 48px; flex-shrink: 0; }
+.dayplan-row-title {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
+.dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
+.dayplan-meta.critical { color: var(--status-critical); }
+.dayplan-link {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  border-top: 1px solid var(--surface-page); padding: 13px 0; margin-top: 4px;
+  font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
+}
