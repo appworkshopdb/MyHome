@@ -690,7 +690,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               </PageSection>
             )}
 
-            {/* Heute — zwei Kacheln */}
+            {/* Heute — zwei Kacheln; entfallen, sobald der Tagesplan offen ist (zeigt dasselbe) */}
+            {!planOpen && (
             <PageSection
               title="Heute"
               action={{ label: 'Kalender ›', onPress: () => setBereich('kalender') }}
@@ -718,6 +719,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 </button>
               </div>
             </PageSection>
+            )}
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
             <PageSection
