@@ -4320,3 +4320,33 @@
 .calview-today-row.left { justify-content: flex-start; }
 .calview-today-row.right { justify-content: flex-end; }
 .calview-today-btn { padding: 5px 12px; font-size: 0.78rem; font-weight: 700; border-radius: var(--r-pill); cursor: pointer; }
+
+/* ── Kalender: Tage klar trennen (Agenda + Woche) ───────────────── */
+.calview-day-list:has(.calview-day-group) { gap: 0; }
+.calview-day-group {
+  display: grid; grid-template-columns: 52px 1fr; gap: var(--space-3);
+  padding: var(--space-4) 0; scroll-margin-top: 84px;
+  border-top: 1px solid var(--border-hairline);
+}
+.calview-day-group:first-child { border-top: none; }
+.calview-day-date {
+  display: flex; flex-direction: column; align-items: center; align-self: start;
+  padding: 6px 0; border-radius: var(--r-md);
+  color: var(--text-secondary); line-height: 1.15;
+}
+.calview-day-wd { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.calview-day-num { font-size: 1.45rem; font-weight: 800; color: var(--text-primary); }
+.calview-day-mon { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
+.calview-day-group.weekend .calview-day-wd { color: var(--action-primary); }
+.calview-day-group.today .calview-day-date { background: var(--action-primary); }
+.calview-day-group.today .calview-day-wd,
+.calview-day-group.today .calview-day-num,
+.calview-day-group.today .calview-day-mon { color: var(--text-on-accent); }
+.calview-day-events { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.calview-day-events .calview-event-row { margin: 0; }
+.calview-group-empty { font-size: 0.82rem; color: var(--text-muted); padding: 10px 0; }
+
+/* Monat: Zellen mit feiner Kontur, Wochenende leicht abgesetzt */
+.calview-month-cell { box-shadow: inset 0 0 0 1px var(--border-hairline); }
+.calview-month-cell:nth-child(7n+6), .calview-month-cell:nth-child(7n) { background: var(--surface-sunken); }
+.calview-month-cell.today, .calview-month-cell.today:nth-child(n) { box-shadow: none; background: var(--action-primary); }

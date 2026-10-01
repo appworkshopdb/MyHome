@@ -60,21 +60,32 @@ function EventDots({ events, calMap }) {
   ));
 }
 
-// Tagesgruppe mit Datumsüberschrift (Agenda + Woche).
+// Tagesgruppe (Agenda + Woche): links ein Datums-Block (Wochentag, Tageszahl,
+// Monat), rechts die Termine. Zwischen den Tagen trennt eine Linie, der
+// heutige Tag ist farbig hervorgehoben.
 function DayGroup({ str, today, events, calMap, onOpen, onToggleTodo, showEmpty, groupRef }) {
   const d = parseDateStr(str);
   if (events.length === 0 && !showEmpty) return null;
+  const isToday = str === today;
+  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
   return (
-    <div className="calview-week-group" id={`cal-day-${str}`} ref={groupRef}>
-      <div className={`calview-week-group-label ${str === today ? 'today' : ''}`}>
-        {str === today ? 'Heute · ' : ''}
-        {d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
+    <section
+      className={`calview-day-group ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}`}
+      id={`cal-day-${str}`}
+      ref={groupRef}
+    >
+      <div className="calview-day-date">
+        <span className="calview-day-wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
+        <span className="calview-day-num">{d.getDate()}</span>
+        <span className="calview-day-mon">{MONTH_NAMES[d.getMonth()].slice(0, 3)}</span>
       </div>
-      {events.length === 0 && <div className="calview-group-empty">Nichts geplant.</div>}
-      {events.map((ev) => (
-        <CalendarEventRow key={`${ev.id}:${str}`} ev={ev} calMap={calMap} onOpen={onOpen} onToggleTodo={onToggleTodo} />
-      ))}
-    </div>
+      <div className="calview-day-events">
+        {events.length === 0 && <div className="calview-group-empty">Nichts geplant</div>}
+        {events.map((ev) => (
+          <CalendarEventRow key={`${ev.id}:${str}`} ev={ev} calMap={calMap} onOpen={onOpen} onToggleTodo={onToggleTodo} />
+        ))}
+      </div>
+    </section>
   );
 }
 
