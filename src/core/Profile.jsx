@@ -191,7 +191,7 @@ export default function Profile({ onOpenModule, hasWarnings }) {
           {loading || !bodyProfile ? (
             <div className="status-note">Wird geladen…</div>
           ) : (
-            <BodyDataForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle />
+            <BodyDataForm value={bodyProfile} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />
           )}
           <p className="profile-section-hint">Gilt app-weit — für Ernährung und Sport.</p>
         </div>
