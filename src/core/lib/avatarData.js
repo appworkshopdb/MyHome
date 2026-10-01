@@ -23,6 +23,8 @@ export function getAvatar(session) {
   return cache.get(id);
 }
 
+export const removeAvatar = (session) => saveAvatar(session, null);
+
 export async function saveAvatar(session, dataUrl) {
   const id = session.user.id;
   const { error } = await getSupabase()
@@ -45,22 +47,25 @@ export function useAvatar(session) {
   return avatar;
 }
 
-// Mittig quadratisch zuschneiden, auf 256px verkleinern, als JPEG kodieren.
-export function fileToAvatarDataUrl(file, size = 256) {
+export function loadImage(src) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => {
-      const side = Math.min(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      canvas.getContext('2d').drawImage(
-        img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size,
-      );
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Bild konnte nicht gelesen werden')); };
-    img.src = url;
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Bild konnte nicht gelesen werden'));
+    img.src = src;
   });
+}
+
+// Zeichnet den Ausschnitt quadratisch auf ctx (size×size). zoom ≥ 1,
+// (offX, offY) = Verschiebung in Zielpixeln; wird so begrenzt, dass das
+// Bild das Quadrat immer vollständig füllt. Gibt die begrenzte Verschiebung zurück.
+export function drawCrop(ctx, img, size, zoom, offX, offY) {
+  const base = size / Math.min(img.width, img.height);
+  const w = img.width * base * zoom;
+  const h = img.height * base * zoom;
+  const x = Math.min(0, Math.max(size - w, (size - w) / 2 + offX));
+  const y = Math.min(0, Math.max(size - h, (size - h) / 2 + offY));
+  ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(img, x, y, w, h);
+  return { offX: x - (size - w) / 2, offY: y - (size - h) / 2 };
 }
