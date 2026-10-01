@@ -1,7 +1,7 @@
 // src/App.jsx
 // Schritt 3: Schwebende Chrome.
 //
-// Strategie: App.jsx rendert ModuleTopBar für Hub + Profil global.
+// Strategie: Hub, Profil und Module rendern ihre ModuleTopBar selbst.
 // Module rendern ihre eigene ModuleTopBar-Instanz (für Tab-Titel und
 // onBack) — dabei wird hasWarnings jetzt global aus dem Store geholt
 // und als Prop übergeben, damit der Warnpunkt auf ALLEN Screens erscheint.
@@ -25,7 +25,6 @@ import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
-import ModuleTopBar from './core/components/ModuleTopBar';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
@@ -70,17 +69,14 @@ export default function App() {
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
-  // Nur noch die Profilseite bekommt eine global gerenderte ModuleTopBar.
-  // Module UND Hub rendern seit Schritt 10 ihre eigene Instanz, weil sie
+  // Hub, Profil und Module rendern ihre eigene ModuleTopBar-Instanz, weil sie
   // auf Detail-Screens einen Zurück-Pfeil und einen zentrierten Titel
   // brauchen — beides kann App.jsx von außen nicht wissen.
-  const showGlobalTopBar = activeModule === 'profile';
-  const globalTitle = 'Profil';
 
-  // padding-top:0, wo die Seite ihre eigene fixed TopBar mitbringt (Hub
+  // padding-top:0, wo die Seite ihre eigene fixed TopBar mitbringt (Hub, Profil
   // und Module); die Inhalte tragen den Abstand selbst über
-  // .with-topbar-space. Nur die Profilseite behält das Padding.
-  const eigeneTopBar = activeModule !== 'profile';
+  // .with-topbar-space.
+  const eigeneTopBar = true; // alle Seiten tragen ihre TopBar selbst
 
   return (
     <EntrySheetProvider>
@@ -91,13 +87,10 @@ export default function App() {
           monat) und bucht immer in den heutigen Monat statt in den, der
           gerade in den Buchungen angezeigt wird. */}
       <FinanceMonthProvider>
-        {showGlobalTopBar && (
-          <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
-        )}
 
         <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
           {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
-          {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
+          {activeModule === 'profile' && <Profile onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {mod && (ModuleComponent ? (
             // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
             // und lokal gecacht, ein aufblitzender Ladeindikator würde nur

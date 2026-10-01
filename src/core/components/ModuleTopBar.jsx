@@ -19,7 +19,7 @@
 // Rechts: EINE Pille (`.chrome-top-right`), zwei Tippflächen getrennt durch
 //         eine Haarlinie: GamificationBadges (Vogel+Level, Nest+Streak,
 //         öffnet GamificationSheet) und Profil-Avatar (Initiale auf
-//         --action-primary) → #/profile, Warnpunkt bei fehlenden
+//         --action-primary) → Dropdown (ProfileMenu) mit Profil-Bereichen, Warnpunkt bei fehlenden
 //         Pflichtdaten. Bleibt auf JEDER Modul-Hauptansicht UND jedem
 //         Detail-Screen sichtbar — verschwindet nur hinter dem Backdrop
 //         eines offenen FAB-Sheets (SheetShell deckt den ganzen Screen ab),
@@ -35,6 +35,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useRoute } from '../lib/useRoute';
 import AppMenu from '../AppMenu';
 import GamificationBadges from './GamificationBadges.jsx';
+import ProfileMenu from './ProfileMenu.jsx';
 
 // Zahnrad-Icon — 20px, 1.8px Stroke, stroke-linecap: round
 function IconGear() {
@@ -59,8 +60,9 @@ function IconArrowLeft() {
 
 export default function ModuleTopBar({ onBack, title, hasWarnings }) {
   const { session } = useAuth();
-  const { navigate } = useRoute();
+  const { module: routeModule, view: routeView, navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const initial = session?.user?.email?.[0]?.toUpperCase() || '?';
 
   return (
@@ -104,11 +106,13 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
 
           <button
             className="chrome-top-profile-zone"
-            onClick={() => navigate('profile')}
+            onClick={() => setProfileMenuOpen((o) => !o)}
+            aria-expanded={profileMenuOpen}
+            aria-haspopup="menu"
             aria-label={
               hasWarnings
-                ? 'Zum Profil — Pflichtdaten unvollständig'
-                : 'Zum Profil'
+                ? 'Profilmenü — Pflichtdaten unvollständig'
+                : 'Profilmenü'
             }
           >
             <span className="chrome-top-avatar">
@@ -120,6 +124,15 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
           </button>
         </div>
       </div>
+
+      {profileMenuOpen && (
+        <ProfileMenu
+          active={routeModule === 'profile' ? routeView : null}
+          hasWarnings={hasWarnings}
+          onClose={() => setProfileMenuOpen(false)}
+          onSelect={(key) => { setProfileMenuOpen(false); navigate(`profile/${key}`); }}
+        />
+      )}
 
       {/* AppMenu — öffnet sich unterhalb der Chrome */}
       {menuOpen && (

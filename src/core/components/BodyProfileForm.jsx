@@ -39,7 +39,7 @@ const NUMBER_FIELDS = [
 // aber nicht direkt SPORT_REQUIRED_FIELDS aus modules/sport importieren
 // (Architektur-Regel), deshalb dort eine manuell synchron zu haltende
 // Kopie, siehe Kommentar in Profile.jsx.
-export default function BodyProfileForm({ value, onChange, requiredFields = BODY_REQUIRED_FIELDS }) {
+function useFormHelpers(value, onChange, requiredFields) {
   function set(key, val) {
     onChange({ ...value, [key]: val });
   }
@@ -54,10 +54,15 @@ export default function BodyProfileForm({ value, onChange, requiredFields = BODY
   function mark(key) {
     return flagged(key) ? <span className="required-mark">*Pflicht</span> : null;
   }
+  return { set, flagged, mark };
+}
 
+// Körperdaten-Teil: Geschlecht, Alter, Größe, Gewicht.
+export function BodyDataForm({ value, onChange, requiredFields = BODY_REQUIRED_FIELDS, showTitle = true }) {
+  const { set, flagged, mark } = useFormHelpers(value, onChange, requiredFields);
   return (
     <>
-      <div className="card-title" style={{ marginTop: 4 }}>Körperdaten</div>
+      {showTitle && <div className="card-title" style={{ marginTop: 4 }}>Körperdaten</div>}
       <label style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
         Geschlecht{mark('gender')}
       </label>
@@ -78,8 +83,16 @@ export default function BodyProfileForm({ value, onChange, requiredFields = BODY
           </div>
         ))}
       </div>
+    </>
+  );
+}
 
-      <div className="card-title">Aktivität &amp; Ziel</div>
+// Aktivität-&-Ziel-Teil: Aktivitätslevel, Ziel, Trainingsfokus, Sportarten.
+export function ActivityGoalForm({ value, onChange, requiredFields = BODY_REQUIRED_FIELDS, showTitle = true }) {
+  const { set, flagged, mark } = useFormHelpers(value, onChange, requiredFields);
+  return (
+    <>
+      {showTitle && <div className="card-title">Aktivität &amp; Ziel</div>}
       <div className="form-group" style={{ marginBottom: 10 }}>
         <label>Aktivitätslevel{mark('activity')}</label>
         <div className={`segmented cols-3 ${flagged('activity') ? 'required-empty' : ''}`}>
@@ -105,6 +118,16 @@ export default function BodyProfileForm({ value, onChange, requiredFields = BODY
         </div>
       </div>
       <SportsSelect value={value.sports ?? []} onChange={(sports) => set('sports', sports)} />
+    </>
+  );
+}
+
+// Beide Teile zusammen (Ernährungs-Modul nutzt weiterhin dieses Formular).
+export default function BodyProfileForm(props) {
+  return (
+    <>
+      <BodyDataForm {...props} />
+      <ActivityGoalForm {...props} />
     </>
   );
 }

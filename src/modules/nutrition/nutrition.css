@@ -119,29 +119,6 @@
 }
 .fab svg { width: 24px; height: 24px; }
 
-.segmented {
-  display: grid;
-  gap: 8px;
-}
-.segmented.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.segmented.cols-3 { grid-template-columns: repeat(3, 1fr); }
-.segmented.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.segmented button {
-  padding: 10px 6px;
-  border-radius: var(--radius-xs);
-  border: 1.5px solid var(--border-hairline);
-  background: var(--surface-raised);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: center;
-}
-.segmented button.active {
-  border-color: var(--action-primary);
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-}
-
 .result-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
