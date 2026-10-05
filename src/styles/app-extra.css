@@ -1145,6 +1145,25 @@
   margin-bottom: var(--space-4);
 }
 
+/* Beleg-Scan (ReceiptScanButton) über dem Name-Feld */
+.wiz-scan {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.wiz-scan-btn { flex: 1; min-height: var(--touch-target); }
+.wiz-scan-alt {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--action-primary);
+  background: none;
+  border: 0;
+}
+.wiz-scan-alt:disabled { color: var(--text-muted); }
+
 .wiz-cat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

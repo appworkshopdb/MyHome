@@ -7,6 +7,8 @@ import * as finData from '../../modules/finance/lib/finData';
 import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
 import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
 import PaymentsEditor from './PaymentsEditor';
+import ReceiptScanButton from './ReceiptScanButton';
+import { formatReceiptDate } from '../lib/receiptScan';
 import SheetShell from './SheetShell';
 
 const QUICK_CATEGORIES = [
@@ -64,6 +66,21 @@ function FinanceWizard({ onClose }) {
     }
     setShowSuggest(false);
     setTimeout(() => amountRef.current?.focus(), 0);
+  }
+
+  // Ergebnis des Beleg-Scans: nur vorbefüllen, gespeichert wird erst nach
+  // der Bestätigung im Wizard. Monat/Jahr bleiben bewusst der aktive Monat
+  // (wie bei manueller Eingabe); das Belegdatum landet in der Notiz.
+  function applyReceipt(r) {
+    if (!r?.is_receipt) return showToast('Das sieht nicht nach einem Kassenbon aus');
+    setShowSuggest(false);
+    if (r.merchant) setName(r.merchant);
+    if (r.total != null) setAmount(String(r.total));
+    if (r.payment_method === 'bar')   setPayments([{ method: 'Bar',  amount: null }]);
+    if (r.payment_method === 'karte') setPayments([{ method: 'Bank', amount: null }]);
+    const d = formatReceiptDate(r.date);
+    if (d) setNote((prev) => prev || `Beleg vom ${d}`);
+    showToast(r.total != null ? 'Beleg gelesen – bitte prüfen' : 'Betrag nicht erkannt – bitte eingeben');
   }
 
   const amountNum = parseFloat(String(amount).replace(',', '.'));
@@ -149,6 +166,7 @@ function FinanceWizard({ onClose }) {
       <div className="wiz-body">
         {step === 1 && (
           <>
+            <ReceiptScanButton onResult={applyReceipt} disabled={saving} />
             <label className="wiz-label t-meta">Name</label>
             <div className="wiz-name-block">
               <input
