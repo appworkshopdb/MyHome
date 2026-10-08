@@ -96,7 +96,13 @@ export async function scanReceipt(session, file) {
     return data.receipt;
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('Das Lesen hat zu lange gedauert – bitte nochmal versuchen');
-    if (err instanceof TypeError) throw new Error('Keine Verbindung zum Server');
+    // fetch() wirft TypeError, wenn gar keine Antwort ankommt (Server/Container
+    // down, Gateway bricht ab, Upload zu groß, CORS). Der Browser sagt nicht
+    // welcher Fall — Meldung und Bildgröße helfen bei der Eingrenzung.
+    if (err instanceof TypeError) {
+      const kb = Math.round(image.length * 0.75 / 1024);
+      throw new Error(`Keine Verbindung zum Server (${err.message}; Bild ${kb} KB; ${new URL(SUPABASE_URL).host})`);
+    }
     throw err;
   } finally {
     clearTimeout(timer);
