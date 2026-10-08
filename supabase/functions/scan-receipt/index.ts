@@ -153,7 +153,13 @@ Deno.serve(async (req) => {
       console.error('[scan-receipt] ANTHROPIC_API_KEY ungültig oder fehlt');
       return json({ error: 'Beleg-Erkennung ist nicht eingerichtet' }, 503);
     }
+    // Ursache mitschicken (kurz, ohne Geheimnisse): Die App zeigt sie im Toast,
+    // damit man am Handy sieht, ob Claude die Anfrage ablehnt oder die Function
+    // selbst stolpert. Volle Details stehen im Function-Log.
     console.error('[scan-receipt]', err);
-    return json({ error: 'Beleg konnte nicht gelesen werden' }, 500);
+    const detail = err instanceof Anthropic.APIError
+      ? `Claude ${err.status}: ${String(err.message).slice(0, 140)}`
+      : String((err as Error)?.message ?? err).slice(0, 140);
+    return json({ error: 'Beleg konnte nicht gelesen werden', detail }, 500);
   }
 });

@@ -79,8 +79,20 @@ export async function scanReceipt(session, file) {
       body: JSON.stringify({ image, media_type: 'image/jpeg' }),
       signal: ctrl.signal,
     });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(data?.error || 'Beleg konnte nicht gelesen werden');
+    // Text zuerst lesen: Gateway-Fehler (Function fehlt, Boot-Fehler) kommen
+    // nicht immer als JSON und würden sonst spurlos hinter der Standardmeldung
+    // verschwinden.
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch { /* kein JSON */ }
+    if (!res.ok) {
+      const base  = data?.error || 'Beleg konnte nicht gelesen werden';
+      const extra = data?.detail || data?.msg || data?.message || (data ? '' : text);
+      // Status/Ursache nur zeigen, wenn die Function keine eigene, verständliche Meldung lieferte
+      const showWhy = !data?.error || data?.detail;
+      throw new Error(showWhy ? `${base} (${res.status}${extra ? ': ' + String(extra).slice(0, 140) : ''})` : base);
+    }
+    if (!data?.receipt) throw new Error('Unerwartete Antwort vom Server');
     return data.receipt;
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('Das Lesen hat zu lange gedauert – bitte nochmal versuchen');

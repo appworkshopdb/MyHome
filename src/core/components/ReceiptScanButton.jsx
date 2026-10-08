@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { useUi } from '../lib/UiContext';
 import { scanReceipt } from '../lib/receiptScan';
 
 // Zwei Wege zum Foto: Kamera direkt (capture) oder vorhandenes Bild aus
@@ -8,27 +7,32 @@ import { scanReceipt } from '../lib/receiptScan';
 // im Datei-Dialog gibt. onResult bekommt das geprüfte Ergebnis der Function.
 export default function ReceiptScanButton({ onResult, disabled }) {
   const { session }   = useAuth();
-  const { showToast } = useUi();
   const cameraRef  = useRef(null);
   const galleryRef = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     e.target.value = ''; // gleiches Foto später erneut wählbar
     if (!file) return;
     setBusy(true);
+    setError('');
     try {
       const receipt = await scanReceipt(session, file);
       onResult(receipt);
     } catch (err) {
-      showToast(err.message || 'Beleg konnte nicht gelesen werden', 3200);
+      // Inline statt Toast: Der Toast ist einzeilig (nowrap) und würde lange
+      // Fehlerdetails abschneiden.
+      console.error('[receipt-scan]', err);
+      setError(err.message || 'Beleg konnte nicht gelesen werden');
     } finally {
       setBusy(false);
     }
   }
 
   return (
+    <div className="wiz-scan-wrap">
     <div className="wiz-scan">
       <button
         type="button"
@@ -50,6 +54,8 @@ export default function ReceiptScanButton({ onResult, disabled }) {
       )}
       <input ref={cameraRef}  type="file" accept="image/*" capture="environment" hidden onChange={handleFile} />
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={handleFile} />
+    </div>
+    {error && <div className="wiz-scan-error t-meta" role="alert">{error}</div>}
     </div>
   );
 }
