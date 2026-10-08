@@ -82,12 +82,18 @@ export async function scanReceipt(session, file) {
     // Text zuerst lesen: Gateway-Fehler (Function fehlt, Boot-Fehler) kommen
     // nicht immer als JSON und würden sonst spurlos hinter der Standardmeldung
     // verschwinden.
-    const text = await res.text();
+    // Der Body kann mitten im Lesen abbrechen (Worker-Absturz, Gateway-Reset):
+    // Die Antwort ist dann angekommen, nur unvollständig. Das darf nicht als
+    // "keine Verbindung" gemeldet werden — der Statuscode ist die wichtige Info.
+    let text = '';
+    let bodyError = '';
+    try { text = await res.text(); } catch (e) { bodyError = e.message; }
     let data = null;
     try { data = JSON.parse(text); } catch { /* kein JSON */ }
     if (!res.ok) {
       const base  = data?.error || 'Beleg konnte nicht gelesen werden';
-      const extra = data?.detail || data?.msg || data?.message || (data ? '' : text);
+      const extra = data?.detail || data?.msg || data?.message
+        || (data ? '' : text || (bodyError ? `Antwort abgebrochen: ${bodyError}` : ''));
       // Status/Ursache nur zeigen, wenn die Function keine eigene, verständliche Meldung lieferte
       const showWhy = !data?.error || data?.detail;
       throw new Error(showWhy ? `${base} (${res.status}${extra ? ': ' + String(extra).slice(0, 140) : ''})` : base);
