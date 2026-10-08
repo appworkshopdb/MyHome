@@ -115,6 +115,27 @@ export async function scanReceipt(session, file) {
   }
 }
 
+/**
+ * Restkontingent des Monats für die Anzeige ("noch 27 von 30 Scans").
+ * Kostet nichts und zählt nicht. Gibt bei jedem Problem null zurück (z. B.
+ * Function noch ohne Kontingent-Unterstützung) — die Anzeige fehlt dann
+ * einfach, der Scan selbst bleibt davon unberührt.
+ * @returns {Promise<{limit:number,used:number,remaining:number}|null>}
+ */
+export async function getReceiptQuota(session) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/scan-receipt`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const q = data?.quota;
+    return q && Number.isFinite(q.limit) && Number.isFinite(q.remaining) ? q : null;
+  } catch {
+    return null;
+  }
+}
+
 // "2026-10-03" → "03.10.2026" (reine String-Operation, siehe CLAUDE.md)
 export function formatReceiptDate(ymd) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || '');

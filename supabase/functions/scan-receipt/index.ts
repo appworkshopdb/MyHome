@@ -9,15 +9,25 @@
 // Server-Konfiguration (Umgebung des Edge-Functions-Containers):
 //   ANTHROPIC_API_KEY   Pflicht. Niemals ins Repo.
 //   RECEIPT_MODEL       Optional, Default claude-sonnet-5-5 (z. B. claude-haiku-4-5).
+//   RECEIPT_MONTHLY_LIMIT  Optional, Scans pro Nutzer und Kalendermonat (Europe/Berlin), Default 30.
+//                       Zähler liegt in der Tabelle receipt_scans (supabase/receipt_scans_migration.sql).
+//
+// Endpunkte:
+//   POST  Beleg scannen → { ok, receipt, quota }; 429 bei erreichtem Monatslimit
+//   GET   Restkontingent abfragen → { ok, quota } (kostet nichts, zählt nicht)
 //
 // CORS: bewusst keine eigenen Header — wie bei den anderen Functions setzt
 // das Kong-Gateway des Supabase-Stacks sie, doppelte Header würden brechen.
 
 import Anthropic from 'npm:@anthropic-ai/sdk';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const MODEL = Deno.env.get('RECEIPT_MODEL') || 'claude-sonnet-5-5';
+const parsedLimit = parseInt(Deno.env.get('RECEIPT_MONTHLY_LIMIT') ?? '', 10);
+const MONTHLY_LIMIT = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 30;
+const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 // Das Frontend verkleinert auf ~1600 px (typisch 200–500 KB). Alles darüber
 // ist kein Beleg-Foto aus unserer App und wird abgelehnt, bevor es Geld kostet.
@@ -75,6 +85,64 @@ async function requireUser(req: Request) {
   return user.id as string;
 }
 
+// ── Monatskontingent ─────────────────────────────────────────────────────────
+// Kalendermonat in Berlin als 'YYYY-MM' (der Monatswechsel gilt nach deutscher
+// Uhrzeit, nicht nach UTC). Über Intl-Teile statt Date-Rechnung, damit keine
+// UTC-Verschiebung hineinspielt (siehe CLAUDE.md "Lokale Datums-Strings").
+function currentPeriod(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit' }).formatToParts(now);
+  const y = parts.find((p) => p.type === 'year')!.value;
+  const m = parts.find((p) => p.type === 'month')!.value;
+  return `${y}-${m}`;
+}
+
+async function countUsed(ownerId: string, period: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('receipt_scans')
+    .select('id', { count: 'exact', head: true })
+    .eq('owner_id', ownerId)
+    .eq('period', period);
+  if (error || count == null) {
+    console.error('[scan-receipt] Kontingent nicht lesbar', error);
+    throw new HttpError(503, 'Scan-Kontingent gerade nicht verfügbar');
+  }
+  return count;
+}
+
+function quotaOf(used: number) {
+  return { limit: MONTHLY_LIMIT, used, remaining: Math.max(0, MONTHLY_LIMIT - used) };
+}
+
+// Erst eintragen, dann zählen: So können parallele Anfragen desselben Nutzers
+// das Limit nicht überlaufen (im Zweifel werden beide abgewiesen, nie beide
+// durchgelassen). Wird nach der Reservierung abgewiesen, ist der Eintrag
+// wieder weg.
+async function reserveScan(ownerId: string) {
+  const period = currentPeriod();
+  const { data: row, error } = await supabase
+    .from('receipt_scans')
+    .insert({ owner_id: ownerId, period })
+    .select('id')
+    .single();
+  if (error || !row) {
+    console.error('[scan-receipt] Reservierung fehlgeschlagen', error);
+    throw new HttpError(503, 'Scan-Kontingent gerade nicht verfügbar');
+  }
+  let used: number;
+  try { used = await countUsed(ownerId, period); }
+  catch (e) { await releaseScan(row.id); throw e; }
+  if (used > MONTHLY_LIMIT) {
+    await releaseScan(row.id);
+    throw new HttpError(429, `Monatslimit von ${MONTHLY_LIMIT} Scans erreicht. Ab dem nächsten Monat sind wieder Scans möglich – manuell eintragen geht weiterhin.`);
+  }
+  return { id: row.id as string, quota: quotaOf(used) };
+}
+
+async function releaseScan(id: string) {
+  const { error } = await supabase.from('receipt_scans').delete().eq('id', id);
+  if (error) console.error('[scan-receipt] Freigabe fehlgeschlagen', id, error);
+}
+
 // Modellabhängige Parameter: Die Beleg-Extraktion braucht kein Nachdenken.
 //  - Sonnet 5.5: "between_tools" ist die niedrigste Denkstufe (disabled → 400).
 //  - Haiku 4.5: kein Denken ohne Budget, "effort" wird dort abgelehnt.
@@ -111,8 +179,13 @@ function cleanResult(raw: any) {
 
 Deno.serve(async (req) => {
   try {
-    if (req.method !== 'POST') throw new HttpError(405, 'Nur POST erlaubt');
+    if (req.method !== 'GET' && req.method !== 'POST') throw new HttpError(405, 'Nur GET und POST erlaubt');
     const ownerId = await requireUser(req);
+
+    // Restkontingent für die Anzeige in der App — kostet nichts, zählt nicht.
+    if (req.method === 'GET') {
+      return json({ ok: true, quota: quotaOf(await countUsed(ownerId, currentPeriod())) });
+    }
 
     const body = await req.json().catch(() => null);
     const image = body?.image;
@@ -121,21 +194,32 @@ Deno.serve(async (req) => {
     if (!ALLOWED_MEDIA_TYPES.has(mediaType)) throw new HttpError(400, 'Bildformat nicht unterstützt');
     if (image.length > MAX_BASE64_CHARS) throw new HttpError(413, 'Bild ist zu groß');
 
+    const client = getAnthropic(); // vor der Reservierung: fehlt der Key, kostet nichts
+    const reservation = await reserveScan(ownerId);
+
     const { outputExtra, thinking } = modelParams(MODEL);
-    const response = await getAnthropic().messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      ...(thinking ? { thinking } : {}),
-      output_config: { format: { type: 'json_schema', schema: SCHEMA }, ...outputExtra },
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
-          { type: 'text', text: 'Lies diesen Kassenbon.' },
-        ],
-      }],
-    } as any);
+    let response: any;
+    try {
+      response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 1024,
+        system: SYSTEM_PROMPT,
+        ...(thinking ? { thinking } : {}),
+        output_config: { format: { type: 'json_schema', schema: SCHEMA }, ...outputExtra },
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
+            { type: 'text', text: 'Lies diesen Kassenbon.' },
+          ],
+        }],
+      } as any);
+    } catch (err) {
+      // Der Aufruf ist gescheitert, bevor Claude etwas geliefert hat: kein
+      // Verbrauch, also zählt der Scan auch nicht gegen das Kontingent.
+      await releaseScan(reservation.id);
+      throw err;
+    }
 
     if (response.stop_reason === 'refusal') throw new HttpError(422, 'Der Beleg konnte nicht gelesen werden');
     const textBlock = response.content.find((b: any) => b.type === 'text') as { text: string } | undefined;
@@ -146,7 +230,7 @@ Deno.serve(async (req) => {
     // Kosten-Kontrolle: Tokens pro Scan im Function-Log (kein Bild, keine Inhalte).
     console.log('[scan-receipt]', ownerId, MODEL, JSON.stringify(response.usage));
 
-    return json({ ok: true, receipt: cleanResult(parsed) });
+    return json({ ok: true, receipt: cleanResult(parsed), quota: reservation.quota });
   } catch (err) {
     if (err instanceof HttpError) return json({ error: err.message }, err.status);
     if (err instanceof Anthropic.RateLimitError) return json({ error: 'Gerade zu viele Anfragen – bitte gleich nochmal versuchen' }, 429);
