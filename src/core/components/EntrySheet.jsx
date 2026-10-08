@@ -18,6 +18,12 @@ const QUICK_CATEGORIES = [
   { key: 'sonstige_ausgaben',  label: 'Sonstige'  },
 ];
 
+// Zahlungsart-Werte der Beleg-Erkennung → Zahlungsarten der App.
+// Karten (EC/Girocard/Kredit) buchen vom Konto ab → "Bank".
+const RECEIPT_PAYMENT_MAP = {
+  bar: 'Bar', karte: 'Bank', paypal: 'Paypal', gutschein: 'Gutschein', klarna: 'Klarna',
+};
+
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 
 // ── Wizard ───────────────────────────────────────────────────────────────────
@@ -76,8 +82,8 @@ function FinanceWizard({ onClose }) {
     setShowSuggest(false);
     if (r.merchant) setName(r.merchant);
     if (r.total != null) setAmount(String(r.total));
-    if (r.payment_method === 'bar')   setPayments([{ method: 'Bar',  amount: null }]);
-    if (r.payment_method === 'karte') setPayments([{ method: 'Bank', amount: null }]);
+    const method = RECEIPT_PAYMENT_MAP[r.payment_method];
+    if (method) setPayments([{ method, amount: null }]); // sonstige/unbekannt: Voreinstellung bleibt
     const d = formatReceiptDate(r.date);
     if (d) setNote((prev) => prev || `Beleg vom ${d}`);
     showToast(r.total != null ? 'Beleg gelesen – bitte prüfen' : 'Betrag nicht erkannt – bitte eingeben');

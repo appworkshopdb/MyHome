@@ -23,6 +23,7 @@ const MODEL = Deno.env.get('RECEIPT_MODEL') || 'claude-sonnet-5-5';
 // ist kein Beleg-Foto aus unserer App und wird abgelehnt, bevor es Geld kostet.
 const MAX_BASE64_CHARS = 3_000_000;
 const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const PAYMENT_METHODS = ['bar', 'karte', 'paypal', 'gutschein', 'klarna', 'sonstige', 'unbekannt'];
 
 const SYSTEM_PROMPT = `Du liest Fotos von Kassenbons und Quittungen (meist deutsch, Euro) und gibst die Felder im vorgegebenen JSON-Schema zurück.
 
@@ -30,7 +31,7 @@ Regeln:
 - total: der Endbetrag, den der Kunde bezahlt hat ("SUMME", "Gesamt", "zu zahlen", "Total"). NICHT Zwischensumme, NICHT Mehrwertsteuer-Zeilen, NICHT "gegeben"/"Bar" und NICHT "Rückgeld". Als Zahl mit Punkt als Dezimaltrenner (12.49).
 - merchant: Name des Geschäfts in kurzer Form (z. B. "REWE", "dm", "Aral"), ohne Adresse und Filialnummer.
 - date: Datum des Einkaufs als YYYY-MM-DD.
-- payment_method: "bar", "karte" (EC/Girocard/Kredit/Visa/Mastercard/Apple Pay), "sonstige" (z. B. Gutschein, PayPal) oder "unbekannt".
+- payment_method: womit bezahlt wurde. "bar" (Bargeld), "karte" (EC/Girocard/Kredit/Visa/Mastercard/Apple Pay/Lastschrift), "paypal", "gutschein" (Gutschein/Geschenkkarte), "klarna", "sonstige" (alles andere) oder "unbekannt", wenn der Beleg keine Zahlungsart zeigt. Bei gemischter Zahlung die Art, mit der der größte Teil bezahlt wurde.
 - Ist ein Wert nicht sicher lesbar, gib null zurück. Rate niemals einen Betrag.
 - Zeigt das Foto keinen Kassenbon, setze is_receipt auf false und alle anderen Felder auf null bzw. "unbekannt".`;
 
@@ -41,7 +42,7 @@ const SCHEMA = {
     total: { anyOf: [{ type: 'number' }, { type: 'null' }] },
     merchant: { anyOf: [{ type: 'string' }, { type: 'null' }] },
     date: { anyOf: [{ type: 'string' }, { type: 'null' }] },
-    payment_method: { type: 'string', enum: ['bar', 'karte', 'sonstige', 'unbekannt'] },
+    payment_method: { type: 'string', enum: PAYMENT_METHODS },
   },
   required: ['is_receipt', 'total', 'merchant', 'date', 'payment_method'],
   additionalProperties: false,
@@ -104,7 +105,7 @@ function cleanResult(raw: any) {
     total: isReceipt && totalNum !== null && totalNum > 0 && totalNum < 100000 ? totalNum : null,
     merchant: isReceipt ? merchant : null,
     date: isReceipt ? validDate(raw?.date) : null,
-    payment_method: ['bar', 'karte', 'sonstige', 'unbekannt'].includes(raw?.payment_method) ? raw.payment_method : 'unbekannt',
+    payment_method: PAYMENT_METHODS.includes(raw?.payment_method) ? raw.payment_method : 'unbekannt',
   };
 }
 
