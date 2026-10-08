@@ -7,7 +7,7 @@ import * as finData from '../../modules/finance/lib/finData';
 import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
 import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
 import PaymentsEditor from './PaymentsEditor';
-import ReceiptScanButton from './ReceiptScanButton';
+import ReceiptScanChoice from './ReceiptScanChoice';
 import { formatReceiptDate } from '../lib/receiptScan';
 import SheetShell from './SheetShell';
 
@@ -34,6 +34,10 @@ function FinanceWizard({ onClose }) {
   // Monat, der gerade in den Buchungen angezeigt wird (sonst aktueller Monat)
   const { activeYear, activeMonth } = useFinanceMonth();
 
+  // Einstieg: 'choose' (Beleg scannen / manuell) → 'manual' (3 Schritte wie
+  // bisher) oder 'scan' (nach erfolgreichem Scan: alles auf einer Seite).
+  const [view, setView] = useState('choose');
+  const [scanned, setScanned] = useState(null); // letztes Scan-Ergebnis, für den Hinweis
   const [step, setStep] = useState(1);
   const [name,     setName]     = useState('');
   const [amount,   setAmount]   = useState('');
@@ -78,15 +82,21 @@ function FinanceWizard({ onClose }) {
   // der Bestätigung im Wizard. Monat/Jahr bleiben bewusst der aktive Monat
   // (wie bei manueller Eingabe); das Belegdatum landet in der Notiz.
   function applyReceipt(r) {
-    if (!r?.is_receipt) return showToast('Das sieht nicht nach einem Kassenbon aus');
     setShowSuggest(false);
-    if (r.merchant) setName(r.merchant);
-    if (r.total != null) setAmount(String(r.total));
+    // Frischer Scan ersetzt, was vorher im Formular stand (auch bei erneutem Scan)
+    setName(r.merchant || '');
+    setAmount(r.total != null ? String(r.total) : '');
     const method = RECEIPT_PAYMENT_MAP[r.payment_method];
-    if (method) setPayments([{ method, amount: null }]); // sonstige/unbekannt: Voreinstellung bleibt
+    setPayments([{ method: method || 'Bank', amount: null }]); // sonstige/unbekannt: Voreinstellung Bank
     const d = formatReceiptDate(r.date);
-    if (d) setNote((prev) => prev || `Beleg vom ${d}`);
-    showToast(r.total != null ? 'Beleg gelesen – bitte prüfen' : 'Betrag nicht erkannt – bitte eingeben');
+    setNote(d ? `Beleg vom ${d}` : '');
+    setScanned(r);
+    setView('scan');
+  }
+
+  function saveScanned() {
+    if (!step1Valid) return showToast('Bitte Name und Betrag eingeben');
+    submit();
   }
 
   const amountNum = parseFloat(String(amount).replace(',', '.'));
@@ -156,10 +166,100 @@ function FinanceWizard({ onClose }) {
     if (step < 3) setStep(step + 1);
     else submit();
   }
-  function back() { if (step > 1) setStep(step - 1); }
+  function back() { if (step > 1) setStep(step - 1); else setView('choose'); }
 
   const showSuggestList = showSuggest && suggestions.length > 0;
   const primaryMethod = payments[0]?.method || '';
+
+  if (view === 'choose') {
+    return (
+      <ReceiptScanChoice
+        onScanned={applyReceipt}
+        onManual={() => { setStep(1); setView('manual'); }}
+      />
+    );
+  }
+
+  if (view === 'scan') {
+    return (
+      <>
+        <div className="wiz-body">
+          <div className="wiz-hint t-meta">
+            {scanned?.total != null
+              ? 'Beleg gelesen – bitte prüfen und bei Bedarf ändern.'
+              : 'Betrag nicht erkannt – bitte eingeben.'}
+          </div>
+
+          <label className="wiz-label t-meta">Name</label>
+          <input
+            className="wiz-input wiz-input-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="z.B. Tanken"
+            autoComplete="off"
+          />
+
+          <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Betrag (€)</label>
+          <input
+            className="wiz-input"
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0,00"
+            min="0"
+            step="0.01"
+          />
+
+          <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Kategorie</label>
+          <div className="wiz-cat-grid">
+            {QUICK_CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                className={`wiz-cat ${category === c.key ? 'active' : ''}`}
+                onClick={() => setCategory(c.key)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
+          <PaymentsEditor
+            payments={payments}
+            onChange={setPayments}
+            totalAmount={amount}
+          />
+
+          <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Fällig am <span className="wiz-optional">optional</span></label>
+          <input
+            className="wiz-input"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+
+          <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Notiz <span className="wiz-optional">optional</span></label>
+          <textarea
+            className="wiz-input wiz-textarea"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Zusatzinfo…"
+          />
+        </div>
+
+        <div className="wiz-nav">
+          <button className="btn btn-secondary" onClick={() => setView('choose')} style={{ flex: 1 }}>
+            Zurück
+          </button>
+          <button className="btn btn-primary" onClick={saveScanned} disabled={saving} style={{ flex: 1 }}>
+            {saving ? 'Speichert…' : 'Speichern'}
+          </button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -172,7 +272,6 @@ function FinanceWizard({ onClose }) {
       <div className="wiz-body">
         {step === 1 && (
           <>
-            <ReceiptScanButton onResult={applyReceipt} disabled={saving} />
             <label className="wiz-label t-meta">Name</label>
             <div className="wiz-name-block">
               <input
@@ -278,7 +377,7 @@ function FinanceWizard({ onClose }) {
         <button
           className="btn btn-secondary"
           onClick={back}
-          style={{ flex: 1, visibility: step === 1 ? 'hidden' : 'visible' }}
+          style={{ flex: 1 }}
         >
           Zurück
         </button>
