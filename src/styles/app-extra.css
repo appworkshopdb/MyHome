@@ -4240,6 +4240,39 @@
   font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
 }
 
+/* Ernährung im Tagesplan — kein Haken, Block ist eine Schaltfläche */
+.dp-nut-head { display: flex; align-items: baseline; justify-content: space-between; }
+.dp-nut-open {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--action-primary);
+}
+.dp-nut-btn { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.dp-nut-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.dp-nut-main { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
+.dp-nut-main small { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0; margin-left: 4px; }
+.dp-nut-side { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.dp-nut-bar { height: 6px; border-radius: var(--r-pill); background: var(--data-track); overflow: hidden; margin-top: 8px; }
+.dp-nut-fill { height: 100%; border-radius: var(--r-pill); background: var(--action-primary); transition: width var(--motion-calm); }
+.dp-nut.over .dp-nut-fill { background: var(--status-caution); }
+.dp-nut.over .dp-nut-main { color: var(--status-caution); }
+.dp-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.dp-macro { background: var(--surface-sunken); border-radius: 12px; padding: 7px 10px; }
+.dp-macro b { display: block; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.dp-macro span { white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.dp-macro i { display: block; height: 3px; border-radius: var(--r-pill); background: var(--data-track); margin-top: 5px; overflow: hidden; }
+.dp-macro i em { display: block; height: 100%; background: var(--action-primary); border-radius: var(--r-pill); }
+.dp-meals { display: flex; gap: 6px; margin-top: 10px; }
+.dp-meal {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  border-radius: var(--r-pill); padding: 5px 0; font-size: 12px; font-weight: 800;
+  background: var(--surface-sunken); color: var(--text-muted);
+}
+.dp-meal.on { background: var(--status-positive-bg); color: var(--status-positive); }
+.dp-meal.next { outline: 1.5px dashed var(--border-strong); outline-offset: -1.5px; }
+.dp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dp-cta { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--action-primary); }
+.dp-hint { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--text-muted); }
+
 /* ── Kalender: Quelle erkennbar (App vs. Google) + Filter ─────────── */
 .calview-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;

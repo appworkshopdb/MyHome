@@ -109,6 +109,12 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   auch per Button "Gegessen eintragen" im Rezept-Dialog). Tageskarte zeigt
   gegessen vs. Tagesziel (`computeBody` in `core/lib/bodyCalc.js`, braucht
   ausgefülltes Körperprofil). Datum `eaten_on` immer lokal bauen (`lib/meals.js`).
+- Tagesplan (Hub, `DayPlan.jsx`): Block "Ernährung" zwischen Training und Aufgaben
+  (ohne Haken, zählt nicht bei "x / y erledigt"): offene kcal/Makros vs. Tagesziel,
+  vier Mahlzeit-Marker. Daten über `core/lib/nutritionDay.js` (eigene Abfrage auf
+  `nut_meals` + `computeBody`; Typen dort dupliziert, weil core nicht aus modules
+  importieren darf). Block → `#/nutrition/mahlzeiten`, "Ernährung ›" → Modul.
+  Fehler beim Laden blenden nur den Block aus.
 - Mahlzeit-Typen: vier (`MEAL_TYPES` in `lib/nutrition.js`: fruehstueck, mittag,
   abend, snack) — gelten für Rezepte UND Mahlzeiten. Alte Rezept-Kategorien
   (frueh/haupt/suppen/desserts/snacks/backen/getraenke) übersetzt

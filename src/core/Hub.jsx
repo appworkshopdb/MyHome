@@ -7,6 +7,7 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
 import { DayPlanPopup, DayPlanSection } from './components/DayPlan';
+import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import PageSection from './components/PageSection';
@@ -189,6 +190,24 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     const t = habTodayStr();
     getCalendarEvents(t, t).then((m) => setEvents(m[t] ?? [])).catch(() => {});
   }, []);
+
+  // Ernährungsstand von heute (Tagesplan). Fehlertolerant wie die Termine: bei
+  // einem Fehler (z. B. Tabelle noch nicht migriert) fehlt nur der Block.
+  // Neu laden, wenn die App wieder in den Vordergrund kommt — gegessen wird
+  // zwischendurch, der Hub bleibt oft lange offen.
+  const [nutrition, setNutrition] = useState(null);
+  useEffect(() => {
+    let aktiv = true;
+    const lade = () => {
+      loadNutritionDay(session)
+        .then((d) => { if (aktiv) setNutrition(d); })
+        .catch(() => { if (aktiv) setNutrition(null); });
+    };
+    lade();
+    const onVisible = () => { if (document.visibilityState === 'visible') lade(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [session]);
 
   const load = useCallback(async (opts = {}) => {
     // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
@@ -690,10 +709,12 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               <PageSection title="Dein Tagesplan">
                 <DayPlanSection
                   plan={dayPlan}
+                  nutrition={nutrition}
                   onToggleTodo={handleToggleTodo}
                   onToggleWorkout={handleToggleWorkout}
                   onToggleHabit={handleToggleHabit}
                   onOpenFinance={() => onOpenModule('finance/offen')}
+                  onOpenNutrition={onOpenModule}
                 />
               </PageSection>
             )}
