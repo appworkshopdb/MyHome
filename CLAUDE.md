@@ -115,6 +115,10 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   `nut_meals` + `computeBody`; Typen dort dupliziert, weil core nicht aus modules
   importieren darf). Block → `#/nutrition/mahlzeiten`, "Ernährung ›" → Modul.
   Fehler beim Laden blenden nur den Block aus.
+- Morgen-Push "Tagesplan" (Kategorie `daily_plan`, 06:00 Europe/Berlin, Function `send-notifications`):
+  fasst Termine/Training/Aufgaben/Gewohnheiten/fällige Zahlungen zusammen; Regeln dupliziert aus
+  `core/lib/dayPlan.js`. Function muss von Hand nach `volumes/functions/` kopiert werden. Test:
+  `?test_owner=<uuid>&test_category=daily_plan`.
 - Mahlzeit-Typen: vier (`MEAL_TYPES` in `lib/nutrition.js`: fruehstueck, mittag,
   abend, snack) — gelten für Rezepte UND Mahlzeiten. Alte Rezept-Kategorien
   (frueh/haupt/suppen/desserts/snacks/backen/getraenke) übersetzt

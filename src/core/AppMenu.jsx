@@ -11,6 +11,7 @@ import {
 } from './lib/googleCalendar';
 
 const NOTIFICATION_CATEGORIES = [
+  { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
   { key: 'tasks_habits', label: 'Aufgaben & Gewohnheiten', hint: 'Abends, wenn noch etwas offen ist' },
   { key: 'finance', label: 'Finanzen', hint: 'Hinweise auf fällige und offene Zahlungen' },
   { key: 'profile', label: 'Profil & Fortschritt', hint: 'Wenn wichtige Angaben fehlen' },
