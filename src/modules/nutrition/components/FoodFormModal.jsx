@@ -39,8 +39,11 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
     });
   }
 
+  // Vorbelegung ohne id/_rowId (z. B. aus dem Mahlzeit-Foto) ist ein NEUES Lebensmittel
+  const isExisting = !!food && (food.id != null || !!food._rowId);
+
   return (
-    <Modal title={food ? 'Lebensmittel bearbeiten' : 'Neues Lebensmittel'} onClose={onClose}>
+    <Modal title={isExisting ? 'Lebensmittel bearbeiten' : 'Neues Lebensmittel'} onClose={onClose}>
       <div className="form-group">
         <label>Name</label>
         <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="z.B. Hähnchenbrust" />

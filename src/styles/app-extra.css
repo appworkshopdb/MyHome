@@ -2767,6 +2767,7 @@
   cursor: pointer;
   text-align: center;
 }
+.qsheet-mode-btn:disabled { opacity: 0.6; cursor: default; }
 .qsheet-mode-btn.active {
   background: var(--text-primary);
   color: var(--bg-primary);

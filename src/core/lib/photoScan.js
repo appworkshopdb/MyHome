@@ -1,7 +1,10 @@
-// src/core/lib/receiptScan.js
-// Kassenbon-Scan: Foto verkleinern und an die Edge Function "scan-receipt"
-// schicken. Die Function liest Betrag/Händler/Datum per Claude Vision und
-// speichert nichts — das Ergebnis dient nur zum Vorbefüllen eines Formulars.
+// src/core/lib/photoScan.js
+// Foto-Scans: Foto verkleinern und an die Edge Function "scan-receipt"
+// schicken. Dieselbe Function bedient zwei Arten (Feld `kind`):
+//   'receipt'  Kassenbon → Betrag/Händler/Datum/Zahlungsart (Finanzen)
+//   'meal'     Mahlzeit  → geschätzte Bestandteile und Nährwerte (Ernährung)
+// Sie speichert nichts — das Ergebnis dient nur zum Vorbefüllen bzw. Anzeigen.
+// Jede Art hat ihr eigenes Monatskontingent.
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -56,15 +59,9 @@ export async function prepareReceiptImage(file) {
   });
 }
 
-/**
- * Liest einen Kassenbon.
- * @param {object} session  Supabase-Session (access_token)
- * @param {File}   file     Foto aus <input type="file">
- * @returns {Promise<{is_receipt:boolean,total:number|null,merchant:string|null,
- *                    date:string|null,payment_method:string}>}
- *   date ist ein "YYYY-MM-DD"-String (kein Date-Objekt, keine UTC-Umrechnung).
- */
-export async function scanReceipt(session, file) {
+// Gemeinsamer Weg für alle Arten: verkleinern, senden, Fehler verständlich
+// machen. what = Wort für die Fehlermeldung ("Beleg" / "Mahlzeit").
+async function postScan(kind, what, session, file) {
   const image = await prepareReceiptImage(file);
 
   const ctrl = new AbortController();
@@ -76,7 +73,7 @@ export async function scanReceipt(session, file) {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ image, media_type: 'image/jpeg' }),
+      body: JSON.stringify({ kind, image, media_type: 'image/jpeg' }),
       signal: ctrl.signal,
     });
     // Text zuerst lesen: Gateway-Fehler (Function fehlt, Boot-Fehler) kommen
@@ -91,15 +88,14 @@ export async function scanReceipt(session, file) {
     let data = null;
     try { data = JSON.parse(text); } catch { /* kein JSON */ }
     if (!res.ok) {
-      const base  = data?.error || 'Beleg konnte nicht gelesen werden';
+      const base  = data?.error || `${what} konnte nicht gelesen werden`;
       const extra = data?.detail || data?.msg || data?.message
         || (data ? '' : text || (bodyError ? `Antwort abgebrochen: ${bodyError}` : ''));
       // Status/Ursache nur zeigen, wenn die Function keine eigene, verständliche Meldung lieferte
       const showWhy = !data?.error || data?.detail;
       throw new Error(showWhy ? `${base} (${res.status}${extra ? ': ' + String(extra).slice(0, 140) : ''})` : base);
     }
-    if (!data?.receipt) throw new Error('Unerwartete Antwort vom Server');
-    return data.receipt;
+    return data;
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('Das Lesen hat zu lange gedauert – bitte nochmal versuchen');
     // fetch() wirft TypeError, wenn gar keine Antwort ankommt (Server/Container
@@ -116,15 +112,44 @@ export async function scanReceipt(session, file) {
 }
 
 /**
+ * Liest einen Kassenbon.
+ * @param {object} session  Supabase-Session (access_token)
+ * @param {File}   file     Foto aus <input type="file">
+ * @returns {Promise<{is_receipt:boolean,total:number|null,merchant:string|null,
+ *                    date:string|null,payment_method:string}>}
+ *   date ist ein "YYYY-MM-DD"-String (kein Date-Objekt, keine UTC-Umrechnung).
+ */
+export async function scanReceipt(session, file) {
+  const data = await postScan('receipt', 'Beleg', session, file);
+  if (!data?.receipt) throw new Error('Unerwartete Antwort vom Server');
+  return data.receipt;
+}
+
+/**
+ * Schätzt eine Mahlzeit aus einem Foto.
+ * @returns {Promise<{is_meal:boolean,name:string|null,
+ *   items:Array<{name:string,grams:number,kcal:number,protein:number,carbs:number,
+ *                sugar:number,fat:number,satfat:number,fiber:number,salt:number}>,
+ *   kcal_low:number|null,kcal_high:number|null,note:string|null}>}
+ *   Werte pro Bestandteil gelten für die geschätzte Menge (grams), nicht pro 100 g.
+ */
+export async function scanMeal(session, file) {
+  const data = await postScan('meal', 'Mahlzeit', session, file);
+  if (!data?.meal) throw new Error('Unerwartete Antwort vom Server');
+  return data.meal;
+}
+
+/**
  * Restkontingent des Monats für die Anzeige ("noch 27 von 30 Scans").
  * Kostet nichts und zählt nicht. Gibt bei jedem Problem null zurück (z. B.
  * Function noch ohne Kontingent-Unterstützung) — die Anzeige fehlt dann
  * einfach, der Scan selbst bleibt davon unberührt.
+ * @param {'receipt'|'meal'} kind  Art des Scans (jede hat ein eigenes Kontingent)
  * @returns {Promise<{limit:number,used:number,remaining:number}|null>}
  */
-export async function getReceiptQuota(session) {
+export async function getScanQuota(session, kind = 'receipt') {
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/scan-receipt`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/scan-receipt?kind=${encodeURIComponent(kind)}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     if (!res.ok) return null;
@@ -135,6 +160,9 @@ export async function getReceiptQuota(session) {
     return null;
   }
 }
+
+export const getReceiptQuota = (session) => getScanQuota(session, 'receipt');
+export const getMealQuota    = (session) => getScanQuota(session, 'meal');
 
 // "2026-10-03" → "03.10.2026" (reine String-Operation, siehe CLAUDE.md)
 export function formatReceiptDate(ymd) {

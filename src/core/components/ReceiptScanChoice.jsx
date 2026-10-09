@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { scanReceipt, getReceiptQuota } from '../lib/receiptScan';
+import { scanReceipt, getReceiptQuota } from '../lib/photoScan';
 import { IconEdit } from './Icons';
 
 // Einstieg des Finanz-Wizards: "Beleg scannen" oder "Manuelle Eingabe".

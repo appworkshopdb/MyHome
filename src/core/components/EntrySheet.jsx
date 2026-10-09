@@ -8,7 +8,7 @@ import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/l
 import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
 import PaymentsEditor from './PaymentsEditor';
 import ReceiptScanChoice from './ReceiptScanChoice';
-import { formatReceiptDate } from '../lib/receiptScan';
+import { formatReceiptDate } from '../lib/photoScan';
 import SheetShell from './SheetShell';
 
 const QUICK_CATEGORIES = [

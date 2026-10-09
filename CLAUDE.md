@@ -80,7 +80,7 @@ Frontend noch nicht genutzt — geplantes Feature: echtes Ein-/Ausblenden
 einzelner Google-Kalender (wie in Googles eigener Kalenderliste), noch nicht
 umgesetzt.
 
-## Beleg-Scan (Finanz-Wizard)
+## Foto-Scans: Beleg (Finanzen) und Mahlzeit (Ernährung)
 
 Kassenbon fotografieren → Betrag/Händler/Datum/Zahlungsart vorbefüllen; der
 Nutzer bestätigt, gespeichert wird nichts automatisch (auch das Foto nicht).
@@ -88,27 +88,36 @@ Einstieg ist die Auswahl "Beleg scannen / Manuelle Eingabe" im `FinanceWizard`
 (`core/components/EntrySheet.jsx`); nach einem Scan erscheinen alle Felder auf
 einer Seite, die manuelle Eingabe behält die 3 Schritte.
 
-- Frontend: `core/components/ReceiptScanChoice.jsx`, `core/lib/receiptScan.js`
-  (verkleinert auf 1600 px, POST/GET an die Function).
+- Frontend: `core/components/ReceiptScanChoice.jsx`, `core/lib/photoScan.js`
+  (verkleinert auf 1600 px, POST/GET an die Function, `scanReceipt`/`scanMeal`).
 - Edge Function `supabase/functions/scan-receipt/index.ts` ruft Claude Vision
-  (Sonnet 5.5). Env im `functions`-Service: `ANTHROPIC_API_KEY` (Pflicht),
-  `RECEIPT_MODEL`, `RECEIPT_MONTHLY_LIMIT` (Default 30 Scans/Nutzer/Monat,
+  (Sonnet 5.5) und bedient beide Arten über das Feld `kind` (`receipt`|`meal`;
+  der Name "scan-receipt" ist historisch). Env im `functions`-Service:
+  `ANTHROPIC_API_KEY` (Pflicht), `RECEIPT_MODEL`, `MEAL_MODEL` (Default = RECEIPT_MODEL),
+  `RECEIPT_MONTHLY_LIMIT` und `MEAL_MONTHLY_LIMIT` (je Default 30 Scans/Nutzer/Monat,
   Kalendermonat Europe/Berlin).
-- Kontingent: Tabelle `receipt_scans` (`supabase/receipt_scans_migration.sql`),
-  nur per service_role erreichbar (RLS an, keine Policy). Zählt Scans, die
-  Claude erreichen; technische Fehler werden freigegeben. `GET` auf die
-  Function liefert das Restkontingent.
+- Mahlzeit-Foto: Option "Mahlzeit scannen" im Ernährungs-FAB-Menü
+  (`core/components/NutritionFabMenu.jsx`) → Ergebnis per window-Event
+  `nutrition:meal-scanned` an `NutritionModule` → `MealScanModal.jsx`
+  (geschätzte Bestandteile mit editierbaren Gramm, kcal-Spanne, "Als Lebensmittel
+  speichern" öffnet das Lebensmittel-Formular vorbefüllt, pro 100 g). Bewusst
+  KEINE Allergen-/Verträglichkeitsangaben; es gibt kein Ernährungstagebuch.
+- Kontingent: Tabelle `receipt_scans` (`supabase/receipt_scans_migration.sql`,
+  Spalte `kind` je Art getrennt), nur per service_role erreichbar (RLS an, keine
+  Policy). Zählt Scans, die Claude erreichen; technische Fehler werden
+  freigegeben. `GET ?kind=…` auf die Function liefert das Restkontingent.
 - Die Function wird NICHT über den Deploy-Workflow ausgerollt (der rsynct nur
   `dist/`): Datei von Hand nach `volumes/functions/scan-receipt/index.ts`
   kopieren. `.env` und `docker-compose.yml` gehören root (`sudo`). Neue
   Env-Variablen greifen erst nach `docker compose up -d --no-deps functions`
   (Neustart reicht nicht; `--no-deps` lässt PostgREST in Ruhe). Wegen der
-  Reihenfolge: erst Tabelle anlegen, dann Function ersetzen.
+  Reihenfolge: erst Migration einspielen (idempotent, auch für neue Spalten),
+  dann Function ersetzen.
 - Fehlerdiagnose: Die App zeigt Status/Ursache unter dem Scan-Button, das
   Function-Log (`docker logs supabase-edge-functions`) enthält pro Scan die
   Token-Zahlen. "could not find an appropriate entrypoint" = Function-Ordner
   fehlt auf dem Server.
-- Kosten: ca. 0,7–0,8 Cent/Scan (gemessen). Anthropic-Guthaben ist vorab
+- Kosten: Beleg ca. 0,7–0,8 Cent/Scan (gemessen), Mahlzeit ca. 1 Cent (geschätzt, ungemessen). Anthropic-Guthaben ist vorab
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 

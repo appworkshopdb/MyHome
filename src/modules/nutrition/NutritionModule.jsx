@@ -11,6 +11,7 @@ import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
 import LexikonView from './components/LexikonView';
 import TippsView from './components/TippsView';
+import MealScanModal from './components/MealScanModal';
 import * as db from './lib/nutData';
 
 registerRequirement('profile', async (session) => {
@@ -60,6 +61,8 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   // Lifted aus AmpelView
   const [showFoodForm, setShowFoodForm] = useState(false);
   const [editingFood, setEditingFood]   = useState(null);
+  // Ergebnis eines Mahlzeit-Fotos (null = kein Dialog offen)
+  const [mealResult, setMealResult] = useState(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -87,11 +90,16 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   useEffect(() => {
     function openNewRecipe() { setEditingRecipe(null); onNavigateView('rezepte'); }
     function openNewFood()   { setEditingFood(null); setShowFoodForm(true); onNavigateView('lebensmittel'); }
+    // Mahlzeit-Foto: Der FAB-Dialog (core/) scannt und schickt das Ergebnis
+    // als CustomEvent; der Ergebnisdialog öffnet sich in jeder Ansicht.
+    function openMealResult(e) { setMealResult(e.detail || null); }
     window.addEventListener('nutrition:new-recipe', openNewRecipe);
     window.addEventListener('nutrition:new-food', openNewFood);
+    window.addEventListener('nutrition:meal-scanned', openMealResult);
     return () => {
       window.removeEventListener('nutrition:new-recipe', openNewRecipe);
       window.removeEventListener('nutrition:new-food', openNewFood);
+      window.removeEventListener('nutrition:meal-scanned', openMealResult);
     };
   }, [onNavigateView]);
 
@@ -104,6 +112,20 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     setAmpelSearch(query);
     onNavigateView('lebensmittel');
   }
+
+  // "Als Lebensmittel speichern" aus dem Mahlzeit-Ergebnis: öffnet das normale
+  // Lebensmittel-Formular mit vorbelegten Werten (pro 100 g). Der Nutzer wählt
+  // noch die Gruppe und speichert selbst.
+  function saveMealAsFood(prefill) {
+    setMealResult(null);
+    setEditingFood(prefill);
+    setShowFoodForm(true);
+    onNavigateView('lebensmittel');
+  }
+
+  const mealModal = mealResult && (
+    <MealScanModal meal={mealResult} onSaveAsFood={saveMealAsFood} onClose={() => setMealResult(null)} />
+  );
 
   async function handleSaveFood(food) {
     await db.saveFood(session, food);
@@ -177,6 +199,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
           {view === 'lexikon' && <LexikonView />}
           {view === 'tipps'   && <TippsView />}
         </div>
+        {mealModal}
       </>
     );
   }
@@ -193,6 +216,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
           onNavigate={onNavigateView}
         />
       </div>
+      {mealModal}
     </>
   );
 }

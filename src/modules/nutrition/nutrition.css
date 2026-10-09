@@ -391,3 +391,47 @@
   font-weight:   600;
   color:         var(--text-muted);
 }
+
+/* Mahlzeit-Foto (MealScanModal) */
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+}
+.meal-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.meal-item-name { font-size: 0.85rem; overflow-wrap: anywhere; }
+.meal-item-kcal { font-size: 0.72rem; color: var(--text-muted); }
+.meal-item-grams {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.meal-item-grams input {
+  width: 76px;
+  min-height: var(--touch-target);
+  padding: 0 10px;
+  font-size: max(16px, 1rem);
+  text-align: right;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+}
+.meal-hint { margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); }
+.meal-disclaimer {
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
