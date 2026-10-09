@@ -108,9 +108,10 @@ export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout,
   return (
     <div className="dayplan-card">
       <div className="dayplan-head">
+        <h2 className="dayplan-title">Dein Tagesplan</h2>
         <span className="dayplan-count">{plan.done} / {plan.total} erledigt</span>
-        <div className="dayplan-bar"><div className="dayplan-bar-fill" style={{ width: `${pct * 100}%` }} /></div>
       </div>
+      <div className="dayplan-bar"><div className="dayplan-bar-fill" style={{ width: `${pct * 100}%` }} /></div>
 
       {plan.isEmpty && <div className="dayplan-empty">Heute steht nichts an — freier Tag.</div>}
 

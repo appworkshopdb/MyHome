@@ -708,7 +708,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
             {/* Tagesplan — erscheint, sobald das Popup heute geöffnet wurde */}
             {planOpen && (
-              <PageSection title="Dein Tagesplan">
+              <section className="page-section">
                 <DayPlanSection
                   plan={dayPlan}
                   nutrition={nutrition}
@@ -718,7 +718,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   onOpenFinance={() => onOpenModule('finance/offen')}
                   onOpenNutrition={onOpenModule}
                 />
-              </PageSection>
+              </section>
             )}
 
             {/* Heute — zwei Kacheln; entfallen, sobald der Tagesplan offen ist (zeigt dasselbe) */}
