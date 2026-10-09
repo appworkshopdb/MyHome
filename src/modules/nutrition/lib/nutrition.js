@@ -17,21 +17,38 @@ export const DEFAULT_PROFILE = {
   allergies: [],
 };
 
+// Schlüssel = food_group in nut_foods (exakt, sonst fällt die Ampel auf Grau).
 export const GROUP_COLORS = {
   'Fleisch & Geflügel': '#ef4444',
   'Fisch & Meeresfrüchte': '#3b82f6',
-  'Milchprodukte & Eier': '#f59e0b',
-  'Getreide & Brot': '#a78bfa',
-  Hülsenfrüchte: '#10b981',
+  'Eier & Milchprodukte': '#f59e0b',
+  'Getreide, Brot & Beilagen': '#a78bfa',
+  'Pflanzliche Alternativen': '#14b8a6',
   Gemüse: '#22c55e',
   Obst: '#f97316',
-  'Nüsse & Samen': '#84cc16',
-  'Öle & Fette': '#fbbf24',
+  'Nüsse, Samen & Kerne': '#84cc16',
+  'Fette & Öle': '#fbbf24',
   'Snacks & Süßes': '#ec4899',
+  Süßungsmittel: '#e879f9',
+  'Fertig- & Verarbeitetes': '#64748b',
   Getränke: '#06b6d4',
   Gewürze: '#8b5cf6',
   Sonstiges: '#6b7280',
 };
+
+// Ernährungsform eines Lebensmittels (nut_foods.diet).
+export const FOOD_DIETS = [
+  { key: 'vegan', label: 'Vegan' },
+  { key: 'veg', label: 'Vegetarisch' },
+  { key: 'animal', label: 'Tierisch' },
+];
+
+// Allergene, die bei einem Lebensmittel markiert werden können. 'Gluten' und
+// 'Milch' bestimmen zugleich die Flags glutenfrei/laktosefrei (siehe nutData.js).
+export const FOOD_ALLERGENS = [
+  'Gluten', 'Milch', 'Ei', 'Fisch', 'Krebstiere', 'Weichtiere', 'Soja', 'Erdnüsse',
+  'Schalenfrüchte', 'Sellerie', 'Senf', 'Sesam', 'Lupinen', 'Schwefeldioxid',
+];
 
 export const AMPEL_CATS = [
   { key: 'erlaubt', label: 'Erlaubt', color: '#16a34a', bg: '#dcfce7' },
@@ -61,7 +78,10 @@ export const CUSTOM_TAGS = [
   'Proteinreich', 'Fettarm', 'Low Carb', 'Ballaststoffreich',
   'Zuckerarm', 'Kalorienarm', 'Vegan', 'Vegetarisch', 'Omega-3 reich',
 ];
-export const GOAL_TAGS = ['Abnehmen', 'Gewicht halten', 'Zunehmen', 'Muskelaufbau'];
+// Tags für Lebensmittel (Filter + Formular). CUSTOM_TAGS bleibt die Auswahl
+// für Rezepte; Lebensmittel haben zusätzlich Vitamin-/Mineralstoff-Tags.
+export const FOOD_TAGS = [...CUSTOM_TAGS, 'Vitaminreich', 'Mineralstoffreich'];
+export const GOAL_TAGS =['Abnehmen', 'Gewicht halten', 'Zunehmen', 'Muskelaufbau'];
 
 export const TAG_COLORS = {
   Proteinreich: '#2563eb',
@@ -73,6 +93,8 @@ export const TAG_COLORS = {
   Vegan: '#059669',
   Vegetarisch: '#0d9488',
   'Omega-3 reich': '#4f46e5',
+  Vitaminreich: '#ea580c',
+  Mineralstoffreich: '#0891b2',
 };
 
 export const TIPP_ICONS = {

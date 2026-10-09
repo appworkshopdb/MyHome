@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { IconSearch, IconChevronDown } from '../../../core/components/Icons';
-import { AMPEL_CATS, GROUP_COLORS, TAG_COLORS, CUSTOM_TAGS, basis } from '../lib/nutrition';
+import { AMPEL_CATS, GROUP_COLORS, TAG_COLORS, FOOD_TAGS, basis } from '../lib/nutrition';
 import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
 import CompareModal from './CompareModal';
@@ -101,7 +101,7 @@ export default function AmpelView({
 
       <div className="chip-row" style={{ marginBottom: 10 }}>
         <button className={`chip ${tag === 'all' ? 'active' : ''}`} onClick={() => setTag('all')}>Alle Tags</button>
-        {CUSTOM_TAGS.map((t) => (
+        {FOOD_TAGS.map((t) => (
           <button
             key={t}
             className="chip"

@@ -64,11 +64,11 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [customFoods, recipeRows] = await Promise.all([
-        db.getCustomFoods(session),
+      const [foodRows, recipeRows] = await Promise.all([
+        db.getFoods(session),
         db.getRecipes(session),
       ]);
-      setFoods(db.mergeFoods(customFoods));
+      setFoods(foodRows);
       setRecipes(recipeRows);
     } catch (e) {
       console.error(e);
@@ -107,15 +107,13 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
 
   async function handleSaveFood(food) {
     await db.saveFood(session, food);
-    const customFoods = await db.getCustomFoods(session);
-    setFoods(db.mergeFoods(customFoods));
+    setFoods(await db.getFoods(session));
   }
 
   async function handleDeleteFood(food) {
-    if (!food._rowId) return; // Seed-Lebensmittel ohne eigene Änderung lassen sich nicht löschen
+    if (!food._rowId) return; // Katalog-Lebensmittel ohne eigene Änderung lassen sich nicht löschen
     await db.deleteFood(food._rowId);
-    const customFoods = await db.getCustomFoods(session);
-    setFoods(db.mergeFoods(customFoods));
+    setFoods(await db.getFoods(session));
   }
 
   async function handleSaveRecipe(recipe) {

@@ -1,5 +1,4 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { SEED_FOODS } from './data/foods';
 import { DEFAULT_PROFILE } from './nutrition';
 
 function ownerId(session) {
@@ -24,48 +23,93 @@ async function getHouseholdId(session) {
 }
 
 // ---------------------------------------------------------------------
-// Lebensmittel: Basis ist die statische SEED_FOODS-Liste (gleich für
-// alle, kein Sync nötig). "nut_foods" enthält nur, was eine Person
-// selbst hinzugefügt oder an einem Seed-Lebensmittel verändert hat.
-// Eine Änderung an einem Seed-Eintrag wird als persönliche Kopie mit
-// override_of = ursprüngliche Seed-Id gespeichert, statt den globalen
-// Datensatz zu verändern.
+// Lebensmittel: EINE Tabelle, "nut_foods", für alles.
+//   owner_id IS NULL      -> globaler Katalog (die Ampel-Lebensmittel), für
+//                            alle lesbar, nur per Migration beschreibbar.
+//                            seed_id ist die stabile Zahlen-Id, auf die
+//                            Rezepte (foodId) und override_of zeigen.
+//   owner_id gesetzt      -> eigenes Lebensmittel (override_of IS NULL) oder
+//                            persönliche Überschreibung eines Katalogeintrags
+//                            (override_of = seed_id).
+// Eigene + vom Haushalt geteilte Zeilen kommen automatisch über RLS zurück
+// (siehe nutrition-household-sharing.sql), deshalb KEIN owner_id-Filter.
 //
-// Geteilt im Haushalt: eigene + vom Haushalt geteilte Zeilen kommen
-// automatisch über RLS zurück (siehe nutrition-household-sharing.sql),
-// deshalb hier bewusst KEIN .eq('owner_id', ...)-Filter mehr.
+// Offline: Die letzte erfolgreich geladene Liste liegt je Nutzer:in im
+// localStorage und springt nur ein, wenn das Laden fehlschlägt.
 // ---------------------------------------------------------------------
 
-export async function getCustomFoods(session) {
-  const { data, error } = await getSupabase()
-    .from('nut_foods')
-    .select('*')
-    .is('deleted_at', null);
-  if (error) throw error;
-  return data;
-}
+const FOODS_CACHE_KEY = 'nestua:nut_foods:';
 
-// Führt Seed-Liste + persönliche/geteilte Overrides/Ergänzungen zu einer
-// Liste zusammen, wie sie die Ansicht braucht.
-export function mergeFoods(customFoods) {
-  const overridesBySeed = new Map();
-  const custom = [];
-  for (const row of customFoods) {
-    if (row.override_of != null) overridesBySeed.set(row.override_of, row);
-    else custom.push(row);
+function readFoodsCache(session) {
+  try {
+    const raw = localStorage.getItem(FOODS_CACHE_KEY + ownerId(session));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
   }
-  const merged = SEED_FOODS.map((f) => {
-    const ov = overridesBySeed.get(f.id);
-    return ov ? toFoodShape(ov, f.id) : f;
-  });
-  return [...merged, ...custom.map((c) => toFoodShape(c))];
 }
 
-function toFoodShape(row, seedId) {
+function writeFoodsCache(session, rows) {
+  try {
+    localStorage.setItem(FOODS_CACHE_KEY + ownerId(session), JSON.stringify(rows));
+  } catch {
+    // Speicher voll/gesperrt: kein Cache, App läuft trotzdem.
+  }
+}
+
+// Lädt Katalog + eigene/geteilte Zeilen und liefert die fertige Liste im
+// UI-Format (siehe toFoodShape).
+export async function getFoods(session) {
+  let rows;
+  try {
+    const { data, error } = await getSupabase()
+      .from('nut_foods')
+      .select('*')
+      .is('deleted_at', null);
+    if (error) throw error;
+    rows = data;
+    writeFoodsCache(session, rows);
+  } catch (e) {
+    rows = readFoodsCache(session);
+    if (!rows) throw e;
+    console.warn('Lebensmittel aus Offline-Cache geladen', e);
+  }
+  return mergeFoods(rows, ownerId(session));
+}
+
+// Führt Katalog + Overrides + eigene Lebensmittel zu der Liste zusammen, wie
+// sie die Ansicht braucht. Gibt es zu einem Katalogeintrag mehrere
+// Overrides (eigener und geteilter), gewinnt der eigene.
+export function mergeFoods(rows, userId) {
+  const overridesBySeed = new Map();
+  const catalog = [];
+  const own = [];
+  const overrides = [];
+  for (const row of rows) {
+    if (row.owner_id == null) catalog.push(row);
+    else if (row.override_of != null) overrides.push(row);
+    else own.push(row);
+  }
+  overrides.sort((a, b) => (a.owner_id === userId) - (b.owner_id === userId));
+  for (const row of overrides) overridesBySeed.set(row.override_of, row);
+
+  catalog.sort((a, b) => a.seed_id - b.seed_id);
+  const merged = catalog.map((row) => {
+    const ov = overridesBySeed.get(row.seed_id);
+    return ov ? toFoodShape(ov, row.seed_id) : toFoodShape(row, row.seed_id, true);
+  });
+  return [...merged, ...own.map((row) => toFoodShape(row))];
+}
+
+// seedId: Katalog-Id, unter der Rezepte das Lebensmittel kennen (bei Katalog-
+// zeilen und Overrides). isCatalog: unveränderte Katalogzeile (_catalog) —
+// sie ist nicht löschbar, Bearbeiten legt eine eigene Kopie an.
+function toFoodShape(row, seedId, isCatalog = false) {
   return {
     id: seedId != null ? seedId : row.id,
-    _rowId: row.id, // echte DB-Id, für Update/Delete
-    _custom: true,
+    _rowId: isCatalog ? undefined : row.id, // echte DB-Id, für Update/Delete
+    _custom: !isCatalog,
+    _catalog: isCatalog,
     override_of: row.override_of ?? null,
     ownerId: row.owner_id,
     householdId: row.household_id ?? null,
@@ -82,13 +126,14 @@ function toFoodShape(row, seedId) {
   };
 }
 
-// food: Objekt im UI-Format (siehe toFoodShape). Ist food.id eine
-// vorhandene Seed-Id (also eine Zahl unter den geladenen Seeds und
-// nicht schon _custom), wird es als Override gespeichert.
+// food: Objekt im UI-Format (siehe toFoodShape). Ein unveränderter
+// Katalogeintrag (_catalog) wird als persönliche Kopie mit override_of =
+// Katalog-Id gespeichert, statt den globalen Datensatz zu verändern.
+// glutenfrei/laktosefrei sind keine Eingaben, sondern folgen den Allergenen.
 export async function saveFood(session, food) {
-  const isSeedEdit = !food._custom && SEED_FOODS.some((f) => f.id === food.id);
-  const overrideOf = isSeedEdit ? food.id : (food._custom ? (food.override_of ?? null) : null);
+  const overrideOf = food._catalog ? food.id : (food._custom ? (food.override_of ?? null) : null);
   const householdId = await getHouseholdId(session);
+  const allergens = food.allergens || [];
   const payload = {
     owner_id: ownerId(session),
     household_id: householdId,
@@ -100,9 +145,10 @@ export async function saveFood(session, food) {
     kcal: food.kcal, protein: food.protein, carbs: food.carbs, sugar: food.sugar,
     fat: food.fat, satfat: food.satfat, fiber: food.fiber, salt: food.salt,
     vitamins: food.vitamins || [], minerals: food.minerals || [], micros_other: food.micros_other || [],
-    allergens: food.allergens || [],
-    glutenfrei: !!food.glutenfrei, laktosefrei: !!food.laktosefrei,
-    tags: food.tags || [], diet: food.diet,
+    allergens,
+    glutenfrei: !allergens.includes('Gluten'),
+    laktosefrei: !allergens.includes('Milch'),
+    tags: food.tags || [], diet: food.diet || null,
   };
   if (food._rowId) payload.id = food._rowId;
   const { data, error } = await getSupabase().from('nut_foods').upsert(payload).select().single();
