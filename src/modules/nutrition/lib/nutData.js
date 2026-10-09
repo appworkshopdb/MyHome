@@ -1,6 +1,6 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { SEED_FOODS } from './data/foods';
-import { DEFAULT_PROFILE } from './nutrition';
+import { DEFAULT_PROFILE, normalizeRecipeCategory } from './nutrition';
 
 function ownerId(session) {
   return session.user.id;
@@ -139,7 +139,7 @@ function fromRecipeRow(row) {
     householdId: row.household_id ?? null,
     name: row.name,
     servings: row.servings,
-    category: row.category,
+    category: normalizeRecipeCategory(row.category), // alte Werte → neue Mahlzeit-Typen
     ingredients: row.ingredients || [],
     note: row.note || '',
     customTags: row.custom_tags || [],
@@ -213,5 +213,88 @@ export async function deleteAllData(session) {
     if (error) throw error;
   }
   const { error } = await getSupabase().from('nut_profile').delete().eq('owner_id', owner);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------
+// Mahlzeiten (Verlauf) — nur für die eigene Person sichtbar (RLS), kein
+// Teilen im Haushalt. Jeder Eintrag ist eine Momentaufnahme: Nährwerte
+// werden beim Speichern kopiert (siehe lib/meals.js). Das Foto wird nie
+// gespeichert.
+// ---------------------------------------------------------------------
+
+function fromMealRow(row) {
+  return {
+    id: row.id,
+    eatenOn: row.eaten_on,
+    mealType: row.meal_type,
+    name: row.name,
+    source: row.source,
+    recipeId: row.recipe_id ?? null,
+    servings: row.servings != null ? Number(row.servings) : null,
+    isEstimate: !!row.is_estimate,
+    kcal: Number(row.kcal) || 0, protein: Number(row.protein) || 0, carbs: Number(row.carbs) || 0,
+    sugar: Number(row.sugar) || 0, fat: Number(row.fat) || 0, satfat: Number(row.satfat) || 0,
+    fiber: Number(row.fiber) || 0, salt: Number(row.salt) || 0,
+    kcalLow: row.kcal_low != null ? Number(row.kcal_low) : null,
+    kcalHigh: row.kcal_high != null ? Number(row.kcal_high) : null,
+    items: Array.isArray(row.items) ? row.items : [],
+    note: row.note || '',
+    createdAt: row.created_at,
+  };
+}
+
+// Einträge von fromStr bis toStr (je einschließlich, 'YYYY-MM-DD')
+export async function getMeals(session, fromStr, toStr) {
+  const { data, error } = await getSupabase()
+    .from('nut_meals')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .is('deleted_at', null)
+    .gte('eaten_on', fromStr)
+    .lte('eaten_on', toStr)
+    .order('eaten_on', { ascending: false })
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data.map(fromMealRow);
+}
+
+export async function saveMeal(session, meal) {
+  const payload = {
+    owner_id: ownerId(session),
+    eaten_on: meal.eatenOn,
+    meal_type: meal.mealType,
+    name: meal.name,
+    source: meal.source,
+    recipe_id: meal.recipeId ?? null,
+    servings: meal.servings ?? null,
+    is_estimate: !!meal.isEstimate,
+    kcal: meal.kcal, protein: meal.protein, carbs: meal.carbs, sugar: meal.sugar,
+    fat: meal.fat, satfat: meal.satfat, fiber: meal.fiber, salt: meal.salt,
+    kcal_low: meal.kcalLow ?? null,
+    kcal_high: meal.kcalHigh ?? null,
+    items: meal.items || [],
+    note: meal.note || null,
+  };
+  const { data, error } = await getSupabase().from('nut_meals').insert(payload).select().single();
+  if (error) throw error;
+  return fromMealRow(data);
+}
+
+// Nur Typ und Datum sind nachträglich änderbar (die Werte sind eine Momentaufnahme).
+export async function updateMeal(id, { mealType, eatenOn }) {
+  const patch = { updated_at: new Date().toISOString() };
+  if (mealType) patch.meal_type = mealType;
+  if (eatenOn) patch.eaten_on = eatenOn;
+  const { data, error } = await getSupabase().from('nut_meals').update(patch).eq('id', id).select().single();
+  if (error) throw error;
+  return fromMealRow(data);
+}
+
+export async function deleteMeal(id) {
+  const { error } = await getSupabase()
+    .from('nut_meals')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
   if (error) throw error;
 }

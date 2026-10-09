@@ -13,7 +13,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
     customTags: recipe.customTags || [],
     goalTags: recipe.goalTags || [],
   } : {
-    name: '', servings: 1, category: 'haupt', ingredients: [], note: '', customTags: [], goalTags: [],
+    name: '', servings: 1, category: 'mittag', ingredients: [], note: '', customTags: [], goalTags: [],
   });
   const [query, setQuery] = useState('');
 

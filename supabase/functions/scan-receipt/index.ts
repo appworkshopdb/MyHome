@@ -16,7 +16,8 @@
 //   RECEIPT_MONTHLY_LIMIT  Optional, Beleg-Scans pro Nutzer und Kalendermonat (Europe/Berlin), Default 30.
 //   MEAL_MONTHLY_LIMIT     Optional, Mahlzeit-Scans pro Nutzer und Kalendermonat, Default 30.
 //                          Zähler liegt in der Tabelle receipt_scans (supabase/receipt_scans_migration.sql),
-//                          je Art getrennt (Spalte kind).
+//                          je Art getrennt (Spalte kind). Dort stehen auch Modell, Tokens und Kosten
+//                          (USD) je Scan — für die Kostenkontrolle, nirgends in der App sichtbar.
 //
 // Endpunkte:
 //   POST  {kind?, image, media_type} → { ok, receipt | meal, quota }; 429 bei erreichtem Monatslimit
@@ -139,6 +140,35 @@ const KINDS: Record<Kind, {
     limit: limitFromEnv('MEAL_MONTHLY_LIMIT'), limitLabel: 'Mahlzeit-Scans', failText: 'Die Mahlzeit konnte nicht gelesen werden',
   },
 };
+
+// Preise in USD pro 1 Mio. Tokens [Input, Output] (Stand der Modelltabelle, Okt. 2026).
+// Nur zur Kostenkontrolle: Die Tokens werden immer gespeichert, die Kosten sind
+// ein Schnappschuss und bei unbekanntem Modell NULL (dann aus den Tokens nachrechnen).
+const PRICES: Record<string, [number, number]> = {
+  'claude-sonnet-5-5': [2, 10], 'claude-sonnet-5': [2, 10], 'claude-sonnet-4-6': [3, 15],
+  'claude-haiku-4-5': [1, 5],
+  'claude-opus-5-5': [4, 20], 'claude-opus-5': [5, 25], 'claude-opus-4-8': [5, 25],
+  'claude-opus-4-7': [5, 25], 'claude-opus-4-6': [5, 25],
+  'claude-fable-5-1': [10, 50], 'claude-fable-5': [10, 50],
+};
+
+function costUsd(model: string, usage: any): number | null {
+  const p = PRICES[model];
+  if (!p || typeof usage?.input_tokens !== 'number' || typeof usage?.output_tokens !== 'number') return null;
+  return Math.round(((usage.input_tokens * p[0] + usage.output_tokens * p[1]) / 1e6) * 1e6) / 1e6;
+}
+
+// Verbrauch an der reservierten Zeile festhalten. Darf den Scan nie scheitern lassen:
+// Der Nutzer hat sein Ergebnis, ein Logging-Fehler wird nur protokolliert.
+async function recordUsage(id: string, model: string, usage: any) {
+  const { error } = await supabase.from('receipt_scans').update({
+    model,
+    input_tokens: usage?.input_tokens ?? null,
+    output_tokens: usage?.output_tokens ?? null,
+    cost_usd: costUsd(model, usage),
+  }).eq('id', id);
+  if (error) console.error('[scan-receipt] Verbrauch nicht gespeichert', id, error);
+}
 
 function parseKind(v: unknown): Kind {
   if (v === undefined || v === null || v === '') return 'receipt'; // ältere App-Versionen
@@ -341,6 +371,9 @@ Deno.serve(async (req) => {
       await releaseScan(reservation.id);
       throw err;
     }
+
+    // Sofort nach der Antwort: Auch abgelehnte oder unlesbare Antworten kosten Tokens.
+    await recordUsage(reservation.id, cfg.model, response.usage);
 
     if (response.stop_reason === 'refusal') throw new HttpError(422, cfg.failText);
     const textBlock = response.content.find((b: any) => b.type === 'text') as { text: string } | undefined;

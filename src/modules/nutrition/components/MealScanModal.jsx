@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from '../../../core/components/Modal';
-import { fmt } from '../lib/nutrition';
+import { fmt, MEAL_TYPES } from '../lib/nutrition';
+import { mealFromScan, defaultMealType, todayStr } from '../lib/meals';
 
 const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
@@ -9,10 +10,16 @@ const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber'
 // die Gramm, werden die Nährwerte dieses Bestandteils proportional umgerechnet
 // und die Kalorienspanne im selben Verhältnis mitgeführt.
 //
+// "Mahlzeit speichern" legt den Eintrag mit den (ggf. korrigierten) Werten in den
+// Verlauf (Bereich "Mahlzeiten") — als Momentaufnahme mit Kennzeichnung "Schätzung".
+//
 // Bewusst keine Allergen-/Verträglichkeitsangaben: Das lässt sich aus einem
 // Foto nicht seriös sagen.
-export default function MealScanModal({ meal, onClose }) {
+export default function MealScanModal({ meal, onSaveMeal, onClose }) {
   const [grams, setGrams] = useState(() => meal.items.map((i) => String(i.grams)));
+  const [mealType, setMealType] = useState(() => defaultMealType());
+  const [eatenOn, setEatenOn]   = useState(() => todayStr());
+  const [saving, setSaving]     = useState(false);
 
   const scaled = useMemo(() => meal.items.map((it, idx) => {
     const g = parseFloat(String(grams[idx]).replace(',', '.'));
@@ -41,6 +48,20 @@ export default function MealScanModal({ meal, onClose }) {
   const hasRange = high - low >= 20;
   // Das Modell hängt der Notiz gelegentlich eine verirrte schließende Klammer an
   const note = (meal.note || '').replace(/\s*[\]}]+$/, '').trim();
+
+  async function save() {
+    if (saving || total.grams <= 0 || !eatenOn) return;
+    setSaving(true);
+    try {
+      await onSaveMeal(mealFromScan(
+        { name: meal.name, items: scaled, kcalLow: low, kcalHigh: high },
+        { mealType, eatenOn },
+      ));
+    } catch (err) {
+      console.error('[meal-save]', err);
+      setSaving(false); // Fehlermeldung zeigt der Aufrufer; Dialog bleibt offen
+    }
+  }
 
   return (
     <Modal title={meal.name || 'Mahlzeit'} onClose={onClose}>
@@ -104,7 +125,29 @@ export default function MealScanModal({ meal, onClose }) {
         tatsächlichen Werte können deutlich abweichen. Keine Angaben zu Allergenen oder Verträglichkeit.
       </div>
 
-      <button className="btn btn-primary btn-block" onClick={onClose}>Schließen</button>
+      <div className="form-group">
+        <label>Mahlzeit</label>
+        <div className="segmented cols-4">
+          {MEAL_TYPES.map((t) => (
+            <button key={t.key} type="button" className={mealType === t.key ? 'active' : ''} onClick={() => setMealType(t.key)}>
+              <div>{t.emoji}</div>
+              <div>{t.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Datum</label>
+        <input type="date" value={eatenOn} onChange={(e) => setEatenOn(e.target.value)} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn btn-primary" disabled={saving || total.grams <= 0 || !eatenOn} onClick={save}>
+          {saving ? 'Speichert…' : 'Mahlzeit speichern'}
+        </button>
+        <button className="btn btn-secondary" onClick={onClose}>Schließen</button>
+      </div>
     </Modal>
   );
 }

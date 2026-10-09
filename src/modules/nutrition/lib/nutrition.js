@@ -39,16 +39,38 @@ export const AMPEL_CATS = [
   { key: 'tabu', label: 'Tabu', color: '#dc2626', bg: '#fee2e2' },
 ];
 
+// Vier Mahlzeit-Typen — gelten für Rezepte UND für den Bereich "Mahlzeiten".
+// (Früher sieben Rezept-Kategorien: Frühstück, Suppen, Hauptgerichte,
+// Desserts, Snacks, Backen, Getränke.)
+export const MEAL_TYPES = [
+  { key: 'fruehstueck', label: 'Frühstück', emoji: '☀️' },
+  { key: 'mittag',      label: 'Mittag',    emoji: '🍽️' },
+  { key: 'abend',       label: 'Abend',     emoji: '🌙' },
+  { key: 'snack',       label: 'Snack',     emoji: '🥨' },
+];
+
 export const RECIPE_CATS = [
   { key: 'all', label: 'Alle', emoji: '🍽️' },
-  { key: 'frueh', label: 'Frühstück', emoji: '☀️' },
-  { key: 'suppen', label: 'Suppen', emoji: '🥣' },
-  { key: 'haupt', label: 'Hauptgerichte', emoji: '🍽️' },
-  { key: 'desserts', label: 'Desserts', emoji: '🍮' },
-  { key: 'snacks', label: 'Snacks', emoji: '🥨' },
-  { key: 'backen', label: 'Backen', emoji: '🧁' },
-  { key: 'getraenke', label: 'Getränke', emoji: '🥤' },
+  ...MEAL_TYPES,
 ];
+
+// Alte Rezept-Kategorien → neue Mahlzeit-Typen. Greift beim Lesen aus der
+// Datenbank (nut_recipes.category kann noch alte Werte enthalten) und macht die
+// Anzeige unabhängig davon, ob die Daten-Migration schon gelaufen ist.
+const LEGACY_RECIPE_CATEGORY = {
+  frueh: 'fruehstueck',
+  haupt: 'mittag',
+  suppen: 'abend',
+  desserts: 'snack',
+  snacks: 'snack',
+  backen: 'snack',
+  getraenke: 'snack',
+};
+
+export function normalizeRecipeCategory(key) {
+  if (MEAL_TYPES.some((t) => t.key === key)) return key;
+  return LEGACY_RECIPE_CATEGORY[key] || 'mittag';
+}
 
 export const LEX_CATS = [
   { key: 'makro', label: 'Makronährstoffe', color: '#3b82f6' },

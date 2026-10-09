@@ -98,20 +98,28 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   Kalendermonat Europe/Berlin).
 - Mahlzeit-Foto: Option "Mahlzeit scannen" im Ernährungs-FAB-Menü
   (`core/components/NutritionFabMenu.jsx`) → Ergebnis per window-Event
-  `nutrition:meal-scanned` an `NutritionModule` → `MealScanModal.jsx`
-  (geschätzte Bestandteile mit editierbaren Gramm, kcal-Spanne; reine Anzeige,
-  noch kein Speichern). Bewusst KEINE Allergen-/Verträglichkeitsangaben. Es gibt
-  kein Ernährungstagebuch, und Rezepte bestehen aus Zutaten der Lebensmittel-DB
-  (`foodId`) — Bestandteile eines Fotos lassen sich daher nicht direkt als Rezept
-  speichern.
-- Scan-Animation: `core/components/ScanPreview.jsx` zeigt das aufgenommene Foto
-  mit fahrender Scanleiste, bis die Antwort da ist (Beleg und Mahlzeit); läuft
-  mindestens `MIN_SCAN_ANIMATION_MS` (photoScan.js). Reine Frontend-Änderung,
-  respektiert `prefers-reduced-motion`.
+  `nutrition:meal-scanned` an `NutritionModule` → `MealScanModal.jsx` (geschätzte
+  Bestandteile mit editierbaren Gramm, kcal-Spanne, "Mahlzeit speichern").
+  Bewusst KEINE Allergen-/Verträglichkeitsangaben; Fotos werden nie gespeichert.
+- Mahlzeiten-Verlauf (Bereich "Mahlzeiten", `MealsView.jsx`): Tabelle `nut_meals`
+  (`supabase/nut_meals_migration.sql`), nur eigene Zeilen (RLS), kein Haushalt-
+  Sharing. Einträge sind MOMENTAUFNAHMEN (Nährwerte kopiert, kein Verweis auf
+  Rezept/Lebensmittel); Quellen: Foto-Schätzung (`is_estimate`, überall mit "≈"
+  gekennzeichnet) und eigenes Rezept × Portionen (exakt, `LogRecipeModal.jsx`,
+  auch per Button "Gegessen eintragen" im Rezept-Dialog). Tageskarte zeigt
+  gegessen vs. Tagesziel (`computeBody` in `core/lib/bodyCalc.js`, braucht
+  ausgefülltes Körperprofil). Datum `eaten_on` immer lokal bauen (`lib/meals.js`).
+- Mahlzeit-Typen: vier (`MEAL_TYPES` in `lib/nutrition.js`: fruehstueck, mittag,
+  abend, snack) — gelten für Rezepte UND Mahlzeiten. Alte Rezept-Kategorien
+  (frueh/haupt/suppen/desserts/snacks/backen/getraenke) übersetzt
+  `normalizeRecipeCategory` beim Lesen; Daten-Migration:
+  `supabase/nut_recipe_categories_migration.sql` (legt gesperrte Sicherung an).
 - Kontingent: Tabelle `receipt_scans` (`supabase/receipt_scans_migration.sql`,
   Spalte `kind` je Art getrennt), nur per service_role erreichbar (RLS an, keine
   Policy). Zählt Scans, die Claude erreichen; technische Fehler werden
-  freigegeben. `GET ?kind=…` auf die Function liefert das Restkontingent.
+  freigegeben. `GET ?kind=…` auf die Function liefert das Restkontingent. Pro Scan
+  stehen dort auch Modell, Tokens und `cost_usd` (Kostenkontrolle pro Nutzer, in
+  der App nicht sichtbar; Abfrage am Ende der Migrationsdatei).
 - Die Function wird NICHT über den Deploy-Workflow ausgerollt (der rsynct nur
   `dist/`): Datei von Hand nach `volumes/functions/scan-receipt/index.ts`
   kopieren. `.env` und `docker-compose.yml` gehören root (`sudo`). Neue
@@ -123,7 +131,8 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   Function-Log (`docker logs supabase-edge-functions`) enthält pro Scan die
   Token-Zahlen. "could not find an appropriate entrypoint" = Function-Ordner
   fehlt auf dem Server.
-- Kosten: Beleg ca. 0,7–0,8 Cent/Scan (gemessen), Mahlzeit ca. 1 Cent (geschätzt, ungemessen). Anthropic-Guthaben ist vorab
+- Kosten (Sonnet 5.5, gemessen): Beleg ca. 0,7–0,8 Cent/Scan, Mahlzeit ca. 1,3 Cent
+  (3.989 In / 469 Out Tokens). Anthropic-Guthaben ist vorab
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 

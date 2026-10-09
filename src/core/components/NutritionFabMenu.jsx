@@ -4,9 +4,9 @@ import { scanMeal, getMealQuota, holdScanAnimation } from '../lib/photoScan';
 import SheetShell from './SheetShell';
 import ScanPreview from './ScanPreview';
 
-// Ernährung hat drei Anlege-Wege (Rezept, Lebensmittel, Mahlzeit per Foto), die
-// in modules/nutrition/ mit eigenen Dialogen leben (RecipeEditorModal,
-// FoodFormModal, MealScanModal). core/ darf nicht direkt aus modules/
+// Ernährung hat vier Anlege-Wege (Rezept, Lebensmittel, Mahlzeit per Foto,
+// Rezept als gegessene Mahlzeit), die in modules/nutrition/ mit eigenen Dialogen
+// leben (RecipeEditorModal, FoodFormModal, MealScanModal, LogRecipeModal). core/ darf nicht direkt aus modules/
 // importieren — deshalb feuert die Auswahl hier ein window-Event, genau wie
 // sport:data-changed, nur in die andere Richtung. NutritionModule.jsx hört zu
 // und öffnet den passenden Dialog selbst.
@@ -14,6 +14,7 @@ const OPTIONS = [
   { event: 'nutrition:new-recipe', icon: '📖', label: 'Neues Rezept' },
   { event: 'nutrition:new-food',   icon: '🥗', label: 'Neues Lebensmittel' },
 ];
+const LOG_OPTION = { event: 'nutrition:log-meal', icon: '📝', label: 'Rezept eintragen' };
 
 const SCAN_STEPS = ['Mahlzeit wird analysiert…', 'Bestandteile werden erkannt…', 'Nährwerte werden geschätzt…'];
 
@@ -103,11 +104,17 @@ export default function NutritionFabMenu({ onClose }) {
               ))}
               <button
                 className="qsheet-mode-btn"
-                style={{ gridColumn: '1 / -1' }}
                 disabled={busy || limitReached}
                 onClick={() => cameraRef.current?.click()}
               >
                 📷 Mahlzeit scannen
+              </button>
+              <button
+                className="qsheet-mode-btn"
+                disabled={busy}
+                onClick={() => choose(LOG_OPTION.event)}
+              >
+                {LOG_OPTION.icon} {LOG_OPTION.label}
               </button>
             </div>
 
