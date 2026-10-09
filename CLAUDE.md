@@ -151,7 +151,10 @@ Migration beschreibbar, `seed_id` = stabile Zahlen-Id), `owner_id` gesetzt = eig
 Lebensmittel oder persönlicher Override eines Katalogeintrags (`override_of` = `seed_id`).
 Rezepte zeigen per `foodId` auf `seed_id` (Katalog) bzw. die uuid (eigene) — `seed_id`s
 nie ändern oder wiederverwenden. Neue Katalogeinträge: weitere Migration mit
-`seed_id` ab 318, `ON CONFLICT (seed_id) WHERE owner_id IS NULL DO NOTHING`.
+`seed_id` ab 718 (318–717 vergeben, `supabase/nutrition_catalog_expansion_migration.sql`),
+`ON CONFLICT (seed_id) WHERE owner_id IS NULL DO NOTHING`. Entfernte Katalogeinträge nur
+per `deleted_at` ausblenden, nie hart löschen. Konvention bei Milchprodukten & Co.: zu
+jeder normalen Variante gibt es eine "… light"-Variante (Ampel eine Stufe besser).
 `glutenfrei`/`laktosefrei` sind abgeleitet (Allergen "Gluten"/"Milch"), nie von Hand.
 `nutData.getFoods()` lädt alles und hält je Nutzer einen Offline-Cache im localStorage.
 
