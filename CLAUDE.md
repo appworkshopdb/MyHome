@@ -142,6 +142,19 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 
+## Lebensmittel-Katalog (Ernährung)
+
+Alle Lebensmittel stehen in EINER Tabelle, `nut_foods` (Migration
+`supabase/nutrition_catalog_migration.sql`); `foods.js` gibt es nicht mehr.
+`owner_id IS NULL` = globaler Katalog (für alle angemeldeten Nutzer lesbar, nur per
+Migration beschreibbar, `seed_id` = stabile Zahlen-Id), `owner_id` gesetzt = eigenes
+Lebensmittel oder persönlicher Override eines Katalogeintrags (`override_of` = `seed_id`).
+Rezepte zeigen per `foodId` auf `seed_id` (Katalog) bzw. die uuid (eigene) — `seed_id`s
+nie ändern oder wiederverwenden. Neue Katalogeinträge: weitere Migration mit
+`seed_id` ab 318, `ON CONFLICT (seed_id) WHERE owner_id IS NULL DO NOTHING`.
+`glutenfrei`/`laktosefrei` sind abgeleitet (Allergen "Gluten"/"Milch"), nie von Hand.
+`nutData.getFoods()` lädt alles und hält je Nutzer einen Offline-Cache im localStorage.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
