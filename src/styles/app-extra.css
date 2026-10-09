@@ -4506,9 +4506,9 @@
 /* ── Scan-Animation (ScanPreview): Foto mit fahrender Scanleiste ──────────
    Läuft, während die Edge Function das Foto liest (Beleg und Mahlzeit).
    Die Animation steckt in einem Sheet/Dialog und ist kein Vorfahre von
-   .chrome-top/.bottom-nav — die Fixed-Nav-Regel bleibt unberührt. Grün =
-   --status-positive, damit die Leiste auf hellen wie dunklen Fotos sichtbar
-   bleibt. Keine Schatten (Design-System): Leuchten läuft über Verlauf. */
+   .chrome-top/.bottom-nav — die Fixed-Nav-Regel bleibt unberührt. Die Farbe
+   ist bewusst ein festes, knalliges Grün und folgt nicht dem Theme: Sie muss
+   auf hellem Bon-Papier wie auf dunklen Tellerfotos leuchten. Keine Schatten (Design-System): Leuchten läuft über Verlauf. */
 .scan-preview {
   display: flex;
   flex-direction: column;
@@ -4517,6 +4517,7 @@
   padding: var(--space-2) 0;
 }
 .scan-frame {
+  --scan-color: #1fff8e;
   position: relative;
   width: fit-content;
   max-width: 100%;
@@ -4534,23 +4535,23 @@
 .scan-tint {
   position: absolute;
   inset: 0;
-  background: rgba(8, 20, 16, 0.22);
+  background: rgba(4, 16, 11, 0.4); /* dunkelt das Foto ab, damit die Leiste knallt */
   animation: scan-tint-pulse 1.8s ease-in-out infinite alternate;
 }
 .scan-bar {
   position: absolute;
   left: 0;
   right: 0;
-  top: -80px;
-  height: 80px;
+  top: -100px;
+  height: 100px;
   animation: scan-sweep 1.9s ease-in-out infinite alternate;
 }
 .scan-bar::before { /* Leuchtband */
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent, var(--status-positive) 50%, transparent);
-  opacity: 0.28;
+  background: linear-gradient(to bottom, transparent, var(--scan-color) 50%, transparent);
+  opacity: 0.6;
 }
 .scan-bar::after { /* die Leiste selbst */
   content: '';
@@ -4558,9 +4559,9 @@
   left: 0;
   right: 0;
   top: 50%;
-  height: 3px;
-  margin-top: -1.5px;
-  background: var(--status-positive);
+  height: 4px;
+  margin-top: -2px;
+  background: var(--scan-color);
 }
 .scan-corner {
   position: absolute;
@@ -4580,16 +4581,30 @@
   min-height: 1.4em;
 }
 @keyframes scan-sweep {
-  from { top: -40px; }
-  to   { top: calc(100% - 40px); }
+  from { top: -50px; }
+  to   { top: calc(100% - 50px); }
 }
 @keyframes scan-tint-pulse {
   from { opacity: 0.55; }
   to   { opacity: 1; }
 }
-/* Wer Bewegung reduziert: Leiste steht mittig, nichts bewegt sich
-   (die globale Regel in base.css würde die Animation sonst nur auf 0 ms kürzen). */
+/* Wer in den Systemeinstellungen "Bewegung reduzieren" aktiviert hat (iOS:
+   Bedienungshilfen → Bewegung): keine Wischbewegung, stattdessen blendet die
+   Leiste nacheinander an drei Stellen des Fotos ein und aus. So bleibt der
+   Scan als "läuft gerade" erkennbar. Der !important-Block schlägt die globale
+   Regel in base.css (animation-duration: 0ms !important), weil er spezifischer ist. */
+@keyframes scan-fade-steps {
+  0%        { top: calc(18% - 50px); opacity: 0; }
+  4%, 27%   { top: calc(18% - 50px); opacity: 1; }
+  33%       { top: calc(18% - 50px); opacity: 0; }
+  34%       { top: calc(50% - 50px); opacity: 0; }
+  38%, 60%  { top: calc(50% - 50px); opacity: 1; }
+  66%       { top: calc(50% - 50px); opacity: 0; }
+  67%       { top: calc(82% - 50px); opacity: 0; }
+  71%, 94%  { top: calc(82% - 50px); opacity: 1; }
+  100%      { top: calc(82% - 50px); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .scan-bar { animation: none !important; top: calc(50% - 40px); }
+  .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
   .scan-tint { animation: none !important; opacity: 0.8; }
 }
