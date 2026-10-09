@@ -11,7 +11,7 @@ const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber'
 //
 // Bewusst keine Allergen-/Verträglichkeitsangaben: Das lässt sich aus einem
 // Foto nicht seriös sagen.
-export default function MealScanModal({ meal, onSaveAsFood, onClose }) {
+export default function MealScanModal({ meal, onClose }) {
   const [grams, setGrams] = useState(() => meal.items.map((i) => String(i.grams)));
 
   const scaled = useMemo(() => meal.items.map((it, idx) => {
@@ -39,21 +39,8 @@ export default function MealScanModal({ meal, onSaveAsFood, onClose }) {
   const high = Math.round((meal.kcal_high ?? baseKcal) * ratio);
   const kcal = Math.round(total.kcal);
   const hasRange = high - low >= 20;
-
-  function saveAsFood() {
-    if (total.grams <= 0) return;
-    const per100 = (v) => Math.round((v * 100) / total.grams * 10) / 10;
-    onSaveAsFood({
-      name: `${meal.name || 'Mahlzeit'} (geschätzt)`,
-      group: '',
-      category: 'erlaubt',
-      unit: 'g', // Werte gelten pro 100 g
-      kcal: Math.round((total.kcal * 100) / total.grams),
-      protein: per100(total.protein), carbs: per100(total.carbs), sugar: per100(total.sugar),
-      fat: per100(total.fat), satfat: per100(total.satfat), fiber: per100(total.fiber),
-      salt: Math.round((total.salt * 100) / total.grams * 100) / 100,
-    });
-  }
+  // Das Modell hängt der Notiz gelegentlich eine verirrte schließende Klammer an
+  const note = (meal.note || '').replace(/\s*[\]}]+$/, '').trim();
 
   return (
     <Modal title={meal.name || 'Mahlzeit'} onClose={onClose}>
@@ -110,17 +97,14 @@ export default function MealScanModal({ meal, onSaveAsFood, onClose }) {
         <div className="meal-hint">Die Mengen sind geschätzt — passe sie an, wenn du es besser weißt.</div>
       </div>
 
-      {meal.note && <div className="meal-hint">Unsicher: {meal.note}</div>}
+      {note && <div className="meal-hint">Unsicher: {note}</div>}
 
       <div className="meal-disclaimer">
         Grobe Schätzung aus dem Foto. Portionsgröße, Öl und Soßen sind schwer zu erkennen, die
         tatsächlichen Werte können deutlich abweichen. Keine Angaben zu Allergenen oder Verträglichkeit.
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary" disabled={total.grams <= 0} onClick={saveAsFood}>Als Lebensmittel speichern</button>
-        <button className="btn btn-secondary" onClick={onClose}>Schließen</button>
-      </div>
+      <button className="btn btn-primary btn-block" onClick={onClose}>Schließen</button>
     </Modal>
   );
 }

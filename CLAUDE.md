@@ -99,9 +99,11 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
 - Mahlzeit-Foto: Option "Mahlzeit scannen" im Ernährungs-FAB-Menü
   (`core/components/NutritionFabMenu.jsx`) → Ergebnis per window-Event
   `nutrition:meal-scanned` an `NutritionModule` → `MealScanModal.jsx`
-  (geschätzte Bestandteile mit editierbaren Gramm, kcal-Spanne, "Als Lebensmittel
-  speichern" öffnet das Lebensmittel-Formular vorbefüllt, pro 100 g). Bewusst
-  KEINE Allergen-/Verträglichkeitsangaben; es gibt kein Ernährungstagebuch.
+  (geschätzte Bestandteile mit editierbaren Gramm, kcal-Spanne; reine Anzeige,
+  noch kein Speichern). Bewusst KEINE Allergen-/Verträglichkeitsangaben. Es gibt
+  kein Ernährungstagebuch, und Rezepte bestehen aus Zutaten der Lebensmittel-DB
+  (`foodId`) — Bestandteile eines Fotos lassen sich daher nicht direkt als Rezept
+  speichern.
 - Kontingent: Tabelle `receipt_scans` (`supabase/receipt_scans_migration.sql`,
   Spalte `kind` je Art getrennt), nur per service_role erreichbar (RLS an, keine
   Policy). Zählt Scans, die Claude erreichen; technische Fehler werden

@@ -113,18 +113,8 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     onNavigateView('lebensmittel');
   }
 
-  // "Als Lebensmittel speichern" aus dem Mahlzeit-Ergebnis: öffnet das normale
-  // Lebensmittel-Formular mit vorbelegten Werten (pro 100 g). Der Nutzer wählt
-  // noch die Gruppe und speichert selbst.
-  function saveMealAsFood(prefill) {
-    setMealResult(null);
-    setEditingFood(prefill);
-    setShowFoodForm(true);
-    onNavigateView('lebensmittel');
-  }
-
   const mealModal = mealResult && (
-    <MealScanModal meal={mealResult} onSaveAsFood={saveMealAsFood} onClose={() => setMealResult(null)} />
+    <MealScanModal meal={mealResult} onClose={() => setMealResult(null)} />
   );
 
   async function handleSaveFood(food) {
