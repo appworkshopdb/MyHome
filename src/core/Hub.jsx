@@ -5,8 +5,9 @@ import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
-import { buildDayPlan, setWorkoutDone, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
+import { buildDayPlan, setWorkoutDone, setEntryPaid, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
 import { DayPlanPopup, DayPlanSection } from './components/DayPlan';
+import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import PageSection from './components/PageSection';
@@ -51,7 +52,9 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 // offener Ausgaben statt der auf drei begrenzten Fixkosten, damit die
 // Zahl in der Fokuskarte zu der in Finanzen passt. Ein alter v3-Eintrag
 // würde dort eine zu kleine Zahl zeigen, deshalb neuer Schlüssel.
-const CACHE_KEY = 'hub-cache-v4';
+// v5: openPosten enthält zusätzlich due_date (Tagesplan zeigt nur Posten
+// mit Fälligkeit heute/überfällig) — v4-Einträge hätten kein Datum.
+const CACHE_KEY = 'hub-cache-v5';
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
@@ -127,7 +130,7 @@ async function loadOpenPosten() {
   const now = new Date();
   const { data, error } = await sb
     .from('fin_entries')
-    .select('id, name, amount, category, paid')
+    .select('id, name, amount, category, paid, due_date')
     .eq('year', now.getFullYear())
     .eq('month', now.getMonth() + 1)
     .eq('paid', false)
@@ -189,6 +192,24 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     const t = habTodayStr();
     getCalendarEvents(t, t).then((m) => setEvents(m[t] ?? [])).catch(() => {});
   }, []);
+
+  // Ernährungsstand von heute (Tagesplan). Fehlertolerant wie die Termine: bei
+  // einem Fehler (z. B. Tabelle noch nicht migriert) fehlt nur der Block.
+  // Neu laden, wenn die App wieder in den Vordergrund kommt — gegessen wird
+  // zwischendurch, der Hub bleibt oft lange offen.
+  const [nutrition, setNutrition] = useState(null);
+  useEffect(() => {
+    let aktiv = true;
+    const lade = () => {
+      loadNutritionDay(session)
+        .then((d) => { if (aktiv) setNutrition(d); })
+        .catch(() => { if (aktiv) setNutrition(null); });
+    };
+    lade();
+    const onVisible = () => { if (document.visibilityState === 'visible') lade(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [session]);
 
   const load = useCallback(async (opts = {}) => {
     // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
@@ -325,6 +346,22 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     } catch (e) {
       console.error('[Hub] Training-Toggle fehlgeschlagen:', e);
       setStatus_(workout.status);
+    }
+  }
+
+  // Posten im Tagesplan als bezahlt abhaken — verschwindet damit auch aus
+  // Fokuskarte (offene Posten) und Finanzen-Liste "offen".
+  async function handlePayPosten(id) {
+    const vorher = openPosten;
+    const neu = openPosten.filter((p) => p.id !== id);
+    setOpenPosten(neu);
+    fb.todoCheck();
+    try {
+      await setEntryPaid(id, true);
+      writeCache({ income, expense, todaySport, openPosten: neu, todos });
+    } catch (e) {
+      console.error('[Hub] Posten als bezahlt markieren fehlgeschlagen:', e);
+      setOpenPosten(vorher);
     }
   }
 
@@ -687,15 +724,18 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
             {/* Tagesplan — erscheint, sobald das Popup heute geöffnet wurde */}
             {planOpen && (
-              <PageSection title="Dein Tagesplan">
+              <section className="page-section">
                 <DayPlanSection
                   plan={dayPlan}
+                  nutrition={nutrition}
                   onToggleTodo={handleToggleTodo}
                   onToggleWorkout={handleToggleWorkout}
                   onToggleHabit={handleToggleHabit}
+                  onPayPosten={handlePayPosten}
                   onOpenFinance={() => onOpenModule('finance/offen')}
+                  onOpenNutrition={onOpenModule}
                 />
-              </PageSection>
+              </section>
             )}
 
             {/* Heute — zwei Kacheln; entfallen, sobald der Tagesplan offen ist (zeigt dasselbe) */}

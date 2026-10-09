@@ -1183,6 +1183,10 @@
 .wiz-mode-icon svg { width: 100%; height: 100%; display: block; }
 .wiz-mode-title { font-size: 15px; font-weight: 700; }
 .wiz-mode-sub { font-size: 12px; color: var(--text-muted); }
+.wiz-scan-quota {
+  text-align: center;
+  color: var(--text-muted);
+}
 .wiz-scan-error {
   color: var(--text-secondary);
   overflow-wrap: anywhere; /* lange Fehlerdetails dürfen umbrechen */
@@ -2763,6 +2767,7 @@
   cursor: pointer;
   text-align: center;
 }
+.qsheet-mode-btn:disabled { opacity: 0.6; cursor: default; }
 .qsheet-mode-btn.active {
   background: var(--text-primary);
   color: var(--bg-primary);
@@ -4190,21 +4195,31 @@
 }
 
 .dayplan-card {
-  background:    var(--surface-raised);
-  border:        1px solid var(--border-hairline);
-  border-radius: var(--r-2xl);
-  box-shadow:    var(--shadow-card);
-  padding:       14px 18px 6px;
+  /* getönte Fläche: hebt den Tagesplan von den weißen Hub-Karten ab,
+     funktioniert in Hell und Dunkel (Mischung aus Aktionsfarbe + Seitenfläche) */
+  background:    color-mix(in srgb, var(--action-primary) 12%, var(--surface-page));
+  border:        1.5px solid color-mix(in srgb, var(--action-primary) 28%, var(--surface-page));
+  border-radius: 22px;
+  padding:       14px 10px 10px;
 }
-.dayplan-head  { margin-bottom: 8px; }
+.dayplan-head  { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; }
+.dayplan-title { margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); }
 .dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
 .dayplan-bar {
-  height: 5px; border-radius: var(--r-pill); background: var(--data-track);
-  margin-top: 8px; overflow: hidden;
+  height: 5px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--action-primary) 22%, var(--surface-page));
+  margin: 8px 8px 4px; overflow: hidden;
 }
 .dayplan-bar-fill { height: 100%; background: var(--action-primary); transition: width var(--motion-calm); }
-.dayplan-empty { padding: 12px 0; font-size: 14px; color: var(--text-muted); }
-.dayplan-group { padding: 8px 0 4px; }
+.dayplan-empty {
+  margin-top: 8px; padding: 14px; font-size: 14px; color: var(--text-muted);
+  background: var(--surface-raised); border-radius: 14px;
+}
+/* Jede Gruppe ist eine weiße Karte auf der getönten Fläche */
+.dayplan-group {
+  background: var(--surface-raised); border-radius: 14px;
+  padding: 10px 14px 4px; margin-top: 8px;
+}
 .dayplan-group-label {
   font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;
@@ -4229,11 +4244,39 @@
 .dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
 .dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
 .dayplan-meta.critical { color: var(--status-critical); }
-.dayplan-link {
-  display: block; width: 100%; text-align: left; background: none; border: none;
-  border-top: 1px solid var(--surface-page); padding: 13px 0; margin-top: 4px;
-  font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
+
+/* Ernährung im Tagesplan — kein Haken, Block ist eine Schaltfläche */
+.dp-nut-head { display: flex; align-items: baseline; justify-content: space-between; }
+.dp-nut-open {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--action-primary);
 }
+.dp-nut-btn { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.dp-nut-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.dp-nut-main { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
+.dp-nut-main small { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0; margin-left: 4px; }
+.dp-nut-side { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.dp-nut-bar { height: 6px; border-radius: var(--r-pill); background: var(--data-track); overflow: hidden; margin-top: 8px; }
+.dp-nut-fill { height: 100%; border-radius: var(--r-pill); background: var(--action-primary); transition: width var(--motion-calm); }
+.dp-nut.over .dp-nut-fill { background: var(--status-caution); }
+.dp-nut.over .dp-nut-main { color: var(--status-caution); }
+.dp-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.dp-macro { background: var(--surface-sunken); border-radius: 12px; padding: 7px 10px; }
+.dp-macro b { display: block; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.dp-macro span { white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.dp-macro i { display: block; height: 3px; border-radius: var(--r-pill); background: var(--data-track); margin-top: 5px; overflow: hidden; }
+.dp-macro i em { display: block; height: 100%; background: var(--action-primary); border-radius: var(--r-pill); }
+.dp-meals { display: flex; gap: 6px; margin-top: 10px; }
+.dp-meal {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  border-radius: var(--r-pill); padding: 5px 0; font-size: 12px; font-weight: 800;
+  background: var(--surface-sunken); color: var(--text-muted);
+}
+.dp-meal.on { background: var(--status-positive-bg); color: var(--status-positive); }
+.dp-meal.next { outline: 1.5px dashed var(--border-strong); outline-offset: -1.5px; }
+.dp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dp-cta { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--action-primary); }
+.dp-hint { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--text-muted); }
 
 /* ── Kalender: Quelle erkennbar (App vs. Google) + Filter ─────────── */
 .calview-dot {
@@ -4497,3 +4540,114 @@
 }
 .avatar-editor-big img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-crop { width: 240px; height: 240px; border-radius: var(--r-pill); touch-action: none; cursor: grab; background: var(--surface-sunken); }
+
+/* ── Scan-Animation (ScanPreview): Foto mit fahrender Scanleiste ──────────
+   Läuft, während die Edge Function das Foto liest (Beleg und Mahlzeit).
+   Die Animation steckt in einem Sheet/Dialog und ist kein Vorfahre von
+   .chrome-top/.bottom-nav — die Fixed-Nav-Regel bleibt unberührt. Die Farbe
+   ist bewusst ein festes, knalliges Grün und folgt nicht dem Theme: Sie muss
+   auf hellem Bon-Papier wie auf dunklen Tellerfotos leuchten. Keine Schatten (Design-System): Leuchten läuft über Verlauf. */
+.scan-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+.scan-frame {
+  --scan-color: #1fff8e;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.scan-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 460px);
+}
+.scan-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 16, 11, 0.4); /* dunkelt das Foto ab, damit die Leiste knallt */
+  animation: scan-tint-pulse 1.8s ease-in-out infinite alternate;
+}
+.scan-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -100px;
+  height: 100px;
+  animation: scan-sweep 1.9s ease-in-out infinite alternate;
+}
+.scan-bar::before { /* Leuchtband */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--scan-color) 50%, transparent);
+  opacity: 0.6;
+}
+.scan-bar::after { /* die Leiste selbst */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  background: var(--scan-color);
+}
+.scan-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid rgba(255, 255, 255, 0.92);
+}
+.scan-corner-tl { top: 10px;    left: 10px;  border-top-width: 3px;    border-left-width: 3px;  border-top-left-radius: 6px; }
+.scan-corner-tr { top: 10px;    right: 10px; border-top-width: 3px;    border-right-width: 3px; border-top-right-radius: 6px; }
+.scan-corner-bl { bottom: 10px; left: 10px;  border-bottom-width: 3px; border-left-width: 3px;  border-bottom-left-radius: 6px; }
+.scan-corner-br { bottom: 10px; right: 10px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+.scan-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  min-height: 1.4em;
+}
+@keyframes scan-sweep {
+  from { top: -50px; }
+  to   { top: calc(100% - 50px); }
+}
+@keyframes scan-tint-pulse {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+/* Wer in den Systemeinstellungen "Bewegung reduzieren" aktiviert hat (iOS:
+   Bedienungshilfen → Bewegung): keine Wischbewegung, stattdessen blendet die
+   Leiste nacheinander an drei Stellen des Fotos ein und aus. So bleibt der
+   Scan als "läuft gerade" erkennbar. Der !important-Block schlägt die globale
+   Regel in base.css (animation-duration: 0ms !important), weil er spezifischer ist. */
+@keyframes scan-fade-steps {
+  0%        { top: calc(18% - 50px); opacity: 0; }
+  4%, 27%   { top: calc(18% - 50px); opacity: 1; }
+  33%       { top: calc(18% - 50px); opacity: 0; }
+  34%       { top: calc(50% - 50px); opacity: 0; }
+  38%, 60%  { top: calc(50% - 50px); opacity: 1; }
+  66%       { top: calc(50% - 50px); opacity: 0; }
+  67%       { top: calc(82% - 50px); opacity: 0; }
+  71%, 94%  { top: calc(82% - 50px); opacity: 1; }
+  100%      { top: calc(82% - 50px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
+  .scan-tint { animation: none !important; opacity: 0.8; }
+}
+.dayplan-row-title--link { background: none; border: 0; padding: 0; text-align: left; font: inherit; cursor: pointer; }
+.dayplan-amount { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; line-height: 1.15; }
+.dayplan-amount b { font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.dayplan-amount span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+.dayplan-amount span.critical { color: var(--status-critical); }

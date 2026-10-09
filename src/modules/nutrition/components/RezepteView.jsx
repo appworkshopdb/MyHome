@@ -8,6 +8,7 @@ import RecipeDetailModal from './RecipeDetailModal';
 export default function RezepteView({
   foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast,
   editing, setEditing, // lifted nach NutritionModule.jsx — siehe dort für Begründung
+  onLogMeal,           // "Gegessen eintragen" → Dialog im NutritionModule
 }) {
   const [tab, setTab] = useState('eigene'); // 'eigene' | 'vorlagen'
   const [catIndex, setCatIndex] = useState(0);
@@ -124,6 +125,7 @@ export default function RezepteView({
           onEdit={(r) => { setDetail(null); setEditing(r); }}
           onDelete={handleDelete}
           onCopy={copyTemplate}
+          onLogMeal={onLogMeal ? (r) => { setDetail(null); onLogMeal(r); } : undefined}
           onClose={() => setDetail(null)}
         />
       )}

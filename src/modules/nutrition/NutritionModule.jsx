@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './nutrition.css';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
@@ -11,6 +11,9 @@ import AmpelView from './components/AmpelView';
 import RezepteView from './components/RezepteView';
 import LexikonView from './components/LexikonView';
 import TippsView from './components/TippsView';
+import MealScanModal from './components/MealScanModal';
+import LogRecipeModal from './components/LogRecipeModal';
+import MealsView from './components/MealsView';
 import * as db from './lib/nutData';
 
 registerRequirement('profile', async (session) => {
@@ -37,6 +40,7 @@ registerRequirement('profile', async (session) => {
 // window-Event. Dieses Modul hört zu und öffnet den passenden,
 // unverändert bestehenden Dialog.
 const DETAIL_TITLES = {
+  mahlzeiten:   'Mahlzeiten',
   lebensmittel: 'Lebensmittel',
   rezepte:      'Rezepte',
   lexikon:      'Lexikon',
@@ -60,6 +64,15 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   // Lifted aus AmpelView
   const [showFoodForm, setShowFoodForm] = useState(false);
   const [editingFood, setEditingFood]   = useState(null);
+  // Ergebnis eines Mahlzeit-Fotos (null = kein Dialog offen)
+  const [mealResult, setMealResult] = useState(null);
+  // "Rezept eintragen": undefined = zu, null = Rezept wählen, Objekt = dieses Rezept
+  const [logRecipe, setLogRecipe] = useState(undefined);
+  // Bereich "Mahlzeiten": nach dem Speichern neu laden und auf das Datum springen
+  const [mealsRefresh, setMealsRefresh] = useState(0);
+  const [mealsFocus, setMealsFocus]     = useState(null);
+
+  const foodsById = useMemo(() => Object.fromEntries(foods.map((f) => [f.id, f])), [foods]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -87,11 +100,19 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   useEffect(() => {
     function openNewRecipe() { setEditingRecipe(null); onNavigateView('rezepte'); }
     function openNewFood()   { setEditingFood(null); setShowFoodForm(true); onNavigateView('lebensmittel'); }
+    // Mahlzeit-Foto: Der FAB-Dialog (core/) scannt und schickt das Ergebnis
+    // als CustomEvent; der Ergebnisdialog öffnet sich in jeder Ansicht.
+    function openMealResult(e) { setMealResult(e.detail || null); }
+    function openLogRecipe()   { setLogRecipe(null); onNavigateView('mahlzeiten'); }
     window.addEventListener('nutrition:new-recipe', openNewRecipe);
     window.addEventListener('nutrition:new-food', openNewFood);
+    window.addEventListener('nutrition:meal-scanned', openMealResult);
+    window.addEventListener('nutrition:log-meal', openLogRecipe);
     return () => {
       window.removeEventListener('nutrition:new-recipe', openNewRecipe);
       window.removeEventListener('nutrition:new-food', openNewFood);
+      window.removeEventListener('nutrition:meal-scanned', openMealResult);
+      window.removeEventListener('nutrition:log-meal', openLogRecipe);
     };
   }, [onNavigateView]);
 
@@ -104,6 +125,37 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     setAmpelSearch(query);
     onNavigateView('lebensmittel');
   }
+
+  // Mahlzeit in den Verlauf schreiben (aus Foto oder Rezept) und dorthin springen.
+  // Wirft bei Fehlern weiter, damit der Dialog offen bleibt und "Speichert…" zurücksetzt.
+  async function handleSaveMeal(meal) {
+    try {
+      await db.saveMeal(session, meal);
+    } catch (e) {
+      console.error(e);
+      showToast('Mahlzeit konnte nicht gespeichert werden');
+      throw e;
+    }
+    setMealResult(null);
+    setLogRecipe(undefined);
+    setMealsFocus(meal.eatenOn);
+    setMealsRefresh((n) => n + 1);
+    onNavigateView('mahlzeiten');
+    showToast('Mahlzeit gespeichert');
+  }
+
+  const mealModal = mealResult && (
+    <MealScanModal meal={mealResult} onSaveMeal={handleSaveMeal} onClose={() => setMealResult(null)} />
+  );
+  const logModal = logRecipe !== undefined && (
+    <LogRecipeModal
+      recipe={logRecipe}
+      recipes={recipes}
+      foodsById={foodsById}
+      onSave={handleSaveMeal}
+      onClose={() => setLogRecipe(undefined)}
+    />
+  );
 
   async function handleSaveFood(food) {
     await db.saveFood(session, food);
@@ -145,6 +197,16 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
       <>
         <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
         <div className="nut-module-content with-topbar-space">
+          {view === 'mahlzeiten' && (
+            <MealsView
+              session={session}
+              focusDate={mealsFocus}
+              refreshKey={mealsRefresh}
+              onLogRecipe={() => setLogRecipe(null)}
+              showToast={showToast}
+            />
+          )}
+
           {view === 'lebensmittel' && (
             <AmpelView
               foods={foods}
@@ -169,12 +231,15 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
               showToast={showToast}
               editing={editingRecipe}
               setEditing={setEditingRecipe}
+              onLogMeal={(r) => setLogRecipe(r)}
             />
           )}
 
           {view === 'lexikon' && <LexikonView />}
           {view === 'tipps'   && <TippsView />}
         </div>
+        {mealModal}
+        {logModal}
       </>
     );
   }
@@ -191,6 +256,8 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
           onNavigate={onNavigateView}
         />
       </div>
+      {mealModal}
+      {logModal}
     </>
   );
 }

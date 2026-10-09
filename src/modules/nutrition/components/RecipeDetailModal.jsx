@@ -4,7 +4,7 @@ import { RECIPE_CATS, TAG_COLORS, fmt } from '../lib/nutrition';
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 
-export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onClose }) {
+export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onLogMeal, onClose }) {
   const servings = recipe.servings || 1;
   const perServing = Math.round(calc.kcal / servings);
   const cat = RECIPE_CATS.find((c) => c.key === recipe.category) || RECIPE_CATS[0];
@@ -13,6 +13,10 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
 
   return (
     <Modal title={recipe.name} onClose={onClose}>
+      {!isTemplate && onLogMeal && (
+        <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
+      )}
+
       <div style={{ display: 'flex', gap: 8 }}>
         {isTemplate ? (
           <button className="btn btn-primary" onClick={() => onCopy(recipe)}><IconPlus /> Übernehmen</button>

@@ -1,15 +1,17 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { scanReceipt } from '../lib/receiptScan';
+import { scanReceipt, getReceiptQuota, holdScanAnimation } from '../lib/photoScan';
 import { IconEdit } from './Icons';
+import ScanPreview from './ScanPreview';
 
 // Einstieg des Finanz-Wizards: "Beleg scannen" oder "Manuelle Eingabe".
 // Der Scan-Button öffnet direkt die Kamera (capture) — das Öffnen des
 // Datei-Dialogs muss im selben Tap passieren, sonst blockt iOS es.
-// "Foto auswählen" nimmt ein vorhandenes Bild (auch für den Desktop-Test).
-// Bei Erfolg ruft die Komponente onScanned(receipt); Fehler und
-// "kein Kassenbon" bleiben hier stehen, damit man es erneut versuchen oder
-// auf manuell wechseln kann.
+// "Foto aus der Galerie" nimmt ein vorhandenes Bild (auch für den Desktop-Test).
+// Nach der Aufnahme zeigt ScanPreview das Foto mit fahrender Scanleiste, bis
+// das Ergebnis da ist. Bei Erfolg ruft die Komponente onScanned(receipt);
+// Fehler und "kein Kassenbon" bleiben hier stehen, damit man es erneut
+// versuchen oder auf manuell wechseln kann.
 function IconCamera() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -19,21 +21,41 @@ function IconCamera() {
   );
 }
 
+const SCAN_STEPS = ['Beleg wird gelesen…', 'Beträge werden erkannt…', 'Angaben werden geprüft…'];
+
 export default function ReceiptScanChoice({ onScanned, onManual }) {
   const { session } = useAuth();
   const cameraRef  = useRef(null);
   const galleryRef = useRef(null);
-  const [busy, setBusy]   = useState(false);
-  const [error, setError] = useState('');
+  const mountedRef = useRef(true);
+  const [busy, setBusy]       = useState(false);
+  const [preview, setPreview] = useState(null); // Objekt-URL des aufgenommenen Fotos
+  const [error, setError]     = useState('');
+  const [quota, setQuota]     = useState(null); // { limit, used, remaining } oder null (unbekannt)
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Restkontingent beim Öffnen und nach jedem Scan-Versuch neu laden
+  const loadQuota = () => getReceiptQuota(session).then(setQuota);
+  useEffect(() => { if (session) loadQuota(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+  const limitReached = quota !== null && quota.remaining <= 0;
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     e.target.value = ''; // gleiches Foto später erneut wählbar
     if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
     setBusy(true);
     setError('');
+    const started = Date.now();
     try {
       const receipt = await scanReceipt(session, file);
+      await holdScanAnimation(started); // Animation nie nur aufblitzen lassen
+      if (!mountedRef.current) return;
       if (!receipt?.is_receipt) {
         setError('Das sieht nicht nach einem Kassenbon aus. Bitte nochmal versuchen oder manuell eingeben.');
       } else {
@@ -41,44 +63,66 @@ export default function ReceiptScanChoice({ onScanned, onManual }) {
       }
     } catch (err) {
       console.error('[receipt-scan]', err);
-      setError(err.message || 'Beleg konnte nicht gelesen werden');
+      if (mountedRef.current) setError(err.message || 'Beleg konnte nicht gelesen werden');
     } finally {
-      setBusy(false);
+      URL.revokeObjectURL(url);
+      if (mountedRef.current) {
+        setBusy(false);
+        setPreview(null);
+        loadQuota();
+      }
     }
   }
 
   return (
     <div className="wiz-mode-wrap">
-      <div className="wiz-mode-grid">
-        <button
-          type="button"
-          className="wiz-mode"
-          disabled={busy}
-          onClick={() => cameraRef.current?.click()}
-        >
-          <span className="wiz-mode-icon"><IconCamera /></span>
-          <span className="wiz-mode-title">{busy ? 'Beleg wird gelesen…' : 'Beleg scannen'}</span>
-          <span className="wiz-mode-sub">Foto vom Kassenbon</span>
-        </button>
+      {preview ? (
+        <ScanPreview src={preview} steps={SCAN_STEPS} />
+      ) : (
+        <>
+          <div className="wiz-mode-grid">
+            <button
+              type="button"
+              className="wiz-mode"
+              disabled={busy || limitReached}
+              onClick={() => cameraRef.current?.click()}
+            >
+              <span className="wiz-mode-icon"><IconCamera /></span>
+              <span className="wiz-mode-title">Beleg scannen</span>
+              <span className="wiz-mode-sub">Foto vom Kassenbon</span>
+            </button>
 
-        <button
-          type="button"
-          className="wiz-mode"
-          disabled={busy}
-          onClick={onManual}
-        >
-          <span className="wiz-mode-icon"><IconEdit /></span>
-          <span className="wiz-mode-title">Manuelle Eingabe</span>
-          <span className="wiz-mode-sub">Selbst eintragen</span>
-        </button>
-      </div>
+            <button
+              type="button"
+              className="wiz-mode"
+              disabled={busy}
+              onClick={onManual}
+            >
+              <span className="wiz-mode-icon"><IconEdit /></span>
+              <span className="wiz-mode-title">Manuelle Eingabe</span>
+              <span className="wiz-mode-sub">Selbst eintragen</span>
+            </button>
+          </div>
 
-      {!busy && (
-        <button type="button" className="wiz-scan-alt" onClick={() => galleryRef.current?.click()}>
-          Foto aus der Galerie wählen
-        </button>
+          {!limitReached && (
+            <button type="button" className="wiz-scan-alt" onClick={() => galleryRef.current?.click()}>
+              Foto aus der Galerie wählen
+            </button>
+          )}
+          {quota && (
+            <div className="wiz-scan-quota t-meta">
+              {limitReached
+                ? `Monatslimit von ${quota.limit} Scans erreicht – manuell eintragen geht weiterhin.`
+                : `Noch ${quota.remaining} von ${quota.limit} Scans in diesem Monat`}
+            </div>
+          )}
+        </>
       )}
-      {error && <div className="wiz-scan-error t-meta" role="alert">{error}</div>}
+
+      {/* Limit-Fehler nicht doppelt zeigen: der Hinweis oben sagt dasselbe */}
+      {error && !(limitReached && error.startsWith('Monatslimit')) && (
+        <div className="wiz-scan-error t-meta" role="alert">{error}</div>
+      )}
 
       <input ref={cameraRef}  type="file" accept="image/*" capture="environment" hidden onChange={handleFile} />
       <input ref={galleryRef} type="file" accept="image/*" hidden onChange={handleFile} />

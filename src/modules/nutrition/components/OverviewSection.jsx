@@ -103,6 +103,10 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
       <PageSection title="Bereiche">
         <AreaList fabClearance>
           <AreaRow
+            label="Mahlzeiten"
+            onPress={() => onNavigate('mahlzeiten')}
+          />
+          <AreaRow
             label="Lebensmittel"
             value={`${foods.length}`}
             onPress={() => onNavigate('lebensmittel')}

@@ -391,3 +391,192 @@
   font-weight:   600;
   color:         var(--text-muted);
 }
+
+/* Mahlzeit-Foto (MealScanModal) */
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+}
+.meal-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.meal-item-name { font-size: 0.85rem; overflow-wrap: anywhere; }
+.meal-item-kcal { font-size: 0.72rem; color: var(--text-muted); }
+.meal-item-grams {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.meal-item-grams input {
+  width: 76px;
+  min-height: var(--touch-target);
+  padding: 0 10px;
+  font-size: max(16px, 1rem);
+  text-align: right;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+}
+.meal-hint { margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); }
+.meal-disclaimer {
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Mahlzeiten (Verlauf): MealsView, LogRecipeModal ───────────────────── */
+.meals-view { padding-bottom: 96px; } /* Luft über dem FAB */
+
+.meals-daynav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.meals-daynav-center { flex: 1; text-align: center; }
+.meals-daynav-label { font-size: 1.1rem; font-weight: 700; }
+.meals-today-link {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--action-primary);
+  background: none;
+  border: 0;
+  padding: 4px 8px;
+}
+
+.meals-daycard { margin: 0 0 14px; padding: 16px; }
+.meals-daycard .label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.meals-daycard-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.meals-kcal { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+.meals-kcal span { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+.meals-goal { text-align: right; }
+.meals-goal-value { font-size: 1.05rem; font-weight: 700; color: var(--text-secondary); }
+
+.meals-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.meals-bar-lg { height: 10px; margin-top: 12px; }
+.meals-bar-fill { height: 100%; border-radius: 999px; background: var(--action-primary); transition: width var(--motion-fast); }
+.meals-bar.is-over .meals-bar-fill { background: var(--status-caution); }
+.meals-remaining { margin-top: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.meals-estimate-note {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.meals-macros { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.meals-macro-head { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: var(--text-secondary); }
+
+.meals-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+.meals-actions .btn { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.meals-actions .btn svg { width: 18px; height: 18px; flex: none; }
+
+.meals-group { margin-bottom: 16px; }
+.meals-group-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 2px 6px;
+}
+
+.meals-entry-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+}
+.meals-entry-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.95rem; }
+.meals-entry-sub { font-size: 0.78rem; color: var(--text-secondary); }
+.meals-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface-sunken);
+}
+.meals-entry-detail { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.meals-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.78rem; color: var(--text-secondary); }
+.meals-items { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+.meals-items li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
+.meals-items li span:last-child { color: var(--text-secondary); white-space: nowrap; }
+.meals-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.meals-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+.meals-edit select, .meals-edit input {
+  min-height: var(--touch-target);
+  padding: 0 10px;
+  font-size: max(16px, 1rem);
+  font-weight: 400;
+  text-transform: none;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+}
+
+.meals-history { margin-top: 20px; }
+.meals-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+.meals-history-row.is-active { background: var(--action-quiet-bg); }
+.meals-history-meta { font-size: 0.78rem; color: var(--text-secondary); }
+
+/* Rezept-Auswahl im LogRecipeModal */
+.meal-pick-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: var(--text-primary);
+}
+.meal-pick-name { font-weight: 600; font-size: 0.92rem; }

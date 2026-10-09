@@ -1,0 +1,153 @@
+import { useMemo, useState } from 'react';
+import Modal from '../../../core/components/Modal';
+import { fmt, MEAL_TYPES } from '../lib/nutrition';
+import { mealFromScan, defaultMealType, todayStr } from '../lib/meals';
+
+const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
+
+// Ergebnis des Mahlzeit-Fotos (Edge Function scan-receipt, kind "meal").
+// Die Werte je Bestandteil gelten für die geschätzte Menge. Ändert der Nutzer
+// die Gramm, werden die Nährwerte dieses Bestandteils proportional umgerechnet
+// und die Kalorienspanne im selben Verhältnis mitgeführt.
+//
+// "Mahlzeit speichern" legt den Eintrag mit den (ggf. korrigierten) Werten in den
+// Verlauf (Bereich "Mahlzeiten") — als Momentaufnahme mit Kennzeichnung "Schätzung".
+//
+// Bewusst keine Allergen-/Verträglichkeitsangaben: Das lässt sich aus einem
+// Foto nicht seriös sagen.
+export default function MealScanModal({ meal, onSaveMeal, onClose }) {
+  const [grams, setGrams] = useState(() => meal.items.map((i) => String(i.grams)));
+  const [mealType, setMealType] = useState(() => defaultMealType());
+  const [eatenOn, setEatenOn]   = useState(() => todayStr());
+  const [saving, setSaving]     = useState(false);
+
+  const scaled = useMemo(() => meal.items.map((it, idx) => {
+    const g = parseFloat(String(grams[idx]).replace(',', '.'));
+    const factor = it.grams > 0 && Number.isFinite(g) && g >= 0 ? g / it.grams : 0;
+    const out = { name: it.name, grams: Number.isFinite(g) && g >= 0 ? g : 0 };
+    for (const k of NUTRIENTS) out[k] = it[k] * factor;
+    return out;
+  }), [meal.items, grams]);
+
+  const total = useMemo(() => {
+    const t = { grams: 0 };
+    for (const k of NUTRIENTS) t[k] = 0;
+    for (const it of scaled) {
+      t.grams += it.grams;
+      for (const k of NUTRIENTS) t[k] += it[k];
+    }
+    return t;
+  }, [scaled]);
+
+  // Spanne mit derselben Skalierung wie die Summe (Original-Summe = Basis)
+  const baseKcal = meal.items.reduce((s, i) => s + i.kcal, 0);
+  const ratio = baseKcal > 0 ? total.kcal / baseKcal : 1;
+  const low  = Math.round((meal.kcal_low  ?? baseKcal) * ratio);
+  const high = Math.round((meal.kcal_high ?? baseKcal) * ratio);
+  const kcal = Math.round(total.kcal);
+  const hasRange = high - low >= 20;
+  // Das Modell hängt der Notiz gelegentlich eine verirrte schließende Klammer an
+  const note = (meal.note || '').replace(/\s*[\]}]+$/, '').trim();
+
+  async function save() {
+    if (saving || total.grams <= 0 || !eatenOn) return;
+    setSaving(true);
+    try {
+      await onSaveMeal(mealFromScan(
+        { name: meal.name, items: scaled, kcalLow: low, kcalHigh: high },
+        { mealType, eatenOn },
+      ));
+    } catch (err) {
+      console.error('[meal-save]', err);
+      setSaving(false); // Fehlermeldung zeigt der Aufrufer; Dialog bleibt offen
+    }
+  }
+
+  return (
+    <Modal title={meal.name || 'Mahlzeit'} onClose={onClose}>
+      <div className="result-grid">
+        <div className="result-tile" style={{ gridColumn: '1 / -1' }}>
+          <div className="label">Geschätzt gesamt</div>
+          <div className="value">
+            {hasRange ? `≈ ${low}–${high}` : `≈ ${kcal}`}<span>kcal</span>
+          </div>
+          {hasRange && <div className="note">Mittelwert der Bestandteile: {kcal} kcal</div>}
+        </div>
+        <div className="result-tile"><div className="label">Eiweiß</div><div className="value">{fmt(total.protein)}<span>g</span></div></div>
+        <div className="result-tile">
+          <div className="label">Kohlenhydrate</div>
+          <div className="value">{fmt(total.carbs)}<span>g</span></div>
+          <div className="note">davon Zucker {fmt(total.sugar)} g</div>
+        </div>
+        <div className="result-tile">
+          <div className="label">Fett</div>
+          <div className="value">{fmt(total.fat)}<span>g</span></div>
+          <div className="note">davon gesättigt {fmt(total.satfat)} g</div>
+        </div>
+        <div className="result-tile">
+          <div className="label">Ballaststoffe</div>
+          <div className="value">{fmt(total.fiber)}<span>g</span></div>
+          <div className="note">Salz {fmt(total.salt)} g</div>
+        </div>
+      </div>
+
+      <div>
+        <div className="card-title" style={{ marginBottom: 8 }}>Erkannte Bestandteile</div>
+        <div className="card" style={{ margin: 0, padding: 0 }}>
+          {meal.items.map((it, idx) => (
+            <div key={idx} className="meal-item" style={{ borderBottom: idx < meal.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div className="meal-item-main">
+                <span className="meal-item-name">{it.name}</span>
+                <span className="meal-item-kcal">{Math.round(scaled[idx].kcal)} kcal</span>
+              </div>
+              <label className="meal-item-grams">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="5"
+                  value={grams[idx]}
+                  onChange={(e) => setGrams((prev) => prev.map((v, i) => (i === idx ? e.target.value : v)))}
+                  aria-label={`Menge ${it.name} in Gramm`}
+                />
+                <span>g</span>
+              </label>
+            </div>
+          ))}
+        </div>
+        <div className="meal-hint">Die Mengen sind geschätzt — passe sie an, wenn du es besser weißt.</div>
+      </div>
+
+      {note && <div className="meal-hint">Unsicher: {note}</div>}
+
+      <div className="meal-disclaimer">
+        Grobe Schätzung aus dem Foto. Portionsgröße, Öl und Soßen sind schwer zu erkennen, die
+        tatsächlichen Werte können deutlich abweichen. Keine Angaben zu Allergenen oder Verträglichkeit.
+      </div>
+
+      <div className="form-group">
+        <label>Mahlzeit</label>
+        <div className="segmented cols-4">
+          {MEAL_TYPES.map((t) => (
+            <button key={t.key} type="button" className={mealType === t.key ? 'active' : ''} onClick={() => setMealType(t.key)}>
+              <div>{t.emoji}</div>
+              <div>{t.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Datum</label>
+        <input type="date" value={eatenOn} onChange={(e) => setEatenOn(e.target.value)} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn btn-primary" disabled={saving || total.grams <= 0 || !eatenOn} onClick={save}>
+          {saving ? 'Speichert…' : 'Mahlzeit speichern'}
+        </button>
+        <button className="btn btn-secondary" onClick={onClose}>Schließen</button>
+      </div>
+    </Modal>
+  );
+}
