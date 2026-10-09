@@ -4502,3 +4502,94 @@
 }
 .avatar-editor-big img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-crop { width: 240px; height: 240px; border-radius: var(--r-pill); touch-action: none; cursor: grab; background: var(--surface-sunken); }
+
+/* ── Scan-Animation (ScanPreview): Foto mit fahrender Scanleiste ──────────
+   Läuft, während die Edge Function das Foto liest (Beleg und Mahlzeit).
+   Die Animation steckt in einem Sheet/Dialog und ist kein Vorfahre von
+   .chrome-top/.bottom-nav — die Fixed-Nav-Regel bleibt unberührt. Grün =
+   --status-positive, damit die Leiste auf hellen wie dunklen Fotos sichtbar
+   bleibt. Keine Schatten (Design-System): Leuchten läuft über Verlauf. */
+.scan-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+.scan-frame {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.scan-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 460px);
+}
+.scan-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 20, 16, 0.22);
+  animation: scan-tint-pulse 1.8s ease-in-out infinite alternate;
+}
+.scan-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -80px;
+  height: 80px;
+  animation: scan-sweep 1.9s ease-in-out infinite alternate;
+}
+.scan-bar::before { /* Leuchtband */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--status-positive) 50%, transparent);
+  opacity: 0.28;
+}
+.scan-bar::after { /* die Leiste selbst */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  background: var(--status-positive);
+}
+.scan-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid rgba(255, 255, 255, 0.92);
+}
+.scan-corner-tl { top: 10px;    left: 10px;  border-top-width: 3px;    border-left-width: 3px;  border-top-left-radius: 6px; }
+.scan-corner-tr { top: 10px;    right: 10px; border-top-width: 3px;    border-right-width: 3px; border-top-right-radius: 6px; }
+.scan-corner-bl { bottom: 10px; left: 10px;  border-bottom-width: 3px; border-left-width: 3px;  border-bottom-left-radius: 6px; }
+.scan-corner-br { bottom: 10px; right: 10px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+.scan-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  min-height: 1.4em;
+}
+@keyframes scan-sweep {
+  from { top: -40px; }
+  to   { top: calc(100% - 40px); }
+}
+@keyframes scan-tint-pulse {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+/* Wer Bewegung reduziert: Leiste steht mittig, nichts bewegt sich
+   (die globale Regel in base.css würde die Animation sonst nur auf 0 ms kürzen). */
+@media (prefers-reduced-motion: reduce) {
+  .scan-bar { animation: none !important; top: calc(50% - 40px); }
+  .scan-tint { animation: none !important; opacity: 0.8; }
+}

@@ -161,6 +161,15 @@ export async function getScanQuota(session, kind = 'receipt') {
   }
 }
 
+// Scan-Animation (ScanPreview): Die Erkennung dauert meist ein paar Sekunden,
+// kann aber auch sehr schnell sein. Damit die Animation nie nur aufblitzt, hält
+// der Aufrufer sie nach der Antwort bis zu dieser Mindestdauer (ab Start) an.
+export const MIN_SCAN_ANIMATION_MS = 2400;
+export function holdScanAnimation(startedAt) {
+  const rest = MIN_SCAN_ANIMATION_MS - (Date.now() - startedAt);
+  return rest > 0 ? new Promise((resolve) => setTimeout(resolve, rest)) : Promise.resolve();
+}
+
 export const getReceiptQuota = (session) => getScanQuota(session, 'receipt');
 export const getMealQuota    = (session) => getScanQuota(session, 'meal');
 

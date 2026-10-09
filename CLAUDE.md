@@ -104,6 +104,10 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   kein Ernährungstagebuch, und Rezepte bestehen aus Zutaten der Lebensmittel-DB
   (`foodId`) — Bestandteile eines Fotos lassen sich daher nicht direkt als Rezept
   speichern.
+- Scan-Animation: `core/components/ScanPreview.jsx` zeigt das aufgenommene Foto
+  mit fahrender Scanleiste, bis die Antwort da ist (Beleg und Mahlzeit); läuft
+  mindestens `MIN_SCAN_ANIMATION_MS` (photoScan.js). Reine Frontend-Änderung,
+  respektiert `prefers-reduced-motion`.
 - Kontingent: Tabelle `receipt_scans` (`supabase/receipt_scans_migration.sql`,
   Spalte `kind` je Art getrennt), nur per service_role erreichbar (RLS an, keine
   Policy). Zählt Scans, die Claude erreichen; technische Fehler werden
