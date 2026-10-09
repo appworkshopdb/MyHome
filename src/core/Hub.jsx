@@ -5,7 +5,7 @@ import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
-import { buildDayPlan, setWorkoutDone, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
+import { buildDayPlan, setWorkoutDone, setEntryPaid, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
 import { DayPlanPopup, DayPlanSection } from './components/DayPlan';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
@@ -346,6 +346,22 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     } catch (e) {
       console.error('[Hub] Training-Toggle fehlgeschlagen:', e);
       setStatus_(workout.status);
+    }
+  }
+
+  // Posten im Tagesplan als bezahlt abhaken — verschwindet damit auch aus
+  // Fokuskarte (offene Posten) und Finanzen-Liste "offen".
+  async function handlePayPosten(id) {
+    const vorher = openPosten;
+    const neu = openPosten.filter((p) => p.id !== id);
+    setOpenPosten(neu);
+    fb.todoCheck();
+    try {
+      await setEntryPaid(id, true);
+      writeCache({ income, expense, todaySport, openPosten: neu, todos });
+    } catch (e) {
+      console.error('[Hub] Posten als bezahlt markieren fehlgeschlagen:', e);
+      setOpenPosten(vorher);
     }
   }
 
@@ -715,6 +731,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   onToggleTodo={handleToggleTodo}
                   onToggleWorkout={handleToggleWorkout}
                   onToggleHabit={handleToggleHabit}
+                  onPayPosten={handlePayPosten}
                   onOpenFinance={() => onOpenModule('finance/offen')}
                   onOpenNutrition={onOpenModule}
                 />

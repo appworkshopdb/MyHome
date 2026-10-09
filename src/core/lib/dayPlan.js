@@ -20,6 +20,13 @@ export async function setWorkoutDone(id, done) {
   if (error) throw error;
 }
 
+// Posten im Tagesplan als bezahlt markieren — gleiche Zeile/Spalte wie
+// finData.togglePaid im Finanzen-Modul (core darf nicht aus modules importieren).
+export async function setEntryPaid(id, paid) {
+  const { error } = await getSupabase().from('fin_entries').update({ paid }).eq('id', id);
+  if (error) throw error;
+}
+
 // Ab/bis wann der Plan als Popup angeboten wird (lokale Stunde)
 export const POPUP_FROM_HOUR = 5;
 export const POPUP_UNTIL_HOUR = 12;

@@ -4646,7 +4646,8 @@
   .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
   .scan-tint { animation: none !important; opacity: 0.8; }
 }
-.dayplan-row--link {
-  width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0;
-  padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit;
-}
+.dayplan-row-title--link { background: none; border: 0; padding: 0; text-align: left; font: inherit; cursor: pointer; }
+.dayplan-amount { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; line-height: 1.15; }
+.dayplan-amount b { font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.dayplan-amount span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+.dayplan-amount span.critical { color: var(--status-critical); }

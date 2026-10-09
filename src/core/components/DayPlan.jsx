@@ -103,7 +103,7 @@ function NutritionBlock({ data, onOpen }) {
   );
 }
 
-export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout, onToggleHabit, onOpenFinance, onOpenNutrition }) {
+export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance, onOpenNutrition }) {
   const pct = plan.total > 0 ? plan.done / plan.total : 0;
   return (
     <div className="dayplan-card">
@@ -160,13 +160,14 @@ export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout,
       {plan.posten.length > 0 && (
         <Group label="Zahlungen">
           {plan.posten.map((p) => (
-            <button key={p.id} className="dayplan-row dayplan-row--link" onClick={onOpenFinance}>
-              <span className="dayplan-icon">€</span>
-              <span className="dayplan-row-title">{p.title}</span>
-              <span className={`dayplan-meta ${p.overdue ? 'critical' : ''}`}>
-                {p.overdue ? 'überfällig · ' : 'heute · '}{formatEur(p.amount)}
+            <div key={p.id} className="dayplan-row">
+              <button className="dayplan-check" onClick={() => onPayPosten(p.id)} aria-label="Als bezahlt markieren" />
+              <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
+              <span className="dayplan-amount">
+                <b>{formatEur(p.amount)}</b>
+                <span className={p.overdue ? 'critical' : ''}>{p.overdue ? 'überfällig' : 'heute'}</span>
               </span>
-            </button>
+            </div>
           ))}
         </Group>
       )}
