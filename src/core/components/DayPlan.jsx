@@ -156,10 +156,18 @@ export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout,
         </Group>
       )}
 
-      {plan.posten.count > 0 && (
-        <button className="dayplan-link" onClick={onOpenFinance}>
-          {plan.posten.count} offene Posten · {formatEur(plan.posten.sum)} ›
-        </button>
+      {plan.posten.length > 0 && (
+        <Group label="Zahlungen">
+          {plan.posten.map((p) => (
+            <button key={p.id} className="dayplan-row dayplan-row--link" onClick={onOpenFinance}>
+              <span className="dayplan-icon">€</span>
+              <span className="dayplan-row-title">{p.title}</span>
+              <span className={`dayplan-meta ${p.overdue ? 'critical' : ''}`}>
+                {p.overdue ? 'überfällig · ' : 'heute · '}{formatEur(p.amount)}
+              </span>
+            </button>
+          ))}
+        </Group>
       )}
     </div>
   );

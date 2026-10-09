@@ -91,7 +91,13 @@ export function buildDayPlan({ todos = [], habits = [], habEntries = [], workout
   }));
 
   const eventItems = plainEvents(events).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
-  const postenSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
+  // Offene Posten gehören nur dann in den Tagesplan, wenn ihnen ein
+  // Fälligkeitsdatum gesetzt ist und es heute erreicht (oder überschritten)
+  // ist — "irgendwie offen im Monat" ist kein Tagesthema.
+  const postenItems = openPosten
+    .filter((p) => !p.paid && p.due_date && p.due_date <= today)
+    .map((p) => ({ id: p.id, title: p.name, amount: Number(p.amount || 0), overdue: p.due_date < today }))
+    .sort((a, b) => (b.overdue - a.overdue) || (b.amount - a.amount));
 
   const all = [...todoItems, ...workoutItems, ...habitItems];
   return {
@@ -100,9 +106,9 @@ export function buildDayPlan({ todos = [], habits = [], habEntries = [], workout
     restDay,
     todos: todoItems,
     habits: habitItems,
-    posten: { count: openPosten.length, sum: postenSumme },
+    posten: postenItems,
     total: all.length,
     done: all.filter((i) => i.done).length,
-    isEmpty: all.length === 0 && eventItems.length === 0 && !restDay,
+    isEmpty: all.length === 0 && eventItems.length === 0 && postenItems.length === 0 && !restDay,
   };
 }

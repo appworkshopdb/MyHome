@@ -4234,11 +4234,6 @@
 .dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
 .dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
 .dayplan-meta.critical { color: var(--status-critical); }
-.dayplan-link {
-  display: block; width: 100%; text-align: left; background: none; border: none;
-  border-top: 1px solid var(--surface-page); padding: 13px 0; margin-top: 4px;
-  font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
-}
 
 /* Ernährung im Tagesplan — kein Haken, Block ist eine Schaltfläche */
 .dp-nut-head { display: flex; align-items: baseline; justify-content: space-between; }
@@ -4640,4 +4635,8 @@
 @media (prefers-reduced-motion: reduce) {
   .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
   .scan-tint { animation: none !important; opacity: 0.8; }
+}
+.dayplan-row--link {
+  width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0;
+  padding: 0; text-align: left; cursor: pointer; font: inherit; color: inherit;
 }

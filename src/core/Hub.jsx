@@ -52,7 +52,9 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 // offener Ausgaben statt der auf drei begrenzten Fixkosten, damit die
 // Zahl in der Fokuskarte zu der in Finanzen passt. Ein alter v3-Eintrag
 // würde dort eine zu kleine Zahl zeigen, deshalb neuer Schlüssel.
-const CACHE_KEY = 'hub-cache-v4';
+// v5: openPosten enthält zusätzlich due_date (Tagesplan zeigt nur Posten
+// mit Fälligkeit heute/überfällig) — v4-Einträge hätten kein Datum.
+const CACHE_KEY = 'hub-cache-v5';
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
@@ -128,7 +130,7 @@ async function loadOpenPosten() {
   const now = new Date();
   const { data, error } = await sb
     .from('fin_entries')
-    .select('id, name, amount, category, paid')
+    .select('id, name, amount, category, paid, due_date')
     .eq('year', now.getFullYear())
     .eq('month', now.getMonth() + 1)
     .eq('paid', false)
