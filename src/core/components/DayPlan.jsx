@@ -103,14 +103,15 @@ function NutritionBlock({ data, onOpen }) {
   );
 }
 
-export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout, onToggleHabit, onOpenFinance, onOpenNutrition }) {
+export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance, onOpenNutrition }) {
   const pct = plan.total > 0 ? plan.done / plan.total : 0;
   return (
     <div className="dayplan-card">
       <div className="dayplan-head">
+        <h2 className="dayplan-title">Dein Tagesplan</h2>
         <span className="dayplan-count">{plan.done} / {plan.total} erledigt</span>
-        <div className="dayplan-bar"><div className="dayplan-bar-fill" style={{ width: `${pct * 100}%` }} /></div>
       </div>
+      <div className="dayplan-bar"><div className="dayplan-bar-fill" style={{ width: `${pct * 100}%` }} /></div>
 
       {plan.isEmpty && <div className="dayplan-empty">Heute steht nichts an — freier Tag.</div>}
 
@@ -156,10 +157,19 @@ export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout,
         </Group>
       )}
 
-      {plan.posten.count > 0 && (
-        <button className="dayplan-link" onClick={onOpenFinance}>
-          {plan.posten.count} offene Posten · {formatEur(plan.posten.sum)} ›
-        </button>
+      {plan.posten.length > 0 && (
+        <Group label="Zahlungen">
+          {plan.posten.map((p) => (
+            <div key={p.id} className="dayplan-row">
+              <button className="dayplan-check" onClick={() => onPayPosten(p.id)} aria-label="Als bezahlt markieren" />
+              <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
+              <span className="dayplan-amount">
+                <b>{formatEur(p.amount)}</b>
+                <span className={p.overdue ? 'critical' : ''}>{p.overdue ? 'überfällig' : 'heute'}</span>
+              </span>
+            </div>
+          ))}
+        </Group>
       )}
     </div>
   );

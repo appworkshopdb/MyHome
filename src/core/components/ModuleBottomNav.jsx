@@ -57,17 +57,11 @@ function IcoSport() {
 function IcoNutrition() {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      <g transform="rotate(-25 12 12)">
-        <line x1="9" y1="2" x2="9" y2="8" />
-        <line x1="12" y1="2" x2="12" y2="8" />
-        <line x1="15" y1="2" x2="15" y2="8" />
-        <path d="M9 8c0 1.5 1.3 2.5 3 2.5s3-1 3-2.5" />
-        <line x1="12" y1="10.5" x2="12" y2="22" />
-      </g>
-      <g transform="rotate(25 12 12)">
-        <path d="M15 2c-2 .5-3.5 2.8-3 5.5.3 1.8 1.5 3 3 3.3" />
-        <line x1="12" y1="2" x2="12" y2="22" />
-      </g>
+      {/* Gedeck: Gabel links, Teller, Messer rechts */}
+      <path d="M2.4 5v3.4a1.5 1.5 0 0 0 3 0V5" />
+      <path d="M3.9 9.9V19" />
+      <circle cx="12" cy="12" r="5.2" />
+      <path d="M21 19V5c-1.4.8-2.2 2.4-2.2 4.4 0 1 .6 1.6 1.4 1.6H21" />
     </svg>
   );
 }

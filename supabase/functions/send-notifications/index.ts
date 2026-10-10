@@ -10,6 +10,8 @@
 // - Neue Prioritätsreihenfolge: finance > tasks_habits > weekly_recap > profile
 // - Finanzen: Fall A (heute fällig, 08:00) + Fall B (überfällig, alle 3 Tage 08:00)
 // - tasks_habits: offene Habits UND offene Todos heute zusammengefasst
+// - daily_plan: täglich 06:00, Zusammenfassung des Tagesplans (Termine, Training,
+//   Aufgaben, Gewohnheiten, fällige Zahlungen) — spiegelt core/lib/dayPlan.js
 // - profile: nur Samstag 11:00, Throttle 14 Tage
 // - weekly_recap: nur Sonntag 18:00
 //
@@ -40,6 +42,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey);
 // Eine Kategorie ist nur dann Kandidat, wenn berlin.hour === ihre Stunde
 // UND (falls angegeben) der Wochentag passt.
 const CATEGORY_SCHEDULE = {
+  daily_plan:   { hour: 6  },               // täglich 06:00 — Tagesplan-Zusammenfassung
   finance:      { hour: 8  },               // täglich 08:00
   tasks_habits: { hour: 19 },               // täglich 19:00
   profile:      { hour: 11, weekday: 5 },   // Samstag 11:00  (Sa = 5, Mo=0…So=6)
@@ -54,6 +57,7 @@ const CATEGORY_SCHEDULE = {
 // profile: 14 Tage.
 // weekly_recap: 7 Tage — kommt ohnehin nur sonntags durch den Schedule.
 const THROTTLE_DAYS = {
+  daily_plan:   0,   // 1x/Tag ergibt sich aus der festen Stunde
   finance:      3,   // gilt für Fall B (überfällig); Fall A ignoriert Throttle
   tasks_habits: 0,
   profile:      14,
@@ -62,13 +66,14 @@ const THROTTLE_DAYS = {
 
 // Prioritätsreihenfolge laut Spec (höchste zuerst).
 // Bei >2 Kandidaten belegen die obersten das Tageslimit.
-const PRIORITY_ORDER = ['finance', 'tasks_habits', 'weekly_recap', 'profile'];
+const PRIORITY_ORDER = ['daily_plan', 'finance', 'tasks_habits', 'weekly_recap', 'profile'];
 
 // Max. Push-Benachrichtigungen pro Nutzer und Kalendertag (Berlin-Zeit).
 const DAILY_CAP_TOTAL = 2;
 
 // Standard-Toggles falls kein Eintrag in notification_prefs vorhanden.
 const DEFAULT_CATEGORIES = {
+  daily_plan:   true,
   finance:      true,
   tasks_habits: true,
   profile:      true,
@@ -392,6 +397,96 @@ async function checkCategory(category, ownerId, berlin) {
     return {
       ...message,
       url: './#/habits',
+    };
+  }
+
+  // ── daily_plan ─────────────────────────────────────────────────────
+  // Morgendliche Zusammenfassung des Tagesplans. Dieselben Regeln wie
+  // core/lib/dayPlan.js (dort nachziehen, wenn sich etwas ändert):
+  //   Termine = nur Google-Kalender, Training = geplante/erledigte Einheiten
+  //   heute, Aufgaben = fällig/überfällig oder wichtig ohne Datum,
+  //   Gewohnheiten = heute fällige, Zahlungen = unbezahlt MIT Fälligkeits-
+  //   datum <= heute. Nichts davon → keine Nachricht.
+  if (category === 'daily_plan') {
+    const wd = berlin.weekdayIndex;
+    const today = berlin.todayStr;
+
+    const [workoutsRes, eventsRes, todosRes, habitsRes, postenRes] = await Promise.all([
+      supabase.from('spo_workouts')
+        .select('type_key, title, status, is_rest')
+        .eq('owner_id', ownerId).eq('occurred_on', today).is('deleted_at', null),
+      supabase.from('calendar_events')
+        .select('title, event_time')
+        .eq('owner_id', ownerId).eq('event_date', today)
+        .eq('source_module', 'google').is('deleted_at', null)
+        .order('event_time', { ascending: true, nullsFirst: true }),
+      supabase.from('todos')
+        .select('due_date, priority')
+        .eq('owner_id', ownerId).eq('done', false).is('deleted_at', null),
+      supabase.from('hab_habits')
+        .select('id, frequency, frequency_days, created_at')
+        .eq('owner_id', ownerId).eq('active', true).is('deleted_at', null),
+      supabase.from('fin_entries')
+        .select('name, amount, due_date')
+        .eq('owner_id', ownerId).eq('paid', false)
+        .not('due_date', 'is', null).lte('due_date', today)
+        .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
+        .is('deleted_at', null),
+    ]);
+
+    const lines: string[] = [];
+
+    const events = eventsRes.data ?? [];
+    if (events.length > 0) {
+      const first = events[0];
+      const t = first.event_time ? `${String(first.event_time).slice(0, 5)} ` : '';
+      lines.push(`📅 ${t}${first.title}${events.length > 1 ? ` +${events.length - 1}` : ''}`);
+    }
+
+    const workouts = workoutsRes.data ?? [];
+    const training = workouts.filter((w) => !w.is_rest);
+    if (training.length > 0) {
+      const w = training[0];
+      const label = w.title
+        || (!w.type_key || w.type_key === 'sonstiges' ? 'Training'
+            : (() => { const l = w.type_key.split('.').pop(); return l.charAt(0).toUpperCase() + l.slice(1); })());
+      lines.push(`💪 ${label}${training.length > 1 ? ` +${training.length - 1}` : ''}`);
+    } else if (workouts.some((w) => w.is_rest)) {
+      lines.push('💪 Restday');
+    }
+
+    const todos = (todosRes.data ?? []).filter((t) =>
+      (t.due_date && t.due_date <= today) || (!t.due_date && t.priority));
+    if (todos.length > 0) {
+      const overdue = todos.filter((t) => t.due_date && t.due_date < today).length;
+      lines.push(`✅ ${todos.length} ${todos.length === 1 ? 'Aufgabe' : 'Aufgaben'}${overdue > 0 ? ` (${overdue} überfällig)` : ''}`);
+    }
+
+    const dueHabits = (habitsRes.data ?? []).filter((h) => {
+      if (toBerlinDateStr(new Date(h.created_at)) > today) return false;
+      if (h.frequency === 'daily') return true;
+      if (h.frequency === 'weekdays') return wd < 5;
+      if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
+      return true;
+    });
+    if (dueHabits.length > 0) {
+      lines.push(`🌿 ${dueHabits.length} ${dueHabits.length === 1 ? 'Gewohnheit' : 'Gewohnheiten'}`);
+    }
+
+    const posten = postenRes.data ?? [];
+    if (posten.length > 0) {
+      const eur = (n) => Number(n).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      const sum = posten.reduce((a, p) => a + Number(p.amount || 0), 0);
+      lines.push(posten.length === 1
+        ? `€ ${posten[0].name} · ${eur(posten[0].amount)}`
+        : `€ ${posten.length} Zahlungen fällig · ${eur(sum)}`);
+    }
+
+    if (lines.length === 0) return null;
+    return {
+      title: '☀️ Dein Tagesplan',
+      body:  lines.join('\n'),
+      url:   './',
     };
   }
 

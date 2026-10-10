@@ -124,6 +124,10 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   `nut_meals` + `computeBody`; Typen dort dupliziert, weil core nicht aus modules
   importieren darf). Block → `#/nutrition/mahlzeiten`, "Ernährung ›" → Modul.
   Fehler beim Laden blenden nur den Block aus.
+- Morgen-Push "Tagesplan" (Kategorie `daily_plan`, 06:00 Europe/Berlin, Function `send-notifications`):
+  fasst Termine/Training/Aufgaben/Gewohnheiten/fällige Zahlungen zusammen; Regeln dupliziert aus
+  `core/lib/dayPlan.js`. Function muss von Hand nach `volumes/functions/` kopiert werden. Test:
+  `?test_owner=<uuid>&test_category=daily_plan`.
 - Mahlzeit-Typen: vier (`MEAL_TYPES` in `lib/nutrition.js`: fruehstueck, mittag,
   abend, snack) — gelten für Rezepte UND Mahlzeiten. Alte Rezept-Kategorien
   (frueh/haupt/suppen/desserts/snacks/backen/getraenke) übersetzt
@@ -150,6 +154,22 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   (3.989 In / 469 Out Tokens). Anthropic-Guthaben ist vorab
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
+
+## Lebensmittel-Katalog (Ernährung)
+
+Alle Lebensmittel stehen in EINER Tabelle, `nut_foods` (Migration
+`supabase/nutrition_catalog_migration.sql`); `foods.js` gibt es nicht mehr.
+`owner_id IS NULL` = globaler Katalog (für alle angemeldeten Nutzer lesbar, nur per
+Migration beschreibbar, `seed_id` = stabile Zahlen-Id), `owner_id` gesetzt = eigenes
+Lebensmittel oder persönlicher Override eines Katalogeintrags (`override_of` = `seed_id`).
+Rezepte zeigen per `foodId` auf `seed_id` (Katalog) bzw. die uuid (eigene) — `seed_id`s
+nie ändern oder wiederverwenden. Neue Katalogeinträge: weitere Migration mit
+`seed_id` ab 718 (318–717 vergeben, `supabase/nutrition_catalog_expansion_migration.sql`),
+`ON CONFLICT (seed_id) WHERE owner_id IS NULL DO NOTHING`. Entfernte Katalogeinträge nur
+per `deleted_at` ausblenden, nie hart löschen. Konvention bei Milchprodukten & Co.: zu
+jeder normalen Variante gibt es eine "… light"-Variante (Ampel eine Stufe besser).
+`glutenfrei`/`laktosefrei` sind abgeleitet (Allergen "Gluten"/"Milch"), nie von Hand.
+`nutData.getFoods()` lädt alles und hält je Nutzer einen Offline-Cache im localStorage.
 
 ## Geheimnisse
 

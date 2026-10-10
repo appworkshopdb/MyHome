@@ -4195,21 +4195,31 @@
 }
 
 .dayplan-card {
-  background:    var(--surface-raised);
-  border:        1px solid var(--border-hairline);
-  border-radius: var(--r-2xl);
-  box-shadow:    var(--shadow-card);
-  padding:       14px 18px 6px;
+  /* getönte Fläche: hebt den Tagesplan von den weißen Hub-Karten ab,
+     funktioniert in Hell und Dunkel (Mischung aus Aktionsfarbe + Seitenfläche) */
+  background:    color-mix(in srgb, var(--action-primary) 12%, var(--surface-page));
+  border:        1.5px solid color-mix(in srgb, var(--action-primary) 28%, var(--surface-page));
+  border-radius: 22px;
+  padding:       14px 10px 10px;
 }
-.dayplan-head  { margin-bottom: 8px; }
+.dayplan-head  { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; }
+.dayplan-title { margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); }
 .dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
 .dayplan-bar {
-  height: 5px; border-radius: var(--r-pill); background: var(--data-track);
-  margin-top: 8px; overflow: hidden;
+  height: 5px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--action-primary) 22%, var(--surface-page));
+  margin: 8px 8px 4px; overflow: hidden;
 }
 .dayplan-bar-fill { height: 100%; background: var(--action-primary); transition: width var(--motion-calm); }
-.dayplan-empty { padding: 12px 0; font-size: 14px; color: var(--text-muted); }
-.dayplan-group { padding: 8px 0 4px; }
+.dayplan-empty {
+  margin-top: 8px; padding: 14px; font-size: 14px; color: var(--text-muted);
+  background: var(--surface-raised); border-radius: 14px;
+}
+/* Jede Gruppe ist eine weiße Karte auf der getönten Fläche */
+.dayplan-group {
+  background: var(--surface-raised); border-radius: 14px;
+  padding: 10px 14px 4px; margin-top: 8px;
+}
 .dayplan-group-label {
   font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;
@@ -4234,11 +4244,6 @@
 .dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
 .dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
 .dayplan-meta.critical { color: var(--status-critical); }
-.dayplan-link {
-  display: block; width: 100%; text-align: left; background: none; border: none;
-  border-top: 1px solid var(--surface-page); padding: 13px 0; margin-top: 4px;
-  font-size: 13px; font-weight: 700; color: var(--action-primary); cursor: pointer;
-}
 
 /* Ernährung im Tagesplan — kein Haken, Block ist eine Schaltfläche */
 .dp-nut-head { display: flex; align-items: baseline; justify-content: space-between; }
@@ -4641,3 +4646,8 @@
   .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
   .scan-tint { animation: none !important; opacity: 0.8; }
 }
+.dayplan-row-title--link { background: none; border: 0; padding: 0; text-align: left; font: inherit; cursor: pointer; }
+.dayplan-amount { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; line-height: 1.15; }
+.dayplan-amount b { font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.dayplan-amount span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+.dayplan-amount span.critical { color: var(--status-critical); }

@@ -6,6 +6,7 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 // preferred_hour / quiet_start / quiet_end entfernt — Zeiten sind
 // feste Produktlogik in der Edge Function, nicht vom Nutzer einstellbar.
 const DEFAULT_CATEGORIES = {
+  daily_plan:   true,
   finance:      true,
   tasks_habits: true,
   profile:      true,
