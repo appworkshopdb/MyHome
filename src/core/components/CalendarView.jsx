@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getCalendarEvents } from '../lib/calendarData';
 import {
   getGoogleCalendars, getGoogleCalendarStatus, syncGoogleCalendar,
@@ -7,7 +8,7 @@ import {
 import {
   toDateStr, parseDateStr, addDays, startOfWeek, monthGridDays,
   WEEKDAYS_SHORT, MONTH_NAMES, APP_CATEGORIES, GOOGLE_FALLBACK_COLOR,
-  filterKey, describeEvent, todoToEvent, sortDay,
+  filterKey, describeEvent, todoToEvent, sortDay, ago,
 } from '../lib/calendarUtils';
 import SheetShell from './SheetShell';
 import CalendarEventRow from './CalendarEventRow';
@@ -47,16 +48,6 @@ function Chevron({ dir }) {
       <path d={dir === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} />
     </svg>
   );
-}
-
-function ago(iso) {
-  if (!iso) return 'noch nie';
-  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (min < 1) return 'gerade eben';
-  if (min < 60) return `vor ${min} Min.`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `vor ${h} Std.`;
-  return `vor ${Math.round(h / 24)} Tagen`;
 }
 
 // Punkte pro Tag (Wochenstreifen): gefüllt = App, Ring = Google.
@@ -331,8 +322,9 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         </div>
       )}
 
-      {conn && (
-        <div className={`calview-sync ${conn.sync_error || syncFailed ? 'error' : ''}`}>
+      {/* Nur bei Problemen eine Leiste; normaler Sync-Status steckt im Button. */}
+      {conn && (conn.sync_error || syncFailed) && (
+        <div className="calview-sync error">
           {conn.sync_error ? (
             <>
               <span className="calview-sync-text">
@@ -341,16 +333,29 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
               <button className="calview-sync-btn primary" disabled={syncing} onClick={reconnect}>Neu verbinden</button>
             </>
           ) : (
-            <>
-              <span className="calview-sync-text">
-                {syncing ? 'Synchronisiere Google…' : syncFailed ? `Sync fehlgeschlagen: ${syncFailed}` : `Google synchronisiert ${ago(conn.last_synced_at)}`}
-              </span>
-              <button className="calview-sync-btn" disabled={syncing} onClick={runSync} aria-label="Jetzt synchronisieren">
-                <span className={syncing ? 'calview-spin' : ''}>↻</span> Aktualisieren
-              </button>
-            </>
+            <span className="calview-sync-text">Sync fehlgeschlagen: {syncFailed}</span>
           )}
         </div>
+      )}
+
+      {/* Sync-Button über dem globalen + (Portal an <body>, damit position:fixed
+          nie von einem Vorfahren mit transform o. ä. gebrochen wird). Existiert
+          nur, solange der Kalender offen ist. */}
+      {conn && createPortal(
+        <button
+          className={`calview-sync-fab ${syncing ? 'busy' : ''} ${conn.sync_error || syncFailed ? 'error' : ''}`}
+          onClick={conn.sync_error ? reconnect : runSync}
+          disabled={syncing}
+          aria-label={conn.sync_error ? 'Google neu verbinden' : 'Google-Kalender jetzt synchronisieren'}
+          title={conn.sync_error ? 'Verbindung abgelaufen' : `Zuletzt synchronisiert ${ago(conn.last_synced_at)}`}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 11a8 8 0 0 0-14.9-3M4 5v3.5h3.5" />
+            <path d="M4 13a8 8 0 0 0 14.9 3M20 19v-3.5h-3.5" />
+          </svg>
+        </button>,
+        document.body,
       )}
 
       <div className="calview-filter">

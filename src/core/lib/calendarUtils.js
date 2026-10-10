@@ -123,3 +123,14 @@ export function sortDay(list) {
     return ta.localeCompare(tb) || a.title.localeCompare(b.title);
   });
 }
+
+// „vor 5 Min.“ / „vor 2 Std.“ für Sync-Zeitpunkte (ISO-String).
+export function ago(iso) {
+  if (!iso) return 'noch nie';
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min.`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  return `vor ${Math.round(h / 24)} Tagen`;
+}

@@ -4670,3 +4670,19 @@
 .calview-sync-btn:disabled { opacity: 0.6; cursor: default; }
 .calview-spin { display: inline-block; animation: calview-spin 0.9s linear infinite; }
 @keyframes calview-spin { to { transform: rotate(360deg); } }
+
+/* Sync-Button im Kalender: schwebt über dem globalen + (wie Sparschwein) */
+.calview-sync-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px + 52px + 12px);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface-raised); color: var(--text-primary);
+  border: 1.5px solid var(--border-hairline); box-shadow: var(--shadow-float);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 190; cursor: pointer; padding: 0;
+}
+.calview-sync-fab:active { transform: scale(0.93); }
+.calview-sync-fab:disabled { cursor: default; }
+.calview-sync-fab.busy svg { animation: calview-spin 0.9s linear infinite; }
+.calview-sync-fab.error { border-color: var(--status-critical); color: var(--status-critical); }

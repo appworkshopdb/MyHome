@@ -9,6 +9,7 @@ import {
 import {
   getGoogleCalendarStatus, connectGoogleCalendar, syncGoogleCalendar, disconnectGoogleCalendar,
 } from './lib/googleCalendar';
+import { ago } from './lib/calendarUtils';
 
 const NOTIFICATION_CATEGORIES = [
   { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
@@ -119,6 +120,11 @@ export default function AppMenu() {
       </>}
       {gcalStatus === 'verbunden' && gcalConnection && <>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Verbunden mit <strong style={{ color: 'var(--text-primary)' }}>{gcalConnection.google_email}</strong></p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          {gcalConnection.last_synced_at
+            ? `Zuletzt synchronisiert: ${ago(gcalConnection.last_synced_at)} (${new Date(gcalConnection.last_synced_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} Uhr)`
+            : 'Noch nicht synchronisiert'}
+        </p>
         {gcalConnection.sync_error && <p style={{ fontSize: '0.78rem', color: 'var(--status-critical)', marginBottom: 10 }}>{gcalConnection.sync_error}</p>}
         <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleSyncGoogle}>{gcalBusy ? 'Synchronisiere…' : 'Jetzt synchronisieren'}</button>
         <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleDisconnectGoogle}>{gcalBusy ? 'Einen Moment…' : gcalConnection.sync_error ? 'Erneut verbinden' : 'Trennen'}</button>
