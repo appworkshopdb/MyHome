@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datenschutzerklärung – Nestua</title>
+  <meta name="robots" content="noindex">
+  <style>
+    @font-face { font-family: 'Nunito'; src: url('/fonts/Nunito-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Nunito'; src: url('/fonts/Nunito-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    :root { --bg: #f4f6fa; --card: #fff; --text: #1b2236; --muted: #5b6477; --accent: #1f2d52; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #11151f; --card: #1a2030; --text: #e8ebf3; --muted: #9aa3b8; --accent: #9db4ff; }
+    }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 'Nunito', system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+    article { background: var(--card); border-radius: 16px; padding: 24px 20px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.1rem; margin: 28px 0 6px; color: var(--accent); }
+    p, li { color: var(--text); }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+<article>
+  <h1>Datenschutzerklärung</h1>
+  <p class="meta">Nestua – persönliche Haushalts-App · Stand: Oktober 2026</p>
+
+  <h2>1. Verantwortlicher</h2>
+  <p>
+    <strong>[NAME UND ANSCHRIFT DES BETREIBERS HIER EINTRAGEN]</strong><br>
+    E-Mail: <a href="mailto:support@nestua.de">support@nestua.de</a>
+  </p>
+
+  <h2>2. Worum es geht</h2>
+  <p>
+    Nestua ist eine App für die persönliche Organisation (Aufgaben, Gewohnheiten, Training,
+    Ernährung, Einkauf, Finanzen und Kalender). Diese Erklärung beschreibt, welche Daten
+    verarbeitet werden – insbesondere bei der optionalen Verbindung mit Google Kalender.
+  </p>
+
+  <h2>3. Verbindung mit Google Kalender</h2>
+  <p>Die Verbindung ist freiwillig und wird nur auf deine Veranlassung hergestellt. Dabei gilt:</p>
+  <ul>
+    <li><strong>Angeforderte Berechtigungen:</strong> ausschließlich Lesezugriff auf deine Kalender
+      (<code>calendar.readonly</code>) sowie deine E-Mail-Adresse zur Anzeige, mit welchem Konto
+      verbunden ist (<code>userinfo.email</code>). Nestua kann keine Termine in Google anlegen,
+      ändern oder löschen.</li>
+    <li><strong>Welche Daten gelesen werden:</strong> Liste deiner Kalender (Name, Farbe) und deren
+      Termine in einem Zeitraum von 7 Tagen in der Vergangenheit bis 60 Tage in der Zukunft
+      (Titel, Datum und Uhrzeit, Ort, Beschreibung, Status, Erinnerung).</li>
+    <li><strong>Wozu:</strong> Die Termine werden in Nestua angezeigt (Kalender, Tagesplan,
+      Erinnerungen). Eine andere Nutzung findet nicht statt.</li>
+    <li><strong>Speicherung:</strong> Termine und Kalenderliste liegen in der Nestua-Datenbank.
+      Das Zugriffs-Token (Refresh-Token) wird verschlüsselt in einem separaten Tresor (Supabase Vault)
+      gespeichert.</li>
+    <li><strong>Weitergabe:</strong> Es erfolgt keine Weitergabe an Dritte, kein Verkauf und keine
+      Nutzung für Werbung oder zum Training von KI-Modellen.</li>
+  </ul>
+  <p>
+    Die Nutzung und Übertragung von Informationen, die von Google-APIs empfangen werden, durch
+    Nestua erfolgt in Übereinstimmung mit der
+    <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
+    einschließlich der Anforderungen zur eingeschränkten Nutzung (Limited Use).
+  </p>
+
+  <h2>4. Weitere Daten in der App</h2>
+  <p>
+    Zum Betrieb der App werden deine Anmeldedaten (E-Mail-Adresse) sowie die Inhalte gespeichert,
+    die du selbst in der App erfasst (z. B. Aufgaben, Trainingsdaten, Einkaufslisten, Finanzeinträge).
+    Die Daten werden auf Servern in Deutschland (Hetzner Online GmbH, Nürnberg) gespeichert und
+    sind nur für dich über dein Konto abrufbar.
+  </p>
+
+  <h2>5. Rechtsgrundlage und Speicherdauer</h2>
+  <p>
+    Rechtsgrundlage ist die Vertragserfüllung bzw. deine Einwilligung (Art. 6 Abs. 1 lit. a und b DSGVO).
+    Die Daten werden gespeichert, solange dein Konto besteht bzw. bis du sie löschst.
+  </p>
+
+  <h2>6. Verbindung trennen und Daten löschen</h2>
+  <ul>
+    <li>In der App kannst du Google Kalender jederzeit trennen. Dabei werden das gespeicherte
+      Zugriffs-Token, die Verbindung und alle aus Google übernommenen Termine in Nestua gelöscht.</li>
+    <li>Den Zugriff kannst du zusätzlich in deinem Google-Konto unter
+      <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> entziehen.</li>
+    <li>Die Löschung deines gesamten Kontos kannst du per E-Mail an
+      <a href="mailto:support@nestua.de">support@nestua.de</a> verlangen.</li>
+  </ul>
+
+  <h2>7. Deine Rechte</h2>
+  <p>
+    Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+    Datenübertragbarkeit und Widerspruch sowie das Recht, eine erteilte Einwilligung jederzeit
+    zu widerrufen. Außerdem kannst du dich bei einer Datenschutzaufsichtsbehörde beschweren.
+    Wende dich dafür an <a href="mailto:support@nestua.de">support@nestua.de</a>.
+  </p>
+
+  <h2>8. Änderungen</h2>
+  <p>Diese Erklärung wird angepasst, wenn sich die App oder die Rechtslage ändert. Es gilt die jeweils hier veröffentlichte Fassung.</p>
+</article>
+</main>
+</body>
+</html>
