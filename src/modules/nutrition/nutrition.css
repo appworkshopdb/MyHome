@@ -427,7 +427,8 @@
   color: var(--text-primary);
 }
 .meal-item-src {
-  margin-left: 8px;
+  align-self: flex-start;
+  margin-top: 3px;
   padding: 1px 7px;
   font-size: 0.65rem;
   font-weight: 700;

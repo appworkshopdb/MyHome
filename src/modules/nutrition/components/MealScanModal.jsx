@@ -6,8 +6,9 @@ import { mealFromScan, defaultMealType, todayStr, isGramFood } from '../lib/meal
 
 const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
-// Herkunft der Nährwerte je Bestandteil
-const SRC_LABEL = { db: 'Datenbank', ai: 'KI-Schätzung', user: 'Hinzugefügt' };
+// Herkunft der Nährwerte je Bestandteil: aus der Lebensmittel-Datenbank (auch bei
+// selbst hinzugefügten Zutaten) oder von der KI geschätzt
+const SRC_LABEL = { db: 'Aus Datenbank', user: 'Aus Datenbank', ai: 'KI-Schätzung' };
 
 // Bestandteil aus dem Scan. base = Menge und Nährwerte so, wie sie ankamen; geändert
 // wird nur die Menge, die Nährwerte werden proportional umgerechnet.
@@ -16,14 +17,14 @@ const SRC_LABEL = { db: 'Datenbank', ai: 'KI-Schätzung', user: 'Hinzugefügt' }
 function itemFromScan(it, key) {
   const base = { grams: it.grams };
   for (const k of NUTRIENTS) base[k] = it[k] || 0;
-  return { key, name: it.name, src: it.src === 'db' ? 'db' : 'ai', foodName: it.food_name || null, grams: String(it.grams), base };
+  return { key, name: it.name, src: it.src === 'db' ? 'db' : 'ai', grams: String(it.grams), base };
 }
 
 // Vom Nutzer hinzugefügt: Nährwerte pro 100 g/ml aus der Datenbank, Start bei 100 g.
 function itemFromFood(food, key) {
   const base = { grams: 100 };
   for (const k of NUTRIENTS) base[k] = Number(food[k]) || 0;
-  return { key, name: food.name, src: 'user', foodName: null, grams: '100', base };
+  return { key, name: food.name, src: 'user', grams: '100', base };
 }
 
 // Ergebnis des Mahlzeit-Fotos (Edge Function scan-receipt, kind "meal").
@@ -152,12 +153,8 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
             <div key={it.key} className="meal-item" style={{ borderBottom: idx < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
               <div className="meal-item-main">
                 <span className="meal-item-name">{it.name}</span>
-                <span className="meal-item-kcal">
-                  {Math.round(scaled[idx].kcal)} kcal
-                  <span className={`meal-item-src is-${it.src}`}>
-                    {SRC_LABEL[it.src]}{it.src === 'db' && it.foodName && it.foodName.toLowerCase() !== it.name.toLowerCase() ? `: ${it.foodName}` : ''}
-                  </span>
-                </span>
+                <span className="meal-item-kcal">{Math.round(scaled[idx].kcal)} kcal</span>
+                <span className={`meal-item-src ${it.src === 'ai' ? 'is-ai' : 'is-db'}`}>{SRC_LABEL[it.src]}</span>
               </div>
               <label className="meal-item-grams">
                 <input
@@ -215,7 +212,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
         )}
 
         <div className="meal-hint">
-          Die Mengen sind geschätzt — passe sie an, wenn du es besser weißt. „Datenbank“: Nährwerte aus deinen Lebensmitteln;
+          Die Mengen sind geschätzt — passe sie an, wenn du es besser weißt. „Aus Datenbank“: Nährwerte aus deinen Lebensmitteln;
           „KI-Schätzung“: Zutat nicht in der Datenbank.
         </div>
       </div>
