@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCalendarEvents } from '../lib/calendarData';
-import { getGoogleCalendars } from '../lib/googleCalendar';
+import {
+  getGoogleCalendars, getGoogleCalendarStatus, syncGoogleCalendar,
+  connectGoogleCalendar, disconnectGoogleCalendar,
+} from '../lib/googleCalendar';
 import {
   toDateStr, parseDateStr, addDays, startOfWeek, monthGridDays,
   WEEKDAYS_SHORT, MONTH_NAMES, APP_CATEGORIES, GOOGLE_FALLBACK_COLOR,
@@ -12,6 +15,8 @@ import CalendarEventSheet from './CalendarEventSheet';
 
 const FILTER_STORAGE_KEY = 'nestua.calendarFilter.v1';
 const AGENDA_STEP_DAYS = 30;
+const AUTO_SYNC_AFTER_MIN = 10; // Auto-Sync beim Öffnen, wenn der letzte Sync älter ist
+
 const MONTH_CHIPS_PER_CELL = 2;
 
 function loadFilter() {
@@ -42,6 +47,16 @@ function Chevron({ dir }) {
       <path d={dir === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} />
     </svg>
   );
+}
+
+function ago(iso) {
+  if (!iso) return 'noch nie';
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min.`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  return `vor ${Math.round(h / 24)} Tagen`;
 }
 
 // Punkte pro Tag (Wochenstreifen): gefüllt = App, Ring = Google.
@@ -89,7 +104,7 @@ function DayGroup({ str, today, events, calMap, onOpen, onToggleTodo, showEmpty,
   );
 }
 
-export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
+export default function CalendarView({ session, todos = [], onToggleTodo, onEditTodo }) {
   const [mode, setMode] = useState('agenda'); // 'agenda' | 'woche' | 'monat'
   const [refDate, setRefDate] = useState(new Date());
   const [selDay, setSelDay] = useState(toDateStr(new Date())); // Woche: markierter Tag
@@ -101,6 +116,11 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
   const [googleCals, setGoogleCals] = useState([]);
   const [filter, setFilter] = useState(loadFilter);
   const groupRefs = useRef({});
+  const [conn, setConn] = useState(null);       // google_calendar_connections-Zeile | null
+  const [syncing, setSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(null); // Fehlertext des letzten manuellen/auto Syncs
+  const [reloadKey, setReloadKey] = useState(0);
+  const autoSyncDone = useRef(false);
 
   const todayStr = toDateStr(new Date());
 
@@ -111,7 +131,49 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
 
   useEffect(() => {
     getGoogleCalendars().then(setGoogleCals).catch((e) => console.warn('[CalendarView] google_calendars', e));
-  }, []);
+  }, [reloadKey]);
+
+  // Sync-Status laden; beim ersten Öffnen automatisch syncen, wenn der
+  // letzte Sync länger als AUTO_SYNC_AFTER_MIN her ist (nicht bei bekanntem
+  // Verbindungsfehler — der braucht erst ein Neu-Verbinden).
+  async function runSync() {
+    if (!session || syncing) return;
+    setSyncing(true);
+    setSyncFailed(null);
+    try {
+      await syncGoogleCalendar(session);
+    } catch (e) {
+      setSyncFailed(e.message || 'Synchronisierung fehlgeschlagen');
+    }
+    try { setConn(await getGoogleCalendarStatus(session)); } catch { /* Status bleibt */ }
+    setReloadKey((k) => k + 1);
+    setSyncing(false);
+  }
+  useEffect(() => {
+    if (!session) return;
+    getGoogleCalendarStatus(session)
+      .then((c) => {
+        setConn(c);
+        const stale = !c?.last_synced_at || Date.now() - new Date(c.last_synced_at).getTime() > AUTO_SYNC_AFTER_MIN * 60000;
+        if (c && !c.sync_error && stale && !autoSyncDone.current) {
+          autoSyncDone.current = true;
+          runSync();
+        }
+      })
+      .catch((e) => console.warn('[CalendarView] sync status', e));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
+  async function reconnect() {
+    setSyncing(true);
+    try {
+      await disconnectGoogleCalendar(session);
+      await connectGoogleCalendar(session); // leitet zu Google weiter
+    } catch (e) {
+      setSyncFailed(e.message || 'Verbindung konnte nicht gestartet werden');
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     try { localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filter)); } catch { /* privater Modus */ }
@@ -133,7 +195,7 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
       .then((map) => { if (aktiv) { setDbEvents(map); setLoading(false); } })
       .catch((e) => { console.error('[CalendarView]', e); if (aktiv) setLoading(false); });
     return () => { aktiv = false; };
-  }, [from, to]);
+  }, [from, to, reloadKey]);
 
   // calendar_events + live Aufgaben (todos mit Fälligkeitsdatum) → ein Map.
   const allEvents = useMemo(() => {
@@ -266,6 +328,28 @@ export default function CalendarView({ todos = [], onToggleTodo, onEditTodo }) {
           <button className="calview-today-btn" onClick={goToday}>
             {todayDir === 'left' ? <><Arrow dir="left" />zu heute</> : <>zu heute<Arrow dir="right" /></>}
           </button>
+        </div>
+      )}
+
+      {conn && (
+        <div className={`calview-sync ${conn.sync_error || syncFailed ? 'error' : ''}`}>
+          {conn.sync_error ? (
+            <>
+              <span className="calview-sync-text">
+                <strong>Google-Verbindung abgelaufen.</strong> Bitte neu verbinden, sonst bleiben die Google-Termine veraltet.
+              </span>
+              <button className="calview-sync-btn primary" disabled={syncing} onClick={reconnect}>Neu verbinden</button>
+            </>
+          ) : (
+            <>
+              <span className="calview-sync-text">
+                {syncing ? 'Synchronisiere Google…' : syncFailed ? `Sync fehlgeschlagen: ${syncFailed}` : `Google synchronisiert ${ago(conn.last_synced_at)}`}
+              </span>
+              <button className="calview-sync-btn" disabled={syncing} onClick={runSync} aria-label="Jetzt synchronisieren">
+                <span className={syncing ? 'calview-spin' : ''}>↻</span> Aktualisieren
+              </button>
+            </>
+          )}
         </div>
       )}
 

@@ -42,7 +42,7 @@ async function syncOneUser(connection: { owner_id: string; refresh_token_secret_
   try { accessToken = await refreshAccessToken(refreshToken); }
   catch (err) {
     if (err instanceof Error && err.message === 'REVOKED') {
-      await supabase.from('google_calendar_connections').update({ sync_error: 'Zugriff wurde bei Google widerrufen — bitte erneut verbinden.' }).eq('owner_id', ownerId);
+      await supabase.from('google_calendar_connections').update({ sync_error: 'Google hat den Zugriff abgelehnt (Token abgelaufen oder entzogen) — bitte erneut verbinden.' }).eq('owner_id', ownerId);
       return { ownerId, status: 'revoked' };
     }
     throw err;

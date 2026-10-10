@@ -529,7 +529,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
       <>
         <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.kalender} hasWarnings={hasWarnings} />
         <div className="hub with-topbar-space">
-          <CalendarView todos={todos} onToggleTodo={handleToggleTodo} onEditTodo={openEditTodo} />
+          <CalendarView session={session} todos={todos} onToggleTodo={handleToggleTodo} onEditTodo={openEditTodo} />
         </div>
 
         {todoSheet && (
