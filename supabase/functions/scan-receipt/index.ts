@@ -119,7 +119,7 @@ const MEAL_SCHEMA = {
 // Lebensmittel der Liste zu (food_ref = Nummer in der Liste). Nährwerte setzt
 // dann diese Function aus den Listenwerten ein; die KI schätzt sie nur für
 // Bestandteile ohne Treffer. So bleiben Scan und eigene Rezepte vergleichbar.
-const MAX_FOODS = 800;
+const MAX_FOODS = 1000;
 const FOOD_KEYS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'] as const;
 
 const MEAL_PROMPT_FOODS = `Du bekommst das Foto einer Mahlzeit (Teller, Schüssel, Snack, Getränk) und die Lebensmittelliste einer App. Du erkennst die Bestandteile, schätzt ihre Menge und ordnest sie nach Möglichkeit Lebensmitteln der Liste zu. Du gibst die Felder im vorgegebenen JSON-Schema zurück.

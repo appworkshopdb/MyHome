@@ -117,7 +117,9 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   `src: 'db'`); nur Zutaten ohne Treffer schätzt die KI (`src: 'ai'`), Spanne als Prozent.
   Ohne `foods` läuft die alte Variante unverändert. `MealScanModal`: Menge ändern,
   Bestandteil entfernen, Zutat aus der DB hinzufügen (`src: 'user'`, zählt exakt).
-  Kein Env-/Migrations-Schritt, nur die Function-Datei ersetzen.
+  Kein Env-/Migrations-Schritt, nur die Function-Datei ersetzen. Kosten: die Liste
+  (Katalog ~717 + eigene, `MAX_FOODS` 1000) kostet geschätzt 6–7k Eingabe-Tokens je Scan
+  (nach dem Ausrollen in `receipt_scans`/Function-Log messen, Abfrage am Ende der Migration).
 - Tagesplan (Hub, `DayPlan.jsx`): Block "Ernährung" zwischen Training und Aufgaben
   (ohne Haken, zählt nicht bei "x / y erledigt"): offene kcal/Makros vs. Tagesziel,
   vier Mahlzeit-Marker. Daten über `core/lib/nutritionDay.js` (eigene Abfrage auf
