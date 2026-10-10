@@ -7,6 +7,12 @@
 
 import { MEAL_TYPES } from './nutrition';
 
+// Lebensmittel, deren Nährwerte pro 100 g/ml gelten (nur diese lassen sich im
+// Mahlzeit-Scan über Gramm umrechnen; "Stück", "EL" usw. gelten pro Einheit).
+export function isGramFood(f) {
+  return !!f && (f.unit === 'g' || f.unit === 'ml');
+}
+
 export const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
 // ── Datum: immer lokale Komponenten, nie toISOString() (siehe CLAUDE.md) ──────
@@ -70,7 +76,10 @@ function roundNutrients(n) {
 
 // scan: { name, items: [{name, grams, kcal, protein, …}] } — items bereits mit den
 // vom Nutzer korrigierten Gramm umgerechnet. kcalLow/kcalHigh: Spanne der ganzen Mahlzeit.
-export function mealFromScan({ name, items, kcalLow, kcalHigh }, { mealType, eatenOn }) {
+// items[].src: 'db' (Nährwerte aus der Lebensmittel-Datenbank), 'ai' (KI-Schätzung)
+// oder 'user' (vom Nutzer aus der Datenbank hinzugefügt); wird mitgespeichert.
+// isEstimate: false nur, wenn nichts davon geschätzt ist (alles vom Nutzer gewählt).
+export function mealFromScan({ name, items, kcalLow, kcalHigh, isEstimate = true }, { mealType, eatenOn }) {
   const total = { kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, satfat: 0, fiber: 0, salt: 0 };
   for (const it of items) for (const k of NUTRIENT_KEYS) total[k] += it[k] || 0;
   const t = roundNutrients(total);
@@ -81,11 +90,11 @@ export function mealFromScan({ name, items, kcalLow, kcalHigh }, { mealType, eat
     source: 'scan',
     recipeId: null,
     servings: null,
-    isEstimate: true,
+    isEstimate,
     ...t,
     kcalLow: kcalLow != null ? Math.min(round(kcalLow), t.kcal) : null,
     kcalHigh: kcalHigh != null ? Math.max(round(kcalHigh), t.kcal) : null,
-    items: items.map((i) => ({ name: i.name, amount: round(i.grams), unit: 'g', kcal: round(i.kcal) })),
+    items: items.map((i) => ({ name: i.name, amount: round(i.grams), unit: 'g', kcal: round(i.kcal), ...(i.src ? { src: i.src } : {}) })),
     note: null,
   };
 }

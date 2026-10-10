@@ -109,6 +109,15 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   auch per Button "Gegessen eintragen" im Rezept-Dialog). Tageskarte zeigt
   gegessen vs. Tagesziel (`computeBody` in `core/lib/bodyCalc.js`, braucht
   ausgefülltes Körperprofil). Datum `eaten_on` immer lokal bauen (`lib/meals.js`).
+- Mahlzeit-Scan nutzt die Lebensmittel-DB: Das Modul trägt seine g/ml-Lebensmittel in
+  `core/lib/scanFoods.js` ein, `scanMeal` schickt sie als `foods` (Name + Nährwerte pro
+  100 g) mit. Die Function lässt die KI erkannte Bestandteile per `food_ref` (Listen-
+  Nummer) + `db_grams` (Gewicht im Zustand des DB-Eintrags, z. B. trocken statt gekocht)
+  zuordnen und setzt die Nährwerte selbst aus der Liste ein (`cleanMealFoods`, Bestandteil
+  `src: 'db'`); nur Zutaten ohne Treffer schätzt die KI (`src: 'ai'`), Spanne als Prozent.
+  Ohne `foods` läuft die alte Variante unverändert. `MealScanModal`: Menge ändern,
+  Bestandteil entfernen, Zutat aus der DB hinzufügen (`src: 'user'`, zählt exakt).
+  Kein Env-/Migrations-Schritt, nur die Function-Datei ersetzen.
 - Tagesplan (Hub, `DayPlan.jsx`): Block "Ernährung" zwischen Training und Aufgaben
   (ohne Haken, zählt nicht bei "x / y erledigt"): offene kcal/Makros vs. Tagesziel,
   vier Mahlzeit-Marker. Daten über `core/lib/nutritionDay.js` (eigene Abfrage auf

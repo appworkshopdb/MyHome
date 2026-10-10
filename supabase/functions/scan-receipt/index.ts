@@ -20,8 +20,12 @@
 //                          (USD) je Scan — für die Kostenkontrolle, nirgends in der App sichtbar.
 //
 // Endpunkte:
-//   POST  {kind?, image, media_type} → { ok, receipt | meal, quota }; 429 bei erreichtem Monatslimit
+//   POST  {kind?, image, media_type, foods?} → { ok, receipt | meal, quota }; 429 bei erreichtem Monatslimit
 //         kind fehlt → 'receipt' (ältere App-Versionen)
+//         foods (nur kind 'meal'): Lebensmittel der App [{id, name, kcal, protein, carbs, sugar, fat,
+//         satfat, fiber, salt}] (Werte pro 100 g/ml). Mit Liste ordnet die KI erkannte Bestandteile
+//         Lebensmitteln zu, und die Nährwerte kommen aus der Liste statt aus der Schätzung der KI;
+//         nur Bestandteile ohne Treffer werden weiter geschätzt. Ohne Liste: wie bisher.
 //   GET   ?kind=receipt|meal → Restkontingent { ok, quota } (kostet nichts, zählt nicht)
 //
 // CORS: bewusst keine eigenen Header — wie bei den anderen Functions setzt
@@ -109,6 +113,83 @@ const MEAL_SCHEMA = {
   required: ['is_meal', 'name', 'items', 'kcal_low', 'kcal_high', 'note'],
   additionalProperties: false,
 };
+
+// ── Mahlzeit mit Lebensmittel-Liste der App (Variante "foods") ───────────────
+// Die KI erkennt weiterhin Bestandteile und Mengen, ordnet sie aber einem
+// Lebensmittel der Liste zu (food_ref = Nummer in der Liste). Nährwerte setzt
+// dann diese Function aus den Listenwerten ein; die KI schätzt sie nur für
+// Bestandteile ohne Treffer. So bleiben Scan und eigene Rezepte vergleichbar.
+const MAX_FOODS = 800;
+const FOOD_KEYS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'] as const;
+
+const MEAL_PROMPT_FOODS = `Du bekommst das Foto einer Mahlzeit (Teller, Schüssel, Snack, Getränk) und die Lebensmittelliste einer App. Du erkennst die Bestandteile, schätzt ihre Menge und ordnest sie nach Möglichkeit Lebensmitteln der Liste zu. Du gibst die Felder im vorgegebenen JSON-Schema zurück.
+
+Regeln:
+- name: kurzer deutscher Name des Gerichts (z. B. "Spaghetti Bolognese").
+- items: die sichtbaren Bestandteile (z. B. "Spaghetti, gekocht", "Hackfleischsoße", "Parmesan"). Höchstens 10, die kalorienreichsten zuerst; Kleinstmengen unter etwa 10 kcal weglassen.
+- grams: geschätztes Gewicht der Portion dieses Bestandteils im zubereiteten Zustand, als Zahl. Nutze Größenanhaltspunkte auf dem Foto (Tellerdurchmesser etwa 26 cm, Besteck, Hände, Verpackung).
+- food_ref: die Nummer des Listeneintrags, wenn der Bestandteil genau dieses Lebensmittel ist (gleiche Sorte). Im Zweifel null. Wähle nie einen nur ähnlichen Eintrag und nie ein Einzelprodukt für eine Mischung: "Hackfleischsoße" ist kein "Hackfleisch", "Nudelsalat" ist keine "Nudel".
+- db_grams: nur bei food_ref (sonst null). Das Gewicht des Bestandteils in dem Zustand, auf den sich die Werte des Listeneintrags beziehen (Werte pro 100 g). Der kcal-Wert in der Liste zeigt den Zustand: Nudeln mit etwa 350 kcal pro 100 g sind trocken, gekochte haben etwa 130–160. Beispiel: 220 g gekochte Spaghetti und Eintrag "Weiße Nudeln, 358 kcal" ergeben db_grams ≈ 90. Passt der Zustand schon, ist db_grams gleich grams. Bei Getränken und Flüssigkeiten zählt 1 ml wie 1 g.
+- kcal, protein, carbs, sugar, fat, satfat, fiber, salt: Nährwerte genau für diese Menge (grams), NICHT pro 100 g. kcal in kcal, alle anderen in Gramm. Nur für Bestandteile OHNE food_ref schätzen, bei food_ref alle acht Werte null. Berücksichtige übliche Zubereitung (Öl, Butter, Dressing), wenn sie erkennbar oder bei diesem Gericht üblich ist.
+- range_minus_pct / range_plus_pct: wie viel Prozent die Gesamtkalorien der ganzen Mahlzeit realistisch nach unten bzw. nach oben abweichen können (5 bis 60), vor allem wegen Portionsgröße und unsichtbarer Zutaten. Sei ehrlich breit, wenn vieles unsicher ist.
+- note: ein kurzer deutscher Satz dazu, was die Schätzung am meisten unsicher macht (z. B. "Menge der Soße nicht erkennbar"), sonst null.
+- Triff keine Aussagen zu Allergenen, Unverträglichkeiten, Diäten oder Gesundheit.
+- Zeigt das Foto kein Essen oder Trinken, setze is_meal auf false, items auf eine leere Liste und alle übrigen Felder auf null.`;
+
+const NUM_OR_NULL = { anyOf: [NUM, { type: 'null' }] };
+const MEAL_ITEM_SCHEMA_FOODS = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    grams: NUM,
+    food_ref: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+    db_grams: NUM_OR_NULL,
+    kcal: NUM_OR_NULL, protein: NUM_OR_NULL, carbs: NUM_OR_NULL, sugar: NUM_OR_NULL,
+    fat: NUM_OR_NULL, satfat: NUM_OR_NULL, fiber: NUM_OR_NULL, salt: NUM_OR_NULL,
+  },
+  required: ['name', 'grams', 'food_ref', 'db_grams', 'kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'],
+  additionalProperties: false,
+};
+const MEAL_SCHEMA_FOODS = {
+  type: 'object',
+  properties: {
+    is_meal: { type: 'boolean' },
+    name: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+    items: { type: 'array', items: MEAL_ITEM_SCHEMA_FOODS },
+    range_minus_pct: NUM_OR_NULL,
+    range_plus_pct: NUM_OR_NULL,
+    note: { anyOf: [{ type: 'string' }, { type: 'null' }] },
+  },
+  required: ['is_meal', 'name', 'items', 'range_minus_pct', 'range_plus_pct', 'note'],
+  additionalProperties: false,
+};
+
+type Food = { id: string | number; name: string; per100: Record<typeof FOOD_KEYS[number], number> };
+
+// Liste aus dem Request prüfen. Fehlt sie oder ist sie leer/ungültig → null (alte Variante).
+function parseFoods(raw: unknown): Food[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const foods: Food[] = [];
+  for (const f of raw.slice(0, MAX_FOODS)) {
+    const idOk = (typeof f?.id === 'number' && Number.isFinite(f.id)) || (typeof f?.id === 'string' && f.id.length > 0 && f.id.length <= 64);
+    const name = typeof f?.name === 'string' ? f.name.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+    if (!idOk || !name) continue;
+    const per100: any = {};
+    let valid = true;
+    for (const k of FOOD_KEYS) {
+      const v = boundedNum(f[k], 1000, 2);
+      if (v === null) { valid = false; break; }
+      per100[k] = v;
+    }
+    if (valid) foods.push({ id: f.id, name, per100 });
+  }
+  return foods.length > 0 ? foods : null;
+}
+
+// Liste für die KI: "Nr | Name | kcal pro 100 g" (Nummer = Position in `foods`)
+function foodListText(foods: Food[]): string {
+  return foods.map((f, i) => `${i} | ${f.name} | ${Math.round(f.per100.kcal)}`).join('\n');
+}
 
 // Erst beim ersten Aufruf anlegen: ohne ANTHROPIC_API_KEY wirft der Konstruktor,
 // und das soll als verständliche 503 beim Scan ankommen, nicht als Boot-Fehler.
@@ -325,6 +406,61 @@ function cleanMeal(raw: any) {
   };
 }
 
+// Variante mit Lebensmittel-Liste. Bestandteil mit gültigem food_ref: Nährwerte aus
+// der Liste (Werte pro 100 g × db_grams / 100). Ohne Treffer: geschätzte Werte der
+// KI, genauso geprüft wie in cleanMeal. Antwortform wie cleanMeal, je Bestandteil
+// zusätzlich src ('db' | 'ai'), bei 'db' auch food_id und food_name.
+function cleanMealFoods(raw: any, foods: Food[]) {
+  const items = (Array.isArray(raw?.items) ? raw.items : []).slice(0, 12).flatMap((it: any) => {
+    const name = typeof it?.name === 'string' ? it.name.trim().slice(0, 60) : '';
+    const grams = boundedNum(it?.grams, 3000, 0);
+    if (!name || !grams || grams <= 0) return [];
+
+    const ref = Number.isInteger(it?.food_ref) && it.food_ref >= 0 && it.food_ref < foods.length ? foods[it.food_ref] : null;
+    if (ref) {
+      // db_grams fehlt oder ist unsinnig → Zustand als gleich annehmen
+      const dbGrams = boundedNum(it?.db_grams, 3000, 1);
+      const useGrams = dbGrams && dbGrams > 0 && dbGrams <= grams * 4 && dbGrams >= grams / 4 ? dbGrams : grams;
+      const f = useGrams / 100;
+      const n: any = {};
+      for (const k of FOOD_KEYS) n[k] = Math.round(ref.per100[k] * f * 10) / 10;
+      n.kcal = Math.round(n.kcal);
+      return [{ name, grams, ...n, src: 'db', food_id: ref.id, food_name: ref.name }];
+    }
+
+    const kcal = boundedNum(it?.kcal, 5000, 0);
+    const protein = boundedNum(it?.protein, 500);
+    const carbs = boundedNum(it?.carbs, 800);
+    const sugar = boundedNum(it?.sugar, 800);
+    const fat = boundedNum(it?.fat, 500);
+    const satfat = boundedNum(it?.satfat, 500);
+    const fiber = boundedNum(it?.fiber, 200);
+    const salt = boundedNum(it?.salt, 50);
+    if (kcal === null || protein === null || carbs === null || sugar === null
+      || fat === null || satfat === null || fiber === null || salt === null) return [];
+    return [{ name, grams, kcal, protein, carbs, sugar, fat, satfat, fiber, salt, src: 'ai' }];
+  });
+
+  if (!(raw?.is_meal === true && items.length > 0)) {
+    return { is_meal: false, name: null, items: [], kcal_low: null, kcal_high: null, note: null };
+  }
+
+  // Spanne in Prozent von der KI, auf die tatsächliche Summe angewendet
+  const sumKcal = items.reduce((s: number, i: { kcal: number }) => s + i.kcal, 0);
+  const minus = boundedNum(raw?.range_minus_pct, 100, 0);
+  const plus = boundedNum(raw?.range_plus_pct, 200, 0);
+  const lo = Math.min(Math.max(minus ?? 25, 5), 60);
+  const hi = Math.min(Math.max(plus ?? 25, 5), 60);
+  return {
+    is_meal: true,
+    name: typeof raw?.name === 'string' ? raw.name.trim().slice(0, 80) || null : null,
+    items,
+    kcal_low: Math.round(sumKcal * (1 - lo / 100)),
+    kcal_high: Math.round(sumKcal * (1 + hi / 100)),
+    note: typeof raw?.note === 'string' ? raw.note.trim().slice(0, 200) || null : null,
+  };
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'GET' && req.method !== 'POST') throw new HttpError(405, 'Nur GET und POST erlaubt');
@@ -345,6 +481,9 @@ Deno.serve(async (req) => {
     if (!ALLOWED_MEDIA_TYPES.has(mediaType)) throw new HttpError(400, 'Bildformat nicht unterstützt');
     if (image.length > MAX_BASE64_CHARS) throw new HttpError(413, 'Bild ist zu groß');
 
+    // Lebensmittel-Liste nur für Mahlzeiten; sonst/ungültig: Variante ohne Liste
+    const foods = kind === 'meal' ? parseFoods(body?.foods) : null;
+
     const client = getAnthropic(); // vor der Reservierung: fehlt der Key, kostet nichts
     const reservation = await reserveScan(ownerId, kind);
 
@@ -354,14 +493,14 @@ Deno.serve(async (req) => {
       response = await client.messages.create({
         model: cfg.model,
         max_tokens: cfg.maxTokens,
-        system: cfg.prompt,
+        system: foods ? MEAL_PROMPT_FOODS : cfg.prompt,
         ...(thinking ? { thinking } : {}),
-        output_config: { format: { type: 'json_schema', schema: cfg.schema }, ...outputExtra },
+        output_config: { format: { type: 'json_schema', schema: foods ? MEAL_SCHEMA_FOODS : cfg.schema }, ...outputExtra },
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
-            { type: 'text', text: cfg.userText },
+            { type: 'text', text: foods ? `${cfg.userText}\n\nLebensmittelliste (Nr | Name | kcal pro 100 g):\n${foodListText(foods)}` : cfg.userText },
           ],
         }],
       } as any);
@@ -385,7 +524,7 @@ Deno.serve(async (req) => {
     console.log('[scan-receipt]', kind, ownerId, cfg.model, JSON.stringify(response.usage));
 
     return json(kind === 'meal'
-      ? { ok: true, meal: cleanMeal(parsed), quota: reservation.quota }
+      ? { ok: true, meal: foods ? cleanMealFoods(parsed, foods) : cleanMeal(parsed), quota: reservation.quota }
       : { ok: true, receipt: cleanResult(parsed), quota: reservation.quota });
   } catch (err) {
     if (err instanceof HttpError) return json({ error: err.message }, err.status);

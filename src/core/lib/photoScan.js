@@ -6,6 +6,8 @@
 // Sie speichert nichts — das Ergebnis dient nur zum Vorbefüllen bzw. Anzeigen.
 // Jede Art hat ihr eigenes Monatskontingent.
 
+import { getScanFoods } from './scanFoods';
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 // Lange Kante in Pixeln. Bons sind schmal und hoch; 1600 px lassen kleine
@@ -61,7 +63,7 @@ export async function prepareReceiptImage(file) {
 
 // Gemeinsamer Weg für alle Arten: verkleinern, senden, Fehler verständlich
 // machen. what = Wort für die Fehlermeldung ("Beleg" / "Mahlzeit").
-async function postScan(kind, what, session, file) {
+async function postScan(kind, what, session, file, extra = {}) {
   const image = await prepareReceiptImage(file);
 
   const ctrl = new AbortController();
@@ -73,7 +75,7 @@ async function postScan(kind, what, session, file) {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ kind, image, media_type: 'image/jpeg' }),
+      body: JSON.stringify({ kind, image, media_type: 'image/jpeg', ...extra }),
       signal: ctrl.signal,
     });
     // Text zuerst lesen: Gateway-Fehler (Function fehlt, Boot-Fehler) kommen
@@ -129,12 +131,17 @@ export async function scanReceipt(session, file) {
  * Schätzt eine Mahlzeit aus einem Foto.
  * @returns {Promise<{is_meal:boolean,name:string|null,
  *   items:Array<{name:string,grams:number,kcal:number,protein:number,carbs:number,
- *                sugar:number,fat:number,satfat:number,fiber:number,salt:number}>,
+ *                sugar:number,fat:number,satfat:number,fiber:number,salt:number,
+ *                src?:'db'|'ai',food_id?:string|number,food_name?:string}>,
  *   kcal_low:number|null,kcal_high:number|null,note:string|null}>}
  *   Werte pro Bestandteil gelten für die geschätzte Menge (grams), nicht pro 100 g.
  */
 export async function scanMeal(session, file) {
-  const data = await postScan('meal', 'Mahlzeit', session, file);
+  // Mit Lebensmittel-Liste ordnet die Function erkannte Bestandteile der Datenbank
+  // zu (items[].src === 'db', food_id); ohne Liste (Modul noch nicht geladen,
+  // ältere Function) schätzt die KI alle Werte wie bisher.
+  const foods = getScanFoods();
+  const data = await postScan('meal', 'Mahlzeit', session, file, foods.length ? { foods } : {});
   if (!data?.meal) throw new Error('Unerwartete Antwort vom Server');
   return data.meal;
 }

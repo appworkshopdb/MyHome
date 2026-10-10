@@ -4,6 +4,7 @@ import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
 import { getBodyProfile, BODY_REQUIRED_FIELDS } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
+import { setScanFoods } from '../../core/lib/scanFoods';
 import { getMissingFields } from '../../core/lib/requiredData';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
 import OverviewSection from './components/OverviewSection';
@@ -15,6 +16,7 @@ import MealScanModal from './components/MealScanModal';
 import LogRecipeModal from './components/LogRecipeModal';
 import MealsView from './components/MealsView';
 import * as db from './lib/nutData';
+import { isGramFood } from './lib/meals';
 
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
@@ -73,6 +75,13 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const [mealsFocus, setMealsFocus]     = useState(null);
 
   const foodsById = useMemo(() => Object.fromEntries(foods.map((f) => [f.id, f])), [foods]);
+
+  // Mahlzeit-Scan (core/): die KI ordnet erkannte Bestandteile diesen Lebensmitteln
+  // zu, Nährwerte kommen von hier. Nur eintragen, solange das Modul offen ist.
+  useEffect(() => {
+    setScanFoods(foods.filter(isGramFood));
+    return () => setScanFoods([]);
+  }, [foods]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -145,7 +154,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   }
 
   const mealModal = mealResult && (
-    <MealScanModal meal={mealResult} onSaveMeal={handleSaveMeal} onClose={() => setMealResult(null)} />
+    <MealScanModal meal={mealResult} foods={foods} onSaveMeal={handleSaveMeal} onClose={() => setMealResult(null)} />
   );
   const logModal = logRecipe !== undefined && (
     <LogRecipeModal
