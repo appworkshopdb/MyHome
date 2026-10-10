@@ -69,6 +69,7 @@ async function syncOneUser(connection: { owner_id: string; refresh_token_secret_
   const windowEndDate = timeMax.slice(0, 10);
 
   let totalCount = 0;
+  let added = 0, changed = 0, deleted = 0; // für die Meldung „X Einträge aktualisiert“
 
   for (const calendarId of calendarIds) {
     const items = await fetchGoogleEvents(accessToken, calendarId, timeMin, timeMax);
@@ -103,6 +104,22 @@ async function syncOneUser(connection: { owner_id: string; refresh_token_secret_
       });
     }
 
+    // Vorher-Stand (nur aktive Zeilen im Fenster) zum Zählen von neu/geändert.
+    const { data: before, error: beforeErr } = await supabase.from('calendar_events')
+      .select('google_event_id, title, event_date, event_time, event_date_end, event_time_end, description, location, status, reminder_minutes')
+      .eq('owner_id', ownerId).eq('source_module', 'google').eq('google_calendar_id', calendarId)
+      .not('google_event_id', 'is', null).is('deleted_at', null)
+      .gte('event_date', windowStartDate).lte('event_date', windowEndDate);
+    if (beforeErr) throw beforeErr;
+    const beforeMap = new Map((before ?? []).map((r: any) => [r.google_event_id, r]));
+    const CMP = ['title', 'event_date', 'event_time', 'event_date_end', 'event_time_end', 'description', 'location', 'status', 'reminder_minutes'];
+    for (const r of rows) {
+      const old = beforeMap.get(r.google_event_id);
+      if (r.deleted_at) { if (old) deleted++; continue; }       // bei Google abgesagt
+      if (!old) { added++; continue; }
+      if (CMP.some((k) => (old[k] ?? null) !== (r[k] ?? null))) changed++;
+    }
+
     if (rows.length) {
       const { error } = await supabase.from('calendar_events').upsert(rows, { onConflict: 'owner_id,google_calendar_id,google_event_id' });
       if (error) throw error;
@@ -115,14 +132,15 @@ async function syncOneUser(connection: { owner_id: string; refresh_token_secret_
       .eq('owner_id', ownerId).eq('source_module', 'google').eq('google_calendar_id', calendarId).not('google_event_id', 'is', null)
       .gte('event_date', windowStartDate).lte('event_date', windowEndDate).is('deleted_at', null);
     if (seenIds.length) cleanupQuery = cleanupQuery.not('google_event_id', 'in', `(${seenIds.map((id) => `"${id.replaceAll('"', '\\"')}"`).join(',')})`);
-    const { error: cleanupError } = await cleanupQuery;
+    const { data: removed, error: cleanupError } = await cleanupQuery.select('google_event_id');
     if (cleanupError) throw cleanupError;
+    deleted += (removed ?? []).length;
 
     totalCount += rows.length;
   }
 
   await supabase.from('google_calendar_connections').update({ last_synced_at: new Date().toISOString(), sync_error: null }).eq('owner_id', ownerId);
-  return { ownerId, status: 'ok', count: totalCount, calendars: calendarIds.length };
+  return { ownerId, status: 'ok', count: totalCount, added, changed, deleted, calendars: calendarIds.length };
 }
 
 async function getRequestOwner(req: Request) {

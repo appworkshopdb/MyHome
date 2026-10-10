@@ -11,6 +11,7 @@ import {
   filterKey, describeEvent, todoToEvent, sortDay, ago,
 } from '../lib/calendarUtils';
 import SheetShell from './SheetShell';
+import { useUi } from '../lib/UiContext';
 import CalendarEventRow from './CalendarEventRow';
 import CalendarEventSheet from './CalendarEventSheet';
 
@@ -106,6 +107,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
   const [detail, setDetail] = useState(null); // Termin (Detail-Sheet)
   const [googleCals, setGoogleCals] = useState([]);
   const [filter, setFilter] = useState(loadFilter);
+  const { showToast } = useUi();
   const groupRefs = useRef({});
   const [conn, setConn] = useState(null);       // google_calendar_connections-Zeile | null
   const [syncing, setSyncing] = useState(false);
@@ -127,12 +129,23 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
   // Sync-Status laden; beim ersten Öffnen automatisch syncen, wenn der
   // letzte Sync länger als AUTO_SYNC_AFTER_MIN her ist (nicht bei bekanntem
   // Verbindungsfehler — der braucht erst ein Neu-Verbinden).
-  async function runSync() {
+  async function runSync({ manual = false } = {}) {
     if (!session || syncing) return;
     setSyncing(true);
     setSyncFailed(null);
     try {
-      await syncGoogleCalendar(session);
+      const res = await syncGoogleCalendar(session);
+      if (manual) {
+        const r = res?.results?.[0];
+        if (r?.status === 'revoked') {
+          // Statusabfrage unten zeigt dann das Neu-Verbinden-Banner
+        } else if (r && r.added != null) {
+          const n = r.added + r.changed + r.deleted;
+          showToast(n === 0 ? 'Alles aktuell' : n === 1 ? '1 Eintrag aktualisiert' : `${n} Einträge aktualisiert`);
+        } else {
+          showToast('Synchronisiert'); // ältere Edge-Function ohne Zähler
+        }
+      }
     } catch (e) {
       setSyncFailed(e.message || 'Synchronisierung fehlgeschlagen');
     }
@@ -344,7 +357,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
       {conn && createPortal(
         <button
           className={`calview-sync-fab ${syncing ? 'busy' : ''} ${conn.sync_error || syncFailed ? 'error' : ''}`}
-          onClick={conn.sync_error ? reconnect : runSync}
+          onClick={conn.sync_error ? reconnect : () => runSync({ manual: true })}
           disabled={syncing}
           aria-label={conn.sync_error ? 'Google neu verbinden' : 'Google-Kalender jetzt synchronisieren'}
           title={conn.sync_error ? 'Verbindung abgelaufen' : `Zuletzt synchronisiert ${ago(conn.last_synced_at)}`}
