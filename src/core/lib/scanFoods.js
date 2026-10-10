@@ -7,7 +7,8 @@
 // Modul Ernährung (modules/nutrition), core/ darf von dort nichts importieren —
 // deshalb trägt das Modul seine Liste hier ein, solange es offen ist.
 //
-// Nur Name und Nährwerte pro 100 g/ml gehen raus (keine Vitamine, Tags o. Ä.).
+// Nur Name, Gruppe und Nährwerte pro 100 g/ml gehen raus (keine Vitamine, Tags o. Ä.).
+// Die Function entscheidet über die Gruppe, was davon als Text an die KI geht.
 
 const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
@@ -18,7 +19,7 @@ export function setScanFoods(foods) {
   current = (foods || [])
     .filter((f) => f && f.id != null && f.name && Number.isFinite(Number(f.kcal)))
     .map((f) => {
-      const out = { id: f.id, name: String(f.name) };
+      const out = { id: f.id, name: String(f.name), group: f.group ? String(f.group) : null };
       for (const k of NUTRIENTS) out[k] = Number(f[k]) || 0;
       return out;
     });

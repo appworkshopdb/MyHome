@@ -118,8 +118,11 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   Ohne `foods` läuft die alte Variante unverändert. `MealScanModal`: Menge ändern,
   Bestandteil entfernen, Zutat aus der DB hinzufügen (`src: 'user'`, zählt exakt).
   Kein Env-/Migrations-Schritt, nur die Function-Datei ersetzen. Kosten: die Liste
-  (Katalog ~717 + eigene, `MAX_FOODS` 1000) kostet geschätzt 6–7k Eingabe-Tokens je Scan
-  (nach dem Ausrollen in `receipt_scans`/Function-Log messen, Abfrage am Ende der Migration).
+  (Katalog ~717 + eigene, `MAX_FOODS` 1000) kostet Eingabe-Tokens je Scan; die Function kürzt sie
+  (ohne Gewürze/Süßungsmittel, kcal nur wo der Zustand zählt: `LIST_EXCLUDED_GROUPS`,
+  `LIST_NO_KCAL_GROUPS`, ca. −25 % Zeichen), geschätzt 4–5k Tokens. Nach dem Ausrollen in
+  `receipt_scans`/Function-Log messen (Abfrage am Ende der Migration). Kein Prompt Caching,
+  kein günstigeres Modell (bewusst), Limit bleibt 90.
 - Tagesplan (Hub, `DayPlan.jsx`): Block "Ernährung" zwischen Training und Aufgaben
   (ohne Haken, zählt nicht bei "x / y erledigt"): offene kcal/Makros vs. Tagesziel,
   vier Mahlzeit-Marker. Daten über `core/lib/nutritionDay.js` (eigene Abfrage auf

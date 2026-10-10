@@ -22,7 +22,7 @@
 // Endpunkte:
 //   POST  {kind?, image, media_type, foods?} → { ok, receipt | meal, quota }; 429 bei erreichtem Monatslimit
 //         kind fehlt → 'receipt' (ältere App-Versionen)
-//         foods (nur kind 'meal'): Lebensmittel der App [{id, name, kcal, protein, carbs, sugar, fat,
+//         foods (nur kind 'meal'): Lebensmittel der App [{id, name, group?, kcal, protein, carbs, sugar, fat,
 //         satfat, fiber, salt}] (Werte pro 100 g/ml). Mit Liste ordnet die KI erkannte Bestandteile
 //         Lebensmitteln zu, und die Nährwerte kommen aus der Liste statt aus der Schätzung der KI;
 //         nur Bestandteile ohne Treffer werden weiter geschätzt. Ohne Liste: wie bisher.
@@ -122,14 +122,26 @@ const MEAL_SCHEMA = {
 const MAX_FOODS = 1000;
 const FOOD_KEYS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'] as const;
 
-const MEAL_PROMPT_FOODS = `Du bekommst das Foto einer Mahlzeit (Teller, Schüssel, Snack, Getränk) und die Lebensmittelliste einer App. Du erkennst die Bestandteile, schätzt ihre Menge und ordnest sie nach Möglichkeit Lebensmitteln der Liste zu. Du gibst die Felder im vorgegebenen JSON-Schema zurück.
+// Die Liste kostet bei jedem Scan Eingabe-Tokens, deshalb schlank halten:
+//  - Gruppen, die auf einem Foto kaum erkennbar sind und kaum Kalorien beitragen
+//    (Gewürze, Süßungsmittel), stehen nicht in der Liste. Solche Bestandteile schätzt
+//    die KI wie Zutaten ohne Treffer.
+//  - Der kcal-Wert dient nur dazu, den Zustand eines Eintrags zu erkennen (trocken/
+//    roh/gekocht). Wo das keine Rolle spielt, entfällt er. Unbekannte oder fehlende
+//    Gruppen behalten ihn (sicherer Standard).
+const LIST_EXCLUDED_GROUPS = new Set(['Gewürze', 'Süßungsmittel']);
+const LIST_NO_KCAL_GROUPS = new Set([
+  'Getränke', 'Eier & Milchprodukte', 'Obst', 'Nüsse, Samen & Kerne', 'Fette & Öle', 'Snacks & Süßes',
+]);
+
+const MEAL_PROMPT_FOODS = `Du bekommst das Foto einer Mahlzeit (Teller, Schüssel, Snack, Getränk) und die Lebensmittelliste einer App (Nr | Name | kcal pro 100 g; der kcal-Wert steht nur bei Einträgen, bei denen der Zustand wichtig ist, z. B. Nudeln, Reis, Fleisch). Gewürze und Süßungsmittel stehen nicht in der Liste, dafür gilt food_ref null. Du erkennst die Bestandteile, schätzt ihre Menge und ordnest sie nach Möglichkeit Lebensmitteln der Liste zu. Du gibst die Felder im vorgegebenen JSON-Schema zurück.
 
 Regeln:
 - name: kurzer deutscher Name des Gerichts (z. B. "Spaghetti Bolognese").
 - items: die sichtbaren Bestandteile (z. B. "Spaghetti, gekocht", "Hackfleischsoße", "Parmesan"). Höchstens 10, die kalorienreichsten zuerst; Kleinstmengen unter etwa 10 kcal weglassen.
 - grams: geschätztes Gewicht der Portion dieses Bestandteils im zubereiteten Zustand, als Zahl. Nutze Größenanhaltspunkte auf dem Foto (Tellerdurchmesser etwa 26 cm, Besteck, Hände, Verpackung).
 - food_ref: die Nummer des Listeneintrags, wenn der Bestandteil genau dieses Lebensmittel ist (gleiche Sorte). Im Zweifel null. Wähle nie einen nur ähnlichen Eintrag und nie ein Einzelprodukt für eine Mischung: "Hackfleischsoße" ist kein "Hackfleisch", "Nudelsalat" ist keine "Nudel".
-- db_grams: nur bei food_ref (sonst null). Das Gewicht des Bestandteils in dem Zustand, auf den sich die Werte des Listeneintrags beziehen (Werte pro 100 g). Der kcal-Wert in der Liste zeigt den Zustand: Nudeln mit etwa 350 kcal pro 100 g sind trocken, gekochte haben etwa 130–160. Beispiel: 220 g gekochte Spaghetti und Eintrag "Weiße Nudeln, 358 kcal" ergeben db_grams ≈ 90. Passt der Zustand schon, ist db_grams gleich grams. Bei Getränken und Flüssigkeiten zählt 1 ml wie 1 g.
+- db_grams: nur bei food_ref (sonst null). Das Gewicht des Bestandteils in dem Zustand, auf den sich die Werte des Listeneintrags beziehen (Werte pro 100 g). Der kcal-Wert in der Liste zeigt den Zustand: Nudeln mit etwa 350 kcal pro 100 g sind trocken, gekochte haben etwa 130–160. Beispiel: 220 g gekochte Spaghetti und Eintrag "Weiße Nudeln, 358 kcal" ergeben db_grams ≈ 90. Passt der Zustand schon oder steht kein kcal-Wert, ist db_grams gleich grams. Bei Getränken und Flüssigkeiten zählt 1 ml wie 1 g.
 - kcal, protein, carbs, sugar, fat, satfat, fiber, salt: Nährwerte genau für diese Menge (grams), NICHT pro 100 g. kcal in kcal, alle anderen in Gramm. Nur für Bestandteile OHNE food_ref schätzen, bei food_ref alle acht Werte null. Berücksichtige übliche Zubereitung (Öl, Butter, Dressing), wenn sie erkennbar oder bei diesem Gericht üblich ist.
 - range_minus_pct / range_plus_pct: wie viel Prozent die Gesamtkalorien der ganzen Mahlzeit realistisch nach unten bzw. nach oben abweichen können (5 bis 60), vor allem wegen Portionsgröße und unsichtbarer Zutaten. Sei ehrlich breit, wenn vieles unsicher ist.
 - note: ein kurzer deutscher Satz dazu, was die Schätzung am meisten unsicher macht (z. B. "Menge der Soße nicht erkennbar"), sonst null.
@@ -164,7 +176,7 @@ const MEAL_SCHEMA_FOODS = {
   additionalProperties: false,
 };
 
-type Food = { id: string | number; name: string; per100: Record<typeof FOOD_KEYS[number], number> };
+type Food = { id: string | number; name: string; group: string | null; per100: Record<typeof FOOD_KEYS[number], number> };
 
 // Liste aus dem Request prüfen. Fehlt sie oder ist sie leer/ungültig → null (alte Variante).
 function parseFoods(raw: unknown): Food[] | null {
@@ -174,6 +186,8 @@ function parseFoods(raw: unknown): Food[] | null {
     const idOk = (typeof f?.id === 'number' && Number.isFinite(f.id)) || (typeof f?.id === 'string' && f.id.length > 0 && f.id.length <= 64);
     const name = typeof f?.name === 'string' ? f.name.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
     if (!idOk || !name) continue;
+    const group = typeof f?.group === 'string' ? f.group.trim().slice(0, 60) || null : null;
+    if (group && LIST_EXCLUDED_GROUPS.has(group)) continue;
     const per100: any = {};
     let valid = true;
     for (const k of FOOD_KEYS) {
@@ -181,14 +195,17 @@ function parseFoods(raw: unknown): Food[] | null {
       if (v === null) { valid = false; break; }
       per100[k] = v;
     }
-    if (valid) foods.push({ id: f.id, name, per100 });
+    if (valid) foods.push({ id: f.id, name, group, per100 });
   }
   return foods.length > 0 ? foods : null;
 }
 
-// Liste für die KI: "Nr | Name | kcal pro 100 g" (Nummer = Position in `foods`)
+// Liste für die KI: "Nr | Name | kcal pro 100 g" (Nummer = Position in `foods`);
+// der kcal-Wert entfällt bei Gruppen, in denen der Zustand keine Rolle spielt.
 function foodListText(foods: Food[]): string {
-  return foods.map((f, i) => `${i} | ${f.name} | ${Math.round(f.per100.kcal)}`).join('\n');
+  return foods
+    .map((f, i) => (f.group && LIST_NO_KCAL_GROUPS.has(f.group) ? `${i} | ${f.name}` : `${i} | ${f.name} | ${Math.round(f.per100.kcal)}`))
+    .join('\n');
 }
 
 // Erst beim ersten Aufruf anlegen: ohne ANTHROPIC_API_KEY wirft der Konstruktor,
@@ -500,7 +517,7 @@ Deno.serve(async (req) => {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
-            { type: 'text', text: foods ? `${cfg.userText}\n\nLebensmittelliste (Nr | Name | kcal pro 100 g):\n${foodListText(foods)}` : cfg.userText },
+            { type: 'text', text: foods ? `${cfg.userText}\n\nLebensmittelliste (Nr | Name | kcal pro 100 g, wo der Zustand wichtig ist):\n${foodListText(foods)}` : cfg.userText },
           ],
         }],
       } as any);
