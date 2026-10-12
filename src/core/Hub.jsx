@@ -5,8 +5,8 @@ import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
-import { buildDayPlan, setWorkoutDone, setEntryPaid, shouldOfferPopup, wasOpenedToday, markOpenedToday, markDismissedThisSession } from './lib/dayPlan';
-import { DayPlanPopup, DayPlanSection } from './components/DayPlan';
+import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
+import { DayPlanSection } from './components/DayPlan';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
@@ -141,15 +141,6 @@ async function loadOpenPosten() {
   return data ?? [];
 }
 
-function sportLabel(w) {
-  if (w.is_rest) return 'Restday';
-  if (w.title) return w.title;
-  if (!w.type_key || w.type_key === 'sonstiges') return 'Training';
-  const parts = w.type_key.split('.');
-  const last = parts[parts.length - 1];
-  return last.charAt(0).toUpperCase() + last.slice(1);
-}
-
 export default function Hub({ onOpenModule, hasWarnings }) {
   const { session } = useAuth();
 
@@ -182,9 +173,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   const [editTodo, setEditTodo]     = useState(null);
   const [todoView, setTodoView]     = useState('alle');
   const [events, setEvents]         = useState([]);
-  // Plan sichtbar, sobald er heute einmal geöffnet wurde (bleibt dann den Tag über)
-  const [planOpen, setPlanOpen]     = useState(() => wasOpenedToday());
-  const [popupAus, setPopupAus]     = useState(false);
 
   // Heutige Termine separat und fehlertolerant: ein Kalenderfehler darf
   // den Hub nicht in den Fehlerzustand schicken.
@@ -365,8 +353,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     }
   }
 
-  function openDayPlan() { markOpenedToday(); setPlanOpen(true); }
-  function dismissPopup() { markDismissedThisSession(); setPopupAus(true); }
 
   async function handleDeleteTodo(id) {
     setTodos((prev) => prev.filter((t) => t.id !== id));
@@ -416,21 +402,11 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
   }).slice(0, 3);
 
-  const restToday    = todaySport.some((w) => w.is_rest);
-  const doneToday    = todaySport.filter((w) => !w.is_rest && w.status === 'done');
-  const plannedToday = todaySport.filter((w) => !w.is_rest && w.status === 'planned');
-  const sportKachel =
-    restToday               ? { icon: '–', text: 'Restday' } :
-    doneToday.length > 0    ? { icon: '✓', text: sportLabel(doneToday[0]) } :
-    plannedToday.length > 0 ? { icon: '·', text: sportLabel(plannedToday[0]) } :
-                              { icon: '·', text: 'Nichts geplant' };
-
   const offeneSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
 
   const dayPlan = buildDayPlan({
     todos, habits: habHabits, habEntries, workouts: todaySport, events, openPosten, today: todayStr,
   });
-  const zeigePopup = !planOpen && !popupAus && !dayPlan.isEmpty && shouldOfferPopup();
 
   // ---- Ladestate ----
   if (status === 'laedt') {
@@ -722,52 +698,19 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               )}
             </FocusCard>
 
-            {/* Tagesplan — erscheint, sobald das Popup heute geöffnet wurde */}
-            {planOpen && (
-              <section className="page-section">
-                <DayPlanSection
-                  plan={dayPlan}
-                  nutrition={nutrition}
-                  onToggleTodo={handleToggleTodo}
-                  onToggleWorkout={handleToggleWorkout}
-                  onToggleHabit={handleToggleHabit}
-                  onPayPosten={handlePayPosten}
-                  onOpenFinance={() => onOpenModule('finance/offen')}
-                  onOpenNutrition={onOpenModule}
-                />
-              </section>
-            )}
-
-            {/* Heute — zwei Kacheln; entfallen, sobald der Tagesplan offen ist (zeigt dasselbe) */}
-            {!planOpen && (
-            <PageSection
-              title="Heute"
-              action={{ label: 'Kalender ›', onPress: () => setBereich('kalender') }}
-            >
-              <div className="hub-tiles">
-                <button className="hub-tile" onClick={() => setBereich('gewohnheiten')}>
-                  <span className="hub-tile-value">
-                    {habTotal > 0 ? `${habDone}/${habTotal}` : '–'}
-                  </span>
-                  <span className="hub-tile-label">Gewohnheiten</span>
-                  <span className="hub-tile-bar">
-                    <span
-                      className="hub-tile-bar-fill"
-                      style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
-                    />
-                  </span>
-                </button>
-
-                <button className="hub-tile" onClick={() => onOpenModule('sport')}>
-                  <span className={`hub-tile-value ${sportKachel.icon === '✓' ? 'hub-tile-value--done' : ''}`}>
-                    {sportKachel.icon}
-                  </span>
-                  <span className="hub-tile-label">Training</span>
-                  <span className="hub-tile-sub">{sportKachel.text}</span>
-                </button>
-              </div>
-            </PageSection>
-            )}
+            {/* Tagesplan — immer sichtbar, direkt unter der Fokuskarte */}
+            <section className="page-section">
+              <DayPlanSection
+                plan={dayPlan}
+                nutrition={nutrition}
+                onToggleTodo={handleToggleTodo}
+                onToggleWorkout={handleToggleWorkout}
+                onToggleHabit={handleToggleHabit}
+                onPayPosten={handlePayPosten}
+                onOpenFinance={() => onOpenModule('finance/offen')}
+                onOpenNutrition={onOpenModule}
+              />
+            </section>
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
             <PageSection
@@ -817,10 +760,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
           </>
         )}
       </div>
-
-      {zeigePopup && (status === 'daten' || status === 'veraltet') && (
-        <DayPlanPopup plan={dayPlan} onOpen={openDayPlan} onDismiss={dismissPopup} />
-      )}
 
       {todoSheet && (
         <TodoSheet

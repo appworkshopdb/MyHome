@@ -27,32 +27,6 @@ export async function setEntryPaid(id, paid) {
   if (error) throw error;
 }
 
-// Ab/bis wann der Plan als Popup angeboten wird (lokale Stunde)
-export const POPUP_FROM_HOUR = 5;
-export const POPUP_UNTIL_HOUR = 12;
-
-const OPENED_KEY = 'hub-dayplan-opened';
-const DISMISSED_KEY = 'hub-dayplan-dismissed';
-
-export function wasOpenedToday() {
-  try { return localStorage.getItem(OPENED_KEY) === todayStr(); } catch { return false; }
-}
-export function markOpenedToday() {
-  try { localStorage.setItem(OPENED_KEY, todayStr()); } catch { /* egal */ }
-}
-// "×" am Popup: nur für diese Sitzung ausblenden, Plan bleibt später erreichbar
-export function wasDismissedThisSession() {
-  try { return sessionStorage.getItem(DISMISSED_KEY) === todayStr(); } catch { return false; }
-}
-export function markDismissedThisSession() {
-  try { sessionStorage.setItem(DISMISSED_KEY, todayStr()); } catch { /* egal */ }
-}
-
-export function shouldOfferPopup(now = new Date()) {
-  const h = now.getHours();
-  return h >= POPUP_FROM_HOUR && h < POPUP_UNTIL_HOUR && !wasOpenedToday() && !wasDismissedThisSession();
-}
-
 function sportLabel(w) {
   if (w.is_rest) return 'Restday';
   if (w.title) return w.title;
