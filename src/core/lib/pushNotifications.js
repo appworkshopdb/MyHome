@@ -11,6 +11,7 @@ const DEFAULT_CATEGORIES = {
   tasks_habits: true,
   profile:      true,
   weekly_recap: true,
+  monthly_recap: true,
 };
 
 function ownerId(session) {

@@ -160,18 +160,27 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 
-## Wochenrückblick (Hub → Statistiken)
+## Wochen- und Monatsüberblick (Hub → Statistiken)
 
-Seite `core/WeekReview.jsx`, Route `#/statistiken` (eigene Core-Route wie `profile`, damit
-der Sonntags-Push `weekly_recap` direkt dorthin verlinken kann; Einstieg im Hub: Bereich
-"Statistiken"). Woche = Mo–So, `‹ ›` blättert zurück. Rechnung rein in `core/lib/weekStats.js`:
-Gewohnheiten (gleiche Quote wie die Statistik im Habits-Modul — die Helfer dafür liegen in
-`core/lib/habitStatsMath.js`, `habUtils.js`/`StatsView.jsx` importieren sie von dort; Vergleich
-mit gleich vielen Tagen der Vorwoche), Training (erledigt von geplant, Ruhetage zählen nicht),
-Ernährung (erfasste Tage aus `nut_meals`, Ø-kcal gegen Tagesziel, Protein-Ziel = ≥ 90 % des
-Tagesziels; ohne vollständiges Körperprofil nur Tage). Der Gesamtring mittelt die Karten, die
-in der Woche Daten haben. Die Edge Function `send-notifications` muss nach Änderungen von Hand
-nach `volumes/functions/` kopiert werden.
+Im Hub steht unter dem Kalender EIN Bereich "Statistiken" → `core/Statistiken.jsx` (Auswahl
+Wochenüberblick / Monatsüberblick). Eigene Core-Routen wie `profile`, damit die Pushes direkt
+verlinken können: `#/statistiken`, `#/statistiken/woche`, `#/statistiken/monat`. Beide Überblicke
+sind `core/PeriodReview.jsx` (`kind` = week | month, `‹ ›` blättert zurück). Rechnung rein in
+`core/lib/periodStats.js`: Woche = Mo–So, eine Spalte je Tag; Monat = Kalendermonat, eine Spalte je
+Kalenderwoche. Gewohnheiten rechnen wie die Statistik im Habits-Modul (Helfer in
+`core/lib/habitStatsMath.js`, `habUtils.js`/`StatsView.jsx` importieren sie von dort; Vergleich mit
+gleich vielen Tagen des Zeitraums davor), Training = erledigt von geplant (Ruhetage zählen nicht),
+Ernährung = erfasste Tage aus `nut_meals`, Ø-kcal gegen Tagesziel, Protein-Ziel = ≥ 90 % des
+Tagesziels (ohne vollständiges Körperprofil nur Tage). Der Gesamtring mittelt die Karten, die im
+Zeitraum Daten haben.
+
+Pushes (Function `send-notifications`, von Hand nach `volumes/functions/` kopieren):
+`weekly_recap` Montag 07:00 (Vorwoche → `#/statistiken/woche`) und `monthly_recap` am 1. um 09:00
+(Vormonat → `#/statistiken/monat`). Beide nur, wenn im Zeitraum etwas erfasst wurde, und OHNE
+Anrechnung aufs Tageslimit von 2 (sonst würden sie Finanzen/Aufgaben an Montagen und Monatsersten
+verdrängen); Throttle 6 bzw. 25 Tage. Toggles "Wochenüberblick"/"Monatsüberblick" im Menü
+(`AppMenu.jsx`, Standard an). Test: `?test_owner=<uuid>&test_category=weekly_recap` bzw.
+`monthly_recap` (rechnet mit der letzten vollen Woche/dem letzten vollen Monat).
 
 ## Lebensmittel-Katalog (Ernährung)
 

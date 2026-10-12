@@ -1,36 +1,64 @@
-// core/WeekReview.jsx
-// Hub → "Statistiken": Wochenrückblick (Mo–So) mit Fortschritt statt Zahlen.
-// Route: #/statistiken — dorthin zeigt auch der Sonntags-Push (weekly_recap).
+// core/PeriodReview.jsx
+// Hub → Statistiken → Wochenüberblick / Monatsüberblick: Fortschritt statt Zahlen.
+// Routen: #/statistiken/woche und #/statistiken/monat — dorthin zeigen auch die
+// Montags- bzw. Monatsersten-Pushes (weekly_recap, monthly_recap).
 //
 // Drei Karten: Gewohnheiten (gleiche Rechnung wie die Statistik im Habits-
 // Modul, siehe core/lib/habitStatsMath.js), Training (geplante gegen erledigte
 // Einheiten) und Ernährung (erfasste Tage, Ø-Kalorien gegen Ziel, Protein).
-// Der Gesamtring oben mittelt die Karten, die in der Woche Daten haben.
+// Der Gesamtring oben mittelt die Karten, die im Zeitraum Daten haben.
 //
-// Alle Rechnungen in core/lib/weekStats.js (rein, ohne Netzwerk).
+// Wochenansicht: ein Tag je Spalte. Monatsansicht: eine Kalenderwoche je Spalte.
+// Alle Rechnungen in core/lib/periodStats.js (rein, ohne Netzwerk).
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useHabitsStore, todayStr } from './lib/habitsStore.js';
 import {
-  weekBounds, buildHabitsWeek, buildSportWeek, buildNutritionWeek,
-  overallRate, weekHeadline, loadWeekExtras,
-} from './lib/weekStats.js';
+  periodBounds, buildHabitsPeriod, buildSportPeriod, buildNutritionPeriod,
+  overallRate, periodHeadline, loadPeriodExtras,
+} from './lib/periodStats.js';
 import ModuleTopBar from './components/ModuleTopBar';
-
-const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const pct = (rate) => (rate === null || rate === undefined ? '–' : `${Math.round(rate * 100)} %`);
 const nf = (n) => Math.round(n).toLocaleString('de-DE');
+const barHeight = (rate) => Math.max(6, Math.round(Math.min(1, rate) * 100));
+
+const COPY = {
+  week: {
+    title: 'Wochenüberblick',
+    ringLabel: 'Wochenquote',
+    now: 'Diese Woche', last: 'Letzte Woche', ago: (n) => `vor ${n} Wochen`,
+    prevAria: 'Vorherige Woche', nextAria: 'Nächste Woche',
+    noHabit: 'In dieser Woche war keine Gewohnheit fällig.',
+    noSport: 'In dieser Woche war kein Training geplant.',
+    noMeals: 'In dieser Woche wurden noch keine Mahlzeiten erfasst.',
+    error: 'Die Woche lässt sich gerade nicht laden.',
+    running: () => 'Die Woche läuft noch — bis Sonntag ist Zeit.',
+    done: 'Woche abgeschlossen.',
+  },
+  month: {
+    title: 'Monatsüberblick',
+    ringLabel: 'Monatsquote',
+    now: 'Dieser Monat', last: 'Letzter Monat', ago: (n) => `vor ${n} Monaten`,
+    prevAria: 'Vorheriger Monat', nextAria: 'Nächster Monat',
+    noHabit: 'In diesem Monat war keine Gewohnheit fällig.',
+    noSport: 'In diesem Monat war kein Training geplant.',
+    noMeals: 'In diesem Monat wurden noch keine Mahlzeiten erfasst.',
+    error: 'Der Monat lässt sich gerade nicht laden.',
+    running: (left) => `Der Monat läuft noch — noch ${left} ${left === 1 ? 'Tag' : 'Tage'}.`,
+    done: 'Monat abgeschlossen.',
+  },
+};
 
 // ─── Bausteine ────────────────────────────────────────────
 
-function Ring({ rate, size = 84 }) {
+function Ring({ rate, label, size = 84 }) {
   const R = size * 0.405;
   const C = 2 * Math.PI * R;
   const c = size / 2;
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Wochenquote ${pct(rate)}`}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label} ${pct(rate)}`}>
       <circle cx={c} cy={c} r={R} fill="none" stroke="var(--data-track)" strokeWidth="9" />
       <circle
         cx={c} cy={c} r={R} fill="none" stroke="var(--data-1)" strokeWidth="9"
@@ -58,9 +86,26 @@ function Delta({ cur, prev }) {
   return <span className="wk-delta flat">● ±0</span>;
 }
 
-function DayLabel({ date, today }) {
-  const wd = (new Date(date + 'T12:00:00').getDay() + 6) % 7;
-  return <span className={`wk-day-label${date === today ? ' today' : ''}`}>{WD[wd]}</span>;
+/**
+ * Kleine Verlaufsgrafik: eine Spalte je Tag (Woche) bzw. Kalenderwoche (Monat).
+ * cols: [{ key, label, node }] — node ist der Inhalt der Spalte (Balken/Punkt).
+ * dot: Spalten mittig statt am Boden (Trainingspunkte).
+ */
+function Strip({ cols, today, days, dot, goalLine }) {
+  return (
+    <div className="wk-strip">
+      {goalLine && <div className="wk-goal-line" aria-hidden="true" />}
+      {cols.map((c) => {
+        const isToday = days[c.key]?.includes(today);
+        return (
+          <div key={c.key} className="wk-day">
+            <div className={`wk-col${dot ? ' wk-col--dot' : ''}`}>{c.node}</div>
+            <span className={`wk-day-label${isToday ? ' today' : ''}`}>{c.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function Card({ icon, title, delta, onOpen, children }) {
@@ -83,30 +128,25 @@ function Empty({ children }) {
 
 // ─── Karten ───────────────────────────────────────────────
 
-function HabitsCard({ data, today, onOpen }) {
+function HabitsCard({ data, period, today, copy, onOpen }) {
   const ranking = data.ranking.slice(0, 6);
+  const cols = data.cols.map((c) => ({
+    key: c.key,
+    label: c.label,
+    node: c.future ? null : (
+      <i className={c.rate === null ? 'is-none' : ''}
+        style={{ height: `${c.rate === null ? 4 : barHeight(c.rate)}%` }} />
+    ),
+  }));
   return (
     <Card icon="✅" title="Gewohnheiten" delta={<Delta cur={data.rate} prev={data.prevRate} />} onOpen={onOpen}>
       {!data.hasData ? (
-        <Empty>In dieser Woche war keine Gewohnheit fällig.</Empty>
+        <Empty>{copy.noHabit}</Empty>
       ) : (
         <>
           <div className="wk-big"><b>{pct(data.rate)}</b><span>{data.done} von {data.due} erledigt</span></div>
           <Bar rate={data.rate} />
-
-          <div className="wk-strip">
-            {data.perDay.map((d) => (
-              <div key={d.date} className="wk-day">
-                <div className="wk-col">
-                  {!d.future && (
-                    <i className={d.rate === null ? 'is-none' : ''}
-                      style={{ height: `${d.rate === null ? 4 : Math.max(6, Math.round(d.rate * 100))}%` }} />
-                  )}
-                </div>
-                <DayLabel date={d.date} today={today} />
-              </div>
-            ))}
-          </div>
+          <Strip cols={cols} today={today} days={period.dayMap} />
 
           <div className="wk-list">
             {ranking.map((r) => (
@@ -127,13 +167,38 @@ function HabitsCard({ data, today, onOpen }) {
   );
 }
 
-function SportCard({ data, today, onOpen }) {
+function SportCard({ data, period, today, copy, onOpen }) {
+  const month = period.kind === 'month';
+  const cols = data?.cols.map((c) => {
+    if (month) {
+      // Monat: Balken = erledigter Anteil der Einheiten in der Kalenderwoche
+      return {
+        key: c.key,
+        label: c.label,
+        node: c.future ? null : (
+          <i className={c.planned === 0 ? 'is-none' : ''}
+            style={{ height: `${c.planned === 0 ? 4 : barHeight(c.done / c.planned)}%` }} />
+        ),
+      };
+    }
+    // Woche: ein Punkt je Tag
+    const state = c.rest && c.planned === 0 ? 'rest'
+      : c.planned === 0 ? 'none'
+      : c.done >= c.planned ? 'done'
+      : c.done > 0 ? 'part'
+      : 'open';
+    return {
+      key: c.key,
+      label: c.label,
+      node: <span className={`wk-dot is-${state}`}>{state === 'done' ? '✓' : state === 'rest' ? '–' : ''}</span>,
+    };
+  });
   return (
     <Card icon="💪" title="Training" delta={data && <Delta cur={data.rate} prev={data.prevRate} />} onOpen={onOpen}>
       {!data ? (
         <Empty>Training konnte nicht geladen werden.</Empty>
       ) : !data.hasData ? (
-        <Empty>In dieser Woche war kein Training geplant.</Empty>
+        <Empty>{copy.noSport}</Empty>
       ) : (
         <>
           <div className="wk-big">
@@ -141,40 +206,42 @@ function SportCard({ data, today, onOpen }) {
             <span>Einheiten{data.minutes > 0 ? ` · ${nf(data.minutes)} Min` : ''}</span>
           </div>
           <Bar rate={data.rate} />
-
-          <div className="wk-strip">
-            {data.perDay.map((d) => {
-              const state = d.rest && d.planned === 0 ? 'rest'
-                : d.planned === 0 ? 'none'
-                : d.done >= d.planned ? 'done'
-                : d.done > 0 ? 'part'
-                : 'open';
-              return (
-                <div key={d.date} className="wk-day">
-                  <div className="wk-col wk-col--dot">
-                    <span className={`wk-dot is-${state}`}>
-                      {state === 'done' ? '✓' : state === 'rest' ? '–' : ''}
-                    </span>
-                  </div>
-                  <DayLabel date={d.date} today={today} />
-                </div>
-              );
-            })}
-          </div>
+          <Strip cols={cols} today={today} days={period.dayMap} dot={!month} />
         </>
       )}
     </Card>
   );
 }
 
-function NutritionCard({ data, today, onOpen }) {
+function NutritionCard({ data, period, today, copy, onOpen }) {
+  const month = period.kind === 'month';
   const goal = data?.goal;
+  const cols = data?.cols.map((c) => {
+    let node = null;
+    if (!c.future) {
+      if (month) {
+        // Monat: Balken = Anteil der Tage mit erfassten Mahlzeiten in der Kalenderwoche
+        const share = c.elapsedDays > 0 ? c.loggedDays / c.elapsedDays : 0;
+        node = <i className={c.loggedDays === 0 ? 'is-none' : ''}
+          style={{ height: `${c.loggedDays === 0 ? 4 : barHeight(share)}%` }} />;
+      } else {
+        // Woche: Kalorien des Tages gegen das Tagesziel (100 % Balken = 120 % vom Ziel)
+        const ratio = c.kcalRatio;
+        const height = !c.logged ? 4
+          : ratio === null ? 60
+          : Math.max(6, Math.round((Math.min(ratio, 1.2) / 1.2) * 100));
+        node = <i className={!c.logged ? 'is-none' : ratio !== null && ratio > 1.1 ? 'is-over' : ''}
+          style={{ height: `${height}%` }} />;
+      }
+    }
+    return { key: c.key, label: c.label, node };
+  });
   return (
     <Card icon="🍽️" title="Ernährung" onOpen={onOpen}>
       {!data ? (
         <Empty>Mahlzeiten konnten nicht geladen werden.</Empty>
       ) : !data.hasData ? (
-        <Empty>In dieser Woche wurden noch keine Mahlzeiten erfasst.</Empty>
+        <Empty>{copy.noMeals}</Empty>
       ) : (
         <>
           <div className="wk-big">
@@ -182,27 +249,7 @@ function NutritionCard({ data, today, onOpen }) {
             <span>Tagen erfasst</span>
           </div>
           <Bar rate={data.rate} />
-
-          <div className="wk-strip">
-            {goal && <div className="wk-goal-line" aria-hidden="true" />}
-            {data.perDay.map((d) => {
-              const ratio = d.kcalRatio;
-              const height = !d.logged ? 4
-                : ratio === null ? 60
-                : Math.max(6, Math.round((Math.min(ratio, 1.2) / 1.2) * 100));
-              return (
-                <div key={d.date} className="wk-day">
-                  <div className="wk-col">
-                    {!d.future && (
-                      <i className={!d.logged ? 'is-none' : ratio !== null && ratio > 1.1 ? 'is-over' : ''}
-                        style={{ height: `${height}%` }} />
-                    )}
-                  </div>
-                  <DayLabel date={d.date} today={today} />
-                </div>
-              );
-            })}
-          </div>
+          <Strip cols={cols} today={today} days={period.dayMap} goalLine={!month && !!goal} />
 
           {goal ? (
             <div className="wk-list">
@@ -232,7 +279,12 @@ function NutritionCard({ data, today, onOpen }) {
 
 // ─── Seite ────────────────────────────────────────────────
 
-export default function WeekReview({ onOpenModule, hasWarnings }) {
+/**
+ * kind: 'week' | 'month'
+ * onBack: zurück zur Statistiken-Auswahl · onOpenModule: Sprung in ein Modul
+ */
+export default function PeriodReview({ kind, onBack, onOpenModule, hasWarnings }) {
+  const copy = COPY[kind];
   const { session } = useAuth();
   const { habits, entries, loaded } = useHabitsStore();
   const [offset, setOffset] = useState(0);
@@ -243,41 +295,44 @@ export default function WeekReview({ onOpenModule, hasWarnings }) {
   // Lokales Datum (kein toISOString) — ändert sich nur über Mitternacht
   const todayKey = todayStr();
 
-  const week = useMemo(() => weekBounds(offset, todayKey), [offset, todayKey]);
-  const prevWeek = useMemo(() => weekBounds(offset - 1, todayKey), [offset, todayKey]);
+  const period = useMemo(() => {
+    const p = periodBounds(kind, offset, todayKey);
+    // Tag → Spalte (zum Hervorheben der heutigen Spalte)
+    return { ...p, dayMap: Object.fromEntries(p.columns.map((c) => [c.key, c.days])) };
+  }, [kind, offset, todayKey]);
+  const prevPeriod = useMemo(() => periodBounds(kind, offset - 1, todayKey), [kind, offset, todayKey]);
 
   useEffect(() => {
     let alive = true;
     setExtras(null);
     setFailed(false);
-    loadWeekExtras(session, week, prevWeek)
+    loadPeriodExtras(session, period, prevPeriod)
       .then((x) => { if (alive) setExtras(x); })
       .catch((e) => {
-        console.error('[WeekReview] Laden fehlgeschlagen:', e);
+        console.error('[PeriodReview] Laden fehlgeschlagen:', e);
         if (alive) setFailed(true);
       });
     return () => { alive = false; };
-  }, [session, week, prevWeek, attempt]);
+  }, [session, period, prevPeriod, attempt]);
 
   const view = useMemo(() => {
     if (!extras || !loaded) return null;
     // Aktive/pausierte Gewohnheiten aus dem Store plus archivierte
     const byId = new Map();
     for (const h of [...habits, ...extras.archived]) byId.set(h.id, h);
-    const habitsWeek = buildHabitsWeek({ habits: [...byId.values()], entries, week, prevWeek, today: todayKey });
+    const habitsData = buildHabitsPeriod({ habits: [...byId.values()], entries, period, prevPeriod, today: todayKey });
     const sport = extras.workouts
-      ? buildSportWeek({ workouts: extras.workouts, week, prevWeek, today: todayKey })
+      ? buildSportPeriod({ workouts: extras.workouts, period, prevPeriod, today: todayKey })
       : null;
     const nutrition = extras.meals
-      ? buildNutritionWeek({ meals: extras.meals, target: extras.target, week, today: todayKey })
+      ? buildNutritionPeriod({ meals: extras.meals, target: extras.target, period, today: todayKey })
       : null;
-    return { habits: habitsWeek, sport, nutrition, overall: overallRate([habitsWeek, sport, nutrition]) };
-  }, [extras, loaded, habits, entries, week, prevWeek, todayKey]);
+    return { habits: habitsData, sport, nutrition, overall: overallRate([habitsData, sport, nutrition]) };
+  }, [extras, loaded, habits, entries, period, prevPeriod, todayKey]);
 
-  const running = week.isCurrent && todayKey < week.end;
-  const topBar = (
-    <ModuleTopBar title="Statistiken" hasWarnings={hasWarnings} onBack={() => onOpenModule(null)} />
-  );
+  const running = period.isCurrent && todayKey < period.end;
+  const daysLeft = period.days.filter((d) => d > todayKey).length;
+  const topBar = <ModuleTopBar title="Statistiken" hasWarnings={hasWarnings} onBack={onBack} />;
 
   if (failed) {
     return (
@@ -285,7 +340,7 @@ export default function WeekReview({ onOpenModule, hasWarnings }) {
         {topBar}
         <div className="hub with-topbar-space">
           <div className="hub-error">
-            <div className="hub-error-headline">Die Woche lässt sich gerade nicht laden.</div>
+            <div className="hub-error-headline">{copy.error}</div>
             <p className="hub-error-sub">Keine Verbindung zur Datenbank. Deine Daten sind da — sie kommen hier nur nicht an.</p>
             <div className="auth-actions" style={{ marginTop: 20 }}>
               <button className="btn btn-primary btn-block" onClick={() => setAttempt((n) => n + 1)}>Nochmal versuchen</button>
@@ -300,16 +355,16 @@ export default function WeekReview({ onOpenModule, hasWarnings }) {
     <>
       {topBar}
       <div className="hub with-topbar-space wk-page">
-        <h1 className="overview-page-title">Wochenrückblick</h1>
+        <h1 className="overview-page-title">{copy.title}</h1>
 
         <div className="wk-nav">
-          <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => o - 1)} aria-label="Vorherige Woche">‹</button>
+          <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => o - 1)} aria-label={copy.prevAria}>‹</button>
           <div className="wk-nav-label">
-            <b>{week.label}</b>
-            <span>{week.isCurrent ? 'Diese Woche' : offset === -1 ? 'Letzte Woche' : `vor ${-offset} Wochen`}</span>
+            <b>{period.label}</b>
+            <span>{period.isCurrent ? copy.now : offset === -1 ? copy.last : copy.ago(-offset)}</span>
           </div>
           <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => Math.min(0, o + 1))}
-            disabled={offset >= 0} aria-label="Nächste Woche">›</button>
+            disabled={offset >= 0} aria-label={copy.nextAria}>›</button>
         </div>
 
         {!view ? (
@@ -321,21 +376,24 @@ export default function WeekReview({ onOpenModule, hasWarnings }) {
         ) : (
           <>
             <section className="wk-card wk-hero">
-              <Ring rate={view.overall} />
+              <Ring rate={view.overall} label={copy.ringLabel} />
               <div>
                 <div className="wk-hero-num">{pct(view.overall)}</div>
-                <div className="wk-hero-title">{weekHeadline(view.overall)}</div>
+                <div className="wk-hero-title">{periodHeadline(view.overall, kind)}</div>
                 <div className="wk-hero-sub">
                   {view.overall === null
                     ? 'Sobald du abhakst, trainierst oder isst, erscheint hier dein Fortschritt.'
-                    : running ? 'Die Woche läuft noch — bis Sonntag ist Zeit.' : 'Woche abgeschlossen.'}
+                    : running ? copy.running(daysLeft) : copy.done}
                 </div>
               </div>
             </section>
 
-            <HabitsCard data={view.habits} today={todayKey} onOpen={() => onOpenModule('habits/statistik')} />
-            <SportCard data={view.sport} today={todayKey} onOpen={() => onOpenModule('sport')} />
-            <NutritionCard data={view.nutrition} today={todayKey} onOpen={() => onOpenModule('nutrition/mahlzeiten')} />
+            <HabitsCard data={view.habits} period={period} today={todayKey} copy={copy}
+              onOpen={() => onOpenModule('habits/statistik')} />
+            <SportCard data={view.sport} period={period} today={todayKey} copy={copy}
+              onOpen={() => onOpenModule('sport')} />
+            <NutritionCard data={view.nutrition} period={period} today={todayKey} copy={copy}
+              onOpen={() => onOpenModule('nutrition/mahlzeiten')} />
           </>
         )}
       </div>

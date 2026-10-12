@@ -31,7 +31,7 @@ import ModuleBottomNav from './core/components/ModuleBottomNav';
 import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
-import WeekReview from './core/WeekReview';
+import Statistiken from './core/Statistiken';
 import LockedModule from './core/LockedModule';
 import { getModule } from './core/modules';
 
@@ -93,7 +93,7 @@ export default function App() {
         <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
           {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {activeModule === 'profile' && <Profile onOpenModule={navigate} hasWarnings={hasWarnings} />}
-          {activeModule === 'statistiken' && <WeekReview onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'statistiken' && <Statistiken view={view} onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {mod && (ModuleComponent ? (
             // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
             // und lokal gecacht, ein aufblitzender Ladeindikator würde nur

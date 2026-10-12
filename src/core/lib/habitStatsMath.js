@@ -2,7 +2,7 @@
 // Reine Rechenhelfer für Gewohnheiten-Rückblicke (Datum, Fälligkeit, Quote).
 //
 // Liegt in core/, weil sowohl die Statistik im Habits-Modul (StatsView) als
-// auch der Wochenrückblick im Hub (core/lib/weekStats.js) dieselben Zahlen
+// auch der Wochen-/Monatsüberblick im Hub (core/lib/periodStats.js) dieselben Zahlen
 // liefern müssen — und core darf nicht aus modules/ importieren. Das Habits-
 // Modul importiert diese Funktionen (habUtils.js reicht sie durch).
 //

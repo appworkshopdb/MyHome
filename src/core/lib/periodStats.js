@@ -1,8 +1,13 @@
-// core/lib/weekStats.js
-// Wochenrückblick (Hub → Statistiken): Fortschritt der Woche (Mo–So) für
-// Gewohnheiten, Sport und Ernährung.
+// core/lib/periodStats.js
+// Wochen- und Monatsüberblick (Hub → Statistiken): Fortschritt eines Zeitraums
+// für Gewohnheiten, Sport und Ernährung.
 //
-// Die build…-Funktionen sind reine Funktionen (kein Netzwerk), loadWeekExtras
+// Ein Zeitraum ("period") ist eine Woche (Mo–So) oder ein Kalendermonat, siehe
+// weekBounds/monthBounds. Er bringt `columns` mit — die Spalten der kleinen
+// Verlaufsgrafik: bei der Woche ein Tag je Spalte, beim Monat eine Kalenderwoche
+// (Mo–So, am Monatsrand gekürzt) je Spalte.
+//
+// Die build…-Funktionen sind reine Funktionen (kein Netzwerk), loadPeriodExtras
 // holt Sport, Mahlzeiten und das Kalorienziel. Gewohnheiten und deren Einträge
 // kommen aus dem gemeinsamen habitsStore (dieselben Daten wie das Habits-Modul).
 //
@@ -26,6 +31,11 @@ import {
 export const PROTEIN_HIT_RATIO = 0.9;
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+const WD = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 // ─── Datum ────────────────────────────────────────────────
 
@@ -34,20 +44,29 @@ export function addDays(dateStr, n) {
   return toDateStr(new Date(y, m - 1, d + n));
 }
 
-function mondayOf(dateStr) {
+function weekdayIndex(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const wd = (new Date(y, m - 1, d).getDay() + 6) % 7; // Mo = 0
-  return addDays(dateStr, -wd);
+  return (new Date(y, m - 1, d).getDay() + 6) % 7; // Mo = 0
 }
 
-function fmtDay(dateStr) {
-  const [, m, d] = dateStr.split('-').map(Number);
-  return `${d}. ${MONTH_ABBR[m - 1]}`;
+function mondayOf(dateStr) {
+  return addDays(dateStr, -weekdayIndex(dateStr));
+}
+
+function dayOfMonth(dateStr) {
+  return Number(dateStr.split('-')[2]);
+}
+
+/** Zeitraum-Rahmen: Start, Ende, alle Tage, Spalten, Beschriftung, "läuft noch". */
+function finishPeriod(kind, days, label, columns, today) {
+  const start = days[0];
+  const end = days[days.length - 1];
+  return { kind, start, end, days, label, columns, isCurrent: today >= start && today <= end };
 }
 
 /**
  * Woche (Mo–So) relativ zur aktuellen: offset 0 = diese Woche, -1 = letzte …
- * Liefert start, end, die sieben Tage und eine Beschriftung.
+ * Spalten: ein Tag je Spalte, beschriftet mit dem Wochentag.
  */
 export function weekBounds(offset = 0, today = todayStr()) {
   const start = addDays(mondayOf(today), offset * 7);
@@ -58,39 +77,79 @@ export function weekBounds(offset = 0, today = todayStr()) {
   const label = m1 === m2
     ? `${d1}.–${d2}. ${MONTH_ABBR[m2 - 1]}`
     : `${d1}. ${MONTH_ABBR[m1 - 1]} – ${d2}. ${MONTH_ABBR[m2 - 1]}`;
-  return { start, end, days, label, isCurrent: today >= start && today <= end, isFuture: start > today };
+  const columns = days.map((d) => ({ key: d, label: WD[weekdayIndex(d)], days: [d] }));
+  return finishPeriod('week', days, label, columns, today);
 }
 
-/** Bis einschließlich heute vergangene Tage der Woche. */
-function elapsedDays(week, today) {
-  return week.days.filter((d) => d <= today);
+/**
+ * Kalendermonat relativ zum aktuellen: offset 0 = dieser Monat, -1 = letzter …
+ * Spalten: Kalenderwochen (Mo–So, am Monatsrand gekürzt), beschriftet mit dem
+ * Tagesbereich ("5.–11.").
+ */
+export function monthBounds(offset = 0, today = todayStr()) {
+  const [y, m] = today.split('-').map(Number);
+  const first = new Date(y, m - 1 + offset, 1);
+  const year = first.getFullYear();
+  const month = first.getMonth();
+  const length = new Date(year, month + 1, 0).getDate();
+  const days = Array.from({ length }, (_, i) => toDateStr(new Date(year, month, i + 1)));
+
+  const columns = [];
+  let cur = [];
+  for (const d of days) {
+    if (weekdayIndex(d) === 0 && cur.length > 0) { columns.push(cur); cur = []; }
+    cur.push(d);
+  }
+  if (cur.length > 0) columns.push(cur);
+
+  return finishPeriod(
+    'month',
+    days,
+    `${MONTH_NAMES[month]} ${year}`,
+    columns.map((ds) => ({
+      key: ds[0],
+      label: ds.length === 1 ? `${dayOfMonth(ds[0])}.` : `${dayOfMonth(ds[0])}.–${dayOfMonth(ds[ds.length - 1])}.`,
+      days: ds,
+    })),
+    today,
+  );
+}
+
+export function periodBounds(kind, offset = 0, today = todayStr()) {
+  return kind === 'month' ? monthBounds(offset, today) : weekBounds(offset, today);
+}
+
+/** Bis einschließlich heute vergangene Tage. */
+function elapsedDays(days, today) {
+  return days.filter((d) => d <= today);
 }
 
 // ─── Gewohnheiten ─────────────────────────────────────────
 
 /**
  * habits: aktive/pausierte (Store) + archivierte; entries: alle Einträge.
- * prevWeek optional (Vergleich zur Vorwoche).
+ * prevPeriod optional (Vergleich zum Zeitraum davor).
  */
-export function buildHabitsWeek({ habits, entries, week, prevWeek, today = todayStr() }) {
+export function buildHabitsPeriod({ habits, entries, period, prevPeriod, today = todayStr() }) {
   const doneIdx = buildDoneIndex(entries);
   const endMap = buildEndMap(habits, entries);
 
-  const elapsed = elapsedDays(week, today);
+  const elapsed = elapsedDays(period.days, today);
   const cur = countHabitRange(habits, doneIdx, endMap, elapsed);
-  // Vergleich mit den gleich vielen Tagen der Vorwoche (wie die Statistik im
-  // Habits-Modul: gleich lange Zeiträume) — sonst stünde am Montag ein Tag
-  // gegen eine ganze Woche.
-  const prev = prevWeek
-    ? countHabitRange(habits, doneIdx, endMap, prevWeek.days.slice(0, elapsed.length))
+  // Vergleich mit den gleich vielen Tagen des Zeitraums davor (wie die
+  // Statistik im Habits-Modul: gleich lange Zeiträume) — sonst stünde am
+  // Montag ein Tag gegen eine ganze Woche.
+  const prev = prevPeriod
+    ? countHabitRange(habits, doneIdx, endMap, prevPeriod.days.slice(0, elapsed.length))
     : { due: 0, done: 0, rate: null };
 
-  const perDay = week.days.map((date) => {
-    if (date > today) return { date, rate: null, future: true };
-    return { date, rate: countHabitRange(habits, doneIdx, endMap, [date]).rate, future: false };
+  const cols = period.columns.map((c) => {
+    const ds = elapsedDays(c.days, today);
+    if (ds.length === 0) return { key: c.key, label: c.label, future: true, rate: null };
+    return { key: c.key, label: c.label, future: false, rate: countHabitRange(habits, doneIdx, endMap, ds).rate };
   });
 
-  // Ranking: nur Gewohnheiten, die in der Woche etwas fällig hatten
+  // Ranking: nur Gewohnheiten, die im Zeitraum etwas fällig hatten
   const ranking = habits
     .map((habit) => ({ habit, ...countHabitRange([habit], doneIdx, endMap, elapsed) }))
     .filter((r) => r.due > 0)
@@ -102,7 +161,7 @@ export function buildHabitsWeek({ habits, entries, week, prevWeek, today = today
     done: cur.done,
     due: cur.due,
     prevRate: prev.rate,
-    perDay,
+    cols,
     ranking,
   };
 }
@@ -110,69 +169,84 @@ export function buildHabitsWeek({ habits, entries, week, prevWeek, today = today
 // ─── Sport ────────────────────────────────────────────────
 
 // workouts: Zeilen aus spo_workouts (mindestens occurred_on, status, is_rest,
-// duration_min), deckt Woche UND Vorwoche ab.
+// duration_min), deckt Zeitraum UND Zeitraum davor ab.
 function sportCounts(workouts, from, to) {
-  const inWeek = workouts.filter((w) => w.occurred_on >= from && w.occurred_on <= to);
-  const real = inWeek.filter((w) => !w.is_rest);
+  const inRange = workouts.filter((w) => w.occurred_on >= from && w.occurred_on <= to);
+  const real = inRange.filter((w) => !w.is_rest);
   const done = real.filter((w) => w.status === 'done');
   return {
-    inWeek,
+    inRange,
     done: done.length,
     total: real.length,
     minutes: done.reduce((s, w) => s + (w.duration_min || 0), 0),
   };
 }
 
-export function buildSportWeek({ workouts, week, prevWeek, today = todayStr() }) {
-  const cur = sportCounts(workouts, week.start, week.end);
-  const prev = prevWeek ? sportCounts(workouts, prevWeek.start, prevWeek.end) : null;
+export function buildSportPeriod({ workouts, period, prevPeriod, today = todayStr() }) {
+  const cur = sportCounts(workouts, period.start, period.end);
+  const prev = prevPeriod ? sportCounts(workouts, prevPeriod.start, prevPeriod.end) : null;
 
-  const perDay = week.days.map((date) => {
-    const list = cur.inWeek.filter((w) => w.occurred_on === date);
+  const cols = period.columns.map((c) => {
+    const list = cur.inRange.filter((w) => c.days.includes(w.occurred_on));
     const real = list.filter((w) => !w.is_rest);
-    const done = real.filter((w) => w.status === 'done').length;
     return {
-      date,
-      future: date > today,
+      key: c.key,
+      label: c.label,
+      future: c.days[0] > today,
       rest: list.some((w) => w.is_rest) && real.length === 0,
       planned: real.length,
-      done,
+      done: real.filter((w) => w.status === 'done').length,
     };
   });
 
   return {
     hasData: cur.total > 0,
-    // Anteil erledigter Einheiten an allen geplanten + absolvierten der Woche
+    // Anteil erledigter Einheiten an allen geplanten + absolvierten des Zeitraums
     rate: cur.total > 0 ? cur.done / cur.total : null,
     done: cur.done,
     total: cur.total,
     minutes: cur.minutes,
     prevRate: prev && prev.total > 0 ? prev.done / prev.total : null,
-    perDay,
+    cols,
   };
 }
 
 // ─── Ernährung ────────────────────────────────────────────
 
 /**
- * meals: Zeilen aus nut_meals der Woche (eaten_on, kcal, protein, is_estimate…)
+ * meals: Zeilen aus nut_meals des Zeitraums (eaten_on, kcal, protein, is_estimate…)
  * target: Ergebnis von computeBody oder null (Profil unvollständig)
  */
-export function buildNutritionWeek({ meals, target, week, today = todayStr() }) {
+export function buildNutritionPeriod({ meals, target, period, today = todayStr() }) {
   const goal = target ? { kcal: target.target, protein: target.protein } : null;
-  const elapsed = elapsedDays(week, today);
+  const elapsed = elapsedDays(period.days, today);
 
-  const perDay = week.days.map((date) => {
+  const perDay = period.days.map((date) => {
     const list = meals.filter((m) => m.eaten_on === date);
-    const kcal = list.reduce((s, m) => s + (Number(m.kcal) || 0), 0);
-    const protein = list.reduce((s, m) => s + (Number(m.protein) || 0), 0);
     return {
       date,
       future: date > today,
       logged: list.length > 0,
-      kcal,
-      protein,
-      kcalRatio: goal && goal.kcal > 0 ? kcal / goal.kcal : null,
+      kcal: list.reduce((s, m) => s + (Number(m.kcal) || 0), 0),
+      protein: list.reduce((s, m) => s + (Number(m.protein) || 0), 0),
+    };
+  });
+  const dayByDate = new Map(perDay.map((d) => [d.date, d]));
+
+  const cols = period.columns.map((c) => {
+    const ds = c.days.map((d) => dayByDate.get(d));
+    const passed = ds.filter((d) => !d.future);
+    const loggedDays = passed.filter((d) => d.logged).length;
+    const first = ds[0];
+    return {
+      key: c.key,
+      label: c.label,
+      future: passed.length === 0,
+      loggedDays,
+      elapsedDays: passed.length,
+      // Tageswerte nur bei Ein-Tages-Spalten (Wochenansicht) sinnvoll
+      kcalRatio: ds.length === 1 && goal && goal.kcal > 0 ? first.kcal / goal.kcal : null,
+      logged: ds.length === 1 ? first.logged : loggedDays > 0,
     };
   });
 
@@ -194,25 +268,26 @@ export function buildNutritionWeek({ meals, target, week, today = todayStr() }) 
     goal,
     proteinDays,
     hasEstimate: meals.some((m) => m.is_estimate),
-    perDay,
+    cols,
   };
 }
 
 // ─── Gesamt ───────────────────────────────────────────────
 
-/** Mittel der Modul-Quoten, die in der Woche Daten haben (null = nichts da). */
+/** Mittel der Modul-Quoten, die im Zeitraum Daten haben (null = nichts da). */
 export function overallRate(parts) {
   const rates = parts.filter((p) => p?.hasData && p.rate !== null).map((p) => p.rate);
   if (rates.length === 0) return null;
   return rates.reduce((a, b) => a + b, 0) / rates.length;
 }
 
-export function weekHeadline(rate) {
+export function periodHeadline(rate, kind = 'week') {
+  const month = kind === 'month';
   if (rate === null) return 'Noch keine Daten';
-  if (rate >= 0.85) return 'Starke Woche';
-  if (rate >= 0.6)  return 'Gute Woche';
+  if (rate >= 0.85) return month ? 'Starker Monat' : 'Starke Woche';
+  if (rate >= 0.6)  return month ? 'Guter Monat' : 'Gute Woche';
   if (rate >= 0.3)  return 'Solide Basis';
-  return 'Ruhige Woche';
+  return month ? 'Ruhiger Monat' : 'Ruhige Woche';
 }
 
 // ─── Laden ────────────────────────────────────────────────
@@ -233,14 +308,12 @@ async function loadArchivedHabits() {
 }
 
 /**
- * Sport, Mahlzeiten und Kalorienziel für Woche + Vorwoche.
+ * Sport, Mahlzeiten und Kalorienziel für Zeitraum + Zeitraum davor.
  * Ein Teil darf ausfallen, ohne die anderen mitzunehmen — der Aufrufer
  * bekommt dann null für den betroffenen Teil.
  */
-export async function loadWeekExtras(session, week, prevWeek) {
+export async function loadPeriodExtras(session, period, prevPeriod) {
   const sb = getSupabase();
-  const from = prevWeek.start;
-  const to = week.end;
   const owner = session.user.id;
 
   const [archived, workouts, meals, target] = await Promise.all([
@@ -249,15 +322,15 @@ export async function loadWeekExtras(session, week, prevWeek) {
       .select('occurred_on, status, is_rest, duration_min')
       .eq('owner_id', owner)
       .is('deleted_at', null)
-      .gte('occurred_on', from)
-      .lte('occurred_on', to)
+      .gte('occurred_on', prevPeriod.start)
+      .lte('occurred_on', period.end)
       .then(({ data, error }) => (error ? null : data ?? [])),
     sb.from('nut_meals')
       .select('eaten_on, kcal, protein, is_estimate')
       .eq('owner_id', owner)
       .is('deleted_at', null)
-      .gte('eaten_on', week.start)
-      .lte('eaten_on', week.end)
+      .gte('eaten_on', period.start)
+      .lte('eaten_on', period.end)
       .then(({ data, error }) => (error ? null : data ?? [])),
     // Fehlendes/defektes Profil ist kein Fehler — dann gibt es nur Summen ohne Ziel
     getBodyProfile(session).then((p) => (p ? computeBody(p) : null)).catch(() => null),

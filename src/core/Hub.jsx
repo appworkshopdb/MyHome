@@ -758,13 +758,15 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               </AreaList>
             </PageSection>
 
-            {/* Statistiken — Wochenrückblick (eigene Route #/statistiken, damit der
-                Sonntags-Push direkt dorthin verlinken kann) */}
-            <PageSection title="Statistiken">
-              <AreaList>
-                <AreaRow label="Wochenrückblick" onPress={() => onOpenModule('statistiken')} />
+            {/* Statistiken — ein einzelner Bereich unter dem Kalender; dort die
+                Auswahl Wochen-/Monatsüberblick (eigene Route #/statistiken, damit
+                die Rückblick-Pushes direkt verlinken können). fabClearance: der
+                schwebende + liegt sonst über dem Pfeil. */}
+            <section className="page-section">
+              <AreaList fabClearance>
+                <AreaRow label="Statistiken" onPress={() => onOpenModule('statistiken')} />
               </AreaList>
-            </PageSection>
+            </section>
           </>
         )}
       </div>

@@ -4743,7 +4743,7 @@
 .calview-mode-toggle button.active { background: var(--action-primary); color: var(--text-on-accent); box-shadow: none; }
 
 /* ═══════════════════════════════════════════════════════════════
-   Wochenrückblick (Hub → Statistiken, core/WeekReview.jsx)
+   Wochen-/Monatsüberblick (Hub → Statistiken, core/PeriodReview.jsx)
    Präfix wk-. Keine transform/filter auf Vorfahren der fixed Chrome.
    ═══════════════════════════════════════════════════════════════ */
 .wk-page { padding-bottom: calc(var(--nav-height) + 30px + env(safe-area-inset-bottom)); }

@@ -16,7 +16,8 @@ const NOTIFICATION_CATEGORIES = [
   { key: 'tasks_habits', label: 'Aufgaben & Gewohnheiten', hint: 'Abends, wenn noch etwas offen ist' },
   { key: 'finance', label: 'Finanzen', hint: 'Hinweise auf fällige und offene Zahlungen' },
   { key: 'profile', label: 'Profil & Fortschritt', hint: 'Wenn wichtige Angaben fehlen' },
-  { key: 'weekly_recap', label: 'Wochenrückblick', hint: 'Deine persönliche Zusammenfassung der Woche' },
+  { key: 'weekly_recap', label: 'Wochenüberblick', hint: 'Montagmorgens: dein Rückblick auf die Vorwoche' },
+  { key: 'monthly_recap', label: 'Monatsüberblick', hint: 'Am 1. des Monats: dein Rückblick auf den Vormonat' },
 ];
 
 function NotifToggle({ checked, onChange, label, hint }) {

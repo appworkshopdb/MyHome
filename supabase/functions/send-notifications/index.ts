@@ -6,14 +6,19 @@
 // V2 — Benachrichtigungen nach NESTUA-BENACHRICHTIGUNGEN-V1.md:
 // - Feste Uhrzeiten pro Kategorie (keine Wunschstunde mehr)
 // - Keine Quiet Hours
-// - Neue Kategorienamen: finance, tasks_habits, profile, weekly_recap
-// - Neue Prioritätsreihenfolge: finance > tasks_habits > weekly_recap > profile
+// - Neue Kategorienamen: finance, tasks_habits, profile, weekly_recap, monthly_recap
+// - Neue Prioritätsreihenfolge: finance > tasks_habits > weekly_recap > monthly_recap > profile
 // - Finanzen: Fall A (heute fällig, 08:00) + Fall B (überfällig, alle 3 Tage 08:00)
 // - tasks_habits: offene Habits UND offene Todos heute zusammengefasst
 // - daily_plan: täglich 06:00, Zusammenfassung des Tagesplans (Termine, Training,
 //   Aufgaben, Gewohnheiten, fällige Zahlungen) — spiegelt core/lib/dayPlan.js
 // - profile: nur Samstag 11:00, Throttle 14 Tage
-// - weekly_recap: nur Sonntag 18:00
+// - weekly_recap: Montag 07:00, Wochenüberblick der Vorwoche (Link ./#/statistiken/woche)
+// - monthly_recap: am 1. des Monats 09:00, Monatsüberblick des Vormonats
+//   (Link ./#/statistiken/monat). Beide Überblicke nur, wenn im Zeitraum etwas
+//   erfasst wurde (Gewohnheit, Training, Mahlzeit), und OHNE Anrechnung auf das
+//   Tageslimit — sonst würden sie Finanzen (08:00) und Aufgaben/Gewohnheiten
+//   (19:00) an Montagen bzw. Monatsersten verdrängen.
 //
 // ZEITZONEN-REGEL: Jede Datums-/Stunden-/Wochentagslogik rechnet in
 // Europe/Berlin — nie mit UTC-Hilfsmitteln wie toISOString().split('T'),
@@ -46,7 +51,8 @@ const CATEGORY_SCHEDULE = {
   finance:      { hour: 8  },               // täglich 08:00
   tasks_habits: { hour: 19 },               // täglich 19:00
   profile:      { hour: 11, weekday: 5 },   // Samstag 11:00  (Sa = 5, Mo=0…So=6)
-  weekly_recap: { hour: 18, weekday: 6 },   // Sonntag  18:00 (So = 6)
+  weekly_recap:  { hour: 7, weekday: 0 },   // Montag   07:00 (Mo = 0) — Überblick der Vorwoche
+  monthly_recap: { hour: 9, day: 1 },       // am 1.    09:00         — Überblick des Vormonats
 };
 
 // Throttle je Kategorie in Tagen.
@@ -55,18 +61,25 @@ const CATEGORY_SCHEDULE = {
 // finance-Fall-B (überfällig):  3 Tage — verhindert tägliche Wiederholung.
 // tasks_habits: 0 — max. 1x/Tag, aber das regelt schon das Tageslimit.
 // profile: 14 Tage.
-// weekly_recap: 7 Tage — kommt ohnehin nur sonntags durch den Schedule.
+// weekly_recap: 6 Tage (nicht 7: der Cron läuft nicht sekundengenau, ein Versand
+//   um 07:00:05 würde sonst den nächsten um 07:00:02 blockieren) — kommt ohnehin
+//   nur montags durch den Schedule.
+// monthly_recap: 25 Tage — kommt ohnehin nur am 1. durch den Schedule.
 const THROTTLE_DAYS = {
   daily_plan:   0,   // 1x/Tag ergibt sich aus der festen Stunde
   finance:      3,   // gilt für Fall B (überfällig); Fall A ignoriert Throttle
   tasks_habits: 0,
   profile:      14,
-  weekly_recap: 7,
+  weekly_recap: 6,
+  monthly_recap: 25,
 };
 
 // Prioritätsreihenfolge laut Spec (höchste zuerst).
 // Bei >2 Kandidaten belegen die obersten das Tageslimit.
-const PRIORITY_ORDER = ['daily_plan', 'finance', 'tasks_habits', 'weekly_recap', 'profile'];
+const PRIORITY_ORDER = ['daily_plan', 'finance', 'tasks_habits', 'weekly_recap', 'monthly_recap', 'profile'];
+
+// Überblicke zählen nicht aufs Tageslimit und werden von ihm nicht blockiert.
+const RECAP_CATEGORIES = ['weekly_recap', 'monthly_recap'];
 
 // Max. Push-Benachrichtigungen pro Nutzer und Kalendertag (Berlin-Zeit).
 const DAILY_CAP_TOTAL = 2;
@@ -78,6 +91,7 @@ const DEFAULT_CATEGORIES = {
   tasks_habits: true,
   profile:      true,
   weekly_recap: true,
+  monthly_recap: true,
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -147,6 +161,7 @@ function isScheduledNow(category, berlin) {
   if (!s) return false;
   if (berlin.hour !== s.hour) return false;
   if (s.weekday !== undefined && berlin.weekdayIndex !== s.weekday) return false;
+  if (s.day !== undefined && berlin.day !== s.day) return false;
   return true;
 }
 
@@ -170,13 +185,14 @@ async function alreadySentRecently(ownerId, category, days) {
   return (data?.length ?? 0) > 0;
 }
 
-// Anzahl gesendeter Pushes seit Berlin-Mitternacht (für Tageslimit).
+// Anzahl gesendeter Pushes seit Berlin-Mitternacht (für Tageslimit) — ohne die Überblicke.
 async function sentTodayCount(ownerId, berlin) {
   const startOfDay = berlinStartOfDay(berlin.todayStr);
   const { data } = await supabase
     .from('notification_log')
     .select('id')
     .eq('owner_id', ownerId)
+    .not('category', 'in', `(${RECAP_CATEGORIES.join(',')})`)
     .gte('sent_at', startOfDay.toISOString());
   return data?.length ?? 0;
 }
@@ -206,6 +222,41 @@ async function sendToUser(ownerId, category, title, body, url = './') {
   }
 
   await supabase.from('notification_log').insert({ owner_id: ownerId, category });
+}
+
+// Reine Kalenderrechnung auf Datumsstrings (YYYY-MM-DD), keine Uhrzeit und
+// keine Zeitzone im Spiel — Date.UTC dient hier nur als Kalender-Rechenhilfe,
+// damit Monats-/Jahresgrenzen stimmen.
+function shiftDateStr(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
+
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
+// Wurde im Zeitraum (inklusive Grenzen) irgendetwas erfasst? Spiegelt grob,
+// was die Überblicke im Frontend zeigen: Gewohnheits-Check-ins, erledigte
+// Trainingseinheiten (ohne Ruhetage) und Mahlzeiten. Ohne das gäbe es einen
+// Push zu einer leeren Seite.
+async function hasActivityBetween(ownerId, from, to) {
+  const head = { count: 'exact', head: true };
+  const [habs, workouts, meals] = await Promise.all([
+    supabase.from('hab_entries').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .gte('logged_on', from).lte('logged_on', to),
+    supabase.from('spo_workouts').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .eq('status', 'done').eq('is_rest', false)
+      .gte('occurred_on', from).lte('occurred_on', to),
+    supabase.from('nut_meals').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .gte('eaten_on', from).lte('eaten_on', to),
+  ]);
+  return (habs.count ?? 0) + (workouts.count ?? 0) + (meals.count ?? 0) > 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -512,26 +563,52 @@ async function checkCategory(category, ownerId, berlin) {
   }
 
   // ── weekly_recap ───────────────────────────────────────────────────
-  // Nur sonntags (bereits durch Schedule gefiltert, doppelte Prüfung
-  // als Sicherheitsnetz falls Schedule-Logik umgebaut wird).
+  // Montagmorgen: Überblick der Vorwoche (Mo–So). Montag ist bereits durch den
+  // Schedule gefiltert, die Prüfung hier ist das Sicherheitsnetz.
   if (category === 'weekly_recap') {
-    if (berlin.weekdayIndex !== 6) return null;
+    if (berlin.weekdayIndex !== 0) return null;
+    const from = shiftDateStr(berlin.todayStr, -7);
+    const to   = shiftDateStr(berlin.todayStr, -1);
+    if (!(await hasActivityBetween(ownerId, from, to))) return null;
     return {
       ...pickRandom([
         {
-          title: '✨ Deine Woche',
-          body:  'Schau was du diese Woche alles geschafft hast.',
+          title: '✨ Dein Wochenüberblick',
+          body:  'Sieh dir an, wie deine letzte Woche gelaufen ist.',
         },
         {
-          title: '🗓 Wochenrückblick',
-          body:  'Eine Woche geschafft — Zeit, kurz zurückzublicken.',
+          title: '🗓 Neue Woche, neuer Blick zurück',
+          body:  'Dein Fortschritt der letzten Woche ist da.',
         },
         {
           title: '✨ Gut gemacht',
-          body:  'Deine Woche ist vorbei. Sieh selbst, was du geleistet hast.',
+          body:  'Deine Woche ist ausgewertet. Sieh selbst, was du geleistet hast.',
         },
       ]),
-      url: './#/statistiken', // Wochenrückblick (core/WeekReview.jsx)
+      url: './#/statistiken/woche', // core/PeriodReview.jsx
+    };
+  }
+
+  // ── monthly_recap ──────────────────────────────────────────────────
+  // Am 1. des Monats: Überblick des Vormonats.
+  if (category === 'monthly_recap') {
+    if (berlin.day !== 1) return null;
+    const from = shiftDateStr(berlin.todayStr, -1).slice(0, 8) + '01'; // 1. des Vormonats
+    const to   = shiftDateStr(berlin.todayStr, -1);                    // letzter Tag des Vormonats
+    if (!(await hasActivityBetween(ownerId, from, to))) return null;
+    const monthName = MONTH_NAMES[Number(from.slice(5, 7)) - 1];
+    return {
+      ...pickRandom([
+        {
+          title: `📅 Dein ${monthName} im Überblick`,
+          body:  'Gewohnheiten, Training und Ernährung — so ist dein Monat gelaufen.',
+        },
+        {
+          title: '✨ Dein Monatsüberblick',
+          body:  `Sieh dir an, was du im ${monthName} geschafft hast.`,
+        },
+      ]),
+      url: './#/statistiken/monat', // core/PeriodReview.jsx
     };
   }
 
@@ -548,15 +625,27 @@ Deno.serve(async (req) => {
   const testCategory = url.searchParams.get('test_category');
   if (testOwnerId) {
     if (testCategory) {
-      // Echten Kategorietext testen — weekdayIndex anpassen damit
-      // weekly_recap (So=6) und profile (Sa=5) nicht geblockt werden.
+      // Echten Kategorietext testen — Wochentag/Datum so setzen, dass die
+      // Tages-Sperren der Kategorien nicht greifen: weekly_recap (Mo) und
+      // monthly_recap (der 1.) rechnen dann mit der letzten vollen Woche bzw.
+      // dem letzten vollen Monat; profile (Sa) nur der Wochentag.
       const berlinBase = berlinNow();
-      const berlinTest = {
-        ...berlinBase,
-        weekdayIndex: testCategory === 'weekly_recap' ? 6
-                    : testCategory === 'profile'       ? 5
-                    : berlinBase.weekdayIndex,
-      };
+      let berlinTest = { ...berlinBase };
+      if (testCategory === 'weekly_recap') {
+        berlinTest = {
+          ...berlinBase,
+          weekdayIndex: 0,
+          todayStr: shiftDateStr(berlinBase.todayStr, -berlinBase.weekdayIndex),
+        };
+      } else if (testCategory === 'monthly_recap') {
+        berlinTest = {
+          ...berlinBase,
+          day: 1,
+          todayStr: `${berlinBase.todayStr.slice(0, 8)}01`,
+        };
+      } else if (testCategory === 'profile') {
+        berlinTest = { ...berlinBase, weekdayIndex: 5 };
+      }
       const result = await checkCategory(testCategory, testOwnerId, berlinTest);
       if (result) {
         await sendToUser(testOwnerId, testCategory, result.title, result.body, result.url);
@@ -596,13 +685,14 @@ Deno.serve(async (req) => {
 
     const toggles = { ...DEFAULT_CATEGORIES, ...(prefRow?.categories ?? {}) };
 
-    // Tageslimit prüfen — wenn bereits 2 heute gesendet, Nutzer überspringen
+    // Tageslimit (ohne Überblicke): Ist es erschöpft, kommen nur noch die
+    // Überblicke in Frage.
     let remainingBudget = DAILY_CAP_TOTAL - (await sentTodayCount(ownerId, berlin));
-    if (remainingBudget <= 0) continue;
 
     // Kaskade: Toggle → Schedule → fachliche Bedingung → Throttle → Kandidat
     for (const category of PRIORITY_ORDER) {
-      if (remainingBudget <= 0) break;
+      const isRecap = RECAP_CATEGORIES.includes(category);
+      if (!isRecap && remainingBudget <= 0) continue;
 
       // 1. Toggle aus (deaktivierte Kategorien sind keine Kandidaten,
       //    verbrauchen kein Budget, beeinflussen Auswahl nicht)
@@ -620,7 +710,7 @@ Deno.serve(async (req) => {
 
       // → Kandidat: senden
       await sendToUser(ownerId, category, result.title, result.body, result.url);
-      remainingBudget -= 1;
+      if (!isRecap) remainingBudget -= 1;
       sentCount += 1;
     }
   }
