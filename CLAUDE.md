@@ -197,6 +197,15 @@ Rezeptbild) und die Suche (Name > Zutaten > Tags/Notiz, Umlaut-unabhängig, alle
 müssen passen) werden abgeleitet. Rezept-Dialog: Portionsrechner rechnet Zutatenmengen und
 Nährwerte nur in der Ansicht um (`servings` = Portionen, für die die Mengen angelegt sind).
 
+## Finanz-Auswertung (Dashboard)
+
+`SummaryView.jsx` + `components/report/` + `lib/analytics.js` (reine Rechenlogik,
+Sparschwein-Regeln wie Übersicht/Buchungen). Zehn Bereiche, je ein-/ausblend-,
+einklapp- und sortierbar; Ansicht + Filter liegen pro Nutzer in `fin_report_prefs`
+(Migration `supabase/fin_report_prefs_migration.sql`, per `docker exec ... psql`
+einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
+`SECTIONS` (sections.jsx), welche globalen Filter er beachtet.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo

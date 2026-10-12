@@ -5,10 +5,9 @@
 // Fokuskarte, "Wohin es geht", Bereiche), mit `view` genau EIN Bereich
 // als Vollbild-Detail-Screen mit Zurück-Pfeil und zentriertem Titel.
 //
-// Nebeneffekt: SummaryView (chart.js + react-chartjs-2, zusammen 177 kB)
-// lädt jetzt erst beim Öffnen des Bereichs "Auswertung" — vorher zog es
-// bei jedem Öffnen des Moduls mit, weil es auf der zusammengelegten
-// Seite immer im Baum stand.
+// Nebeneffekt: SummaryView (Auswertungs-Dashboard) lädt erst beim Öffnen
+// des Bereichs "Auswertung" — vorher zog es bei jedem Öffnen des Moduls
+// mit, weil es auf der zusammengelegten Seite immer im Baum stand.
 //
 // Neue Einträge laufen weiterhin ausschließlich über den globalen FAB
 // (EntrySheet); die "+Fixkosten"/"+Vertrag"-Buttons in ContractsView
