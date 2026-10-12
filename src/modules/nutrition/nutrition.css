@@ -774,3 +774,8 @@
 .rf-chips .chip small { font-size: 10.5px; font-weight: 600; opacity: 0.75; margin-left: 2px; }
 .rf-info { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 4px 2px 8px; }
 .rf-info button { font: inherit; font-weight: 700; color: var(--action-primary); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+
+/* Symbole in Buttons der Ernährung (z. B. "+ Zu meinen Rezepten"): die Icons
+   haben keine feste Größe und wurden sonst auf die Kartenbreite gezogen. */
+.nut-module-content .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.nut-module-content .btn svg { width: 18px; height: 18px; flex: none; }

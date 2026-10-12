@@ -85,10 +85,6 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
       <PageSection title="Bereiche">
         <AreaList fabClearance>
           <AreaRow
-            label="Mahlzeiten"
-            onPress={() => onNavigate('mahlzeiten')}
-          />
-          <AreaRow
             label="Ampel"
             value={(
               <span className="nut-area-ampel">
