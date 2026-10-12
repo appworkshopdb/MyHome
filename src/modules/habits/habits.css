@@ -2591,3 +2591,213 @@
   display: flex;
   flex-direction: column;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Statistik-Cockpit (StatsView)
+   ═══════════════════════════════════════════════════════════════ */
+
+.hab-cp {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.hab-cp-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.hab-cp-chips::-webkit-scrollbar { display: none; }
+
+.hab-cp-chip {
+  flex: none;
+  min-height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hab-cp-chip.on {
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+}
+.hab-cp-chip:focus-visible,
+.hab-cp-row:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.hab-cp-card {
+  background: var(--surface-raised);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+  padding: 12px 14px;
+}
+
+.hab-cp-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.hab-cp-label span {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Delta-Chip */
+.hab-cp-delta {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: 0.74rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.hab-cp-delta.up   { background: var(--status-positive-bg); color: var(--status-positive); }
+.hab-cp-delta.down { background: var(--status-critical-bg); color: var(--status-critical); }
+.hab-cp-delta.flat { background: var(--surface-sunken);     color: var(--text-muted); }
+
+/* Hero */
+.hab-cp-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hab-cp-hero-num {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.hab-cp-hero-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.hab-cp-hero-delta { margin-top: 6px; }
+.hab-cp-hero-delta .hab-cp-hero-sub { margin-left: 2px; }
+
+/* Verlaufslinie */
+.hab-cp-chart text { fill: var(--text-muted); font-size: 9px; }
+.hab-cp-grid { stroke: var(--border-hairline); stroke-width: 1; }
+.hab-cp-area { fill: var(--data-1); opacity: 0.12; }
+.hab-cp-line {
+  fill: none;
+  stroke: var(--data-1);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.hab-cp-end { fill: var(--data-1); stroke: var(--surface-raised); stroke-width: 2; }
+
+/* Ranking */
+.hab-cp-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hab-cp-label + .hab-cp-row { border-top: none; }
+.hab-cp-row-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.hab-cp-row-pct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.hab-cp-row-bar {
+  grid-column: 2 / 4;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--data-track);
+  overflow: hidden;
+}
+.hab-cp-row-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--data-1);
+}
+
+/* Einzel-Kennzahlen */
+.hab-cp-stats3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.hab-cp-stat {
+  padding: 10px 8px;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+.hab-cp-stat b {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.hab-cp-stat span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Rhythmus */
+.hab-cp-heat {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+}
+.hab-cp-heat-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+.hab-cp-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+.hab-cp-legend i {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}

@@ -2,9 +2,7 @@
 // Views (alle über Hash-URL #/habits/<view>):
 //   null               → OverviewSection (Übersicht)
 //   'gewohnheiten'     → HabitsView (Meine Gewohnheiten, lazy)
-//   'statistik'        → StatsView Hauptseite
-//   'jahresrueckblick' → Jahresrückblick (Unterseite von statistik)
-//   'verlauf'          → Verlauf (Unterseite von statistik)
+//   'statistik'        → StatsView (Cockpit mit Zeitraum-/Gewohnheitsfilter)
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import ModuleTopBar     from '../../core/components/ModuleTopBar.jsx';
@@ -83,24 +81,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     );
   }
 
-  // ── Statistik-Unterseiten (eigene URLs, Zurück → statistik) ──
-  if (view === 'jahresrueckblick' || view === 'verlauf') {
-    return (
-      <>
-        <ModuleTopBar onBack={() => onNavigateView('statistik')} hasWarnings={hasWarnings} />
-        <div className="hab-module-content with-topbar-space">
-          {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
-          <StatsView
-            habits={habits}
-            entries={entries}
-            subView={view}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Statistik-Hauptseite ──
+  // ── Statistik (Cockpit) ──
   if (view === 'statistik') {
     return (
       <>
@@ -110,8 +91,6 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
           <StatsView
             habits={habits}
             entries={entries}
-            subView={null}
-            onNavigate={onNavigateView}
           />
         </div>
       </>
