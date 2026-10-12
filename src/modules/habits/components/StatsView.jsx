@@ -28,7 +28,12 @@ const PERIODS = [
 ];
 
 // Tage pro Messpunkt der Verlaufslinie
-const BUCKET_DAYS = { 7: 1, 30: 3, 90: 7, 180: 15 };
+function bucketDays(len) {
+  if (len <= 14)  return 1;
+  if (len <= 45)  return 3;
+  if (len <= 120) return 7;
+  return 15;
+}
 
 const HEAT_WEEKS = 12;
 
@@ -121,21 +126,41 @@ function Cockpit({ habits, entries }) {
   const shown    = selected ? [selected] : habits;
 
   // Aktueller Zeitraum und der gleich lange davor
-  const curDates  = useMemo(() => dateRange(addDays(todayStr, -(period - 1)), todayStr), [todayStr, period]);
-  const prevDates = useMemo(() => dateRange(addDays(todayStr, -(2 * period - 1)), addDays(todayStr, -period)), [todayStr, period]);
+  // Erster Tag, an dem die gewählten Gewohnheiten existieren. Der Zeitraum
+  // beginnt nie davor, sonst staucht sich der Verlauf auf leere Tage.
+  const firstDate = useMemo(
+    () => shown.reduce((min, h) => {
+      const c = toDateStr(new Date(h.created_at));
+      return !min || c < min ? c : min;
+    }, null),
+    [shown]
+  );
+  const periodStart = useMemo(() => {
+    const wanted = addDays(todayStr, -(period - 1));
+    return firstDate && firstDate > wanted ? firstDate : wanted;
+  }, [todayStr, period, firstDate]);
+  const isClamped = periodStart !== addDays(todayStr, -(period - 1));
+
+  const curDates = useMemo(() => dateRange(periodStart, todayStr), [periodStart, todayStr]);
+  // Vergleichszeitraum nur, wenn er komplett im Datenbestand liegt
+  const prevDates = useMemo(() => {
+    const prevStart = addDays(periodStart, -curDates.length);
+    if (firstDate && prevStart < firstDate) return [];
+    return dateRange(prevStart, addDays(periodStart, -1));
+  }, [periodStart, curDates.length, firstDate]);
 
   const cur  = useMemo(() => countRange(shown, doneIdx, curDates),  [shown, doneIdx, curDates]);
   const prev = useMemo(() => countRange(shown, doneIdx, prevDates), [shown, doneIdx, prevDates]);
 
   // Verlaufslinie
   const trend = useMemo(() => {
-    const size = BUCKET_DAYS[period];
+    const size = bucketDays(curDates.length);
     const pts = [];
     for (let i = 0; i < curDates.length; i += size) {
       pts.push(countRange(shown, doneIdx, curDates.slice(i, i + size)).rate);
     }
     return pts;
-  }, [shown, doneIdx, curDates, period]);
+  }, [shown, doneIdx, curDates]);
 
   // Ranking aller Gewohnheiten (nur bei Auswahl "Alle")
   const ranking = useMemo(() => {
@@ -192,7 +217,7 @@ function Cockpit({ habits, entries }) {
       </div>
 
       {/* Hero */}
-      <Hero cur={cur} prev={prev} />
+      <Hero cur={cur} prev={prev} sinceLabel={isClamped ? fmtShort(periodStart) : null} />
 
       {/* Verlauf */}
       <div className="hab-cp-card">
@@ -274,7 +299,7 @@ function Delta({ cur, prev }) {
   return <span className="hab-cp-delta flat">● ±0</span>;
 }
 
-function Hero({ cur, prev }) {
+function Hero({ cur, prev, sinceLabel }) {
   const R = 34;
   const C = 2 * Math.PI * R;
   const offset = C * (1 - (cur.rate ?? 0));
@@ -292,9 +317,10 @@ function Hero({ cur, prev }) {
       <div>
         <div className="hab-cp-hero-num">{fmtPct(cur.rate)}</div>
         <div className="hab-cp-hero-sub">{cur.done} von {cur.due} erledigt</div>
+        {sinceLabel && <div className="hab-cp-hero-sub">seit {sinceLabel} (erste Gewohnheit)</div>}
         <div className="hab-cp-hero-delta">
           <Delta cur={cur.rate} prev={prev.rate} />
-          <span className="hab-cp-hero-sub"> zum Zeitraum davor</span>
+          <span className="hab-cp-hero-sub">{prev.rate === null ? ' noch kein Vergleich möglich' : ' zum Zeitraum davor'}</span>
         </div>
       </div>
     </div>
