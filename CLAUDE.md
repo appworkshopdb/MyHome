@@ -187,6 +187,15 @@ Rezeptname bzw. Mahlzeit-Typ (`resolveCover`: Gericht-Wörter wie Suppe/Auflauf 
 weitere Zutat → Teller-Motiv; Wörter mit Leerzeichen-Präfix wie ' eis', sonst trifft "Reis"). Neues Motiv: Eintrag in `COVER_MOTIFS`
 (bestehende Keys nie umbenennen, sonst fallen gespeicherte Rezepte auf "automatisch").
 
+## Rezeptliste (Ernährung)
+
+Suche + Filter + Sortierung in `RezepteView` über `modules/nutrition/lib/recipeFilter.js`
+(reine Funktionen). Gespeichert ist nur die Mahlzeit (`category`); Ernährungsform (aus
+`food.diet`/Gruppe der Zutaten), Nährwert-Filter (pro Portion), Gerichtart (aus dem
+Rezeptbild) und die Suche (Name > Zutaten > Tags/Notiz, Umlaut-unabhängig, alle Wörter
+müssen passen) werden abgeleitet. Rezept-Dialog: Portionsrechner rechnet Zutatenmengen und
+Nährwerte nur in der Ansicht um (`servings` = Portionen, für die die Mengen angelegt sind).
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
