@@ -784,10 +784,10 @@ function DayDetail({ habits, doneIdx, endMap, dateStr }) {
     <div className="hab-cp-detail">
       <b>{head} · {done} von {due} erledigt</b>
       <ul>
-        {rows.map(({ h, due: isDue, done: isDone }) => (
+        {rows.filter((r) => r.due).map(({ h, done: isDone }) => (
           <li key={h.id}>
-            <span className={isDone ? 'ok' : isDue ? 'no' : 'na'}>{isDone ? '✓' : isDue ? '✕' : '–'}</span>
-            <span>{h.icon} {h.name}{!isDue && <span className="hab-cp-note"> nicht fällig</span>}</span>
+            <span className={isDone ? 'ok' : 'no'}>{isDone ? '✓' : '✕'}</span>
+            <span>{h.icon} {h.name}</span>
           </li>
         ))}
       </ul>

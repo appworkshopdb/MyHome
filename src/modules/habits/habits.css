@@ -3078,7 +3078,6 @@
 .hab-cp-detail li { display: flex; gap: 8px; }
 .hab-cp-detail .ok { color: var(--status-positive); font-weight: 800; }
 .hab-cp-detail .no { color: var(--status-critical); font-weight: 800; }
-.hab-cp-detail .na { color: var(--text-muted); font-weight: 800; }
 
 .hab-cp-legend {
   display: flex;
