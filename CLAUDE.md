@@ -178,11 +178,13 @@ jeder normalen Variante gibt es eine "… light"-Variante (Ampel eine Stufe bess
 
 ## Rezeptbilder (Ernährung)
 
-Keine Fotos: 24 flächige Illustrationen in `modules/nutrition/lib/recipeCovers.jsx`
+Keine Fotos: 30 flächige Illustrationen (inkl. gemischte Gerichte: Teller mit Hähnchen/Steak/
+Fisch, gemischter Teller, Auflauf, Pfannengericht, Power Bowl) in `modules/nutrition/lib/recipeCovers.jsx`
 (Zeichenfläche 200×85, Farben der App; dunkelblaue Teile nutzen die Klassen `cv-ink`/
 `cv-soft`, weil `var()` als SVG-Attribut nicht greift). `nut_recipes.cover` = `motiv` oder
 `motiv:farbton` (`supabase/nut_recipe_cover_migration.sql`), `NULL` = automatisch über
-Rezeptname bzw. Mahlzeit-Typ (`resolveCover`). Neues Motiv: Eintrag in `COVER_MOTIFS`
+Rezeptname bzw. Mahlzeit-Typ (`resolveCover`: Gericht-Wörter wie Suppe/Auflauf schlagen Zutaten, Eiweiß +
+weitere Zutat → Teller-Motiv; Wörter mit Leerzeichen-Präfix wie ' eis', sonst trifft "Reis"). Neues Motiv: Eintrag in `COVER_MOTIFS`
 (bestehende Keys nie umbenennen, sonst fallen gespeicherte Rezepte auf "automatisch").
 
 ## Geheimnisse

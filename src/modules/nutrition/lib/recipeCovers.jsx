@@ -97,17 +97,6 @@ const Burger = () => (
   </>
 );
 
-const Brot = () => (
-  <>
-    <path d="M62 72V42c-9-3-11-15-2-20 6-4 12-2 16 1 6-8 42-8 48 0 4-3 10-5 16-1 9 5 7 17-2 20v30z" fill="#C98B4B" />
-    <g transform="translate(100 46) scale(.86) translate(-100 -46)">
-      <path d="M62 72V42c-9-3-11-15-2-20 6-4 12-2 16 1 6-8 42-8 48 0 4-3 10-5 16-1 9 5 7 17-2 20v30z" fill="#F6E2B0" />
-    </g>
-    <rect x="86" y="40" width="28" height="16" rx="3.5" fill="#F5D060" />
-    <rect x="89" y="43" width="12" height="3" rx="1.5" fill="#FBE79A" />
-  </>
-);
-
 const Wrap = () => (
   <g transform="rotate(-16 100 44)">
     <rect x="52" y="28" width="96" height="34" rx="17" fill="#F2D7A6" />
@@ -325,15 +314,147 @@ const Snack = () => (
   </>
 );
 
-const Kartoffel = () => (
+// Gemischte Gerichte: Teller in Schrägsicht mit Eiweiß, Beilage und Gemüse
+const Platte = () => (
   <>
-    <ellipse cx="82" cy="46" rx="34" ry="24" transform="rotate(-12 82 46)" fill="#C98B4B" />
-    <g fill="#8B5A3A">
-      <ellipse cx="68" cy="40" rx="3" ry="1.8" /><ellipse cx="90" cy="54" rx="3" ry="1.8" /><ellipse cx="96" cy="36" rx="2.6" ry="1.6" /><ellipse cx="72" cy="56" rx="2.4" ry="1.5" />
+    <ellipse cx="100" cy="50" rx="64" ry="30" fill="#FFFFFF" />
+    <ellipse cx="100" cy="48" rx="52" ry="23" fill="#EEF1F6" />
+  </>
+);
+
+const HaehnchenTeller = () => (
+  <>
+    <Platte />
+    <ellipse cx="76" cy="53" rx="16" ry="10" fill="#F6E7C8" />
+    <g fill="#E9D3A4">
+      <ellipse cx="70" cy="50" rx="2.6" ry="1.2" transform="rotate(-25 70 50)" />
+      <ellipse cx="80" cy="48" rx="2.6" ry="1.2" transform="rotate(20 80 48)" />
+      <ellipse cx="76" cy="56" rx="2.6" ry="1.2" transform="rotate(-10 76 56)" />
+      <ellipse cx="86" cy="54" rx="2.6" ry="1.2" transform="rotate(30 86 54)" />
     </g>
-    <ellipse cx="140" cy="54" rx="24" ry="17" transform="rotate(10 140 54)" fill="#C98B4B" />
-    <ellipse cx="140" cy="54" rx="19.5" ry="12.5" transform="rotate(10 140 54)" fill="#F6E7C8" />
-    <circle cx="136" cy="52" r="1.2" fill="#E9D3A4" /><circle cx="146" cy="57" r="1.2" fill="#E9D3A4" /><circle cx="140" cy="60" r="1.2" fill="#E9D3A4" />
+    <rect x="98" y="40" width="5" height="9" rx="2.5" fill="#8ED8A8" />
+    <circle cx="94" cy="36" r="7" fill="#2E9E78" />
+    <circle cx="108" cy="36" r="7" fill="#2E9E78" />
+    <circle cx="101" cy="30" r="7.5" fill="#38B68A" />
+    <path d="M138 55l12 4" stroke="#F6E7C8" strokeWidth="5" strokeLinecap="round" fill="none" />
+    <circle cx="152.5" cy="59" r="3.6" fill="#F6E7C8" />
+    <ellipse cx="124" cy="49" rx="17" ry="12" transform="rotate(-18 124 49)" fill="#D9893B" />
+    <ellipse cx="119" cy="45" rx="7" ry="3.2" transform="rotate(-30 119 45)" fill="#FFFFFF" opacity=".3" />
+  </>
+);
+
+const SteakTeller = () => (
+  <>
+    <Platte />
+    <path d="M60 52c-2-10 6-17 18-17 11 0 23 3 29 10 4 6 3 13-3 16-8 4-23 5-32 2-7-2-11-6-12-11z" fill="#8B4A2F" />
+    <path d="M67 51c-1-7 5-11 13-11 8 0 17 3 21 8 3 4 2 8-2 10-6 3-18 4-25 2-4-1-6-4-7-9z" fill="#B85F3A" />
+    <g stroke="#6B3820" strokeWidth="2.6" strokeLinecap="round">
+      <path d="M76 42l7 14" /><path d="M86 41l7 14" /><path d="M96 42l6 12" />
+    </g>
+    <circle cx="124" cy="39" r="7" fill="#2E9E78" />
+    <circle cx="135" cy="42" r="6.5" fill="#38B68A" />
+    <circle cx="127" cy="33" r="6" fill="#38B68A" />
+    <rect x="109" y="56" width="22" height="6" rx="3" transform="rotate(-12 120 59)" fill="#F08A3C" />
+    <rect x="124" y="58" width="20" height="6" rx="3" transform="rotate(10 134 61)" fill="#F08A3C" />
+    <circle cx="142" cy="52" r="5" fill="#E1554C" />
+    <circle cx="112" cy="46" r="4.4" fill="#E1554C" />
+  </>
+);
+
+const FischTeller = () => (
+  <>
+    <Platte />
+    <path d="M58 48c4-9 25-14 41-7 7 3 9 8 6 12-4 6-23 10-39 6-8-2-12-6-8-11z" fill="#F0837C" />
+    <g fill="none" stroke="#FFD1CC" strokeWidth="2.2" strokeLinecap="round">
+      <path d="M72 42c3 4 3 10 0 14" /><path d="M84 40c3 5 3 12 0 17" /><path d="M96 41c2 4 2 9 0 13" />
+    </g>
+    <circle cx="128" cy="36" r="11" fill="#F5D060" />
+    <circle cx="128" cy="36" r="8" fill="#FBE79A" />
+    <g stroke="#F5D060" strokeWidth="1.6"><path d="M128 28v16" /><path d="M120 36h16" /><path d="M122.5 30.5l11 11" /><path d="M133.5 30.5l-11 11" /></g>
+    <circle cx="122" cy="58" r="6" fill="#E9BE6A" />
+    <circle cx="135" cy="55" r="6.4" fill="#E9BE6A" />
+    <circle cx="121" cy="56.5" r="1.1" fill="#C98B4B" /><circle cx="137" cy="53.5" r="1.1" fill="#C98B4B" />
+    <g stroke="#2E9E78" strokeWidth="3.6" strokeLinecap="round">
+      <path d="M108 60l14-6" /><path d="M110 65l16-5" />
+    </g>
+  </>
+);
+
+// Gemischter Teller von oben: Gemüse (Hälfte), Eiweiß, Beilage
+const Mix = () => (
+  <>
+    <circle cx="100" cy="43" r="37" fill="#FFFFFF" />
+    <path d="M100 14A29 29 0 0 0 100 72z" fill="#7FDDB6" />
+    <path d="M100 14A29 29 0 0 1 129 43H100z" fill="#E58A6B" />
+    <path d="M129 43A29 29 0 0 1 100 72V43z" fill="#F6D58E" />
+    <g stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round"><path d="M100 14V72" /><path d="M100 43H129" /></g>
+    <circle cx="82" cy="31" r="4.6" fill="#E1554C" />
+    <circle cx="90" cy="55" r="4.2" fill="#E1554C" />
+    <circle cx="78" cy="44" r="5.6" fill="#2E9E78" />
+    <circle cx="88" cy="40" r="4.6" fill="#38B68A" />
+    <ellipse cx="116" cy="29" rx="7" ry="3.6" transform="rotate(-25 116 29)" fill="#B85F3A" />
+    <g fill="#E9BE6A">
+      <circle cx="110" cy="52" r="1.8" /><circle cx="118" cy="58" r="1.8" /><circle cx="121" cy="50" r="1.8" /><circle cx="112" cy="63" r="1.8" />
+    </g>
+  </>
+);
+
+const Auflauf = () => (
+  <>
+    <rect x="52" y="40" width="96" height="30" rx="8" fill="#E1554C" />
+    <rect x="46" y="44" width="10" height="7" rx="3.5" fill="#E1554C" />
+    <rect x="144" y="44" width="10" height="7" rx="3.5" fill="#E1554C" />
+    <rect x="50" y="36" width="100" height="8" rx="4" fill="#C93E36" />
+    <path d="M56 38c0-11 20-14 44-14s44 3 44 14z" fill="#E9A855" />
+    <g fill="#C97A2A"><ellipse cx="80" cy="32" rx="5" ry="2.6" /><ellipse cx="108" cy="29" rx="6" ry="2.8" /><ellipse cx="126" cy="34" rx="4.6" ry="2.4" /></g>
+    <g fill="#4FC79B"><circle cx="94" cy="35" r="1.8" /><circle cx="118" cy="35" r="1.8" /><circle cx="70" cy="36" r="1.6" /></g>
+    <g fill="none" stroke="#97A6C2" strokeWidth="3.4" strokeLinecap="round"><path d="M84 20c-3-3 3-5 0-9" /><path d="M104 18c-3-3 3-5 0-9" /><path d="M122 20c-3-3 3-5 0-9" /></g>
+  </>
+);
+
+const Wok = () => (
+  <>
+    <rect x="140" y="43" width="42" height="8" rx="4" className="cv-ink" />
+    <path d="M44 44h104c0 18-18 28-52 28S44 62 44 44z" className="cv-ink" />
+    <circle cx="68" cy="38" r="8" fill="#2E9E78" />
+    <circle cx="80" cy="36" r="7" fill="#38B68A" />
+    <rect x="90" y="32" width="16" height="8" rx="4" transform="rotate(25 98 36)" fill="#F08A3C" />
+    <rect x="108" y="30" width="18" height="8" rx="4" transform="rotate(-20 117 34)" fill="#E1554C" />
+    <rect x="124" y="35" width="16" height="10" rx="5" fill="#F2D7A6" />
+    <rect x="62" y="43" width="14" height="8" rx="4" fill="#F2D7A6" />
+    <g fill="#4FC79B"><circle cx="100" cy="43" r="2.4" /><circle cx="108" cy="46" r="2.4" /><circle cx="90" cy="46" r="2.4" /></g>
+    <g fill="none" className="cv-soft-s" strokeWidth="3.4" strokeLinecap="round"><path d="M74 24c-3-3 3-5 0-9" /><path d="M100 22c-3-3 3-5 0-9" /><path d="M126 24c-3-3 3-5 0-9" /></g>
+  </>
+);
+
+const PowerBowl = () => (
+  <>
+    <path d="M54 44h92c0 19-16 33-46 33S54 63 54 44z" className="cv-ink" />
+    <ellipse cx="100" cy="44" rx="46" ry="8" fill="#FFFFFF" />
+    <path d="M60 44c0-15 22-16 26 0z" fill="#F6E7C8" />
+    <ellipse cx="140" cy="39" rx="12" ry="8.5" fill="#7A5BB0" />
+    <path d="M90 44c0-11 8-17 17-12 4 2 4 9-2 12z" fill="#4FC79B" />
+    <path d="M94 43c0-6 4-9 9-7 2 1 2 4-1 7z" fill="#C8EDA0" />
+    <circle cx="114" cy="33" r="6.4" fill="#E1554C" />
+    <g fill="#E9BE6A"><circle cx="76" cy="31" r="3.2" /><circle cx="84" cy="27" r="3.2" /><circle cx="70" cy="38" r="3.2" /></g>
+    <ellipse cx="127" cy="42" rx="6" ry="2.6" transform="rotate(-20 127 42)" fill="#F08A3C" />
+  </>
+);
+
+const Sandwich = () => (
+  <>
+    <rect x="56" y="58" width="88" height="14" rx="6" fill="#E0A44F" />
+    <rect x="61" y="60" width="78" height="7" rx="3.5" fill="#F6E2B0" />
+    <rect x="54" y="52" width="92" height="7" rx="3.5" fill="#F0A5A0" />
+    <rect x="58" y="47" width="84" height="6" fill="#F5B83A" />
+    <path d="M60 53h12l-6 7zM128 53h12l-6 7z" fill="#F5B83A" />
+    <ellipse cx="82" cy="44" rx="13" ry="4" fill="#E1554C" />
+    <ellipse cx="118" cy="44" rx="13" ry="4" fill="#E1554C" />
+    <path d="M54 44h92v1c-5 5-10 0-15 3s-10 0-15 3-10 0-15-3-10 2-15-3-10 0-15-3z" fill="#4FC79B" />
+    <rect x="56" y="24" width="88" height="20" rx="9" fill="#E0A44F" />
+    <rect x="62" y="28" width="76" height="9" rx="4.5" fill="#F0B866" />
+    <path d="M100 6v26" stroke="#C98B4B" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+    <path d="M100 6l12 4-12 4z" fill="#E1554C" />
   </>
 );
 
@@ -355,37 +476,43 @@ const Teller = () => (
 // Motive in Anzeigereihenfolge der Auswahl. `tone`: Standardfarbe,
 // `words`: Teilwörter (klein) für die automatische Zuordnung über den Namen.
 export const COVER_MOTIFS = [
-  { key: 'suppe',       label: 'Suppe',       tone: 'ochre', Art: Suppe,       words: ['suppe', 'brühe', 'bruehe', 'creme', 'kürbis'] },
-  { key: 'topf',        label: 'Eintopf',     tone: 'ochre', Art: Topf,        words: ['eintopf', 'gulasch', 'chili', 'ragout', 'curry', 'topf'] },
-  { key: 'pizza',       label: 'Pizza',       tone: 'rot',   Art: Pizza,       words: ['pizza', 'flammkuchen', 'quiche'] },
-  { key: 'pasta',       label: 'Pasta',       tone: 'rot',   Art: Pasta,       words: ['pasta', 'nudel', 'spaghetti', 'lasagne', 'penne', 'gnocchi'] },
-  { key: 'burger',      label: 'Burger',      tone: 'ochre', Art: Burger,      words: ['burger'] },
-  { key: 'brot',        label: 'Brot',        tone: 'ochre', Art: Brot,        words: ['brot', 'toast', 'stulle', 'sandwich', 'brötchen', 'broetchen'] },
-  { key: 'wrap',        label: 'Wrap',        tone: 'gruen', Art: Wrap,        words: ['wrap', 'taco', 'burrito', 'döner', 'doener', 'fajita'] },
-  { key: 'salat',       label: 'Salat',       tone: 'gruen', Art: Salat,       words: ['salat', 'rohkost', 'dip'] },
-  { key: 'bowl',        label: 'Bowl',        tone: 'lila',  Art: Bowl,        words: ['bowl', 'müsli', 'muesli', 'porridge', 'oats', 'skyr', 'joghurt', 'quark'] },
-  { key: 'reis',        label: 'Reis',        tone: 'gruen', Art: Reis,        words: ['reis', 'risotto', 'sushi', 'quinoa'] },
-  { key: 'fisch',       label: 'Fisch',       tone: 'blau',  Art: Fisch,       words: ['fisch', 'lachs', 'thunfisch', 'forelle', 'garnele', 'kabeljau'] },
-  { key: 'steak',       label: 'Fleisch',     tone: 'rot',   Art: Steak,       words: ['steak', 'rind', 'schwein', 'fleisch', 'braten', 'schnitzel', 'hack', 'lamm'] },
-  { key: 'haehnchen',   label: 'Hähnchen',    tone: 'ochre', Art: Haehnchen,   words: ['hähnchen', 'haehnchen', 'huhn', 'pute', 'geflügel', 'gefluegel', 'chicken'] },
-  { key: 'gemuese',     label: 'Gemüse',      tone: 'gruen', Art: Gemuese,     words: ['gemüse', 'gemuese', 'möhre', 'karotte', 'brokkoli', 'pfanne'] },
-  { key: 'ei',          label: 'Ei',          tone: 'gruen', Art: Ei,          words: ['rührei', 'ruehrei', 'spiegelei', 'omelett', 'ei '] },
-  { key: 'pfannkuchen', label: 'Pfannkuchen', tone: 'ochre', Art: Pfannkuchen, words: ['pfannkuchen', 'pancake', 'waffel', 'crêpe', 'crepe'] },
-  { key: 'kuchen',      label: 'Kuchen',      tone: 'rot',   Art: Kuchen,      words: ['kuchen', 'torte', 'muffin', 'brownie', 'dessert'] },
-  { key: 'eis',         label: 'Eis',         tone: 'blau',  Art: Eis,         words: ['eis', 'sorbet'] },
-  { key: 'obst',        label: 'Obst',        tone: 'rot',   Art: Obst,        words: ['obst', 'apfel', 'beere', 'frucht', 'banane'] },
-  { key: 'smoothie',    label: 'Smoothie',    tone: 'gruen', Art: Smoothie,    words: ['smoothie', 'shake', 'saft', 'drink'] },
-  { key: 'kaffee',      label: 'Kaffee',      tone: 'blau',  Art: Kaffee,      words: ['kaffee', 'latte', 'kakao', 'tee', 'cappuccino'] },
-  { key: 'snack',       label: 'Snack',       tone: 'ochre', Art: Snack,       words: ['energie', 'ball', 'riegel', 'nuss', 'nüsse', 'snack'] },
-  { key: 'kartoffel',   label: 'Kartoffel',   tone: 'ochre', Art: Kartoffel,   words: ['kartoffel', 'pommes', 'süßkartoffel', 'suesskartoffel'] },
-  { key: 'teller',      label: 'Gedeck',      tone: 'grau',  Art: Teller,      words: [] },
+  { key: 'haehnchenteller', label: 'Hähnchen-Teller', tone: 'ochre', Art: HaehnchenTeller, words: [] },
+  { key: 'steakteller',     label: 'Steak-Teller',    tone: 'rot',   Art: SteakTeller,     words: [] },
+  { key: 'fischteller',     label: 'Fisch-Teller',    tone: 'blau',  Art: FischTeller,     words: [] },
+  { key: 'mix',             label: 'Gemischter Teller', tone: 'gruen', Art: Mix,           words: ['teller', 'menü', 'menue', 'gemischt'] },
+  { key: 'auflauf',         label: 'Auflauf',         tone: 'rot',   Art: Auflauf,         words: ['auflauf', 'gratin', 'ofen', 'überbacken', 'ueberbacken'] },
+  { key: 'wok',             label: 'Pfannengericht',  tone: 'gruen', Art: Wok,             words: ['pfanne', 'wok', 'stir', 'gebraten'] },
+  { key: 'buddha',          label: 'Power Bowl',      tone: 'gruen', Art: PowerBowl,       words: ['buddha', 'power', 'poke'] },
+  { key: 'bowl',            label: 'Müsli-Bowl',      tone: 'lila',  Art: Bowl,            words: ['bowl', 'müsli', 'muesli', 'porridge', 'oats', 'skyr'] },
+  { key: 'suppe',           label: 'Suppe',           tone: 'ochre', Art: Suppe,           words: ['suppe', 'brühe', 'bruehe'] },
+  { key: 'topf',            label: 'Eintopf',         tone: 'ochre', Art: Topf,            words: ['eintopf', 'gulasch', 'chili', 'ragout', 'curry', 'topf'] },
+  { key: 'pasta',           label: 'Pasta',           tone: 'rot',   Art: Pasta,           words: ['pasta', 'nudel', 'spaghetti', 'lasagne', 'penne', 'gnocchi'] },
+  { key: 'pizza',           label: 'Pizza',           tone: 'rot',   Art: Pizza,           words: ['pizza', 'flammkuchen', 'quiche'] },
+  { key: 'burger',          label: 'Burger',          tone: 'ochre', Art: Burger,          words: ['burger'] },
+  { key: 'sandwich',        label: 'Sandwich',        tone: 'ochre', Art: Sandwich,        words: ['sandwich', 'toast', 'stulle', 'brötchen', 'broetchen', 'belegt'] },
+  { key: 'wrap',            label: 'Wrap',            tone: 'gruen', Art: Wrap,            words: ['wrap', 'taco', 'burrito', 'döner', 'doener', 'fajita'] },
+  { key: 'salat',           label: 'Salat',           tone: 'gruen', Art: Salat,           words: ['salat', 'rohkost', 'dip'] },
+  { key: 'reis',            label: 'Reis',            tone: 'gruen', Art: Reis,            words: ['reis', 'risotto', 'sushi', 'quinoa'] },
+  { key: 'fisch',           label: 'Fisch',           tone: 'blau',  Art: Fisch,           words: ['fisch', 'lachs', 'thunfisch', 'forelle', 'garnele', 'kabeljau'] },
+  { key: 'steak',           label: 'Fleisch',         tone: 'rot',   Art: Steak,           words: ['steak', 'rind', 'schwein', 'fleisch', 'braten', 'schnitzel', 'hack', 'lamm'] },
+  { key: 'haehnchen',       label: 'Hähnchen',        tone: 'ochre', Art: Haehnchen,       words: ['hähnchen', 'haehnchen', 'huhn', 'pute', 'geflügel', 'gefluegel', 'chicken'] },
+  { key: 'gemuese',         label: 'Gemüse',          tone: 'gruen', Art: Gemuese,         words: ['gemüse', 'gemuese', 'möhre', 'karotte', 'brokkoli', 'spinat', 'spargel'] },
+  { key: 'ei',              label: 'Ei',              tone: 'gruen', Art: Ei,              words: ['rührei', 'ruehrei', 'spiegelei', 'omelett', 'eier', ' ei '] },
+  { key: 'pfannkuchen',     label: 'Pfannkuchen',     tone: 'ochre', Art: Pfannkuchen,     words: ['pfannkuchen', 'pancake', 'waffel', 'crêpe', 'crepe'] },
+  { key: 'kuchen',          label: 'Kuchen',          tone: 'rot',   Art: Kuchen,          words: ['kuchen', 'torte', 'muffin', 'brownie', 'dessert'] },
+  { key: 'eis',             label: 'Eis',             tone: 'blau',  Art: Eis,             words: [' eis', 'sorbet', 'frozen'] },
+  { key: 'obst',            label: 'Obst',            tone: 'rot',   Art: Obst,            words: ['obst', 'apfel', 'beere', 'frucht', 'banane'] },
+  { key: 'smoothie',        label: 'Smoothie',        tone: 'gruen', Art: Smoothie,        words: ['smoothie', 'shake', 'saft', 'drink'] },
+  { key: 'kaffee',          label: 'Kaffee',          tone: 'blau',  Art: Kaffee,          words: ['kaffee', 'latte', 'kakao', 'tee', 'cappuccino'] },
+  { key: 'snack',           label: 'Snack',           tone: 'ochre', Art: Snack,           words: ['energie', 'ball', 'riegel', 'nuss', 'nüsse', 'snack'] },
+  { key: 'teller',          label: 'Gedeck',          tone: 'grau',  Art: Teller,          words: [] },
 ];
 
 const MOTIF_BY_KEY = Object.fromEntries(COVER_MOTIFS.map((m) => [m.key, m]));
 const TONE_KEYS = new Set(COVER_TONES.map((t) => t.key));
 
 // Standardmotiv je Mahlzeit-Typ, falls der Name nichts hergibt
-const MEAL_DEFAULT = { fruehstueck: 'bowl', mittag: 'teller', abend: 'teller', snack: 'snack' };
+const MEAL_DEFAULT = { fruehstueck: 'bowl', mittag: 'mix', abend: 'mix', snack: 'snack' };
 
 // "suppe" | "suppe:blau" → { motif, tone } oder null (= automatisch)
 export function parseCover(cover) {
@@ -402,14 +529,35 @@ export function formatCover(motifKey, toneKey) {
   return toneKey && toneKey !== motif.tone ? `${motifKey}:${toneKey}` : motifKey;
 }
 
+// Gerichte (Form der Mahlzeit) schlagen einzelne Zutaten: "Linsen-Gemüse-Eintopf"
+// ist ein Eintopf, nicht Gemüse. Nur ohne Gericht-Treffer zählen Zutaten.
+const DISH_KEYS = new Set(['buddha', 'bowl', 'suppe', 'topf', 'pasta', 'pizza', 'burger', 'sandwich', 'wrap', 'salat',
+  'auflauf', 'wok', 'pfannkuchen', 'kuchen', 'eis', 'smoothie', 'kaffee']);
+const SAVORY_KEYS = ['haehnchen', 'steak', 'fisch', 'gemuese', 'reis', 'ei'];
+const PROTEIN_PLATE = { haehnchen: 'haehnchenteller', steak: 'steakteller', fisch: 'fischteller' };
+
 // Auswahl für ein Rezept: gespeichertes Cover, sonst Treffer im Namen,
 // sonst Standard nach Mahlzeit-Typ. Liefert immer ein Motiv.
 export function resolveCover(recipe) {
   const saved = parseCover(recipe?.cover);
   if (saved) return saved;
   const name = ` ${(recipe?.name || '').toLowerCase()} `;
-  const hit = COVER_MOTIFS.find((m) => m.words.some((w) => name.includes(w)));
-  const motif = hit || MOTIF_BY_KEY[MEAL_DEFAULT[recipe?.category]] || MOTIF_BY_KEY.teller;
+  const hits = COVER_MOTIFS.filter((m) => m.words.some((w) => name.includes(w)));
+  const keys = new Set(hits.map((h) => h.key));
+  const savory = SAVORY_KEYS.filter((k) => keys.has(k));
+  const protein = ['haehnchen', 'steak', 'fisch'].find((k) => keys.has(k));
+
+  let motif;
+  if (keys.has('bowl') && savory.length > 0) motif = MOTIF_BY_KEY.buddha; // herzhafte Bowl
+  else if (hits.find((h) => DISH_KEYS.has(h.key))) motif = hits.find((h) => DISH_KEYS.has(h.key));
+  else if (protein && (savory.length > 1 || /( mit | und |&|,)/.test(name))) motif = MOTIF_BY_KEY[PROTEIN_PLATE[protein]]; // z. B. "Lachs mit Gemüse"
+  else if (savory.length > 2) motif = MOTIF_BY_KEY.mix;
+  else {
+    // mehrere Zutaten ohne Eiweiß: die zuerst genannte gibt das Bild ("Rührei mit Spinat" → Ei)
+    const pos = (m) => Math.min(...m.words.map((w) => name.indexOf(w)).filter((i) => i >= 0));
+    const first = [...hits].sort((a, b) => pos(a) - pos(b))[0];
+    motif = first || MOTIF_BY_KEY[MEAL_DEFAULT[recipe?.category]] || MOTIF_BY_KEY.teller;
+  }
   return { motif, tone: motif.tone };
 }
 
