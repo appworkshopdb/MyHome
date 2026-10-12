@@ -3094,7 +3094,62 @@
 .hab-cp-sw { width: 14px; height: 14px; border-radius: 4px; display: block; flex: none; }
 
 /* Löschen-Sheet / Archiv-Aktion */
-.hab-del-danger { color: var(--status-critical); }
+.hab-del-opts { display: flex; flex-direction: column; gap: 10px; }
+.hab-del-opt {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: start;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-hairline);
+  border-radius: var(--r-xl);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hab-del-opt b { font-size: 0.95rem; font-weight: 800; }
+.hab-del-desc { font-size: 0.8rem; line-height: 1.35; color: var(--text-muted); }
+.hab-del-radio {
+  grid-row: 1 / 3;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: var(--surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hab-del-opt.on { border-color: var(--action-primary); background: var(--action-quiet-bg); }
+.hab-del-opt.on .hab-del-radio { border-color: var(--action-primary); }
+.hab-del-opt.on .hab-del-radio::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--action-primary);
+}
+.hab-del-opt.danger.on { border-color: var(--status-critical); background: var(--status-critical-bg); }
+.hab-del-opt.danger.on .hab-del-radio { border-color: var(--status-critical); }
+.hab-del-opt.danger.on .hab-del-radio::after { background: var(--status-critical); }
+.hab-del-opt:focus-visible,
+.hab-del-confirm:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.hab-del-confirm {
+  min-height: 50px;
+  border: none;
+  border-radius: var(--r-xl);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hab-del-confirm.danger { background: var(--status-critical); color: var(--surface-raised); }
+.hab-del-cancel { min-height: 40px; font-weight: 800; }
 .hab-manage-btn--text {
   width: auto;
   padding: 0 10px;

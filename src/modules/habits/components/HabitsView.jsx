@@ -78,6 +78,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
+  const [deleteHideStats, setDeleteHideStats] = useState(false);
   const [error, setError]             = useState(null);
   const [showArchive, setShowArchive] = useState(false);
   const [archivedHabits, setArchived] = useState([]);
@@ -225,6 +226,11 @@ export default function HabitsView({ habits, onHabitsChange }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  function openDelete(habit) {
+    setDeleteHideStats(false); // harmlosere Option vorauswählen
+    setDeleteTarget(habit);
   }
 
   async function handleDelete(habitId, hideFromStats) {
@@ -643,7 +649,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                     key={habit.id}
                     habit={habit}
                     onEdit={() => openEdit(habit)}
-                    onDelete={() => setDeleteTarget(habit)}
+                    onDelete={() => openDelete(habit)}
                     onToggleActive={() => handleToggleActive(habit)}
                     deleting={deletingId === habit.id}
                   />
@@ -664,15 +670,40 @@ export default function HabitsView({ habits, onHabitsChange }) {
               Soll die Gewohnheit auch aus den Statistiken verschwinden, oder sollen die
               bisherigen Werte dort erhalten bleiben?
             </div>
-            <button type="button" className="btn btn-primary" onClick={() => handleDelete(deleteTarget.id, false)}>
-              Nur aus der Liste löschen
-              <small style={{ display: 'block', fontWeight: 500 }}>Werte bleiben in der Statistik</small>
+
+            <div role="radiogroup" aria-label="Löschen" className="hab-del-opts">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!deleteHideStats}
+                className={`hab-del-opt${!deleteHideStats ? ' on' : ''}`}
+                onClick={() => setDeleteHideStats(false)}
+              >
+                <span className="hab-del-radio" />
+                <b>Nur aus der Liste löschen</b>
+                <span className="hab-del-desc">Die Werte bleiben in der Statistik erhalten.</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={deleteHideStats}
+                className={`hab-del-opt danger${deleteHideStats ? ' on' : ''}`}
+                onClick={() => setDeleteHideStats(true)}
+              >
+                <span className="hab-del-radio" />
+                <b>Auch aus der Statistik löschen</b>
+                <span className="hab-del-desc">Die Gewohnheit zählt in keinem Verlauf mehr.</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
+              onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
+            >
+              {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
             </button>
-            <button type="button" className="btn btn-secondary hab-del-danger" onClick={() => handleDelete(deleteTarget.id, true)}>
-              Auch aus der Statistik löschen
-              <small style={{ display: 'block', fontWeight: 500 }}>Die Gewohnheit zählt in keinem Verlauf mehr</small>
-            </button>
-            <button type="button" className="hab-cp-link" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+            <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
           </div>
         </SheetShell>
       )}
@@ -687,7 +718,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 key={habit.id}
                 habit={habit}
                 onEdit={() => openEdit(habit)}
-                onDelete={() => setDeleteTarget(habit)}
+                onDelete={() => openDelete(habit)}
                 onToggleActive={() => handleToggleActive(habit)}
                 deleting={deletingId === habit.id}
                 paused
