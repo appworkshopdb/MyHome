@@ -9,7 +9,7 @@
   position: relative;
   margin-bottom: 10px;
 }
-.nut-search svg {
+.nut-search > svg {
   position: absolute;
   left: 12px;
   top: 50%;
@@ -762,11 +762,10 @@
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   width: 36px; height: 36px; border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--surface-raised); color: var(--text-primary);
-  border: 1px solid var(--border-hairline); cursor: pointer; padding: 0;
+  background: var(--action-primary); color: var(--text-on-accent);
+  border: 0; cursor: pointer; padding: 0;
 }
-.nut-filter-btn svg { width: 18px; height: 18px; }
-.nut-filter-btn.active { background: var(--action-primary); color: var(--text-on-accent); border-color: var(--action-primary); }
+.nut-filter-btn svg { display: block; width: 18px; height: 18px; flex: none; }
 .nut-filter-btn b {
   position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
   border-radius: 9px; background: var(--raw-ochre-300, #D9A94F); color: #1B2A4A;
