@@ -11,7 +11,8 @@
 
 import { useState } from 'react';
 import { useGamificationStore } from '../lib/gamificationStore.js';
-import { IconBird, IconNest } from './GamificationIcons.jsx';
+import { IconNest } from './GamificationIcons.jsx';
+import Bird from './birds/Bird';
 import GamificationSheet from './GamificationSheet.jsx';
 
 export default function GamificationBadges() {
@@ -28,7 +29,7 @@ export default function GamificationBadges() {
         aria-label={`Fortschritt öffnen — Level ${status.level}, Serie ${status.current_streak} Tage`}
       >
         <span className="gami-tapzone__item">
-          <IconBird size={28} animated />
+          <Bird species={status.bird_species || 'robin'} stage={status.level} head size={30} />
           <span className="gami-tapzone__label">Lv {status.level}</span>
         </span>
         <span className="gami-tapzone__item gami-tapzone__item--nest">

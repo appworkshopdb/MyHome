@@ -8,7 +8,7 @@
 //    damit die TopBar-Badges live updaten ohne Reload.
 
 import { useState, useEffect } from 'react';
-import { getGamificationStatus, calcLevel, calcLevelProgress } from './gamificationData.js';
+import { getGamificationStatus, calcLevel, calcLevelProgress, saveBirdSpecies } from './gamificationData.js';
 
 // ─── Interner State ───────────────────────────────────────────
 
@@ -19,6 +19,7 @@ let state = {
   last_active_date: null,
   level:            1,
   levelProgress:    null,
+  bird_species:     null,
   loaded:           false,
   loading:          false,
 };
@@ -28,6 +29,26 @@ const listeners = new Set();
 function setState(patch) {
   state = { ...state, ...patch };
   listeners.forEach((fn) => fn(state));
+}
+
+// ─── Vogelart ────────────────────────────────────────────────
+// Liegt in gamification_status.bird_species (Migration:
+// supabase/bird_species_migration.sql). Solange die Spalte fehlt oder das
+// Speichern scheitert, dient localStorage als Rückfall — dann gilt die Wahl
+// nur für dieses Gerät, die App bleibt aber benutzbar.
+const SPECIES_LS_KEY = 'nestua:bird-species';
+function readLocalSpecies() {
+  try { return localStorage.getItem(SPECIES_LS_KEY) || null; } catch { return null; }
+}
+
+export async function setBirdSpecies(species) {
+  try { localStorage.setItem(SPECIES_LS_KEY, species); } catch { /* ignorieren */ }
+  setState({ bird_species: species });
+  try {
+    await saveBirdSpecies(species);
+  } catch (e) {
+    console.warn('[gamificationStore] Vogelart nicht in der DB gespeichert (Spalte fehlt?):', e?.message || e);
+  }
 }
 
 // ─── Laden ───────────────────────────────────────────────────
@@ -46,6 +67,7 @@ export async function loadGamificationStore({ force = false } = {}) {
       last_active_date: data.last_active_date ?? null,
       level,
       levelProgress:    calcLevelProgress(data.points_total ?? 0),
+      bird_species:     data.bird_species ?? readLocalSpecies(),
       loaded:           true,
       loading:          false,
     });

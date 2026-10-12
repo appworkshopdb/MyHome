@@ -35,7 +35,7 @@ export const DAILY_CAP = {
 };
 
 // Level-Schwellen: Level 1 = 0 Punkte, Level 2 = 50, …
-const LEVEL_THRESHOLDS = [0, 50, 150, 300, 500, 800, 1200, 1700, 2300, 3000, 4000, 5500, 7500, 10000];
+export const LEVEL_THRESHOLDS = [0, 50, 150, 300, 500, 800, 1200, 1700, 2300, 3000, 4000, 5500, 7500, 10000];
 
 export function calcLevel(pointsTotal) {
   let level = 1;
@@ -196,4 +196,14 @@ export async function awardPoints(actionType, entityId) {
   if (upsertErr) throw upsertErr;
 
   return { awarded: true, points, newTotal, newLevel: calcLevel(newTotal), newStreak };
+}
+
+// ─── Vogelart speichern ──────────────────────────────────────
+// Schreibt nur bird_species — upsert lässt die übrigen Spalten einer
+// bestehenden Zeile unberührt.
+export async function saveBirdSpecies(species) {
+  const { error } = await getSupabase()
+    .from('gamification_status')
+    .upsert({ owner_id: getOwnerId(), bird_species: species }, { onConflict: 'owner_id' });
+  if (error) throw error;
 }

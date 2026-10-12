@@ -25,6 +25,9 @@ import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
+import BirdDefs from './core/components/birds/BirdDefs';
+import WelcomeWizard from './core/components/WelcomeWizard';
+import { useGamificationStore } from './core/lib/gamificationStore';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
@@ -57,6 +60,14 @@ const MODULE_COMPONENTS = {
   shopping:  ShoppingModule,
 };
 
+// Eigene Komponente (statt Hook in App): der Store lädt beim ersten Mount und
+// braucht dafür eine Sitzung — App rendert diese Stelle erst nach dem Login.
+function FirstRunWizard() {
+  const gami = useGamificationStore();
+  if (!gami.loaded || gami.bird_species) return null;
+  return <WelcomeWizard level={gami.level} />;
+}
+
 export default function App() {
   const { session, ladeVorgang } = useAuth();
   const { module: activeModule, view, navigate } = useRoute();
@@ -82,6 +93,8 @@ export default function App() {
 
   return (
     <EntrySheetProvider>
+      <BirdDefs />
+      <FirstRunWizard />
       {/* FinanceMonthProvider umschließt sowohl <main> (MonthsView schreibt
           den aktiven Monat rein) als auch GlobalFab (SparschweinFab liest
           ihn raus). Beide MÜSSEN unter derselben Provider-Instanz hängen,
