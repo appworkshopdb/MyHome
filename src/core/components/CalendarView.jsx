@@ -14,6 +14,7 @@ import SheetShell from './SheetShell';
 import { useUi } from '../lib/UiContext';
 import CalendarEventRow from './CalendarEventRow';
 import CalendarEventSheet from './CalendarEventSheet';
+import CalendarFilterSheet from './CalendarFilterSheet';
 
 const FILTER_STORAGE_KEY = 'nestua.calendarFilter.v1';
 const AGENDA_STEP_DAYS = 30;
@@ -27,9 +28,10 @@ function loadFilter() {
     return {
       source: ['alle', 'app', 'google'].includes(raw?.source) ? raw.source : 'alle',
       hidden: Array.isArray(raw?.hidden) ? raw.hidden : [],
+      hideDone: raw?.hideDone === true,
     };
   } catch {
-    return { source: 'alle', hidden: [] };
+    return { source: 'alle', hidden: [], hideDone: false };
   }
 }
 
@@ -107,6 +109,8 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
   const [detail, setDetail] = useState(null); // Termin (Detail-Sheet)
   const [googleCals, setGoogleCals] = useState([]);
   const [filter, setFilter] = useState(loadFilter);
+  const [query, setQuery] = useState(''); // Suche, nicht gespeichert
+  const [filterOpen, setFilterOpen] = useState(false);
   const { showToast } = useUi();
   const groupRefs = useRef({});
   const [conn, setConn] = useState(null);       // google_calendar_connections-Zeile | null
@@ -213,7 +217,16 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
     return map;
   }, [dbEvents, todos, from, to]);
 
-  // Gefilterte Sicht — Filter wirkt nur auf die Anzeige.
+  // Suchtext: Titel, Notiz, Ort und Kategorie-/Kalendername.
+  function matchesQuery(ev, q) {
+    if (!q) return true;
+    const d = describeEvent(ev, calMap);
+    const hay = [ev.title, ev.description, ev.location, d.detail].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  }
+
+  // Gefilterte Sicht — Filter und Suche wirken nur auf die Anzeige.
+  const q = query.trim().toLowerCase();
   const events = useMemo(() => {
     const hidden = new Set(filter.hidden);
     const out = {};
@@ -222,14 +235,19 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         const isGoogle = ev.source_module === 'google';
         if (filter.source === 'app' && isGoogle) return false;
         if (filter.source === 'google' && !isGoogle) return false;
-        return !hidden.has(filterKey(ev));
+        if (filter.hideDone && ev.done) return false;
+        if (hidden.has(filterKey(ev))) return false;
+        return matchesQuery(ev, q);
       });
       if (kept.length) out[date] = kept;
     }
     return out;
-  }, [allEvents, filter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allEvents, filter, q, calMap]);
 
-  const chips = useMemo(() => {
+  // Alle wählbaren Kategorien (Nestua + Google-Kalender) und Terminzahlen im
+  // geladenen Zeitraum — Grundlage fürs Filter-Sheet und die aktiven Chips.
+  const categories = useMemo(() => {
     const list = Object.entries(APP_CATEGORIES).map(([m, c]) => ({
       key: `app:${m}`, label: c.label, color: c.color, isGoogle: false,
     }));
@@ -245,8 +263,17 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         }
       }
     }
-    return list.filter((c) => filter.source === 'alle' || (filter.source === 'google') === c.isGoogle);
-  }, [googleCals, allEvents, filter.source]);
+    return list;
+  }, [googleCals, allEvents]);
+
+  const counts = useMemo(() => {
+    const c = {};
+    for (const evs of Object.values(allEvents)) for (const ev of evs) c[filterKey(ev)] = (c[filterKey(ev)] ?? 0) + 1;
+    return c;
+  }, [allEvents]);
+
+  const totalCount = useMemo(() => Object.values(allEvents).reduce((n, l) => n + l.length, 0), [allEvents]);
+  const shownCount = useMemo(() => Object.values(events).reduce((n, l) => n + l.length, 0), [events]);
 
   function toggleHidden(key) {
     setFilter((f) => ({
@@ -254,7 +281,16 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
       hidden: f.hidden.includes(key) ? f.hidden.filter((k) => k !== key) : [...f.hidden, key],
     }));
   }
-  const filterActive = filter.source !== 'alle' || filter.hidden.length > 0;
+  const filterCount = (filter.source !== 'alle' ? 1 : 0) + filter.hidden.length + (filter.hideDone ? 1 : 0);
+  const filterActive = filterCount > 0 || q !== '';
+  function resetAll() { setFilter({ source: 'alle', hidden: [], hideDone: false }); setQuery(''); }
+
+  // Aktive Filter als entfernbare Chips unter der Suche.
+  const activeChips = [
+    ...(filter.source !== 'alle' ? [{ id: 'source', label: filter.source === 'app' ? 'Nur Nestua' : 'Nur Google', remove: () => setFilter((f) => ({ ...f, source: 'alle' })) }] : []),
+    ...filter.hidden.map((k) => ({ id: k, label: `ohne ${categories.find((c) => c.key === k)?.label ?? 'Google'}`, remove: () => toggleHidden(k) })),
+    ...(filter.hideDone ? [{ id: 'done', label: 'ohne Erledigte', remove: () => setFilter((f) => ({ ...f, hideDone: false })) }] : []),
+  ];
 
   // Detail-Sheet: Aufgaben immer live aus dem Hub-State, damit Abhaken im
   // Sheet / in der Liste sofort sichtbar ist.
@@ -371,49 +407,80 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         document.body,
       )}
 
-      <div className="calview-filter">
-        <div className="calview-source-toggle" role="group" aria-label="Quelle">
-          {[['alle', 'Alle'], ['app', 'Nur App'], ['google', 'Nur Google']].map(([key, label]) => (
-            <button
-              key={key}
-              className={filter.source === key ? 'active' : ''}
-              onClick={() => setFilter((f) => ({ ...f, source: key }))}
-            >
-              {label}
+      <div className="calview-search-row">
+        <label className="calview-search">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Termine suchen …"
+            aria-label="Termine suchen"
+            autoComplete="off"
+          />
+          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
+        </label>
+        <button
+          type="button"
+          className={`calview-filter-btn ${filterCount > 0 ? 'on' : ''}`}
+          onClick={() => setFilterOpen(true)}
+          aria-label="Filter öffnen"
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="17" r="2.2" />
+          </svg>
+          {filterCount > 0 && <span className="calview-filter-badge">{filterCount}</span>}
+        </button>
+      </div>
+
+      {activeChips.length > 0 && (
+        <div className="calview-active-chips">
+          {activeChips.map((c) => (
+            <button key={c.id} type="button" className="calview-chip removable" onClick={c.remove} aria-label={`${c.label} entfernen`}>
+              {c.label} <i aria-hidden="true">×</i>
             </button>
           ))}
         </div>
-        <div className="calview-chips">
-          {chips.map((c) => {
-            const off = filter.hidden.includes(c.key);
-            return (
-              <button
-                key={c.key}
-                className={`calview-chip ${off ? 'off' : ''}`}
-                onClick={() => toggleHidden(c.key)}
-                aria-pressed={!off}
-              >
-                <span className={`calview-dot ${c.isGoogle ? 'calview-dot--google' : ''}`} style={{ '--dot-color': c.color }} />
-                {c.label}
-              </button>
-            );
-          })}
-          {filterActive && (
-            <button className="calview-chip-reset" onClick={() => setFilter({ source: 'alle', hidden: [] })}>
-              Zurücksetzen
-            </button>
-          )}
+      )}
+
+      {filterActive && !loading && (
+        <div className="calview-count-line">
+          <span>{shownCount} von {totalCount} Terminen</span>
+          <button type="button" onClick={resetAll}>Zurücksetzen</button>
         </div>
-      </div>
+      )}
+
+      {filterOpen && (
+        <CalendarFilterSheet
+          filter={filter}
+          categories={categories}
+          counts={counts}
+          shownCount={shownCount}
+          onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
+          onToggleKey={toggleHidden}
+          onReset={() => setFilter({ source: 'alle', hidden: [], hideDone: false })}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
 
       {mode === 'agenda' && (
         <div className="calview-day-list">
           {loading && <div className="calview-loading">Lädt…</div>}
-          {!loading && !agendaHasToday && (
+          {!loading && !agendaHasToday && !filterActive && (
             <DayGroup str={todayStr} today={todayStr} events={[]} showEmpty {...rowProps} />
           )}
           {!loading && agendaKeys.length === 0 && (
-            <div className="calview-empty">In den nächsten {agendaDays} Tagen steht nichts an.</div>
+            filterActive ? (
+              <div className="calview-empty">
+                <strong>Keine Treffer</strong>
+                {q ? <>Für „{query.trim()}“ gibt es in den nächsten {agendaDays} Tagen nichts.</> : 'Mit den aktuellen Filtern ist nichts zu sehen.'}
+                <button type="button" className="calview-empty-btn" onClick={resetAll}>Filter zurücksetzen</button>
+              </div>
+            ) : (
+              <div className="calview-empty">In den nächsten {agendaDays} Tagen steht nichts an.</div>
+            )
           )}
           {!loading && agendaKeys.map((str) => (
             <DayGroup key={str} str={str} today={todayStr} events={events[str]} {...rowProps} />
