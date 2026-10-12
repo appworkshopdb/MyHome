@@ -176,6 +176,15 @@ jeder normalen Variante gibt es eine "… light"-Variante (Ampel eine Stufe bess
 `glutenfrei`/`laktosefrei` sind abgeleitet (Allergen "Gluten"/"Milch"), nie von Hand.
 `nutData.getFoods()` lädt alles und hält je Nutzer einen Offline-Cache im localStorage.
 
+## Rezeptbilder (Ernährung)
+
+Keine Fotos: 24 flächige Illustrationen in `modules/nutrition/lib/recipeCovers.jsx`
+(Zeichenfläche 200×85, Farben der App; dunkelblaue Teile nutzen die Klassen `cv-ink`/
+`cv-soft`, weil `var()` als SVG-Attribut nicht greift). `nut_recipes.cover` = `motiv` oder
+`motiv:farbton` (`supabase/nut_recipe_cover_migration.sql`), `NULL` = automatisch über
+Rezeptname bzw. Mahlzeit-Typ (`resolveCover`). Neues Motiv: Eintrag in `COVER_MOTIFS`
+(bestehende Keys nie umbenennen, sonst fallen gespeicherte Rezepte auf "automatisch").
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo

@@ -19,6 +19,7 @@
 
 import { useState } from 'react';
 import { AMPEL_CATS, RECIPE_CATS } from '../lib/nutrition';
+import { RecipeCover } from '../lib/recipeCovers';
 import { LEXIKON } from '../lib/data/lexikon';
 import { IconSearch } from '../../../core/components/Icons';
 import FocusCard from '../../../core/components/FocusCard.jsx';
@@ -86,7 +87,7 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
           <div className="nut-recipe-grid">
             {latest.map((r) => (
               <button key={r.id} className="nut-recipe-card" onClick={() => onNavigate('rezepte')}>
-                <span className="nut-recipe-image" aria-hidden="true" />
+                <RecipeCover recipe={r} className="nut-recipe-image" />
                 <span className="nut-recipe-title">{r.name}</span>
                 <span className="nut-recipe-meta">
                   {[RECIPE_CATS.find((c) => c.key === r.category)?.label,

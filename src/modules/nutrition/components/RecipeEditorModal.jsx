@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { IconSearch, IconPlus, IconClose } from '../../../core/components/Icons';
 import { RECIPE_CATS, GOAL_TAGS, CUSTOM_TAGS, computeNutrition, fmt, basis } from '../lib/nutrition';
+import { COVER_MOTIFS, COVER_TONES, CoverArt, parseCover, resolveCover, formatCover } from '../lib/recipeCovers';
 
 const UNIT_SHORT = { ml: 'ml', Scheibe: 'Sch', Stück: 'Stk', Zehe: 'Zehe', EL: 'EL' };
 const DEFAULT_AMOUNT = { ml: 200, Stück: 1, Scheibe: 1, Zehe: 1, EL: 1 };
@@ -12,8 +13,9 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
     ingredients: recipe.ingredients.map((i) => ({ ...i })),
     customTags: recipe.customTags || [],
     goalTags: recipe.goalTags || [],
+    cover: recipe.cover ?? null,
   } : {
-    name: '', servings: 1, category: 'mittag', ingredients: [], note: '', customTags: [], goalTags: [],
+    name: '', servings: 1, category: 'mittag', ingredients: [], note: '', customTags: [], goalTags: [], cover: null,
   });
   const [query, setQuery] = useState('');
 
@@ -54,6 +56,10 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
     });
   }
 
+  // Bild: gespeicherte Wahl (chosen) oder automatisch aus Name/Mahlzeit-Typ (resolved)
+  const chosen = parseCover(draft.cover);
+  const resolved = resolveCover(draft);
+
   const extraCustomTags = (draft.customTags || []).filter((t) => !CUSTOM_TAGS.includes(t));
 
   return (
@@ -76,6 +82,40 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
               <div>{c.emoji}</div>
               <div>{c.label}</div>
             </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Bild</label>
+        <CoverArt motif={resolved.motif} tone={resolved.tone} className="cover-picker-preview" fit="meet" />
+        <div className="cover-grid">
+          <button type="button" className={`cover-option${!chosen ? ' active' : ''}`} onClick={() => set('cover', null)}>
+            <span className="recipe-cover rc-tone-grau" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>Auto</span>
+            <span className="name">Automatisch</span>
+          </button>
+          {COVER_MOTIFS.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              className={`cover-option${chosen?.motif.key === m.key ? ' active' : ''}`}
+              onClick={() => set('cover', formatCover(m.key, chosen ? chosen.tone : m.tone))}
+              aria-label={m.label}
+            >
+              <CoverArt motif={m} tone={chosen ? chosen.tone : m.tone} />
+              <span className="name">{m.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="cover-tones" role="group" aria-label="Hintergrundfarbe">
+          {COVER_TONES.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              className={`cover-tone recipe-cover rc-tone-${t.key}${resolved.tone === t.key ? ' active' : ''}`}
+              aria-label={t.label}
+              onClick={() => set('cover', formatCover(resolved.motif.key, t.key))}
+            />
           ))}
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { IconPlus, IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, computeNutrition, fmt } from '../lib/nutrition';
 import { TEMPLATE_RECIPES } from '../lib/data/templates';
+import { RecipeCover } from '../lib/recipeCovers';
 import RecipeEditorModal from './RecipeEditorModal';
 import RecipeDetailModal from './RecipeDetailModal';
 
@@ -77,11 +78,10 @@ export default function RezepteView({
 
       {list.map((r) => {
         const calc = computeNutrition(r.ingredients, foodsById);
-        const rc = RECIPE_CATS.find((c) => c.key === r.category) || RECIPE_CATS[0];
         return (
           <div key={r.id} className="card recipe-card" onClick={() => setDetail(r)}>
             <div className="head">
-              <span className="emoji">{rc.emoji}</span>
+              <RecipeCover recipe={r} className="thumb" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span className="title">{r.name}</span>

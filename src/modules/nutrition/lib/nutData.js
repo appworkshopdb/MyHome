@@ -190,6 +190,7 @@ function fromRecipeRow(row) {
     note: row.note || '',
     customTags: row.custom_tags || [],
     goalTags: row.goal_tags || [],
+    cover: row.cover ?? null, // Motiv[:Farbton], null = automatisch (lib/recipeCovers.jsx)
   };
 }
 
@@ -205,6 +206,7 @@ export async function saveRecipe(session, recipe) {
     note: recipe.note || '',
     custom_tags: recipe.customTags || [],
     goal_tags: recipe.goalTags || [],
+    cover: recipe.cover || null,
   };
   if (recipe.id) payload.id = recipe.id;
   const { data, error } = await getSupabase().from('nut_recipes').upsert(payload).select().single();

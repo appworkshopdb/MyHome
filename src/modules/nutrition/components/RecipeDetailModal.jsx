@@ -1,6 +1,7 @@
 import Modal from '../../../core/components/Modal';
 import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, fmt } from '../lib/nutrition';
+import { RecipeCover } from '../lib/recipeCovers';
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 
@@ -13,6 +14,8 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
 
   return (
     <Modal title={recipe.name} onClose={onClose}>
+      <RecipeCover recipe={recipe} className="recipe-detail-cover" fit="meet" />
+
       {!isTemplate && onLogMeal && (
         <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
       )}

@@ -606,3 +606,87 @@
   color: var(--text-primary);
 }
 .meal-pick-name { font-weight: 600; font-size: 0.92rem; }
+
+/* ── Rezeptbilder (lib/recipeCovers.jsx) ─────────────────────
+   Flächige Illustrationen auf Farbgrund. Dunkelblaue Teile der Motive
+   lesen --cv-ink; im Dunkelmodus wird er heller, damit sie nicht im
+   Hintergrund verschwinden. Hintergrund hell/dunkel je Farbton. */
+.recipe-cover {
+  --cv-ink:      #1B2A4A;
+  --cv-ink-soft: #97A6C2;
+  display:  block;
+  overflow: hidden;
+}
+.recipe-cover svg { display: block; }
+.recipe-cover .cv-ink    { fill: var(--cv-ink); }
+.recipe-cover .cv-soft   { fill: var(--cv-ink-soft); }
+.recipe-cover .cv-soft-s { stroke: var(--cv-ink-soft); }
+.dark .recipe-cover {
+  --cv-ink:      #A9B8DA;
+  --cv-ink-soft: #4C6493;
+}
+.recipe-cover.rc-tone-ochre { background: #F7EEDC; }
+.recipe-cover.rc-tone-rot   { background: #FBE7E4; }
+.recipe-cover.rc-tone-gruen { background: #DFF3EA; }
+.recipe-cover.rc-tone-blau  { background: #E7EBF3; }
+.recipe-cover.rc-tone-lila  { background: #ECE7F5; }
+.recipe-cover.rc-tone-grau  { background: #EEF1F6; }
+.dark .recipe-cover.rc-tone-ochre { background: #3A2F18; }
+.dark .recipe-cover.rc-tone-rot   { background: #3B2220; }
+.dark .recipe-cover.rc-tone-gruen { background: #1A3329; }
+.dark .recipe-cover.rc-tone-blau  { background: #243049; }
+.dark .recipe-cover.rc-tone-lila  { background: #30294A; }
+.dark .recipe-cover.rc-tone-grau  { background: #2A3345; }
+
+/* Rezeptliste (Eigene Rezepte / Vorlagen): kleines Bild links */
+.recipe-card .thumb {
+  flex:          none;
+  width:         88px;
+  height:        56px;
+  border-radius: 12px;
+}
+/* Rezept-Dialog: breites Titelbild */
+.recipe-detail-cover {
+  width:         100%;
+  height:        112px;
+  border-radius: 16px;
+}
+/* Bildauswahl im Rezept-Editor */
+.cover-picker-preview {
+  width:         100%;
+  height:        104px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+}
+.cover-grid {
+  display:               grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:                   8px;
+}
+.cover-option {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+  padding:        0;
+  border:         2px solid transparent;
+  border-radius:  14px;
+  background:     none;
+  cursor:         pointer;
+  min-height:     var(--touch-target);
+}
+.cover-option .recipe-cover { width: 100%; height: 44px; border-radius: 10px; }
+.cover-option .name { font-size: 10.5px; font-weight: 700; color: var(--text-muted); line-height: 1.1; padding-bottom: 3px; }
+.cover-option.active { border-color: var(--action-primary); }
+.cover-option.active .name { color: var(--text-primary); }
+.cover-tones { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.cover-tone {
+  width:         32px;
+  height:        32px;
+  border-radius: 50%;
+  border:        2px solid transparent;
+  box-shadow:    inset 0 0 0 1px var(--border-hairline);
+  cursor:        pointer;
+  padding:       0;
+}
+.cover-tone.active { border-color: var(--action-primary); box-shadow: none; }
