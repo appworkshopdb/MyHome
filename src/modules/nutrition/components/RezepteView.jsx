@@ -119,15 +119,17 @@ export default function RezepteView({
         <button className={`chip ${tab === 'vorlagen' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => setTab('vorlagen')}>Vorlagen</button>
       </div>
 
-      <div className="nut-search">
-        <IconSearch />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rezept, Zutat oder Tag suchen…"
-          aria-label="Rezepte durchsuchen"
-        />
-        {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}>×</button>}
+      <div className="nut-searchbar">
+        <div className="nut-search">
+          <IconSearch />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rezept, Zutat oder Tag suchen…"
+            aria-label="Rezepte durchsuchen"
+          />
+          {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}>×</button>}
+        </div>
         <button type="button" className={`nut-filter-btn ${activeCount > 0 ? 'active' : ''}`} aria-label={activeCount > 0 ? `Filter, ${activeCount} aktiv` : 'Filter'} onClick={() => setSheetOpen(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" />
