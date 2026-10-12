@@ -7,9 +7,8 @@
 import { useEffect, useRef, useState } from 'react';
 import SheetShell from './SheetShell.jsx';
 import Bird from './birds/Bird';
-import { SPECIES, SPECIES_KEYS, STAGE_NAMES, STAGE_BLURB } from './birds/birdArt';
+import { STAGE_NAMES, STAGE_BLURB } from './birds/birdArt';
 import { calcLevelProgress, LEVEL_THRESHOLDS } from '../lib/gamificationData.js';
-import { setBirdSpecies } from '../lib/gamificationStore.js';
 
 export default function GamificationSheet({ status, onClose }) {
   const {
@@ -104,16 +103,6 @@ export default function GamificationSheet({ status, onClose }) {
           Ein Tag gilt als aktiv, wenn du mindestens eine Gewohnheit abhakst,
           ein To-do erledigst, trainierst oder eine Einkaufsliste abschließt.
         </p>
-
-        {/* Vogelart wechseln */}
-        <div className="gs-species">
-          <span className="gs-species-label">Dein Vogel</span>
-          <div className="segmented cols-2">
-            {SPECIES_KEYS.map((k) => (
-              <button key={k} className={species === k ? 'active' : ''} onClick={() => setBirdSpecies(k)}>{SPECIES[k].name}</button>
-            ))}
-          </div>
-        </div>
       </div>
     </SheetShell>
   );

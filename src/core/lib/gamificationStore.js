@@ -41,7 +41,10 @@ function readLocalSpecies() {
   try { return localStorage.getItem(SPECIES_LS_KEY) || null; } catch { return null; }
 }
 
+// Die Wahl ist endgültig (Willkommens-Assistent): ist schon eine Art gesetzt,
+// wird ein weiterer Aufruf ignoriert.
 export async function setBirdSpecies(species) {
+  if (state.bird_species) return;
   try { localStorage.setItem(SPECIES_LS_KEY, species); } catch { /* ignorieren */ }
   setState({ bird_species: species });
   try {

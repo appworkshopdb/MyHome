@@ -37,7 +37,7 @@ export default function WelcomeWizard({ level = 1 }) {
         {step === 1 && (
           <div className="wiz-body">
             <h1 className="wiz-title">Wähle deinen Vogel</h1>
-            <p className="wiz-text">Er begleitet dich vom Ei bis zum Phönix. Du kannst ihn später ändern.</p>
+            <p className="wiz-text">Er begleitet dich vom Ei bis zum Phönix.</p>
             <div className="wiz-pick">
               {SPECIES_KEYS.map((k) => (
                 <button key={k} className={`wiz-species${pick === k ? ' on' : ''}`} onClick={() => setPick(k)} aria-pressed={pick === k}>
@@ -47,6 +47,9 @@ export default function WelcomeWizard({ level = 1 }) {
                 </button>
               ))}
             </div>
+            <p className="wiz-info" role="note">
+              <b>Gut überlegen:</b> Die Wahl ist endgültig und lässt sich später nicht mehr ändern.
+            </p>
             <div className="wiz-actions">
               <button className="btn btn-secondary" onClick={() => setStep(0)}>Zurück</button>
               <button className="btn btn-primary" onClick={() => setStep(2)}>Weiter</button>
@@ -63,6 +66,7 @@ export default function WelcomeWizard({ level = 1 }) {
                 ? 'Noch ruht alles in der Schale. Erledige Dinge in der App, und es schlüpft.'
                 : `Er ist gerade ${STAGE_NAMES[level]} (Level ${level}) und wächst mit jedem Punkt weiter.`}
             </p>
+            <p className="wiz-info" role="note">Dein Vogel bleibt für immer bei dir, die Wahl lässt sich nicht mehr ändern.</p>
             <div className="wiz-actions">
               <button className="btn btn-secondary" onClick={() => setStep(1)}>Zurück</button>
               <button className="btn btn-primary" onClick={finish}>Los geht’s</button>

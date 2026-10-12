@@ -7,7 +7,7 @@ export default function Bird({ species, stage, size = 120, head = false, animate
   const html = useMemo(() => birdSvg({ species, stage, head }), [species, stage, head]);
   return (
     <span
-      className={`nbird${animated ? '' : ' nbird--still'} ${className}`.trim()}
+      className={`nbird${animated ? '' : ' nbird--still'}${head ? ' nbird--head' : ''} ${className}`.trim()}
       style={{ width: size, height: head ? size : size * (275 / 240) }}
       dangerouslySetInnerHTML={{ __html: html }}
     />

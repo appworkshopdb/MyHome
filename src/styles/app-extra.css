@@ -4911,3 +4911,6 @@
 .wiz-species.on { border-color: var(--action-primary); background: var(--surface-raised); box-shadow: var(--shadow-card); }
 .wiz-species-name { font-weight: 900; font-size: .95rem; color: var(--text-primary); }
 .wiz-species-blurb { font-size: .72rem; color: var(--text-muted); line-height: 1.35; }
+/* Kopf-Ausschnitte: Nest/Aura nicht über den Rand hinaus zeichnen */
+.nbird--head .nbird-svg { overflow: hidden; }
+.wiz-info { margin: 0; padding: 10px 14px; border-radius: 14px; background: rgba(226, 130, 58, .14); color: var(--text-primary); font-size: .8rem; line-height: 1.45; width: 100%; }
