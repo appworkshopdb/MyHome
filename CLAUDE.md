@@ -190,7 +190,8 @@ weitere Zutat → Teller-Motiv; Wörter mit Leerzeichen-Präfix wie ' eis', sons
 ## Rezeptliste (Ernährung)
 
 Suche + Filter + Sortierung in `RezepteView` über `modules/nutrition/lib/recipeFilter.js`
-(reine Funktionen). Gespeichert ist nur die Mahlzeit (`category`); Ernährungsform (aus
+(reine Funktionen); Mahlzeit-Chips + Suchfeld stehen oben, alle weiteren Filter und die
+Sortierung im Bottom-Sheet `RecipeFilterSheet` (Knopf im Suchfeld, gewählte Filter als Chips). Gespeichert ist nur die Mahlzeit (`category`); Ernährungsform (aus
 `food.diet`/Gruppe der Zutaten), Nährwert-Filter (pro Portion), Gerichtart (aus dem
 Rezeptbild) und die Suche (Name > Zutaten > Tags/Notiz, Umlaut-unabhängig, alle Wörter
 müssen passen) werden abgeleitet. Rezept-Dialog: Portionsrechner rechnet Zutatenmengen und

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { IconPlus, IconSearch } from '../../../core/components/Icons';
+import { IconPlus, IconSearch, IconClose } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, computeNutrition, fmt } from '../lib/nutrition';
 import { TEMPLATE_RECIPES } from '../lib/data/templates';
 import { RecipeCover } from '../lib/recipeCovers';
-import { DIET_FILTERS, NUTRI_FILTERS, ART_GROUPS, SORTS, recipeFacts, applyRecipeFilters } from '../lib/recipeFilter';
+import { DIET_FILTERS, NUTRI_FILTERS, ART_GROUPS, SORTS, recipeFacts, applyRecipeFilters, searchScore } from '../lib/recipeFilter';
 import RecipeEditorModal from './RecipeEditorModal';
+import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeDetailModal from './RecipeDetailModal';
 
 export default function RezepteView({
@@ -22,7 +23,7 @@ export default function RezepteView({
   const [nutri, setNutri] = useState([]);
   const [art, setArt] = useState(null);
   const [sort, setSort] = useState('standard');
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const foodsById = useMemo(() => Object.fromEntries(foods.map((f) => [f.id, f])), [foods]);
 
@@ -38,16 +39,27 @@ export default function RezepteView({
     [items, query, meal, diet, nutri, art, sort, tab],
   );
 
-  // Nur Filter anbieten, zu denen es in dieser Liste mindestens ein Rezept gibt
+  // Zähler fürs Filter-Sheet: total = in der ganzen Liste (bestimmt, ob ein Chip
+  // angeboten wird), shown = bei aktueller Mahlzeit und Suche (Zahl am Chip)
+  const counts = useMemo(() => {
+    const base = items.filter((it) => (meal === 'all' || it.recipe.category === meal) && searchScore(it.facts, query) !== null);
+    const count = (test) => ({ total: items.filter((it) => test(it.facts)).length, shown: base.filter((it) => test(it.facts)).length });
+    return {
+      diet: Object.fromEntries(DIET_FILTERS.map((d) => [d.key, count(d.test)])),
+      nutri: Object.fromEntries(NUTRI_FILTERS.map((n) => [n.key, count(n.test)])),
+      art: Object.fromEntries(ART_GROUPS.map((g) => [g.key, count((f) => f.artKey === g.key)])),
+    };
+  }, [items, meal, query]);
   const mealChips = RECIPE_CATS.filter((c) => c.key === 'all' || items.some((it) => it.recipe.category === c.key));
-  const dietChips = DIET_FILTERS.filter((d) => items.some((it) => d.test(it.facts)));
-  const nutriChips = NUTRI_FILTERS.filter((n) => items.some((it) => n.test(it.facts)));
-  const artChips = ART_GROUPS.filter((g) => items.some((it) => it.facts.artKey === g.key));
 
-  const moreCount = (diet ? 1 : 0) + nutri.length + (art ? 1 : 0);
-  const filtered = query.trim() !== '' || meal !== 'all' || moreCount > 0;
+  const activeCount = (diet ? 1 : 0) + nutri.length + (art ? 1 : 0); // Filter aus dem Sheet
+  const filtered = query.trim() !== '' || meal !== 'all' || activeCount > 0;
+  const dietLabel = DIET_FILTERS.find((d) => d.key === diet)?.label;
+  const artLabel = ART_GROUPS.find((g) => g.key === art)?.label;
+  const sortLabel = SORTS.find((o) => o.key === sort)?.label;
   const toggleNutri = (key) => setNutri((n) => (n.includes(key) ? n.filter((k) => k !== key) : [...n, key]));
-  function resetFilters() { setQuery(''); setMeal('all'); setDiet(null); setNutri([]); setArt(null); }
+  function resetSheetFilters() { setDiet(null); setNutri([]); setArt(null); }
+  function resetFilters() { setQuery(''); setMeal('all'); resetSheetFilters(); }
 
   async function handleSave(recipe) {
     await onSaveRecipe(recipe);
@@ -92,6 +104,12 @@ export default function RezepteView({
           aria-label="Rezepte durchsuchen"
         />
         {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}>×</button>}
+        <button type="button" className={`nut-filter-btn ${activeCount > 0 ? 'active' : ''}`} aria-label={activeCount > 0 ? `Filter, ${activeCount} aktiv` : 'Filter'} onClick={() => setSheetOpen(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" />
+          </svg>
+          {activeCount > 0 && <b>{activeCount}</b>}
+        </button>
       </div>
 
       <div className="chip-row" style={{ marginBottom: 8 }}>
@@ -102,59 +120,22 @@ export default function RezepteView({
         ))}
       </div>
 
-      <div className="rf-bar">
-        <button type="button" className={`chip ${moreOpen || moreCount > 0 ? 'active' : ''}`} aria-expanded={moreOpen} onClick={() => setMoreOpen((o) => !o)}>
-          Filter{moreCount > 0 ? ` · ${moreCount}` : ''} {moreOpen ? '▴' : '▾'}
-        </button>
-        <label className="rf-sort">
-          <span>Sortieren</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
-            {SORTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
-          </select>
-        </label>
-      </div>
-
-      {moreOpen && (
-        <div className="rf-panel">
-          {dietChips.length > 0 && (
-            <div className="rf-group">
-              <div className="rf-group-label">Ernährung</div>
-              <div className="rf-chips">
-                {dietChips.map((d) => (
-                  <button key={d.key} className={`chip ${diet === d.key ? 'active' : ''}`} onClick={() => setDiet(diet === d.key ? null : d.key)}>{d.label}</button>
-                ))}
-              </div>
-            </div>
-          )}
-          {nutriChips.length > 0 && (
-            <div className="rf-group">
-              <div className="rf-group-label">Nährwerte pro Portion</div>
-              <div className="rf-chips">
-                {nutriChips.map((n) => (
-                  <button key={n.key} className={`chip ${nutri.includes(n.key) ? 'active' : ''}`} onClick={() => toggleNutri(n.key)}>
-                    {n.label} <small>{n.hint}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {artChips.length > 0 && (
-            <div className="rf-group">
-              <div className="rf-group-label">Gerichtart</div>
-              <div className="rf-chips">
-                {artChips.map((g) => (
-                  <button key={g.key} className={`chip ${art === g.key ? 'active' : ''}`} onClick={() => setArt(art === g.key ? null : g.key)}>{g.label}</button>
-                ))}
-              </div>
-            </div>
-          )}
+      {activeCount > 0 && (
+        <div className="chip-row rf-active">
+          {diet && <button type="button" className="chip rf-out" onClick={() => setDiet(null)} aria-label={`${dietLabel} entfernen`}>{dietLabel} <IconClose /></button>}
+          {nutri.map((k) => {
+            const n = NUTRI_FILTERS.find((f) => f.key === k);
+            return <button key={k} type="button" className="chip rf-out" onClick={() => toggleNutri(k)} aria-label={`${n.label} entfernen`}>{n.label} <IconClose /></button>;
+          })}
+          {art && <button type="button" className="chip rf-out" onClick={() => setArt(null)} aria-label={`${artLabel} entfernen`}>{artLabel} <IconClose /></button>}
+          <button type="button" className="rf-link" onClick={resetSheetFilters}>Zurücksetzen</button>
         </div>
       )}
 
       {items.length > 0 && (
         <div className="rf-info">
           <span>{rows.length}{filtered ? ` von ${items.length}` : ''} Rezept{items.length !== 1 ? 'e' : ''}</span>
-          {filtered && <button type="button" onClick={resetFilters}>Filter zurücksetzen</button>}
+          <button type="button" className="rf-sort-btn" onClick={() => setSheetOpen(true)}>Sortieren: {sortLabel} ▾</button>
         </div>
       )}
 
@@ -199,6 +180,20 @@ export default function RezepteView({
           )}
         </div>
       ))}
+
+      {sheetOpen && (
+        <RecipeFilterSheet
+          counts={counts}
+          diet={diet} setDiet={setDiet}
+          nutri={nutri} toggleNutri={toggleNutri}
+          art={art} setArt={setArt}
+          sort={sort} setSort={setSort}
+          resultCount={rows.length}
+          activeCount={activeCount}
+          onReset={resetSheetFilters}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       {editing !== undefined && (
         <RecipeEditorModal

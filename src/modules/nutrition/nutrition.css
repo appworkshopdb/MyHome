@@ -757,19 +757,39 @@
   background: none; border: 0; color: var(--text-muted);
   font-size: 20px; line-height: 1; cursor: pointer;
 }
-.rf-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.rf-sort { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
-.rf-sort select { width: auto; padding: 6px 28px 6px 10px; font-size: 13px; }
-.rf-panel {
-  background:    var(--surface-sunken);
-  border-radius: var(--r-xl);
-  padding:       10px 12px 12px;
-  margin-bottom: 8px;
-  display:       flex;
-  flex-direction: column;
-  gap:           10px;
+/* Filter-Knopf im Suchfeld (öffnet das Filter-Sheet) */
+.nut-filter-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-raised); color: var(--text-primary);
+  border: 1px solid var(--border-hairline); cursor: pointer; padding: 0;
 }
-.rf-group-label { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.nut-filter-btn svg { width: 18px; height: 18px; }
+.nut-filter-btn.active { background: var(--action-primary); color: var(--text-on-accent); border-color: var(--action-primary); }
+.nut-filter-btn b {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 9px; background: var(--raw-ochre-300, #D9A94F); color: #1B2A4A;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.nut-search:has(.nut-filter-btn) input { padding-right: 52px; }
+.nut-search:has(.nut-filter-btn) .nut-search-clear { right: 48px; }
+/* gewählte Filter als kleine Chips mit × */
+.rf-active { align-items: center; margin-bottom: 8px; }
+.chip.rf-out {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-raised); border: 1.5px solid var(--action-primary); color: var(--action-primary);
+}
+.chip.rf-out svg { width: 12px; height: 12px; }
+.rf-link { font: inherit; font-size: 12px; font-weight: 700; color: var(--action-primary); background: none; border: 0; padding: 0 6px; cursor: pointer; text-decoration: underline; flex: none; }
+.rf-info .rf-sort-btn { font: inherit; font-weight: 700; color: var(--text-muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+/* Filter-Sheet */
+.rf-sheet { display: flex; flex-direction: column; gap: 16px; padding: 4px 18px 20px; }
+.rf-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.rf-sheet-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.rf-sheet-head .rf-link { font-size: 13px; }
+.rf-sheet-done { width: 100%; height: 50px; }
+.rf-group-label { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
 .rf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .rf-chips .chip small { font-size: 10.5px; font-weight: 600; opacity: 0.75; margin-left: 2px; }
 .rf-info { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 4px 2px 8px; }
