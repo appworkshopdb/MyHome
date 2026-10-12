@@ -410,22 +410,22 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         document.body,
       )}
 
-      <div className="calview-search">
-        <svg className="calview-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
-        </svg>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Termine suchen …"
-          aria-label="Termine suchen"
-          autoComplete="off"
-        />
-        {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
+      <div className="calview-searchbar">
+        <div className="calview-search">
+          <svg className="calview-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Termine suchen …"
+            aria-label="Termine durchsuchen"
+          />
+          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
+        </div>
         <button
           type="button"
-          className="calview-filter-btn"
+          className={`calview-filter-btn ${filterCount > 0 ? 'active' : ''}`}
           aria-label={filterCount > 0 ? `Filter, ${filterCount} aktiv` : 'Filter'}
           onClick={() => setFilterOpen(true)}
         >
