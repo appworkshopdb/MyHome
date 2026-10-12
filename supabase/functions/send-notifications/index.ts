@@ -531,7 +531,7 @@ async function checkCategory(category, ownerId, berlin) {
           body:  'Deine Woche ist vorbei. Sieh selbst, was du geleistet hast.',
         },
       ]),
-      url: './#/finance/auswertung',
+      url: './#/statistiken', // Wochenrückblick (core/WeekReview.jsx)
     };
   }
 

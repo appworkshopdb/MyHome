@@ -2,35 +2,19 @@
 // Berechnungen für Streaks, Completion-Rates, Heatmaps, Badges
 
 // ─── Datumshelfer ─────────────────────────────────────────
+// toDateStr, dateRange, weekdayMon, matchesFrequency, habitEndDate und
+// isDueHistoric liegen in core/lib/habitStatsMath.js, weil der Wochenrückblick
+// im Hub (core/) dieselbe Rechnung braucht. Hier nur durchgereicht, damit alle
+// bestehenden Importe aus habUtils unverändert weiterlaufen.
 
-export function toDateStr(date) {
-  if (typeof date === 'string') return date;
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+import {
+  toDateStr, dateRange, weekdayMon, matchesFrequency, habitEndDate, isDueHistoric,
+} from '../../../core/lib/habitStatsMath.js';
+
+export { toDateStr, dateRange, weekdayMon, matchesFrequency, habitEndDate, isDueHistoric };
 
 export function today() {
   return toDateStr(new Date());
-}
-
-/** Gibt alle Datumsstrings zwischen from und to zurück (inklusiv) */
-export function dateRange(from, to) {
-  const dates = [];
-  const cur = new Date(from);
-  const end = new Date(to);
-  while (cur <= end) {
-    dates.push(toDateStr(cur));
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
-}
-
-/** Wochentag (0=Mo, 6=So) — normalisiert auf Montag-Basis */
-export function weekdayMon(dateStr) {
-  const d = new Date(dateStr);
-  return (d.getDay() + 6) % 7; // Mo=0 ... So=6
 }
 
 // ─── Sollte Habit an diesem Datum aktiv sein? ────────────
@@ -44,43 +28,6 @@ export function isDueOn(habit, dateStr) {
   if (habit.deleted_at) return false;
   // Nur ab Erstellungsdatum
   if (dateStr < toDateStr(new Date(habit.created_at))) return false;
-  return matchesFrequency(habit, dateStr);
-}
-
-/** Passt der Wochentag zur Häufigkeit des Habits? (ohne Aktiv-/Datums-Prüfung) */
-export function matchesFrequency(habit, dateStr) {
-  const wd = weekdayMon(dateStr); // 0=Mo ... 6=So
-
-  if (habit.frequency === 'daily') return true;
-  if (habit.frequency === 'weekdays') return wd < 5; // Mo–Fr
-  if (habit.frequency === 'custom' && Array.isArray(habit.frequency_days)) {
-    return habit.frequency_days.includes(wd);
-  }
-  return true;
-}
-
-/**
- * Letzter Tag, an dem ein Habit zählt — für die Statistik der Vergangenheit.
- *  - aktiv:      null (läuft bis heute)
- *  - gelöscht:   Löschtag
- *  - pausiert:   paused_at, sonst letzter Check-in, sonst Erstellungstag
- * Gibt einen Datumsstring oder null zurück.
- */
-export function habitEndDate(habit, lastEntryDate) {
-  if (habit.deleted_at) return toDateStr(new Date(habit.deleted_at));
-  if (habit.active) return null;
-  if (habit.paused_at) return toDateStr(new Date(habit.paused_at));
-  return lastEntryDate ?? toDateStr(new Date(habit.created_at));
-}
-
-/**
- * Wie isDueOn, aber für Rückblicke: ignoriert den aktuellen Aktiv-/Gelöscht-
- * Status und zählt den Habit für alle Tage von created_at bis endDate.
- * So ändern Pausieren, Löschen oder Austauschen die Vergangenheit nicht.
- */
-export function isDueHistoric(habit, dateStr, endDate) {
-  if (dateStr < toDateStr(new Date(habit.created_at))) return false;
-  if (endDate && dateStr > endDate) return false;
   return matchesFrequency(habit, dateStr);
 }
 

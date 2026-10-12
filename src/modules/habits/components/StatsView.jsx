@@ -14,10 +14,11 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
+import { countHabitRange as countRange, buildDoneIndex, buildEndMap } from '../../../core/lib/habitStatsMath.js';
 import { loadDeletedHabits } from '../lib/habData.js';
 import {
   calcStreak, calcLongestStreak, getEarnedBadges, BADGES,
-  today, dateRange, toDateStr, isDueHistoric, habitEndDate, weekdayMon,
+  today, dateRange, toDateStr, isDueHistoric, weekdayMon,
 } from '../lib/habUtils.js';
 
 // ─── Konstanten ───────────────────────────────────────────
@@ -86,20 +87,6 @@ function levelOf(rate) {
   return 0;
 }
 
-/** Zählt fällige und erledigte Einheiten über Habits × Tage. */
-function countRange(habits, doneIdx, endMap, dates) {
-  let due = 0;
-  let done = 0;
-  for (const d of dates) {
-    for (const h of habits) {
-      if (!isDueHistoric(h, d, endMap.get(h.id))) continue;
-      due++;
-      if ((doneIdx.get(`${h.id}|${d}`) ?? 0) >= (h.target_count ?? 1)) done++;
-    }
-  }
-  return { due, done, rate: due > 0 ? done / due : null };
-}
-
 function rangeLabel(range) {
   if (range.kind === 'custom') return `${fmtShort(range.from)} – ${fmtShort(range.to)}`;
   if (range.kind === 'year')   return 'Dieses Jahr';
@@ -158,27 +145,10 @@ function Cockpit({ allHabits, entries }) {
   const todayStr = today();
 
   // Index "habitId|datum" → count
-  const doneIdx = useMemo(() => {
-    const m = new Map();
-    for (const e of entries) {
-      if (e.deleted_at) continue;
-      m.set(`${e.habit_id}|${e.logged_on}`, e.count ?? 1);
-    }
-    return m;
-  }, [entries]);
+  const doneIdx = useMemo(() => buildDoneIndex(entries), [entries]);
 
   // Letzter Tag, an dem jede Gewohnheit zählt (null = läuft noch)
-  const endMap = useMemo(() => {
-    const lastEntry = new Map();
-    for (const e of entries) {
-      if (e.deleted_at) continue;
-      const cur = lastEntry.get(e.habit_id);
-      if (!cur || e.logged_on > cur) lastEntry.set(e.habit_id, e.logged_on);
-    }
-    const m = new Map();
-    for (const h of allHabits) m.set(h.id, habitEndDate(h, lastEntry.get(h.id)));
-    return m;
-  }, [allHabits, entries]);
+  const endMap = useMemo(() => buildEndMap(allHabits, entries), [allHabits, entries]);
 
   const shown = useMemo(() => allHabits.filter((h) => !excluded.has(h.id)), [allHabits, excluded]);
 

@@ -160,6 +160,19 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 
+## Wochenrückblick (Hub → Statistiken)
+
+Seite `core/WeekReview.jsx`, Route `#/statistiken` (eigene Core-Route wie `profile`, damit
+der Sonntags-Push `weekly_recap` direkt dorthin verlinken kann; Einstieg im Hub: Bereich
+"Statistiken"). Woche = Mo–So, `‹ ›` blättert zurück. Rechnung rein in `core/lib/weekStats.js`:
+Gewohnheiten (gleiche Quote wie die Statistik im Habits-Modul — die Helfer dafür liegen in
+`core/lib/habitStatsMath.js`, `habUtils.js`/`StatsView.jsx` importieren sie von dort; Vergleich
+mit gleich vielen Tagen der Vorwoche), Training (erledigt von geplant, Ruhetage zählen nicht),
+Ernährung (erfasste Tage aus `nut_meals`, Ø-kcal gegen Tagesziel, Protein-Ziel = ≥ 90 % des
+Tagesziels; ohne vollständiges Körperprofil nur Tage). Der Gesamtring mittelt die Karten, die
+in der Woche Daten haben. Die Edge Function `send-notifications` muss nach Änderungen von Hand
+nach `volumes/functions/` kopiert werden.
+
 ## Lebensmittel-Katalog (Ernährung)
 
 Alle Lebensmittel stehen in EINER Tabelle, `nut_foods` (Migration

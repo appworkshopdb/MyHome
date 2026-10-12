@@ -21,8 +21,8 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
   const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
   const [open, setOpen] = useState(null); // null | 'todo' | 'habit' | 'sport' | 'shopping' | 'nutrition'
 
-  // Kein FAB auf Profil
-  if (activeModule === 'profile') return null;
+  // Kein FAB auf Profil und Statistiken (reine Anzeigeseiten)
+  if (activeModule === 'profile' || activeModule === 'statistiken') return null;
 
   function handlePress() {
     if (activeModule === null)       return setOpen('todo');

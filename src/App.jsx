@@ -31,6 +31,7 @@ import ModuleBottomNav from './core/components/ModuleBottomNav';
 import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
+import WeekReview from './core/WeekReview';
 import LockedModule from './core/LockedModule';
 import { getModule } from './core/modules';
 
@@ -65,7 +66,8 @@ export default function App() {
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
 
-  const isModule = activeModule && activeModule !== 'profile';
+  // 'profile' und 'statistiken' sind Seiten des Cores, keine Module
+  const isModule = activeModule && activeModule !== 'profile' && activeModule !== 'statistiken';
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
@@ -91,6 +93,7 @@ export default function App() {
         <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
           {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {activeModule === 'profile' && <Profile onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'statistiken' && <WeekReview onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {mod && (ModuleComponent ? (
             // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
             // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
@@ -112,7 +115,7 @@ export default function App() {
         <EntrySheet />
         <GlobalFab activeModule={activeModule} />
         <ModuleBottomNav
-          active={activeModule === null ? '' : activeModule}
+          active={activeModule === null || activeModule === 'statistiken' ? '' : activeModule}
           onChange={navigate}
         />
       </FinanceMonthProvider>

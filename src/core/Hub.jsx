@@ -757,6 +757,14 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 <AreaRow label="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
               </AreaList>
             </PageSection>
+
+            {/* Statistiken — Wochenrückblick (eigene Route #/statistiken, damit der
+                Sonntags-Push direkt dorthin verlinken kann) */}
+            <PageSection title="Statistiken">
+              <AreaList>
+                <AreaRow label="Wochenrückblick" onPress={() => onOpenModule('statistiken')} />
+              </AreaList>
+            </PageSection>
           </>
         )}
       </div>
