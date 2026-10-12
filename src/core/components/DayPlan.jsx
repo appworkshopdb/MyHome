@@ -1,23 +1,7 @@
-import { createPortal } from 'react-dom';
 import { formatEur } from '../lib/format';
 
-// Tagesplan im Hub: DayPlanPopup (Einladung am Seitenrand, morgens) und
-// DayPlanSection (der Plan selbst, abhakbar). Abhaken läuft über die
+// Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
 // Handler aus dem Hub — hier wird nur dargestellt.
-
-export function DayPlanPopup({ plan, onOpen, onDismiss }) {
-  // Portal nach body: .hub-Vorfahren bleiben unberührt (Fixed-Nav-Regel)
-  return createPortal(
-    <div className="dayplan-popup" role="dialog" aria-label="Dein Tagesplan">
-      <button className="dayplan-popup-main" onClick={onOpen}>
-        <span className="dayplan-popup-title">Dein Tagesplan</span>
-        <span className="dayplan-popup-sub">{plan.total} {plan.total === 1 ? 'Punkt' : 'Punkte'} für heute ›</span>
-      </button>
-      <button className="dayplan-popup-close" onClick={onDismiss} aria-label="Später">×</button>
-    </div>,
-    document.body,
-  );
-}
 
 function Row({ done, onToggle, icon, title, meta, critical }) {
   return (
