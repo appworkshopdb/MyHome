@@ -10,8 +10,9 @@
 .rp-root button:focus-visible, .rp-fbody button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 /* ── Zeitraum ─────────────────────────────────────────────── */
-.rp-seg { display: flex; background: var(--action-quiet-bg); border-radius: var(--r-pill); padding: 3px; }
-.rp-seg button { flex: 1; min-height: 38px; border: 0; background: none; border-radius: var(--r-pill); font-size: 13px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+/* Maße wie die Chips/Tabs im Rest der App (Rezepte, Kalender): einzelne Pillen, 6px Abstand */
+.rp-seg { display: flex; gap: 6px; }
+.rp-seg button { flex: 1; min-width: 0; min-height: 32px; padding: 6px 12px; border: 0; background: var(--surface-sunken); border-radius: var(--r-pill); font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
 .rp-seg button.is-on { background: var(--action-primary); color: var(--text-on-accent); }
 
 .rp-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 0; }
@@ -27,7 +28,7 @@
 /* ── Werkzeugleiste, Filter-Chips ─────────────────────────── */
 .rp-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 12px; }
 .rp-chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; flex: 1; }
-.rp-fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border-hairline); border-radius: var(--r-pill); background: var(--surface-raised); color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-card); }
+.rp-fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 12px; border: 1px solid var(--border-hairline); border-radius: var(--r-pill); background: var(--surface-raised); color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-card); }
 .rp-tools { display: flex; gap: 8px; flex-shrink: 0; }
 .rp-iconbtn { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-hairline); border-radius: var(--r-pill); background: var(--surface-raised); color: var(--text-primary); box-shadow: var(--shadow-float); cursor: pointer; }
 .rp-iconbtn:active { background: var(--surface-sunken); }
@@ -143,9 +144,9 @@
 
 /* ── Chips (Bereiche) ─────────────────────────────────────── */
 .rp-chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
-.rp-chip { min-height: 36px; padding: 0 12px; border: 1px solid var(--border-hairline); border-radius: var(--r-pill); background: var(--surface-raised); color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.rp-chip { min-height: 32px; padding: 6px 12px; border: 1px solid var(--border-hairline); border-radius: var(--r-pill); background: var(--surface-raised); color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 .rp-chip.is-on { background: var(--action-primary); border-color: var(--action-primary); color: var(--text-on-accent); }
-.rp-chip--lg { min-height: 40px; padding: 0 14px; font-size: 13.5px; background: var(--surface-sunken); }
+.rp-chip--lg { min-height: 36px; padding: 6px 14px; font-size: 0.8125rem; background: var(--surface-sunken); }
 .rp-localfilter { padding: 10px 12px 12px; margin-bottom: 4px; border-radius: var(--r-lg); background: var(--surface-sunken); }
 .rp-lf-l { margin: 4px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
 .rp-localfilter .rp-chip { background: var(--surface-raised); }
@@ -205,4 +206,4 @@
 .rp-fhint { margin: 8px 0 0; font-size: 12px; font-weight: 600; line-height: 1.4; color: var(--text-muted); }
 .rp-frange { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rp-frange label span { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: var(--text-muted); }
-.rp-fbody .rp-seg button { min-height: 40px; }
+.rp-fbody .rp-seg button { min-height: 36px; }
