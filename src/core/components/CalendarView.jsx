@@ -27,11 +27,11 @@ function loadFilter() {
     const raw = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY));
     return {
       source: ['alle', 'app', 'google'].includes(raw?.source) ? raw.source : 'alle',
-      hidden: Array.isArray(raw?.hidden) ? raw.hidden : [],
+      only: Array.isArray(raw?.only) ? raw.only : [],
       hideDone: raw?.hideDone === true,
     };
   } catch {
-    return { source: 'alle', hidden: [], hideDone: false };
+    return { source: 'alle', only: [], hideDone: false };
   }
 }
 
@@ -228,7 +228,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
   // Gefilterte Sicht — Filter und Suche wirken nur auf die Anzeige.
   const q = query.trim().toLowerCase();
   const events = useMemo(() => {
-    const hidden = new Set(filter.hidden);
+    const only = new Set(filter.only); // leer = alle Kategorien sichtbar
     const out = {};
     for (const [date, list] of Object.entries(allEvents)) {
       const kept = list.filter((ev) => {
@@ -236,7 +236,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         if (filter.source === 'app' && isGoogle) return false;
         if (filter.source === 'google' && !isGoogle) return false;
         if (filter.hideDone && ev.done) return false;
-        if (hidden.has(filterKey(ev))) return false;
+        if (only.size > 0 && !only.has(filterKey(ev))) return false;
         return matchesQuery(ev, q);
       });
       if (kept.length) out[date] = kept;
@@ -275,20 +275,23 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
   const totalCount = useMemo(() => Object.values(allEvents).reduce((n, l) => n + l.length, 0), [allEvents]);
   const shownCount = useMemo(() => Object.values(events).reduce((n, l) => n + l.length, 0), [events]);
 
-  function toggleHidden(key) {
+  // Umgekehrte Logik: Standard = alles sichtbar. Ein Tipp wählt NUR diese
+  // Kategorie, weitere Tipps fügen hinzu, erneutes Tippen entfernt sie wieder
+  // (ist nichts mehr gewählt, ist wieder alles sichtbar).
+  function toggleOnly(key) {
     setFilter((f) => ({
       ...f,
-      hidden: f.hidden.includes(key) ? f.hidden.filter((k) => k !== key) : [...f.hidden, key],
+      only: f.only.includes(key) ? f.only.filter((k) => k !== key) : [...f.only, key],
     }));
   }
-  const filterCount = (filter.source !== 'alle' ? 1 : 0) + filter.hidden.length + (filter.hideDone ? 1 : 0);
+  const filterCount = (filter.source !== 'alle' ? 1 : 0) + filter.only.length + (filter.hideDone ? 1 : 0);
   const filterActive = filterCount > 0 || q !== '';
-  function resetAll() { setFilter({ source: 'alle', hidden: [], hideDone: false }); setQuery(''); }
+  function resetAll() { setFilter({ source: 'alle', only: [], hideDone: false }); setQuery(''); }
 
   // Aktive Filter als entfernbare Chips unter der Suche.
   const activeChips = [
     ...(filter.source !== 'alle' ? [{ id: 'source', label: filter.source === 'app' ? 'Nur Nestua' : 'Nur Google', remove: () => setFilter((f) => ({ ...f, source: 'alle' })) }] : []),
-    ...filter.hidden.map((k) => ({ id: k, label: `ohne ${categories.find((c) => c.key === k)?.label ?? 'Google'}`, remove: () => toggleHidden(k) })),
+    ...filter.only.map((k) => ({ id: k, label: categories.find((c) => c.key === k)?.label ?? 'Google', remove: () => toggleOnly(k) })),
     ...(filter.hideDone ? [{ id: 'done', label: 'ohne Erledigte', remove: () => setFilter((f) => ({ ...f, hideDone: false })) }] : []),
   ];
 
@@ -407,31 +410,29 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         document.body,
       )}
 
-      <div className="calview-search-row">
-        <label className="calview-search">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
-          </svg>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Termine suchen …"
-            aria-label="Termine suchen"
-            autoComplete="off"
-          />
-          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
-        </label>
+      <div className="calview-search">
+        <svg className="calview-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+        </svg>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Termine suchen …"
+          aria-label="Termine suchen"
+          autoComplete="off"
+        />
+        {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
         <button
           type="button"
-          className={`calview-filter-btn ${filterCount > 0 ? 'on' : ''}`}
+          className="calview-filter-btn"
+          aria-label={filterCount > 0 ? `Filter, ${filterCount} aktiv` : 'Filter'}
           onClick={() => setFilterOpen(true)}
-          aria-label="Filter öffnen"
         >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" aria-hidden="true">
-            <path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="17" r="2.2" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" />
           </svg>
-          {filterCount > 0 && <span className="calview-filter-badge">{filterCount}</span>}
+          {filterCount > 0 && <b>{filterCount}</b>}
         </button>
       </div>
 
@@ -459,8 +460,8 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
           counts={counts}
           shownCount={shownCount}
           onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
-          onToggleKey={toggleHidden}
-          onReset={() => setFilter({ source: 'alle', hidden: [], hideDone: false })}
+          onToggleKey={toggleOnly}
+          onReset={() => setFilter({ source: 'alle', only: [], hideDone: false })}
           onClose={() => setFilterOpen(false)}
         />
       )}

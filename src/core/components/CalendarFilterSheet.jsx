@@ -10,14 +10,15 @@ export default function CalendarFilterSheet({
   const googleCats = categories.filter((c) => c.isGoogle);
 
   function chip(c) {
-    const off = filter.hidden.includes(c.key);
+    const selected = filter.only.includes(c.key);
+    const dim = filter.only.length > 0 && !selected; // etwas gewählt, dieses nicht
     const disabled = (filter.source === 'app' && c.isGoogle) || (filter.source === 'google' && !c.isGoogle);
     return (
       <button
         key={c.key}
         type="button"
-        className={`calview-chip ${off ? 'off' : ''} ${disabled ? 'disabled' : ''}`}
-        aria-pressed={!off}
+        className={`calview-chip ${selected ? 'selected' : ''} ${dim ? 'dim' : ''} ${disabled ? 'disabled' : ''}`}
+        aria-pressed={selected}
         disabled={disabled}
         onClick={() => onToggleKey(c.key)}
       >
@@ -35,6 +36,9 @@ export default function CalendarFilterSheet({
         <button className="sheet-cancel" onClick={onReset}>Zurücksetzen</button>
       </div>
       <div className="calview-fsheet">
+        <p className="calview-fsheet-hint">
+          {filter.only.length === 0 ? 'Alles ist sichtbar. Tippe eine Kategorie, um nur sie zu zeigen.' : 'Weitere antippen, um sie zusätzlich zu zeigen. Erneut tippen entfernt sie.'}
+        </p>
         <section>
           <div className="calview-fsheet-label">Quelle</div>
           <div className="calview-source-toggle" role="group" aria-label="Quelle">

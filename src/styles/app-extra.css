@@ -4656,39 +4656,45 @@
 .calview-sync-fab.error { border-color: var(--status-critical); color: var(--status-critical); }
 
 /* ── Kalender: Suche + Filter-Sheet ──────────────────────────────── */
-.calview-search-row { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
-.calview-search {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 10px;
-  background: var(--surface-raised); border: 1.5px solid var(--border-hairline); border-radius: var(--r-lg);
-  color: var(--text-muted); box-shadow: var(--shadow-card);
+.calview-search { position: relative; margin-bottom: var(--space-2); }
+.calview-search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); pointer-events: none;
 }
-.calview-search:focus-within { border-color: var(--action-primary); }
 .calview-search input {
-  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
-  font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+  width: 100%; box-sizing: border-box; height: 44px; padding: 0 52px 0 36px;
+  background: var(--surface-raised); border: 1.5px solid var(--border-hairline); border-radius: var(--r-lg);
+  font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-primary); outline: 0;
 }
+.calview-search input:focus { border-color: var(--action-primary); }
 .calview-search input::placeholder { color: var(--text-muted); font-weight: 600; }
 .calview-search input::-webkit-search-cancel-button { display: none; }
 .calview-search-x {
-  border: 0; background: var(--surface-sunken); color: var(--text-secondary);
-  width: 22px; height: 22px; border-radius: 50%; font-size: 0.85rem; line-height: 1; cursor: pointer; flex-shrink: 0;
+  position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; background: none; border: 0;
+  color: var(--text-muted); font-size: 20px; line-height: 1; cursor: pointer;
 }
+/* Filter-Knopf im Suchfeld — identisch zum Rezepte-Filter im Ernährungsmodul */
 .calview-filter-btn {
-  position: relative; flex-shrink: 0; width: 42px; height: 42px; border-radius: var(--r-lg);
-  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-  background: var(--surface-raised); color: var(--text-primary);
-  border: 1.5px solid var(--border-hairline); box-shadow: var(--shadow-card);
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--action-primary); color: var(--text-on-accent);
+  border: 0; cursor: pointer; padding: 0;
 }
-.calview-filter-btn.on { background: var(--action-primary); color: var(--text-on-accent); border-color: var(--action-primary); }
-.calview-filter-badge {
-  position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px;
-  border-radius: 99px; background: var(--status-critical); color: #fff;
-  font-size: 0.62rem; font-weight: 800; display: grid; place-items: center;
+.calview-filter-btn svg { display: block; width: 18px; height: 18px; flex: none; }
+.calview-filter-btn b {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 9px; background: var(--raw-ochre-300, #D9A94F); color: #1B2A4A;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
 }
 .calview-active-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: var(--space-2); }
 .calview-active-chips::-webkit-scrollbar { display: none; }
 .calview-chip.removable { background: var(--surface-sunken); border-color: transparent; }
 .calview-chip.removable i { font-style: normal; font-weight: 800; opacity: 0.6; }
+.calview-chip.selected { background: var(--surface-sunken); border-color: var(--action-primary); box-shadow: inset 0 0 0 1px var(--action-primary); font-weight: 800; }
+.calview-chip.dim { opacity: 0.5; }
+.calview-fsheet-hint { margin: 0; font-size: 0.78rem; color: var(--text-muted); }
 .calview-chip.disabled { opacity: 0.35; pointer-events: none; }
 .calview-chip-count { font-weight: 600; color: var(--text-muted); }
 .calview-count-line {
