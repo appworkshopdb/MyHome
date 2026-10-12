@@ -489,7 +489,7 @@ export const COVER_MOTIFS = [
   { key: 'pasta',           label: 'Pasta',           tone: 'rot',   Art: Pasta,           words: ['pasta', 'nudel', 'spaghetti', 'lasagne', 'penne', 'gnocchi'] },
   { key: 'pizza',           label: 'Pizza',           tone: 'rot',   Art: Pizza,           words: ['pizza', 'flammkuchen', 'quiche'] },
   { key: 'burger',          label: 'Burger',          tone: 'ochre', Art: Burger,          words: ['burger'] },
-  { key: 'sandwich',        label: 'Sandwich',        tone: 'ochre', Art: Sandwich,        words: ['sandwich', 'toast', 'stulle', 'brötchen', 'broetchen', 'belegt'] },
+  { key: 'sandwich',        label: 'Sandwich',        tone: 'ochre', Art: Sandwich,        words: ['sandwich', 'toast', 'ei-brot', 'stulle', 'brötchen', 'broetchen', 'belegt'] },
   { key: 'wrap',            label: 'Wrap',            tone: 'gruen', Art: Wrap,            words: ['wrap', 'taco', 'burrito', 'döner', 'doener', 'fajita'] },
   { key: 'salat',           label: 'Salat',           tone: 'gruen', Art: Salat,           words: ['salat', 'rohkost', 'dip'] },
   { key: 'reis',            label: 'Reis',            tone: 'gruen', Art: Reis,            words: ['reis', 'risotto', 'sushi', 'quinoa'] },
