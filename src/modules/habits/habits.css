@@ -3092,3 +3092,13 @@
 .hab-cp-legend div { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .hab-cp-legend b { color: var(--text-primary); font-weight: 800; }
 .hab-cp-sw { width: 14px; height: 14px; border-radius: 4px; display: block; flex: none; }
+
+/* Löschen-Sheet / Archiv-Aktion */
+.hab-del-danger { color: var(--status-critical); }
+.hab-manage-btn--text {
+  width: auto;
+  padding: 0 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

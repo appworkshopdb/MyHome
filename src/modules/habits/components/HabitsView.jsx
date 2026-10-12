@@ -4,6 +4,7 @@
 // + Erinnerungs-UI
 
 import { useState } from 'react';
+import SheetShell from '../../../core/components/SheetShell.jsx';
 import {
   DndContext,
   closestCenter,
@@ -22,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 import {
   saveHabit, deleteHabit, toggleHabitActive, updateSortOrder,
-  restoreHabit, loadDeletedHabits,
+  restoreHabit, loadDeletedHabits, setStatsHidden,
 } from '../lib/habData.js';
 import {
   HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY, TIME_SLOTS,
@@ -76,6 +77,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
   const [error, setError]             = useState(null);
   const [showArchive, setShowArchive] = useState(false);
   const [archivedHabits, setArchived] = useState([]);
@@ -225,11 +227,11 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  async function handleDelete(habitId) {
-    if (!window.confirm('Gewohnheit und alle Einträge löschen?')) return;
+  async function handleDelete(habitId, hideFromStats) {
+    setDeleteTarget(null);
     setDeletingId(habitId);
     try {
-      await deleteHabit(habitId);
+      await deleteHabit(habitId, { hideFromStats });
       await onHabitsChange();
       setLocalOrder(null);
     } catch (e) {
@@ -264,10 +266,22 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
+  async function handleToggleStatsHidden(habit) {
+    setRestoringId(habit.id);
+    try {
+      await setStatsHidden(habit.id, !habit.stats_hidden);
+      setArchived(await loadDeletedHabits());
+    } catch (e) {
+      setError('Konnte nicht geändert werden. Ist die Migration hab_stats_hidden eingespielt?');
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
   async function handleRestore(habitId) {
     setRestoringId(habitId);
     try {
-      await restoreHabit(habitId);
+      await restoreHabit(habitId, { wasHidden: archivedHabits.find((h) => h.id === habitId)?.stats_hidden });
       await onHabitsChange();
       setLocalOrder(null);
       const data = await loadDeletedHabits();
@@ -306,10 +320,18 @@ export default function HabitsView({ habits, onHabitsChange }) {
                     <div className="hab-manage-name">{habit.name}</div>
                     <div className="hab-manage-meta">
                       {habit.category} · Gelöscht am {new Date(habit.deleted_at).toLocaleDateString('de-DE')}
+                      {habit.stats_hidden ? ' · nicht in Statistik' : ' · in Statistik'}
                     </div>
                   </div>
                 </div>
                 <div className="hab-manage-card-right">
+                  <button
+                    className="hab-manage-btn hab-manage-btn--text"
+                    onClick={() => handleToggleStatsHidden(habit)}
+                    disabled={restoringId === habit.id}
+                  >
+                    {habit.stats_hidden ? 'In Statistik zeigen' : 'Aus Statistik entfernen'}
+                  </button>
                   <button
                     className="hab-manage-btn"
                     onClick={() => handleRestore(habit.id)}
@@ -621,7 +643,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                     key={habit.id}
                     habit={habit}
                     onEdit={() => openEdit(habit)}
-                    onDelete={() => handleDelete(habit.id)}
+                    onDelete={() => setDeleteTarget(habit)}
                     onToggleActive={() => handleToggleActive(habit)}
                     deleting={deletingId === habit.id}
                   />
@@ -630,6 +652,29 @@ export default function HabitsView({ habits, onHabitsChange }) {
             </SortableContext>
           </DndContext>
         </div>
+      )}
+
+      {deleteTarget && (
+        <SheetShell onClose={() => setDeleteTarget(null)} labelledBy="hab-del-title">
+          <div className="hab-cp-sheet">
+            <div className="hab-cp-sheet-head">
+              <h2 id="hab-del-title">„{deleteTarget.name}" löschen?</h2>
+            </div>
+            <div className="hab-cp-note">
+              Soll die Gewohnheit auch aus den Statistiken verschwinden, oder sollen die
+              bisherigen Werte dort erhalten bleiben?
+            </div>
+            <button type="button" className="btn btn-primary" onClick={() => handleDelete(deleteTarget.id, false)}>
+              Nur aus der Liste löschen
+              <small style={{ display: 'block', fontWeight: 500 }}>Werte bleiben in der Statistik</small>
+            </button>
+            <button type="button" className="btn btn-secondary hab-del-danger" onClick={() => handleDelete(deleteTarget.id, true)}>
+              Auch aus der Statistik löschen
+              <small style={{ display: 'block', fontWeight: 500 }}>Die Gewohnheit zählt in keinem Verlauf mehr</small>
+            </button>
+            <button type="button" className="hab-cp-link" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+          </div>
+        </SheetShell>
       )}
 
       {/* Pausierte Habits */}
@@ -642,7 +687,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 key={habit.id}
                 habit={habit}
                 onEdit={() => openEdit(habit)}
-                onDelete={() => handleDelete(habit.id)}
+                onDelete={() => setDeleteTarget(habit)}
                 onToggleActive={() => handleToggleActive(habit)}
                 deleting={deletingId === habit.id}
                 paused

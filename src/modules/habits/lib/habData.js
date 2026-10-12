@@ -86,11 +86,30 @@ export async function saveHabit(habit) {
   }
 }
 
-export async function deleteHabit(habitId) {
+/**
+ * Gewohnheit löschen (soft). Mit hideFromStats zählt sie auch in keiner
+ * Statistik mehr (Spalte stats_hidden, siehe hab_stats_hidden_migration.sql);
+ * ohne bleiben ihre Werte für die Tage, an denen sie aktiv war, erhalten.
+ */
+export async function deleteHabit(habitId, { hideFromStats = false } = {}) {
+  const sb = getSupabase();
+  const patch = { deleted_at: new Date().toISOString() };
+  // stats_hidden nur mitschicken, wenn gewünscht — so geht normales Löschen
+  // auch, solange die Migration noch nicht eingespielt ist.
+  if (hideFromStats) patch.stats_hidden = true;
+  const { error } = await sb
+    .from('hab_habits')
+    .update(patch)
+    .eq('id', habitId);
+  if (error) throw error;
+}
+
+/** Gelöschte Gewohnheit in der Statistik aus- oder wieder einblenden. */
+export async function setStatsHidden(habitId, hidden) {
   const sb = getSupabase();
   const { error } = await sb
     .from('hab_habits')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ stats_hidden: hidden })
     .eq('id', habitId);
   if (error) throw error;
 }
@@ -219,11 +238,13 @@ export async function setEntryCount(habitId, date, count) {
 /**
  * Gelöschten Habit wiederherstellen (deleted_at auf null setzen).
  */
-export async function restoreHabit(habitId) {
+export async function restoreHabit(habitId, { wasHidden = false } = {}) {
   const sb = getSupabase();
+  const patch = { deleted_at: null, active: true };
+  if (wasHidden) patch.stats_hidden = false;
   const { error } = await sb
     .from('hab_habits')
-    .update({ deleted_at: null, active: true })
+    .update(patch)
     .eq('id', habitId);
   if (error) throw error;
 }

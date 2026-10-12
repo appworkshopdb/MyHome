@@ -122,7 +122,10 @@ export default function StatsView({ habits, entries }) {
 
   const allHabits = useMemo(() => {
     const byId = new Map();
-    for (const h of [...habits, ...archived]) byId.set(h.id, h);
+    for (const h of [...habits, ...archived]) {
+      if (h.deleted_at && h.stats_hidden) continue; // aus der Statistik entfernt
+      byId.set(h.id, h);
+    }
     return [...byId.values()].sort((a, b) =>
       (statusOf(a) ? 1 : 0) - (statusOf(b) ? 1 : 0)
       || (a.sort_order ?? 0) - (b.sort_order ?? 0)
