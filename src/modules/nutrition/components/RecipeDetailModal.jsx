@@ -1,13 +1,19 @@
+import { useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
-import { RECIPE_CATS, TAG_COLORS, fmt } from '../lib/nutrition';
+import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 
 export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onLogMeal, onClose }) {
-  const servings = recipe.servings || 1;
-  const perServing = Math.round(calc.kcal / servings);
+  // Das Rezept ist für `baseServings` Portionen angelegt: calc und Zutatenmengen
+  // gelten dafür. Der Rechner skaliert nur die Anzeige (nichts wird gespeichert).
+  const baseServings = Math.max(1, recipe.servings || 1);
+  const [portions, setPortions] = useState(baseServings);
+  const factor = portions / baseServings;
+  const perPortion = (v) => v / baseServings;
+  const total = (v) => perPortion(v) * portions;
   const cat = RECIPE_CATS.find((c) => c.key === recipe.category) || RECIPE_CATS[0];
   const isOwner = isTemplate || recipe.ownerId === currentUserId;
   const isShared = !!recipe.householdId;
@@ -33,19 +39,54 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <span className="chip">{cat.emoji} {cat.label}</span>
-        <span className="chip">{servings} Portion{servings !== 1 ? 'en' : ''}</span>
         {isShared && <span className="chip">Vom Haushalt geteilt{!isOwner ? ' (nicht von dir)' : ''}</span>}
       </div>
 
-      <div className="result-grid">
-        <div className="result-tile"><div className="label">Kalorien gesamt</div><div className="value">{Math.round(calc.kcal)}<span>kcal</span></div></div>
-        <div className="result-tile"><div className="label">Pro Portion</div><div className="value">{perServing}<span>kcal</span></div></div>
-        <div className="result-tile"><div className="label">Protein</div><div className="value">{fmt(calc.protein)}<span>g</span></div></div>
-        <div className="result-tile"><div className="label">Kohlenhydrate</div><div className="value">{fmt(calc.carbs)}<span>g</span></div></div>
+      <div className="portion-calc">
+        <div className="portion-calc-row">
+          <div>
+            <div className="portion-calc-label">Portionen</div>
+            <div className="portion-calc-hint">
+              {portions === baseServings
+                ? `Angelegt für ${baseServings} Portion${baseServings !== 1 ? 'en' : ''}`
+                : <>Angelegt für {baseServings} · <button type="button" className="portion-calc-reset" onClick={() => setPortions(baseServings)}>zurücksetzen</button></>}
+            </div>
+          </div>
+          <div className="portion-stepper">
+            <button type="button" aria-label="Eine Portion weniger" disabled={portions <= 1} onClick={() => setPortions((p) => Math.max(1, p - 1))}>−</button>
+            <input
+              type="number" min="1" max="99" inputMode="numeric" aria-label="Portionen"
+              value={portions}
+              onChange={(e) => setPortions(Math.min(99, Math.max(1, Math.round(+e.target.value) || 1)))}
+            />
+            <button type="button" aria-label="Eine Portion mehr" disabled={portions >= 99} onClick={() => setPortions((p) => Math.min(99, p + 1))}>+</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="card nut-facts" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+        <div className="nut-facts-row head">
+          <span />
+          <span>Pro Portion</span>
+          <span>Gesamt</span>
+        </div>
+        {[
+          ['Kalorien', 'kcal', 'kcal', 0],
+          ['Eiweiß', 'protein', 'g', 1],
+          ['Kohlenhydrate', 'carbs', 'g', 1],
+          ['Fett', 'fat', 'g', 1],
+          ['Ballaststoffe', 'fiber', 'g', 1],
+        ].map(([label, key, unit, digits]) => (
+          <div className="nut-facts-row" key={key}>
+            <span>{label}</span>
+            <span>{fmt(perPortion(calc[key]), digits)}<small>{unit}</small></span>
+            <span>{fmt(total(calc[key]), digits)}<small>{unit}</small></span>
+          </div>
+        ))}
       </div>
 
       <div>
-        <div className="card-title" style={{ marginBottom: 8 }}>Zutaten</div>
+        <div className="card-title" style={{ marginBottom: 8 }}>Zutaten für {portions} Portion{portions !== 1 ? 'en' : ''}</div>
         <div className="card" style={{ margin: 0, padding: 0 }}>
           {recipe.ingredients.map((ing, idx) => {
             const food = foodsById[ing.foodId];
@@ -53,7 +94,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
             return (
               <div key={idx} style={{ display: 'flex', padding: '9px 14px', borderBottom: idx < recipe.ingredients.length - 1 ? '1px solid var(--border)' : 'none' }}>
                 <span style={{ flex: 1, fontSize: '0.85rem' }}>{food.name}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{ing.amount} {UNIT_LABEL[food.unit] || 'g'}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
               </div>
             );
           })}

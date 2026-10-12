@@ -45,7 +45,9 @@ const fmtNum = (n) => Math.round(n).toLocaleString('de-DE');
 
 // Ernährungsstand des Tages: kein Haken, zählt nicht bei "x / y erledigt".
 // Block antippen → Mahlzeiten (Verlauf + Eintragen), "Ernährung ›" → Modul.
-function NutritionBlock({ data, onOpen }) {
+// Wird auch oben auf der Ernährungs-Seite gezeigt (label="Heute", hideOpen: der
+// Link ins Modul entfällt dort).
+export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = false }) {
   const { kcal, goal, macros, slots, count, hasEstimate, eaten, overKcal } = data;
   const approx = hasEstimate ? '≈ ' : '';
   const over = overKcal > 0;
@@ -66,8 +68,8 @@ function NutritionBlock({ data, onOpen }) {
   return (
     <div className={`dayplan-group dp-nut ${over ? 'over' : ''}`}>
       <div className="dp-nut-head">
-        <div className="dayplan-group-label">Ernährung</div>
-        <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung ›</button>
+        <div className="dayplan-group-label">{label}</div>
+        {!hideOpen && <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung ›</button>}
       </div>
       <button className="dp-nut-btn" onClick={() => onOpen?.('nutrition/mahlzeiten')}>
         <div className="dp-nut-top">

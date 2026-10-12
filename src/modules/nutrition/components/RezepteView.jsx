@@ -87,7 +87,7 @@ export default function RezepteView({
                   <span className="title">{r.name}</span>
                   <span className="servings">{r.servings} Port.</span>
                 </div>
-                <div className="macros">{Math.round(calc.kcal)} kcal · {fmt(calc.protein)}g Protein</div>
+                <div className="macros">{Math.round(calc.kcal / Math.max(1, r.servings || 1))} kcal · {fmt(calc.protein / Math.max(1, r.servings || 1))}g Eiweiß pro Portion</div>
                 <div className="tags">
                   {(r.goalTags || []).map((t) => <span key={t} className="goal-tag">{t}</span>)}
                   {(r.customTags || []).map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}

@@ -43,7 +43,7 @@ registerRequirement('profile', async (session) => {
 // unverändert bestehenden Dialog.
 const DETAIL_TITLES = {
   mahlzeiten:   'Mahlzeiten',
-  lebensmittel: 'Lebensmittel',
+  lebensmittel: 'Ampel',
   rezepte:      'Rezepte',
   lexikon:      'Lexikon',
   tipps:        'Tipps',
@@ -56,10 +56,6 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const [foods, setFoods] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Suchbegriff aus der Ampel-Fokuskarte, der an AmpelView durchgereicht
-  // wird — nur beim Wechsel über die Fokuskarte gesetzt.
-  const [ampelSearch, setAmpelSearch] = useState('');
 
   // Lifted aus RezepteView: undefined = geschlossen, null = neu, Objekt = bearbeiten
   const [editingRecipe, setEditingRecipe] = useState(undefined);
@@ -126,13 +122,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   }, [onNavigateView]);
 
   function backToOverview() {
-    setAmpelSearch('');
     onNavigateView(null);
-  }
-
-  function openAmpelWithSearch(query) {
-    setAmpelSearch(query);
-    onNavigateView('lebensmittel');
   }
 
   // Mahlzeit in den Verlauf schreiben (aus Foto oder Rezept) und dorthin springen.
@@ -226,7 +216,6 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
               setShowForm={setShowFoodForm}
               formFood={editingFood}
               setFormFood={setEditingFood}
-              initialSearch={ampelSearch}
             />
           )}
 
@@ -261,7 +250,6 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
         <OverviewSection
           foods={foods}
           recipes={recipes}
-          onSearch={openAmpelWithSearch}
           onNavigate={onNavigateView}
         />
       </div>

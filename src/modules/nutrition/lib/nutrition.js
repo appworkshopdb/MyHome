@@ -124,6 +124,17 @@ export const TIPP_ICONS = {
   satt: '🥗', reduzieren: '📉', praxis: '📋',
 };
 
+// Zutatenmenge für die Anzeige (z. B. beim Umrechnen der Portionen):
+// g/ml auf ganze Zahlen (unter 10 mit einer Nachkommastelle), Stück/Scheibe/
+// Zehe/EL in Vierteln ("1,5", "0,25"), deutsches Zahlenformat.
+export function fmtAmount(amount, unit) {
+  const piece = ['Scheibe', 'Stück', 'Zehe', 'EL'].includes(unit);
+  let v = Number(amount) || 0;
+  if (piece) v = Math.max(Math.round(v * 4) / 4, v > 0 ? 0.25 : 0);
+  else v = v >= 10 ? Math.round(v) : Math.round(v * 10) / 10;
+  return v.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+}
+
 export const fmt = (v, digits = 1) => (v == null || isNaN(v) ? '–' : (+v).toFixed(digits));
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 

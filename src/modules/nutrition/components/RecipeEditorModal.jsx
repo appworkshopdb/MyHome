@@ -70,8 +70,9 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
       </div>
 
       <div className="form-group">
-        <label>Portionen</label>
+        <label>Für wie viele Portionen ist das Rezept?</label>
         <input type="number" min="1" value={draft.servings} onChange={(e) => set('servings', e.target.value)} />
+        <div className="nut-hint">Die Zutatenmengen unten gelten für diese Anzahl Portionen. Im Rezept kannst du sie später umrechnen.</div>
       </div>
 
       <div className="form-group">
@@ -168,12 +169,15 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
 
       {draft.ingredients.length > 0 && (
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-title">Nährwerte gesamt ({draft.servings || 1} Port.)</div>
+          <div className="card-title">Nährwerte gesamt ({Math.max(1, +draft.servings || 1)} Port.)</div>
           <div className="result-grid">
             <div className="result-tile"><div className="label">kcal</div><div className="value">{Math.round(calc.kcal)}</div></div>
             <div className="result-tile"><div className="label">Protein</div><div className="value">{fmt(calc.protein)}<span>g</span></div></div>
             <div className="result-tile"><div className="label">KH</div><div className="value">{fmt(calc.carbs)}<span>g</span></div></div>
             <div className="result-tile"><div className="label">Fett</div><div className="value">{fmt(calc.fat)}<span>g</span></div></div>
+          </div>
+          <div className="nut-hint">
+            Pro Portion: {Math.round(calc.kcal / Math.max(1, +draft.servings || 1))} kcal · {fmt(calc.protein / Math.max(1, +draft.servings || 1))} g Eiweiß
           </div>
         </div>
       )}

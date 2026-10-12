@@ -690,3 +690,61 @@
   padding:       0;
 }
 .cover-tone.active { border-color: var(--action-primary); box-shadow: none; }
+
+/* Bereich "Ampel": die drei Zähler als Punkte in der Bereiche-Zeile */
+.nut-area-ampel { display: inline-flex; align-items: center; gap: 10px; }
+.nut-area-ampel-item { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Portionsrechner im Rezept-Dialog ────────────────────────── */
+.portion-calc {
+  background:    var(--surface-sunken);
+  border-radius: var(--r-xl);
+  padding:       12px 14px;
+}
+.portion-calc-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.portion-calc-label { font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.portion-calc-hint  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.portion-calc-reset {
+  font: inherit; font-weight: 700; color: var(--action-primary);
+  background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline;
+}
+.portion-stepper { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.portion-stepper button {
+  width:         var(--touch-target);
+  height:        var(--touch-target);
+  border-radius: var(--r-xl);
+  background:    var(--surface-raised);
+  border:        1px solid var(--border-hairline);
+  color:         var(--text-primary);
+  font-size:     20px;
+  font-weight:   700;
+  line-height:   1;
+  cursor:        pointer;
+}
+.portion-stepper button:disabled { opacity: 0.35; cursor: default; }
+.portion-stepper input {
+  width:         52px;
+  height:        var(--touch-target);
+  text-align:    center;
+  font-size:     18px;
+  font-weight:   800;
+  border-radius: var(--r-xl);
+  padding:       0;
+}
+/* Nährwerte: Pro Portion | Gesamt */
+.nut-facts-row {
+  display:               grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap:                   8px;
+  align-items:           baseline;
+  padding:               9px 14px;
+  border-top:            1px solid var(--border-hairline);
+  font-size:             13px;
+  color:                 var(--text-secondary);
+}
+.nut-facts-row:first-child { border-top: 0; }
+.nut-facts-row span:nth-child(n+2) { text-align: right; font-weight: 800; color: var(--text-primary); }
+.nut-facts-row small { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-left: 2px; }
+.nut-facts-row.head { background: var(--surface-sunken); font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.nut-facts-row.head span:nth-child(n+2) { font-weight: 800; color: var(--text-muted); }
+.nut-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
