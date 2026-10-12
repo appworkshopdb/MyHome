@@ -1,12 +1,36 @@
 import { useMemo, useState } from 'react';
 import { IconPlus, IconSearch, IconClose } from '../../../core/components/Icons';
-import { RECIPE_CATS, TAG_COLORS, computeNutrition, fmt } from '../lib/nutrition';
+import { RECIPE_CATS, computeNutrition, fmt } from '../lib/nutrition';
 import { TEMPLATE_RECIPES } from '../lib/data/templates';
 import { RecipeCover } from '../lib/recipeCovers';
 import { DIET_FILTERS, NUTRI_FILTERS, ART_GROUPS, SORTS, recipeFacts, applyRecipeFilters, searchScore } from '../lib/recipeFilter';
 import RecipeEditorModal from './RecipeEditorModal';
 import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeDetailModal from './RecipeDetailModal';
+
+// Karte bleibt kompakt: statt aller Tags und der ganzen Notiz nur die Anzahl der
+// Tags (eigene, Ziele und aus den Zutaten abgeleitete, ohne Doppelte) und ein
+// Hinweis, dass eine Notiz existiert. Alles Weitere steht im Rezept-Dialog.
+function RecipeMeta({ recipe, calc }) {
+  const tagCount = new Set([...(recipe.customTags || []), ...(recipe.goalTags || []), ...(calc.tags || [])]).size;
+  if (tagCount === 0 && !recipe.note) return null;
+  return (
+    <div className="meta-pills">
+      {tagCount > 0 && (
+        <span className="meta-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" /><circle cx="8" cy="8" r="1.4" /></svg>
+          {tagCount} Tag{tagCount !== 1 ? 's' : ''}
+        </span>
+      )}
+      {recipe.note && (
+        <span className="meta-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 3h10l4 4v14H5z" /><path d="M9 12h6M9 16h6" /></svg>
+          Notiz
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function RezepteView({
   foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast,
@@ -165,12 +189,7 @@ export default function RezepteView({
                 <span className="servings">{r.servings} Port.</span>
               </div>
               <div className="macros">{Math.round(facts.kcal)} kcal · {fmt(facts.protein)}g Eiweiß pro Portion</div>
-              <div className="tags">
-                {(r.goalTags || []).map((t) => <span key={t} className="goal-tag">{t}</span>)}
-                {(r.customTags || []).map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
-                {calc.tags.filter((t) => !(r.customTags || []).includes(t)).slice(0, 2).map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
-              </div>
-              {r.note && <p className="note">{r.note}</p>}
+              <RecipeMeta recipe={r} calc={calc} />
             </div>
           </div>
           {tab === 'vorlagen' && (

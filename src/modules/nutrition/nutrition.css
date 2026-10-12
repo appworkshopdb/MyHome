@@ -798,3 +798,13 @@
    haben keine feste Größe und wurden sonst auf die Kartenbreite gezogen. */
 .nut-module-content .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .nut-module-content .btn svg { width: 18px; height: 18px; flex: none; }
+
+/* Rezeptkarte: Anzahl Tags und Notiz-Hinweis statt der vollen Inhalte */
+.meta-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.meta-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px 3px 7px; border-radius: 999px;
+  background: var(--surface-sunken); color: var(--text-muted);
+  font-size: 11px; font-weight: 700;
+}
+.meta-pill svg { width: 12px; height: 12px; flex: none; }
