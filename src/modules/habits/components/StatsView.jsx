@@ -500,8 +500,8 @@ function HabitsSheet({ allHabits, excluded, onChange, onClose }) {
 function Delta({ cur, prev }) {
   if (cur === null || prev === null) return <span className="hab-cp-delta flat">–</span>;
   const pp = Math.round((cur - prev) * 100);
-  if (pp > 0) return <span className="hab-cp-delta up">▲ {pp} PP</span>;
-  if (pp < 0) return <span className="hab-cp-delta down">▼ {Math.abs(pp)} PP</span>;
+  if (pp > 0) return <span className="hab-cp-delta up">▲ {pp} Pkt.</span>;
+  if (pp < 0) return <span className="hab-cp-delta down">▼ {Math.abs(pp)} Pkt.</span>;
   return <span className="hab-cp-delta flat">● ±0</span>;
 }
 
