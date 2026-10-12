@@ -4728,3 +4728,17 @@
   border: 0; background: var(--action-primary); color: var(--text-on-accent);
   border-radius: var(--r-lg); padding: 13px; font-weight: 800; font-size: 0.9rem; cursor: pointer;
 }
+
+/* ── Kalender: Größen an die Rezeptliste angleichen ──────────────────
+   .main-content bringt bereits 16px Seitenabstand mit; .calview hatte
+   zusätzlich 18px (= 34px, Rezepte: 16px). Umschalter wie die Tab-Chips
+   der Rezepte (nutrition.css .chip: 6px 12px, 0.75rem, 600). */
+.calview { padding: 0 0 var(--space-8); }
+.calview-mode-toggle {
+  background: transparent; padding: 0; gap: 6px; border-radius: 0; margin-bottom: 12px;
+}
+.calview-mode-toggle button {
+  padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  background: var(--surface-sunken); color: var(--text-secondary); box-shadow: none;
+}
+.calview-mode-toggle button.active { background: var(--action-primary); color: var(--text-on-accent); box-shadow: none; }
