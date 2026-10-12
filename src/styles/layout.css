@@ -234,29 +234,30 @@
 
 .module-tabs {
   display: flex;
-  border-radius: var(--r-lg);
-  background: var(--surface-sunken);
+  border-radius: 0;
+  background: transparent;
   /* Direkt unter der schwebenden TopBar (top:16px + Höhe 42px = 58px
      Unterkante) — nur 2px Luft statt der vorherigen 16px+.
      Direkt über dem Inhalt — nur 4px statt 8px. */
   margin-top: 60px;
   margin-bottom: 4px;
   overflow-x: auto;
-  padding: 3px;
-  gap: 2px;
+  padding: 0;
+  gap: 6px;
   scrollbar-width: none;
 }
 .module-tabs::-webkit-scrollbar { display: none; }
 
 .module-tab {
+  /* Chip-Maße wie Rezepte-Tabs (nutrition.css .chip) */
   flex: 1;
-  padding: 8px 10px;
+  padding: 6px 12px;
   text-align: center;
-  font-size: 12px;            /* t-card-title */
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--surface-sunken);
   color: var(--text-secondary);
-  border-radius: var(--r-md);
-  min-height: var(--touch-target);
+  border-radius: 999px;
   white-space: nowrap;
   transition:
     background var(--motion-fast),
@@ -264,9 +265,8 @@
 }
 
 .module-tab.active {
-  background: var(--surface-raised);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-card);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
 
 /* ── Seitenheader ─────────────────────────────────────────────*/

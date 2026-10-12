@@ -860,11 +860,12 @@
 }
 
 .sho-freq-pill {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 4px 12px;
-  border: 1.5px solid var(--border);
-  background: none;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-sunken);
   color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font);
@@ -873,9 +874,8 @@
 }
 
 .sho-freq-pill.active {
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  border-color: var(--text-primary);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
 
 .sho-freq-total {

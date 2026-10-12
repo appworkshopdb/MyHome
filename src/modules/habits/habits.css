@@ -301,13 +301,12 @@
 }
 
 .hab-pill-btn {
-  min-height: 40px;
-  padding: 0 18px;
+  padding: 6px 12px;
   border-radius: var(--r-pill);
   background: var(--surface-raised);
   border: none;
   box-shadow: var(--shadow-card);
-  font-size: 13px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
@@ -1599,14 +1598,14 @@
    ═══════════════════════════════════════════════════════════ */
 
 .hab-archive-btn {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   background: var(--surface-raised);
   border: none;
   border-radius: var(--r-pill);
   box-shadow: var(--shadow-card);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;

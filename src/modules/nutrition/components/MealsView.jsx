@@ -141,12 +141,12 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
     <div className="meals-view">
       {/* Tagesnavigation */}
       <div className="meals-daynav">
-        <button className="btn-icon" aria-label="Vorheriger Tag" onClick={() => goTo(shiftDate(date, -1))}><IconChevronLeft /></button>
+        <button className="month-nav-btn" aria-label="Vorheriger Tag" onClick={() => goTo(shiftDate(date, -1))}><IconChevronLeft /></button>
         <div className="meals-daynav-center">
           <div className="meals-daynav-label">{formatDayLabel(date, today)}</div>
           {date !== today && <button className="meals-today-link" onClick={() => goTo(today)}>Zu heute</button>}
         </div>
-        <button className="btn-icon" aria-label="Nächster Tag" onClick={() => goTo(shiftDate(date, 1))}><IconChevronRight /></button>
+        <button className="month-nav-btn" aria-label="Nächster Tag" onClick={() => goTo(shiftDate(date, 1))}><IconChevronRight /></button>
       </div>
 
       {failed && <div className="meal-hint" role="alert">Der Verlauf konnte nicht geladen werden. Bitte später nochmal versuchen.</div>}

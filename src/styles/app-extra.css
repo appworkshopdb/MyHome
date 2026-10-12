@@ -2443,7 +2443,6 @@
   transition:
     background var(--motion-fast),
     color      var(--motion-fast);
-  min-height: var(--touch-target);
 }
 
 .hub-todo-chip.active {
@@ -3395,7 +3394,7 @@
    .hub { padding-top: 6px } weiter oben in dieser Datei schlägt —
    .with-topbar-space aus layout.css allein würde verlieren, weil
    app-extra.css später geladen wird. 66px TopBar + 6px Luft. */
-.hub.with-topbar-space { padding-top: 72px; }
+.hub.with-topbar-space { padding-top: 66px; }
 
 .hub-date {
   font-size:     13px;
