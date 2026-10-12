@@ -24,7 +24,7 @@ import { MONTHS_DE } from '../lib/finance';
 import {
   defaultPeriod, periodRange, effectiveRange, compareRange, shiftPeriod, switchPreset,
   periodLabel, rangeText, nowIdx, idxToYM, monthIdx, MONTHS_SHORT, inRange, applyFilters, HONOR,
-  activeFilterGroups, resetFilterGroup, entriesToCsv, toDateStr,
+  activeFilterGroups, entriesToCsv, toDateStr,
 } from '../lib/analytics';
 import {
   defaultPrefs, sanitizePrefs, loadReportPrefs, saveReportPrefs, DEFAULT_COLLAPSED, SECTION_IDS,
@@ -296,6 +296,13 @@ export default function SummaryView() {
         <button type="button" className="month-nav-btn" aria-label="Weiter" onClick={() => setPeriod((p) => shiftPeriod(p, 1))}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
         </button>
+        <div className="rp-tools">
+          <button type="button" className="rp-iconbtn" aria-label={`Filter${groups.length ? `, ${groups.length} aktiv` : ''}`} onClick={() => setFilterOpen(true)}>
+            <IconFilter />
+            {groups.length > 0 && <span className="rp-count">{groups.length}</span>}
+          </button>
+          <button type="button" className="rp-iconbtn" aria-label="Bereiche anpassen" onClick={() => setEditing(true)}><IconRows /></button>
+        </div>
       </div>
 
       {period.preset === 'custom' && (
@@ -319,28 +326,6 @@ export default function SummaryView() {
         </div>
       )}
 
-      <div className="rp-toolbar">
-        <div className="rp-chips">
-          {prefs.filters.compare !== 'none' && (
-            <button type="button" className="rp-fchip" onClick={() => setFilters({ ...prefs.filters, compare: 'none' })}>
-              Vergleich: {prefs.filters.compare === 'year' ? 'Vorjahr' : 'Vorperiode'} <span aria-hidden="true">×</span>
-              <span className="sr-only"> entfernen</span>
-            </button>
-          )}
-          {groups.map((g) => (
-            <button key={g.key} type="button" className="rp-fchip" onClick={() => setFilters(resetFilterGroup(prefs.filters, g.key))}>
-              {g.label} <span aria-hidden="true">×</span><span className="sr-only"> entfernen</span>
-            </button>
-          ))}
-        </div>
-        <div className="rp-tools">
-          <button type="button" className="rp-iconbtn" aria-label={`Filter${groups.length ? `, ${groups.length} aktiv` : ''}`} onClick={() => setFilterOpen(true)}>
-            <IconFilter />
-            {groups.length > 0 && <span className="rp-count">{groups.length}</span>}
-          </button>
-          <button type="button" className="rp-iconbtn" aria-label="Bereiche anpassen" onClick={() => setEditing(true)}><IconRows /></button>
-        </div>
-      </div>
       <p className="rp-fnote">Die Filter wirken auf die meisten Bereiche. Wo ein Bereich abweicht, steht es in seiner Kopfzeile.</p>
 
       {visible.map((id) => (
