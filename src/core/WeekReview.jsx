@@ -53,8 +53,8 @@ function Bar({ rate, tone }) {
 function Delta({ cur, prev }) {
   if (cur === null || cur === undefined || prev === null || prev === undefined) return null;
   const pp = Math.round((cur - prev) * 100);
-  if (pp > 0) return <span className="wk-delta up">▲ {pp} PP</span>;
-  if (pp < 0) return <span className="wk-delta down">▼ {Math.abs(pp)} PP</span>;
+  if (pp > 0) return <span className="wk-delta up">▲ {pp} Pkt.</span>;
+  if (pp < 0) return <span className="wk-delta down">▼ {Math.abs(pp)} Pkt.</span>;
   return <span className="wk-delta flat">● ±0</span>;
 }
 
