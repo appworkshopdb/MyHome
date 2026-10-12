@@ -349,7 +349,7 @@ export default function SummaryView() {
 
       {filterOpen && (
         <FilterSheet
-          filters={prefs.filters} entries={data.entries} range={eff}
+          filters={prefs.filters}
           onClose={() => setFilterOpen(false)}
           onApply={(f) => { setFilters(f); setFilterOpen(false); }}
         />

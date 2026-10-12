@@ -1,5 +1,5 @@
 // Filter-Sheet der Auswertung. Arbeitet auf einer Kopie (Entwurf) und
-// übernimmt sie erst bei "Anzeigen"; "Abbrechen" verwirft sie.
+// übernimmt sie erst bei "Speichern"; "Abbrechen" verwirft sie.
 // Jede Gruppe nennt, auf welche Bereiche sie wirkt (siehe SECTIONS in
 // sections.jsx) — die Abweichungen stehen zusätzlich in deren Kopfzeile.
 
@@ -7,7 +7,6 @@ import { useState } from 'react';
 import SheetShell from '../../../../core/components/SheetShell.jsx';
 import {
   ALL_CATS, TYPES, PAYMENTS, PAYMENT_LABEL, DEFAULT_FILTERS,
-  applyFilters, inRange, HONOR,
 } from '../../lib/analytics.js';
 import { CATEGORIES } from '../../lib/finance.js';
 
@@ -60,11 +59,10 @@ function Seg({ value, options, onChange, label }) {
   );
 }
 
-export default function FilterSheet({ filters, entries, range, onApply, onClose }) {
+export default function FilterSheet({ filters, onApply, onClose }) {
   const [d, setD] = useState(filters);
   const set = (patch) => setD((cur) => ({ ...cur, ...patch }));
 
-  const count = applyFilters(inRange(entries, range), d, HONOR.all).length;
   const numOrNull = (v) => (v === '' || Number.isNaN(Number(v)) ? null : Math.max(0, Number(v)));
 
   return (
@@ -142,9 +140,7 @@ export default function FilterSheet({ filters, entries, range, onApply, onClose 
 
       <div className="entry-modal-actions">
         <button type="button" className="btn btn-secondary" onClick={onClose} style={{ marginLeft: 'auto' }}>Abbrechen</button>
-        <button type="button" className="btn btn-primary" onClick={() => onApply(d)}>
-          {count} {count === 1 ? 'Buchung' : 'Buchungen'} anzeigen
-        </button>
+        <button type="button" className="btn btn-primary" onClick={() => onApply(d)}>Speichern</button>
       </div>
     </SheetShell>
   );
