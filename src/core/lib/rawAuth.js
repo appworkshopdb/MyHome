@@ -144,6 +144,13 @@ export function resendConfirmation(email) {
   return authRequest(`resend?redirect_to=${confirmRedirect()}`, { type: 'signup', email });
 }
 
+// „Passwort vergessen“: GoTrue schickt einen Link, der mit #…&type=recovery in die
+// App zurückführt (consumeAuthRedirect) — dort legt die Person ein neues Passwort
+// fest (ResetPassword.jsx). GoTrue antwortet bewusst gleich, egal ob es die Adresse gibt.
+export function requestPasswordReset(email) {
+  return authRequest(`recover?redirect_to=${confirmRedirect()}`, { email });
+}
+
 // ── Rückkehr über den Link aus der Bestätigungsmail ─────────────────
 // GoTrue leitet auf  <redirect_to>#access_token=…&refresh_token=…&type=signup
 // (bzw. #error=…&error_code=otp_expired) zurück. Die App nutzt aber
@@ -197,7 +204,7 @@ async function processRedirect(p) {
       user,
     });
     persist(session);
-    return { session };
+    return { session, type: p.get('type') }; // 'signup' | 'recovery' | …
   } catch {
     return { error: 'E-Mail bestätigt, aber die Anmeldung ist fehlgeschlagen. Bitte melde dich mit deinem Passwort an.' };
   }

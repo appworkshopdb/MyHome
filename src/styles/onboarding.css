@@ -239,3 +239,53 @@
 .hp-group { margin: 6px 2px 0; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
 .hp-banner { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 14px; background: var(--warm-soft); font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
 .hp-banner b { padding: 4px 10px; border-radius: 99px; background: var(--warm); color: #fff; font-size: 0.75rem; }
+
+/* ── Anmelden / Registrieren / Passwort zurücksetzen (Login.jsx, ResetPassword.jsx) ── */
+.lg {
+  min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+  width: 100%; max-width: 460px; margin: 0 auto; box-sizing: border-box; background: var(--surface-page);
+}
+/* Der dunkelblaue Kopf bleibt in beiden Designs dunkelblau (Markenfläche). */
+.lg-navy {
+  position: relative; overflow: hidden; box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top) + 26px) 26px 54px; color: #fff;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(229, 118, 47, 0.30), transparent 55%), linear-gradient(160deg, #1B2A4A 0%, #2F4A80 100%);
+}
+.lg-wordmark { display: block; margin-bottom: 26px; font-size: 12px; font-weight: 800; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.82); }
+.lg-navy h1 { margin: 0 0 10px; font-size: 1.85rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: #fff; }
+.lg-navy p { margin: 0; max-width: 34ch; font-size: 0.92rem; line-height: 1.5; color: rgba(255, 255, 255, 0.78); }
+.lg-mods { display: flex; gap: 8px; margin-top: 22px; }
+.lg-mods i { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 13px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.16); color: #fff; }
+
+.lg-sheet {
+  position: relative; flex: 1; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box;
+  margin-top: -28px; padding: 22px 24px calc(28px + env(safe-area-inset-bottom));
+  border-radius: 26px 26px 0 0; background: var(--surface-raised); box-shadow: 0 -10px 30px rgba(27, 42, 74, 0.12);
+}
+.lg-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-sunken); }
+.lg-tabs button { height: 40px; border: 0; border-radius: 11px; background: none; font: inherit; font-size: 0.9rem; font-weight: 800; color: var(--text-muted); cursor: pointer; }
+.lg-tabs button.on { background: var(--surface-raised); color: var(--text-primary); box-shadow: 0 1px 4px rgba(27, 42, 74, 0.14); }
+.lg-tabs button:focus-visible, .lg-eye:focus-visible, .lg-textbtn:focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+
+.lg-field { display: flex; flex-direction: column; gap: 7px; }
+.lg-lab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.lg-lab em { font-style: normal; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.lg-textbtn { padding: 0; border: 0; background: none; font: inherit; font-size: 0.8rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--warm-ink); cursor: pointer; }
+.lg-in { display: flex; align-items: center; height: 54px; border-radius: 16px; border: 1.5px solid var(--border-strong); background: var(--surface-page); transition: border-color 0.15s, box-shadow 0.15s; }
+.lg-in:focus-within { border-color: var(--warm); box-shadow: 0 0 0 4px var(--warm-soft); }
+.lg-in input { flex: 1; min-width: 0; height: 100%; padding: 0 16px; border: 0; outline: 0; background: none; font: inherit; font-size: 1rem; color: var(--text-primary); }
+.lg-eye { display: flex; align-items: center; justify-content: center; width: 48px; height: 100%; border: 0; background: none; color: var(--text-muted); cursor: pointer; }
+
+.lg-btn { height: 54px; justify-content: center; border-radius: 16px; font-size: 1rem; font-weight: 800; }
+.lg-msg { padding: 11px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.45; background: var(--surface-sunken); color: var(--text-secondary); }
+.lg-msg.ok { background: var(--success-light); color: var(--success); }
+.lg-msg.error { background: var(--danger-light); color: var(--danger); }
+.lg-msg.warn { background: var(--warning-light); color: var(--text-primary); }
+
+.lg-steps { display: flex; flex-direction: column; gap: 9px; margin: 10px 0 0; padding: 0; list-style: none; }
+.lg-steps li { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+.lg-steps b { display: flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--warm-soft); color: var(--warm-ink); font-size: 0.8rem; font-weight: 800; }
+.lg-legal { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--text-muted); }
+.lg-legal a { color: var(--text-secondary); font-weight: 700; }
+.lg-foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin: auto 0 0; padding-top: 6px; font-size: 0.76rem; color: var(--text-muted); }
+.lg-foot svg { flex: none; }

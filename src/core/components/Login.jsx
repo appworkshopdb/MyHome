@@ -3,20 +3,52 @@ import { supabaseConfigured } from '../lib/supabaseClient';
 import * as rawAuth from '../lib/rawAuth';
 import { useAuth } from '../lib/AuthContext';
 import EnvelopeArt from './EnvelopeArt';
+import AuthHero from './AuthHero';
+import { UiIcon } from './ModuleIcons';
+
+// Anmelden / Registrieren / Passwort vergessen — Variante B der Mockups: oben
+// der dunkelblaue Bereich mit der Aussage und den sechs Bereichen, darunter das
+// weiße Karten-Sheet mit Umschalter „Anmelden | Registrieren“. Danach: bei
+// aktiver Bestätigungspflicht die „Fast geschafft“-Seite (awaitingConfirm).
+// Styles: styles/onboarding.css (.lg-*).
 
 const RESEND_COOLDOWN_S = 60;
 
+// Die Datenschutzerklärung liegt als statische Seite in public/. Nutzungsbedingungen
+// gibt es noch nicht — deshalb steht nur der Hinweis auf die Datenschutzerklärung da
+// (keine toten Links, keine erfundenen Rechtstexte).
+const PRIVACY_URL = `${import.meta.env.BASE_URL}datenschutz.html`;
+
+const HEAD = {
+  signin: {
+    title: 'Dein Leben, in Zahlen die dir gehören.',
+    sub: 'Geld, Sport, Ernährung, Gewohnheiten — ein Konto, sechs Module, alles auf jedem Gerät.',
+  },
+  signup: {
+    title: 'Neu hier? Ein Konto für alles.',
+    sub: 'Ein Konto, alle Module. Kein zusätzliches Passwort pro Bereich.',
+  },
+  forgot: {
+    title: 'Passwort vergessen?',
+    sub: 'Kein Problem. Wir schicken dir einen Link, mit dem du ein neues festlegst.',
+  },
+};
+
+const STEPS = ['E-Mail bestätigen', 'Profil einrichten', 'Vogel wählen'];
+
 export default function Login() {
   const { setSession, authNotice, clearAuthNotice } = useAuth();
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   // Gesetzt, sobald die Registrierung eine Bestätigungsmail ausgelöst hat
   // (oder ein Login an „E-Mail nicht bestätigt“ scheitert) → Warte-Ansicht.
   const [awaitingConfirm, setAwaitingConfirm] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return undefined;
@@ -28,6 +60,13 @@ export default function Login() {
     setAwaitingConfirm(true);
     setStatus(null);
     setCooldown(RESEND_COOLDOWN_S);
+  }
+
+  function switchMode(next) {
+    setMode(next);
+    setStatus(null);
+    setResetSent(false);
+    clearAuthNotice();
   }
 
   async function resend() {
@@ -67,7 +106,10 @@ export default function Login() {
     setStatus(null);
     clearAuthNotice();
     try {
-      if (mode === 'signin') {
+      if (mode === 'forgot') {
+        await rawAuth.requestPasswordReset(email);
+        setResetSent(true);
+      } else if (mode === 'signin') {
         setSession(await rawAuth.signInWithPassword(email, password));
       } else {
         const data = await rawAuth.signUp(email, password);
@@ -99,7 +141,7 @@ export default function Login() {
             dann richten wir dein Nest ein. Das dauert nur eine Minute.
           </p>
           <p className="wiz-info" role="note">Nichts angekommen? Schau im Spam-Ordner nach.</p>
-          {status && <div className={`auth-msg ${status.type}`} style={{ marginTop: 12 }}>{status.text}</div>}
+          {status && <div className={`lg-msg ${status.type}`} style={{ marginTop: 12 }}>{status.text}</div>}
         </main>
 
         <div className="cf-actions">
@@ -117,61 +159,87 @@ export default function Login() {
     );
   }
 
-  return (
-    <div className="auth-screen">
-      <div className="auth-wordmark">NESTUA</div>
+  const head = HEAD[mode];
+  const signup = mode === 'signup';
+  const forgot = mode === 'forgot';
 
-      <form className="auth-card" onSubmit={submit}>
-        <div>
-          <h1>
-            {(mode === 'signin'
-              ? ['Dein Leben,', 'in Zahlen die', 'dir gehören.']
-              : ['Neu hier?', 'Ein Konto für', 'alles.']
-            ).map((line, i, arr) => (
-              <span key={i}>
-                {line}
-                {i < arr.length - 1 && <br />}
-              </span>
-            ))}
-          </h1>
-          <div className="sub">
-            {mode === 'signin'
-              ? 'Geld, Sport, Ernährung, Gewohnheiten — ein Konto, sechs Module, alles auf jedem Gerät.'
-              : 'Ein Konto, alle Module. Kein zusätzliches Passwort pro Bereich.'}
+  return (
+    <div className="lg">
+      <AuthHero title={head.title} sub={head.sub} />
+
+      <form className="lg-sheet" onSubmit={submit}>
+        {!forgot && (
+          <div className="lg-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected={!signup} className={!signup ? 'on' : ''} onClick={() => switchMode('signin')}>Anmelden</button>
+            <button type="button" role="tab" aria-selected={signup} className={signup ? 'on' : ''} onClick={() => switchMode('signup')}>Registrieren</button>
           </div>
-        </div>
+        )}
 
         {!supabaseConfigured && (
-          <div className="auth-msg warn">
+          <div className="lg-msg warn">
             Supabase ist nicht korrekt konfiguriert. Prüfe die <code>.env</code>-Datei
             im Projektordner (Details in der Browser-Konsole, F12 → „Console").
           </div>
         )}
 
-        <div className="auth-field">
-          <label>E-Mail</label>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
+        {forgot && resetSent ? (
+          <>
+            <div className="lg-msg ok">Wenn ein Konto zu dieser Adresse gehört, ist eine Mail mit dem Link unterwegs. Schau auch im Spam-Ordner nach.</div>
+            <button type="button" className="btn btn-primary lg-btn" onClick={() => switchMode('signin')}>Zurück zur Anmeldung</button>
+          </>
+        ) : (
+          <>
+            <div className="lg-field">
+              <label className="lg-lab" htmlFor="lg-email">E-Mail</label>
+              <div className="lg-in">
+                <input id="lg-email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+            </div>
 
-        <div className="auth-field">
-          <label>Passwort</label>
-          <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
+            {!forgot && (
+              <div className="lg-field">
+                <label className="lg-lab" htmlFor="lg-pw">
+                  <span>Passwort{signup && <em> mindestens 6 Zeichen</em>}</span>
+                  {!signup && <button type="button" className="lg-textbtn" onClick={() => switchMode('forgot')}>Passwort vergessen?</button>}
+                </label>
+                <div className="lg-in">
+                  <input
+                    id="lg-pw" type={showPw ? 'text' : 'password'} required minLength={6}
+                    autoComplete={signup ? 'new-password' : 'current-password'}
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button type="button" className="lg-eye" aria-label={showPw ? 'Passwort verbergen' : 'Passwort anzeigen'} aria-pressed={showPw} onClick={() => setShowPw(!showPw)}>
+                    <UiIcon name={showPw ? 'eyeoff' : 'eye'} />
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {authNotice && <div className="auth-msg warn">{authNotice}</div>}
-        {status && <div className={`auth-msg ${status.type}`}>{status.text}</div>}
+            {authNotice && <div className="lg-msg warn">{authNotice}</div>}
+            {status && <div className={`lg-msg ${status.type}`}>{status.text}</div>}
 
-        <div className="auth-actions">
-          <button type="submit" className="btn btn-primary btn-block" disabled={busy || !supabaseConfigured}>
-            {busy ? 'Bitte warten…' : mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
-          </button>
+            <button type="submit" className="btn btn-primary lg-btn" disabled={busy || !supabaseConfigured}>
+              {busy ? 'Bitte warten…' : forgot ? 'Link senden' : signup ? 'Konto erstellen' : 'Anmelden'}
+            </button>
+            {forgot && <button type="button" className="btn onb-ghost" onClick={() => switchMode('signin')}>Zurück zur Anmeldung</button>}
+          </>
+        )}
 
-          <button type="button" className="btn btn-outline-block" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
-            {mode === 'signin' ? 'Konto erstellen' : 'Schon ein Konto? Anmelden'}
-          </button>
-        </div>
+        {signup && (
+          <>
+            <div>
+              <span className="lg-lab">So geht’s danach weiter</span>
+              <ol className="lg-steps">
+                {STEPS.map((s, i) => <li key={s}><b>{i + 1}</b>{s}</li>)}
+              </ol>
+            </div>
+            <p className="lg-legal">
+              Wie wir mit deinen Daten umgehen, steht in der <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>.
+            </p>
+          </>
+        )}
 
-        <div className="auth-footnote">Server in Frankfurt. Keine Werbung, keine Weitergabe.</div>
+        <p className="lg-foot"><UiIcon name="lock" size={14} />Server in Frankfurt. Keine Werbung, keine Weitergabe.</p>
       </form>
     </div>
   );

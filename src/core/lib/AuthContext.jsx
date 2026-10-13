@@ -9,6 +9,9 @@ export function AuthProvider({ children }) {
   // Hinweis nach Rückkehr aus der Bestätigungsmail (z. B. Link abgelaufen);
   // Login.jsx zeigt ihn an.
   const [authNotice, setAuthNotice] = useState(null);
+  // true, solange die Person über den „Passwort vergessen“-Link kommt und noch
+  // kein neues Passwort gesetzt hat (App.jsx zeigt dann ResetPassword).
+  const [recovery, setRecovery] = useState(false);
   const timerRef = useRef(null);
 
   // Initiales Laden der gespeicherten Sitzung (einmalig beim App-Start).
@@ -21,6 +24,7 @@ export function AuthProvider({ children }) {
       const redirect = await consumeAuthRedirect();
       if (!aktiv) return;
       if (redirect?.error) setAuthNotice(redirect.error);
+      if (redirect?.session && redirect.type === 'recovery') setRecovery(true);
       setSession(redirect?.session ?? loadStoredSession());
       setLadeVorgang(false);
     })();
@@ -63,7 +67,7 @@ export function AuthProvider({ children }) {
   }, [session]);
 
   return (
-    <AuthContext.Provider value={{ session, ladeVorgang, setSession, authNotice, clearAuthNotice: () => setAuthNotice(null) }}>
+    <AuthContext.Provider value={{ session, ladeVorgang, setSession, authNotice, clearAuthNotice: () => setAuthNotice(null), recovery, clearRecovery: () => setRecovery(false) }}>
       {children}
     </AuthContext.Provider>
   );

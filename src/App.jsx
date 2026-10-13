@@ -26,6 +26,7 @@ import { useOnboardingStatus } from './core/lib/onboardingData';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
+import ResetPassword from './core/components/ResetPassword';
 import ProfileWizard from './core/components/ProfileWizard';
 import ModuleTutorial from './core/components/ModuleTutorial';
 import BirdDefs from './core/components/birds/BirdDefs';
@@ -72,7 +73,7 @@ function FirstRunWizard() {
 }
 
 export default function App() {
-  const { session, ladeVorgang } = useAuth();
+  const { session, ladeVorgang, recovery } = useAuth();
   const { module: activeModule, view, navigate } = useRoute();
   const { warnings } = useRequiredDataStatus(session);
   const hasWarnings = warnings.length > 0;
@@ -80,6 +81,8 @@ export default function App() {
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
+  // „Passwort vergessen“-Link geöffnet: erst neues Passwort festlegen, dann weiter
+  if (recovery) return <ResetPassword />;
   // Neue Konten (E-Mail bestätigt) richten zuerst ihr Profil ein; erst danach
   // wird die App gerendert — und mit ihr der WelcomeWizard (Vogelwahl).
   if (onboarding.loading) return <div className="loading-note">Lädt…</div>;

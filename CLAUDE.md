@@ -237,6 +237,11 @@ Hash ab, bevor das Hash-Routing sie sieht) → `ProfileWizard` (Gate in `App.jsx
 (E-Mail) gilt beim Start schon als erledigt; das Ei (`EggFill`) füllt sich je Schritt
 (20/40/60/80 %), in der Vogelwahl ist es weg, am Ende das echte Vogel-Ei. Ernährung/Allergene
 sind freiwillig. Die Vogelart wird erst am Ende festgeschrieben (`setBirdSpecies`, endgültig).
+Anmelden/Registrieren/„Passwort vergessen“ = `Login.jsx` (Navy-Kopf `AuthHero.jsx` + weißes Sheet,
+Styles `.lg-*` in `onboarding.css`); Recovery-Link → `rawAuth.consumeAuthRedirect` (`type=recovery`) →
+`AuthContext.recovery` → `App.jsx` zeigt `ResetPassword.jsx`. Datenschutz-Link auf `public/datenschutz.html`;
+Nutzungsbedingungen gibt es noch nicht. Deutsche Mail-Vorlagen: `public/mail/*.html`, Server-Setup
+(GoTrue-Env, `sudo`) in `supabase/mail_templates.md` — von Hand auf dem Server einzutragen.
 Der alte `WelcomeWizard` bleibt nur für Bestandsnutzer ohne Vogel. Styles: `styles/onboarding.css`
 (Wizard, Bestätigungsseite, Touren, Anlege-Seiten; nur semantische Tokens, Akzent `--warm`).
 
