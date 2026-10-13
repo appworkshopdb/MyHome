@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import ModuleTopBar     from '../../core/components/ModuleTopBar.jsx';
 import OverviewSection  from './components/OverviewSection.jsx';
 import StatsView        from './components/StatsView.jsx';
-import OnboardingWizard from './components/OnboardingWizard.jsx';
 
 const HabitsView = lazy(() => import('./components/HabitsView.jsx'));
 
@@ -20,7 +19,6 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   const loading = !loaded;
 
   const [error,      setError]      = useState(null);
-  const [wizardDone, setWizardDone] = useState(false);
 
   useEffect(() => {
     loadHabitsData({ force: true }).catch(() =>
@@ -31,34 +29,11 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   const fetchHabits  = useCallback(() => reloadHabits(),  []);
   const fetchEntries = useCallback(() => reloadEntries(), []);
 
-  const activeHabits = habits.filter((h) => h.active && !h.deleted_at);
-  const showWizard   = !loading && activeHabits.length === 0 && !wizardDone && !view;
-
-  async function handleWizardDone() {
-    await fetchHabits();
-    await fetchEntries();
-    setWizardDone(true);
-  }
-
   if (loading) {
     return (
       <>
         <ModuleTopBar hasWarnings={hasWarnings} />
         <div className="page-loading with-topbar-space">Wird geladen …</div>
-      </>
-    );
-  }
-
-  if (showWizard) {
-    return (
-      <>
-        <ModuleTopBar hasWarnings={hasWarnings} />
-        <div className="hab-module-content with-topbar-space">
-          <OnboardingWizard
-            onDone={handleWizardDone}
-            onSkip={() => setWizardDone(true)}
-          />
-        </div>
       </>
     );
   }

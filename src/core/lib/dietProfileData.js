@@ -11,6 +11,19 @@
 // dieselbe Tabelle zu).
 import { getSupabase } from './supabaseClient';
 
+export const DIET_OPTIONS = [
+  { key: 'alles', label: 'Alles' }, { key: 'vegetarisch', label: 'Vegetarisch' },
+  { key: 'vegan', label: 'Vegan' }, { key: 'glutenfrei', label: 'Glutenfrei' },
+];
+
+// Allergene wie in modules/nutrition/lib/nutrition.js (FOOD_ALLERGENS) — core darf
+// nicht aus modules/* importieren, deshalb hier gespiegelt. Ändert sich die Liste
+// dort, hier nachziehen (die Namen müssen identisch bleiben).
+export const ALLERGEN_OPTIONS = [
+  'Gluten', 'Milch', 'Ei', 'Fisch', 'Krebstiere', 'Weichtiere', 'Soja', 'Erdnüsse',
+  'Schalenfrüchte', 'Sellerie', 'Senf', 'Sesam', 'Lupinen', 'Schwefeldioxid',
+];
+
 const DEFAULT_DIET_PROFILE = { diet: 'alles', allergies: [] };
 
 export async function getDietProfile(session) {

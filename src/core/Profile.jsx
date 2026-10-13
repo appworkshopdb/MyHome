@@ -3,7 +3,7 @@ import { useAuth } from './lib/AuthContext';
 import { useUi } from './lib/UiContext';
 import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bodyProfileData';
-import { getDietProfile, saveDietProfile } from './lib/dietProfileData';
+import { getDietProfile, saveDietProfile, DIET_OPTIONS } from './lib/dietProfileData';
 import { computeBody, GOAL_NOTE, METRIC_INFO } from './lib/bodyCalc';
 import { getGoals } from './lib/goalsData';
 import { BodyDataForm, ActivityGoalForm } from './components/BodyProfileForm';
@@ -24,10 +24,6 @@ import { MODULES } from './modules';
 // modules/sport/lib/requiredFields.js, hier nachziehen.
 const PROFILE_REQUIRED_FIELDS = [...BODY_REQUIRED_FIELDS, { key: 'training_focus', label: 'Trainingsfokus' }];
 
-const DIET_OPTIONS = [
-  { key: 'alles', label: 'Alles' }, { key: 'vegetarisch', label: 'Vegetarisch' },
-  { key: 'vegan', label: 'Vegan' }, { key: 'glutenfrei', label: 'Glutenfrei' },
-];
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);

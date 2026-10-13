@@ -9,10 +9,19 @@ export function EntrySheetProvider({ children }) {
   const [version, setVersion] = useState(0);
   const [financePeriod, setFinancePeriodState] = useState(null);
   const financePeriodRef = useRef(null);
+  // Version zusätzlich als Ref: Sheets rufen notifySaved() und gleich danach
+  // onClose(). Wer beim Schließen wissen will, ob gespeichert wurde
+  // (ModuleTutorial), liest über getVersion() synchron den aktuellen Wert statt
+  // des noch nicht neu gerenderten State.
+  const versionRef = useRef(0);
 
   const open = useCallback((moduleId) => setOpenFor(moduleId), []);
   const close = useCallback(() => setOpenFor(null), []);
-  const notifySaved = useCallback(() => setVersion((v) => v + 1), []);
+  const notifySaved = useCallback(() => {
+    versionRef.current += 1;
+    setVersion(versionRef.current);
+  }, []);
+  const getVersion = useCallback(() => versionRef.current, []);
 
   // State + Ref gemeinsam pflegen. Die Ref hält den zuletzt ausgewählten
   // Buchungsmonat synchron für das globale Erfassen-Sheet vor.
@@ -32,6 +41,7 @@ export function EntrySheetProvider({ children }) {
         close,
         version,
         notifySaved,
+        getVersion,
         financePeriod,
         setFinancePeriod,
         getFinancePeriod,

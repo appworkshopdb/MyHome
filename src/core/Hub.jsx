@@ -644,40 +644,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
           </div>
         )}
 
-        {status === 'leer' && (
-          <>
-            <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
-            <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
-            <div className="hub-empty-steps">
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
-                <div>
-                  <div className="hub-empty-step-title">Erste Ausgabe eintragen</div>
-                  <div className="hub-empty-step-sub">Betrag, Name, fertig</div>
-                </div>
-                <span className="hub-empty-step-arrow">›</span>
-              </button>
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance/vertraege')}>
-                <div>
-                  <div className="hub-empty-step-title">Fixkosten anlegen</div>
-                  <div className="hub-empty-step-sub">Miete, Handy, Abos — einmal, dann jeden Monat automatisch</div>
-                </div>
-                <span className="hub-empty-step-arrow">›</span>
-              </button>
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance/einstellungen')}>
-                <div>
-                  <div className="hub-empty-step-title">Alte Daten importieren</div>
-                  <div className="hub-empty-step-sub">JSON oder XLSX</div>
-                </div>
-                <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
-              </button>
-            </div>
-            <div className="hub-empty-note">
-              <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
-            </div>
-          </>
-        )}
-
-        {(status === 'daten' || status === 'veraltet') && (
+        {/* 'leer' (noch keine Daten) zeigt bewusst dieselbe Übersicht: der Einstieg läuft über die Modul-Tutorials (ModuleTutorial.jsx), nicht über einen Leerzustand. */}
+        {(status === 'daten' || status === 'veraltet' || status === 'leer') && (
           <>
             <h1 className="overview-page-title">{greeting()}</h1>
             <div className="hub-date">{datumLang}</div>

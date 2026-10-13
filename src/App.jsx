@@ -27,6 +27,7 @@ import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
 import ProfileWizard from './core/components/ProfileWizard';
+import ModuleTutorial from './core/components/ModuleTutorial';
 import BirdDefs from './core/components/birds/BirdDefs';
 import WelcomeWizard from './core/components/WelcomeWizard';
 import { useGamificationStore } from './core/lib/gamificationStore';
@@ -102,6 +103,7 @@ export default function App() {
     <EntrySheetProvider>
       <BirdDefs />
       <FirstRunWizard />
+      <ModuleTutorial activeModule={activeModule} />
       {/* FinanceMonthProvider umschließt sowohl <main> (MonthsView schreibt
           den aktiven Monat rein) als auch GlobalFab (SparschweinFab liest
           ihn raus). Beide MÜSSEN unter derselben Provider-Instanz hängen,

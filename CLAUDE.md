@@ -228,6 +228,21 @@ einklapp- und sortierbar; Ansicht + Filter liegen pro Nutzer in `fin_report_pref
 einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
 `SECTIONS` (sections.jsx), welche globalen Filter er beachtet.
 
+## Registrierung, Onboarding und Modul-Tutorials
+
+Konto erstellen → Bestätigungsmail (GoTrue-SMTP, Resend; Port 587, 465 ist bei Hetzner
+gesperrt) → Link führt zurück in die App (`rawAuth.consumeAuthRedirect` fängt die Tokens im
+Hash ab, bevor das Hash-Routing sie sieht) → `ProfileWizard` (Name, Körperdaten, Aktivität/
+Ziel/Sport, Ernährung/Allergene freiwillig, Vogelwahl; Gate in `App.jsx` über
+`body_profile.onboarding_completed_at`) → Hub. Die Vogelart wird erst am Ende festgeschrieben
+(`setBirdSpecies`, endgültig). Der alte `WelcomeWizard` bleibt nur für Bestandsnutzer ohne Vogel.
+
+Jeder Bereich (Hub + 5 Module) hat beim ersten Besuch ein Tutorial: `core/components/ModuleTutorial.jsx`
+(einmal in `App.jsx`), Inhalte in `core/lib/tutorials.js`. Letzte Folie öffnet das echte Anlege-
+Sheet (dieselben wie im `GlobalFab`). Gesehen-Zustand: `body_profile.tutorials_done` (Migrationen
+`onboarding_migration.sql`, `tutorials_migration.sql`; Bestandsnutzer sind dort vorab auf „gesehen“).
+Neues Modul = Eintrag in `tutorials.js` + Id in der Migration. Der Hub zeigt keinen Leerzustand mehr.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
