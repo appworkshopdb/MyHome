@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabaseConfigured } from '../lib/supabaseClient';
 import * as rawAuth from '../lib/rawAuth';
 import { useAuth } from '../lib/AuthContext';
+import EnvelopeArt from './EnvelopeArt';
 
 const RESEND_COOLDOWN_S = 60;
 
@@ -83,31 +84,34 @@ export default function Login() {
 
   if (awaitingConfirm) {
     return (
-      <div className="auth-screen">
-        <div className="auth-wordmark">NESTUA</div>
-        <div className="auth-card">
-          <div>
-            <h1>Fast<br />geschafft.</h1>
-            <div className="sub">
-              Wir haben dir eine Mail an <strong>{email}</strong> geschickt. Öffne den Link darin,
-              um dein Konto zu bestätigen — danach richten wir dein Nest ein.
-            </div>
-          </div>
+      <div className="cf">
+        <header className="onb-top">
+          <span className="onb-wordmark">NESTUA</span>
+          <span className="onb-count">Konto bestätigen</span>
+        </header>
 
-          <div className="auth-msg">Nichts angekommen? Schau im Spam-Ordner nach.</div>
-          {status && <div className={`auth-msg ${status.type}`}>{status.text}</div>}
+        <div className="onb-hero cf-hero"><EnvelopeArt height={186} /></div>
 
-          <div className="auth-actions">
-            <button type="button" className="btn btn-primary btn-block" disabled={busy} onClick={checkConfirmed}>
-              {busy ? 'Bitte warten…' : 'Ich habe bestätigt'}
-            </button>
-            <button type="button" className="btn btn-outline-block" disabled={busy || cooldown > 0} onClick={resend}>
-              {cooldown > 0 ? `Mail erneut senden (${cooldown}s)` : 'Mail erneut senden'}
-            </button>
-            <button type="button" className="btn btn-outline-block" onClick={() => { setAwaitingConfirm(false); setStatus(null); setMode('signup'); }}>
-              Andere E-Mail verwenden
-            </button>
-          </div>
+        <main className="onb-main">
+          <h1 className="onb-title">Fast geschafft.</h1>
+          <p className="onb-lead">
+            Wir haben dir eine Mail an <strong>{email}</strong> geschickt. Tipp auf den Link darin,
+            dann richten wir dein Nest ein. Das dauert nur eine Minute.
+          </p>
+          <p className="wiz-info" role="note">Nichts angekommen? Schau im Spam-Ordner nach.</p>
+          {status && <div className={`auth-msg ${status.type}`} style={{ marginTop: 12 }}>{status.text}</div>}
+        </main>
+
+        <div className="cf-actions">
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={checkConfirmed}>
+            {busy ? 'Bitte warten…' : 'Ich habe bestätigt'}
+          </button>
+          <button type="button" className="btn btn-secondary" disabled={busy || cooldown > 0} onClick={resend}>
+            {cooldown > 0 ? `Mail erneut senden (${cooldown} s)` : 'Mail erneut senden'}
+          </button>
+          <button type="button" className="btn onb-ghost" onClick={() => { setAwaitingConfirm(false); setStatus(null); setMode('signup'); }}>
+            Andere E-Mail verwenden
+          </button>
         </div>
       </div>
     );

@@ -232,16 +232,23 @@ einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
 
 Konto erstellen → Bestätigungsmail (GoTrue-SMTP, Resend; Port 587, 465 ist bei Hetzner
 gesperrt) → Link führt zurück in die App (`rawAuth.consumeAuthRedirect` fängt die Tokens im
-Hash ab, bevor das Hash-Routing sie sieht) → `ProfileWizard` (Name, Körperdaten, Aktivität/
-Ziel/Sport, Ernährung/Allergene freiwillig, Vogelwahl; Gate in `App.jsx` über
-`body_profile.onboarding_completed_at`) → Hub. Die Vogelart wird erst am Ende festgeschrieben
-(`setBirdSpecies`, endgültig). Der alte `WelcomeWizard` bleibt nur für Bestandsnutzer ohne Vogel.
+Hash ab, bevor das Hash-Routing sie sieht) → `ProfileWizard` (Gate in `App.jsx` über
+`body_profile.onboarding_completed_at`) → Hub. Die Wizard-Leiste hat 6 Schritte, Schritt 1
+(E-Mail) gilt beim Start schon als erledigt; das Ei (`EggFill`) füllt sich je Schritt
+(20/40/60/80 %), in der Vogelwahl ist es weg, am Ende das echte Vogel-Ei. Ernährung/Allergene
+sind freiwillig. Die Vogelart wird erst am Ende festgeschrieben (`setBirdSpecies`, endgültig).
+Der alte `WelcomeWizard` bleibt nur für Bestandsnutzer ohne Vogel. Styles: `styles/onboarding.css`
+(Wizard, Bestätigungsseite, Touren, Anlege-Seiten; nur semantische Tokens, Akzent `--warm`).
 
-Jeder Bereich (Hub + 5 Module) hat beim ersten Besuch ein Tutorial: `core/components/ModuleTutorial.jsx`
-(einmal in `App.jsx`), Inhalte in `core/lib/tutorials.js`. Letzte Folie öffnet das echte Anlege-
-Sheet (dieselben wie im `GlobalFab`). Gesehen-Zustand: `body_profile.tutorials_done` (Migrationen
-`onboarding_migration.sql`, `tutorials_migration.sql`; Bestandsnutzer sind dort vorab auf „gesehen“).
-Neues Modul = Eintrag in `tutorials.js` + Id in der Migration. Der Hub zeigt keinen Leerzustand mehr.
+Jeder Bereich (Hub + 5 Module) hat beim ersten Besuch eine Tour: `core/components/ModuleTutorial.jsx`
+(einmal in `App.jsx`), Bühnen in `TutorialStage.jsx`, Inhalte rein als Daten in `core/lib/tutorials.js`
+(Folien + Mission + Erfolgstext). Die Mission öffnet das echte Anlege-Sheet (dieselben wie im
+`GlobalFab`); bei Gewohnheiten die Vorlagen-Auswahl `HabitTemplatePicker` (Vorlagen in
+`lib/habitTemplates.js`, max. 3). Anlege-Seiten im Tour-Design: `ShoppingQuickSheet` (Vollseite mit
+Vorschaukarte), `NutritionFabMenu` (gruppiert). Gesehen-Zustand: `body_profile.tutorials_done`
+(Migrationen `onboarding_migration.sql`, `tutorials_migration.sql`; Bestandsnutzer vorab „gesehen“).
+Neues Modul = Eintrag in `tutorials.js` + Id in der Migration. Bereichs-Symbole zentral in
+`ModuleIcons.jsx` (auch Bottom-Nav). Der Hub zeigt keinen Leerzustand mehr.
 
 ## Geheimnisse
 

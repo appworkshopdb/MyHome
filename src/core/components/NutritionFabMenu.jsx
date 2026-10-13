@@ -3,6 +3,7 @@ import { useAuth } from '../lib/AuthContext';
 import { scanMeal, getMealQuota, holdScanAnimation } from '../lib/photoScan';
 import SheetShell from './SheetShell';
 import ScanPreview from './ScanPreview';
+import { UiIcon } from './ModuleIcons';
 
 // Ernährung hat vier Anlege-Wege (Rezept, Lebensmittel, Mahlzeit per Foto,
 // Rezept als gegessene Mahlzeit), die in modules/nutrition/ mit eigenen Dialogen
@@ -10,11 +11,17 @@ import ScanPreview from './ScanPreview';
 // importieren — deshalb feuert die Auswahl hier ein window-Event, genau wie
 // sport:data-changed, nur in die andere Richtung. NutritionModule.jsx hört zu
 // und öffnet den passenden Dialog selbst.
-const OPTIONS = [
-  { event: 'nutrition:new-recipe', icon: '📖', label: 'Neues Rezept' },
-  { event: 'nutrition:new-food',   icon: '🥗', label: 'Neues Lebensmittel' },
+// Gruppiert: „Heute gegessen“ (Erfassen) und „Deine Sammlung“ (Anlegen).
+const GROUPS = [
+  { label: 'Heute gegessen', rows: [
+    { scan: true, icon: 'camera', title: 'Mahlzeit scannen', sub: 'Foto machen, Nährwerte werden geschätzt' },
+    { event: 'nutrition:log-meal', icon: 'clipcheck', title: 'Rezept eintragen', sub: 'Als gegessen verbuchen, zählt zum Tagesziel' },
+  ] },
+  { label: 'Deine Sammlung', soft: true, rows: [
+    { event: 'nutrition:new-recipe', icon: 'book', title: 'Neues Rezept', sub: 'Zutaten wählen, Nährwerte rechnet die App' },
+    { event: 'nutrition:new-food', icon: 'leaf', title: 'Neues Lebensmittel', sub: 'Eigener Eintrag für die Datenbank' },
+  ] },
 ];
-const LOG_OPTION = { event: 'nutrition:log-meal', icon: '📝', label: 'Rezept eintragen' };
 
 const SCAN_STEPS = ['Mahlzeit wird analysiert…', 'Bestandteile werden erkannt…', 'Nährwerte werden geschätzt…'];
 
@@ -91,40 +98,34 @@ export default function NutritionFabMenu({ onClose }) {
           <ScanPreview src={preview} steps={SCAN_STEPS} />
         ) : (
           <>
-            <div className="qsheet-mode-grid">
-              {OPTIONS.map((o) => (
-                <button
-                  key={o.event}
-                  className="qsheet-mode-btn"
-                  disabled={busy}
-                  onClick={() => choose(o.event)}
-                >
-                  {o.icon} {o.label}
-                </button>
+            <div className="ax-menu">
+              {GROUPS.map((g) => (
+                <div key={g.label}>
+                  <div className="ax-sec">{g.label}</div>
+                  {g.rows.map((r) => (
+                    <button
+                      key={r.title}
+                      type="button"
+                      className="ax-menurow"
+                      disabled={busy || (r.scan && limitReached)}
+                      onClick={() => (r.scan ? cameraRef.current?.click() : choose(r.event))}
+                    >
+                      <span className={`ax-ico${g.soft ? ' soft' : ''}`}><UiIcon name={r.icon} /></span>
+                      <span>{r.title}<small>{r.sub}</small></span>
+                      <span className="chev" aria-hidden="true">›</span>
+                    </button>
+                  ))}
+                </div>
               ))}
-              <button
-                className="qsheet-mode-btn"
-                disabled={busy || limitReached}
-                onClick={() => cameraRef.current?.click()}
-              >
-                📷 Mahlzeit scannen
-              </button>
-              <button
-                className="qsheet-mode-btn"
-                disabled={busy}
-                onClick={() => choose(LOG_OPTION.event)}
-              >
-                {LOG_OPTION.icon} {LOG_OPTION.label}
-              </button>
             </div>
 
             {!limitReached && (
-              <button type="button" className="wiz-scan-alt" style={{ alignSelf: 'center' }} onClick={() => galleryRef.current?.click()}>
+              <button type="button" className="ax-link" onClick={() => galleryRef.current?.click()}>
                 Mahlzeit-Foto aus der Galerie wählen
               </button>
             )}
             {quota && (
-              <div className="wiz-scan-quota t-meta">
+              <div className="ax-quota">
                 {limitReached
                   ? `Monatslimit von ${quota.limit} Mahlzeit-Scans erreicht.`
                   : `Noch ${quota.remaining} von ${quota.limit} Mahlzeit-Scans in diesem Monat`}

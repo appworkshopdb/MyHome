@@ -22,10 +22,12 @@ import { useTutorialsDone, markTutorialDone } from '../lib/onboardingData';
 import { TUTORIALS, tutorialIdFor } from '../lib/tutorials';
 import Bird from './birds/Bird';
 import TodoSheet from './TodoSheet';
-import HabitQuickSheet from './HabitQuickSheet';
+import HabitTemplatePicker from './HabitTemplatePicker';
 import SportQuickSheet from './SportQuickSheet';
 import ShoppingQuickSheet from './ShoppingQuickSheet';
 import NutritionFabMenu from './NutritionFabMenu';
+import { ModuleIcon } from './ModuleIcons';
+import { SlideStage, MissionStage, SuccessStage } from './TutorialStage';
 
 // Events, mit denen Ernährung einen Anlege-Weg startet (siehe NutritionFabMenu.jsx).
 const NUTRITION_START_EVENTS = ['nutrition:new-recipe', 'nutrition:new-food', 'nutrition:log-meal', 'nutrition:meal-scanned'];
@@ -69,8 +71,10 @@ export default function ModuleTutorial({ activeModule }) {
     }
   }, [openFor]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Während die Erfolgsseite steht, bleibt die Tour sichtbar, auch wenn „gesehen“
+  // schon gespeichert ist (sonst verschwände sie sofort wieder).
   const visible = Boolean(
-    session && tutorial && done && !done.includes(id) && !dismissed.has(id)
+    session && tutorial && done && (!done.includes(id) || success) && !dismissed.has(id)
     && gami.loaded && gami.bird_species, // nie über dem Vogel-Willkommens-Assistenten
   );
   if (!visible) return null;
@@ -104,7 +108,7 @@ export default function ModuleTutorial({ activeModule }) {
     const kind = tutorial.action.kind;
     const onSaved = () => { savedRef.current = true; };
     if (kind === 'todo') return <TodoSheet onClose={settle} onSaved={() => { onSaved(); notifySaved(); }} />;
-    if (kind === 'habit') return <HabitQuickSheet onClose={settle} onSaved={onSaved} />;
+    if (kind === 'habit') return <HabitTemplatePicker onClose={settle} onSaved={onSaved} />;
     if (kind === 'sport') return <SportQuickSheet onClose={settle} />;
     if (kind === 'shopping') return <ShoppingQuickSheet onClose={settle} onSaved={onSaved} />;
     if (kind === 'nutrition') return <NutritionFabMenu onClose={settle} />;
@@ -117,36 +121,48 @@ export default function ModuleTutorial({ activeModule }) {
 
   function skip() { finish(false); }
 
+  const peekLeft = !success && (last || ['plan', 'habit'].includes(current?.stage?.kind));
+
   return (
-    <div className="tut-overlay" role="dialog" aria-modal="true" aria-label="Kurze Einführung">
-      <div className="tut-card">
-        <div className="tut-bird">
-          <Bird species={gami.bird_species} stage={gami.level} size={84} />
+    <div className="tut" role="dialog" aria-modal="true" aria-label={`Tour ${tutorial.name}`}>
+      <div className="tut-in">
+        <div className="tut-top">
+          <div className="tut-pill"><i><ModuleIcon id={tutorial.icon} size={17} strokeWidth={2} /></i>{tutorial.name}</div>
+          <span className="onb-count">{success ? 'Geschafft' : `${slide + 1} von ${total}`}</span>
         </div>
 
-        {success ? (
-          <>
-            <h2 className="tut-title">Geschafft!</h2>
-            <p className="tut-text">{tutorial.success}</p>
-            <div className="tut-actions">
-              <button type="button" className="btn btn-primary" onClick={() => setDismissed((p) => new Set(p).add(id))}>Weiter</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="tut-dots" aria-label={`Schritt ${slide + 1} von ${total}`}>
-              {Array.from({ length: total }, (_, i) => <span key={i} className={i === slide ? 'on' : ''} />)}
-            </div>
-            <h2 className="tut-title">{last ? 'Probier es gleich aus' : current.title}</h2>
-            <p className="tut-text">{last ? tutorial.action.hint : current.text}</p>
-            <div className="tut-actions">
-              <button type="button" className="btn btn-secondary" onClick={skip}>{last ? 'Später' : 'Überspringen'}</button>
-              {last
-                ? <button type="button" className="btn btn-primary" onClick={startAction}>{tutorial.action.label}</button>
-                : <button type="button" className="btn btn-primary" onClick={() => setSlide(slide + 1)}>Weiter</button>}
-            </div>
-          </>
-        )}
+        <div className="tut-stage">
+          {success ? <SuccessStage /> : last ? <MissionStage mission={tutorial.action.mission} /> : <SlideStage stage={current.stage} moduleIcon={tutorial.icon} />}
+          <span className="tut-peek" style={peekLeft ? { left: 14 } : { right: 14 }}>
+            <Bird species={gami.bird_species} stage={gami.level} size={64} />
+          </span>
+        </div>
+
+        <div className="tut-sheet">
+          {success ? (
+            <>
+              <h2 className="tut-title">Geschafft!</h2>
+              <p className="tut-text">{tutorial.success}</p>
+              <div className="tut-btns">
+                <button type="button" className="btn btn-primary" onClick={() => setDismissed((p) => new Set(p).add(id))}>Weiter</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="tut-dots" aria-hidden="true">
+                {Array.from({ length: total }, (_, i) => <span key={i} className={i === slide ? 'on' : ''} />)}
+              </div>
+              <h2 className="tut-title">{last ? 'Probier es gleich aus' : current.title}</h2>
+              <p className="tut-text">{last ? tutorial.action.hint : current.text}</p>
+              <div className="tut-btns">
+                <button type="button" className="btn btn-secondary" onClick={skip}>{last ? 'Später' : 'Überspringen'}</button>
+                {last
+                  ? <button type="button" className="btn btn-primary" onClick={startAction}>{tutorial.action.label}</button>
+                  : <button type="button" className="btn btn-primary" onClick={() => setSlide(slide + 1)}>Weiter</button>}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

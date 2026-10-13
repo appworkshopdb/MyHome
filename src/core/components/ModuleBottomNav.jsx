@@ -10,71 +10,16 @@
 // Vollnamen durchgehend ("Gewohnheiten" statt "Habbits").
 // aria-current="page" am aktiven Punkt.
 
+import { ModuleIcon } from './ModuleIcons';
+
 // ── SVG-Icons (Strichzeichnung, kein Emoji) ───────────────────────────
-const s = { fill: 'none', stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round', strokeLinejoin: 'round' };
-
-function IcoHub() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-
-function IcoHabits() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function IcoFinance() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      {/* Euro-Zeichen: zwei waagerechte Linien + offener Bogen links */}
-      <path d="M18 6.5A8 8 0 1 0 18 17.5" />
-      <line x1="4" y1="10" x2="13" y2="10" />
-      <line x1="4" y1="14" x2="13" y2="14" />
-    </svg>
-  );
-}
-
-function IcoSport() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      <path d="M6.5 6.5v11" />
-      <path d="M17.5 6.5v11" />
-      <path d="M4 9v6" />
-      <path d="M20 9v6" />
-      <line x1="6.5" y1="12" x2="17.5" y2="12" />
-    </svg>
-  );
-}
-
-function IcoNutrition() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      {/* Gedeck: Gabel links, Teller, Messer rechts */}
-      <path d="M2.4 5v3.4a1.5 1.5 0 0 0 3 0V5" />
-      <path d="M3.9 9.9V19" />
-      <circle cx="12" cy="12" r="5.2" />
-      <path d="M21 19V5c-1.4.8-2.2 2.4-2.2 4.4 0 1 .6 1.6 1.4 1.6H21" />
-    </svg>
-  );
-}
-
-function IcoShopping() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" {...s}>
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-    </svg>
-  );
-}
+// Die Zeichnungen leben in ModuleIcons.jsx (auch von Wizard und Touren genutzt).
+const IcoHub       = () => <ModuleIcon id="hub" size={19} />;
+const IcoHabits    = () => <ModuleIcon id="habits" size={19} />;
+const IcoFinance   = () => <ModuleIcon id="finance" size={19} />;
+const IcoSport     = () => <ModuleIcon id="sport" size={19} />;
+const IcoNutrition = () => <ModuleIcon id="nutrition" size={19} />;
+const IcoShopping  = () => <ModuleIcon id="shopping" size={19} />;
 
 // ── Nav-Items ─────────────────────────────────────────────────────────
 const ITEMS = [
