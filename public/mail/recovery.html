@@ -7,34 +7,24 @@
 <meta name="supported-color-schemes" content="light">
 <title>Neues Passwort festlegen</title>
 </head>
-<body style="margin:0;padding:0;background:#F2F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#EEF1F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Link zum Festlegen eines neuen Passworts.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F4F8;">
-<tr><td align="center" style="padding:28px 14px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:22px;overflow:hidden;">
-    <tr><td bgcolor="#1B2A4A" style="background:#1B2A4A;background-image:linear-gradient(160deg,#1B2A4A 0%,#2F4A80 100%);padding:28px 32px 34px;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-        <td valign="middle"><img src="https://staging.nestua.de/icons/icon-192.png" width="34" height="34" alt="" style="display:block;border:0;border-radius:9px;"></td>
-        <td valign="middle" style="padding-left:12px;font-size:12px;font-weight:700;letter-spacing:2.2px;color:#ffffff;">NESTUA</td>
-      </tr></table>
-      <div style="padding-top:26px;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#F3B183;">Passwort vergessen</div>
-      <h1 style="margin:8px 0 0;font-size:27px;line-height:1.15;font-weight:800;color:#ffffff;">Neues Passwort festlegen</h1>
-    </td></tr>
-    <tr><td style="padding:28px 32px 10px;">
-      <p style="margin:0 0 24px;font-size:16px;line-height:1.55;color:#3C455A;">Du hast ein neues Passwort für dein Nestua-Konto angefordert. Tippe auf den Knopf, um eines festzulegen.</p>
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#E5762F" style="border-radius:14px;background:#E5762F;">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:14px;">Neues Passwort festlegen</a>
-      </td></tr></table>
-      <p style="margin:12px 0 0;font-size:13px;color:#6B7487;">Der Link ist nur begrenzt gültig und funktioniert einmal.</p>
-    </td></tr>
-    <tr><td style="padding:14px 32px 30px;">
-      <div style="border-top:1px solid #E4E8F0;padding-top:18px;">
-        <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#6B7487;">Du hast das nicht angefordert? Dann kannst du diese Mail ignorieren — dein Passwort bleibt wie es ist.</p>
-        <p style="margin:0;font-size:12px;line-height:1.5;color:#8A93A5;word-break:break-all;">Funktioniert der Knopf nicht? Kopiere diesen Link in deinen Browser:<br><a href="{{ .ConfirmationURL }}" style="color:#8A93A5;">{{ .ConfirmationURL }}</a></p>
-      </div>
-    </td></tr>
-  </table>
-  <p style="max-width:480px;margin:16px 0 0;font-size:12px;line-height:1.5;color:#8A93A5;text-align:center;">Nestua · Geld, Sport, Ernährung, Gewohnheiten und Einkauf an einem Ort.<br>Server in Frankfurt. Keine Werbung, keine Weitergabe.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF1F7;">
+<tr><td align="center" style="padding:24px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:26px;overflow:hidden;">
+<tr><td align="center" bgcolor="#E3EAF8" style="background:#E3EAF8;background-image:linear-gradient(180deg,#DCE6F7 0%,#F1F5FC 100%);padding:26px 24px 8px;">
+  <div style="font-size:12px;font-weight:800;letter-spacing:2.4px;color:#1B2A4A;">NESTUA</div>
+  <img src="https://staging.nestua.de/mail/img/envelope.png" width="220" height="174" alt="Briefumschlag mit Herz" style="display:block;margin:18px auto 0;border:0;">
+</td></tr>
+<tr><td align="center" style="padding:26px 32px 6px;">
+  <h1 style="margin:0 0 12px;font-size:32px;line-height:1.1;font-weight:800;letter-spacing:-0.5px;color:#1B2236;">Neues Passwort festlegen</h1>
+  <p style="margin:0 0 26px;font-size:16px;line-height:1.55;color:#3C455A;">Du hast ein neues Passwort für dein Nestua-Konto angefordert. Tippe auf den Knopf, um eines festzulegen.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#E5762F" style="border-radius:16px;background:#E5762F;"><a href="{{ .ConfirmationURL }}" style="display:block;padding:18px 32px;font-size:17px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:16px;text-align:center;">Neues Passwort festlegen</a></td></tr></table>
+  <p style="margin:12px 0 0;font-size:13px;color:#6B7487;">Der Link ist nur begrenzt gültig und funktioniert einmal.</p>
+</td></tr>
+<tr><td style="padding:18px 32px 30px;"><p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#6B7487;text-align:center;">Du hast das nicht angefordert? Dann kannst du diese Mail ignorieren — dein Passwort bleibt wie es ist.</p><p style="margin:0;font-size:12px;line-height:1.5;color:#8A93A5;">Funktioniert der Knopf nicht? Kopiere diesen Link in deinen Browser:<br><a href="{{ .ConfirmationURL }}" style="color:#8A93A5;word-break:break-all;">{{ .ConfirmationURL }}</a></p></td></tr>
+</table>
+<p style="max-width:480px;margin:16px 0 0;font-size:12px;line-height:1.5;color:#8A93A5;text-align:center;">Nestua · Geld, Sport, Ernährung, Gewohnheiten und Einkauf an einem Ort.<br>Server in Frankfurt. Keine Werbung, keine Weitergabe.</p>
 </td></tr>
 </table>
 </body>
