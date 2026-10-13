@@ -31,6 +31,8 @@ Testregistrierung bzw. „Passwort vergessen?“ auslösen.
 ## Hinweise
 
 - Platzhalter in den Vorlagen: `{{ .ConfirmationURL }}` (fertiger Link inkl. `redirect_to`).
+- Das App-Symbol im Kopf lädt von `https://staging.nestua.de/icons/icon-192.png` (absolute URL, in Mails nicht anders möglich); für Production die Domain in den drei Dateien ersetzen. Mail-Programme blenden Bilder oft zunächst aus — der Kopf bleibt dann mit Wortmarke lesbar.
+- Gültigkeitsdauer des Links steuert `GOTRUE_MAILER_OTP_EXP` (Sekunden, Standard 3600); die Mail nennt bewusst keine Zahl.
 - Alle Styles sind inline (Mail-Programme ignorieren `<style>`); Farben fest (kein Dunkelmodus).
 - Ist die Vorlagen-URL nicht erreichbar, fällt GoTrue auf die englische Standardvorlage zurück.
 - Production hat eine eigene Compose-Datei und eine eigene Domain → URLs dort anpassen.

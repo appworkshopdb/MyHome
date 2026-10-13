@@ -3,27 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Willkommen bei Nestua</title>
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Schön, dass du da bist.</title>
 </head>
 <body style="margin:0;padding:0;background:#F2F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Ein Klick, dann richten wir dein Nest ein.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Ein Tipp, dann richten wir dein Nest ein.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F4F8;">
 <tr><td align="center" style="padding:28px 14px;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:20px;overflow:hidden;">
-    <tr><td style="background:#1B2A4A;padding:26px 28px;">
-      <span style="font-size:12px;font-weight:800;letter-spacing:2px;color:#ffffff;">NESTUA</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:22px;overflow:hidden;">
+    <tr><td bgcolor="#1B2A4A" style="background:#1B2A4A;background-image:linear-gradient(160deg,#1B2A4A 0%,#2F4A80 100%);padding:28px 32px 34px;">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td valign="middle"><img src="https://staging.nestua.de/icons/icon-192.png" width="34" height="34" alt="" style="display:block;border:0;border-radius:9px;"></td>
+        <td valign="middle" style="padding-left:12px;font-size:12px;font-weight:700;letter-spacing:2.2px;color:#ffffff;">NESTUA</td>
+      </tr></table>
+      <div style="padding-top:26px;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#F3B183;">Willkommen</div>
+      <h1 style="margin:8px 0 0;font-size:27px;line-height:1.15;font-weight:800;color:#ffffff;">Schön, dass du da bist.</h1>
     </td></tr>
-    <tr><td style="padding:30px 28px 8px;">
-      <h1 style="margin:0 0 14px;font-size:24px;line-height:1.2;color:#1B2236;">Willkommen bei Nestua</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.55;color:#4A5367;">Schön, dass du da bist. Bestätige kurz deine E-Mail-Adresse, danach richten wir dein Nest ein. Das dauert nur eine Minute.</p>
-      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 28px;border-radius:14px;background:#E5762F;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">E-Mail bestätigen</a>
+    <tr><td style="padding:28px 32px 10px;">
+      <p style="margin:0 0 24px;font-size:16px;line-height:1.55;color:#3C455A;">Bestätige kurz deine E-Mail-Adresse, danach richten wir dein Nest ein. Das dauert nur eine Minute.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#E5762F" style="border-radius:14px;background:#E5762F;">
+        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:14px;">E-Mail bestätigen</a>
+      </td></tr></table>
+      <p style="margin:12px 0 0;font-size:13px;color:#6B7487;">Der Link ist nur begrenzt gültig und funktioniert einmal.</p>
     </td></tr>
-    <tr><td style="padding:22px 28px 30px;">
-      <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#6B7487;">Du hast dich nicht bei Nestua registriert? Dann kannst du diese Mail einfach löschen.</p>
-      <p style="margin:0;font-size:12px;line-height:1.5;color:#8A93A5;word-break:break-all;">Funktioniert der Knopf nicht? Kopiere diesen Link in deinen Browser:<br>{{ .ConfirmationURL }}</p>
+    <tr><td style="padding:8px 32px 6px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#6B7487;padding:0 0 12px;">So geht’s danach weiter</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr><td width="34" valign="top" style="padding:0 0 12px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="26" height="26" align="center" style="width:26px;height:26px;border-radius:13px;background:#FCE9DB;color:#8A3F0B;font-size:13px;font-weight:700;line-height:26px;">1</td></tr></table></td><td valign="middle" style="padding:0 0 12px;font-size:15px;line-height:26px;font-weight:600;color:#1B2236;">E-Mail bestätigen</td></tr><tr><td width="34" valign="top" style="padding:0 0 12px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="26" height="26" align="center" style="width:26px;height:26px;border-radius:13px;background:#FCE9DB;color:#8A3F0B;font-size:13px;font-weight:700;line-height:26px;">2</td></tr></table></td><td valign="middle" style="padding:0 0 12px;font-size:15px;line-height:26px;font-weight:600;color:#1B2236;">Profil einrichten</td></tr><tr><td width="34" valign="top" style="padding:0 0 12px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="26" height="26" align="center" style="width:26px;height:26px;border-radius:13px;background:#FCE9DB;color:#8A3F0B;font-size:13px;font-weight:700;line-height:26px;">3</td></tr></table></td><td valign="middle" style="padding:0 0 12px;font-size:15px;line-height:26px;font-weight:600;color:#1B2236;">Vogel wählen</td></tr></table>
+    </td></tr>
+<tr><td style="padding:14px 32px 30px;">
+      <div style="border-top:1px solid #E4E8F0;padding-top:18px;">
+        <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:#6B7487;">Du hast dich nicht bei Nestua registriert? Dann kannst du diese Mail einfach löschen.</p>
+        <p style="margin:0;font-size:12px;line-height:1.5;color:#8A93A5;word-break:break-all;">Funktioniert der Knopf nicht? Kopiere diesen Link in deinen Browser:<br><a href="{{ .ConfirmationURL }}" style="color:#8A93A5;">{{ .ConfirmationURL }}</a></p>
+      </div>
     </td></tr>
   </table>
-  <p style="max-width:480px;margin:16px 0 0;font-size:12px;line-height:1.5;color:#8A93A5;text-align:center;">Nestua · Server in Frankfurt. Keine Werbung, keine Weitergabe.</p>
+  <p style="max-width:480px;margin:16px 0 0;font-size:12px;line-height:1.5;color:#8A93A5;text-align:center;">Nestua · Geld, Sport, Ernährung, Gewohnheiten und Einkauf an einem Ort.<br>Server in Frankfurt. Keine Werbung, keine Weitergabe.</p>
 </td></tr>
 </table>
 </body>
