@@ -5,7 +5,6 @@ import * as rawAuth from './lib/rawAuth';
 import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bodyProfileData';
 import { getDietProfile, saveDietProfile, DIET_OPTIONS } from './lib/dietProfileData';
 import { computeBody, GOAL_NOTE, METRIC_INFO } from './lib/bodyCalc';
-import { getGoals } from './lib/goalsData';
 import { BodyDataForm, ActivityGoalForm } from './components/BodyProfileForm';
 import { PROFILE_SECTIONS } from './components/ProfileMenu';
 import { useAvatar } from './lib/avatarData';
@@ -14,7 +13,6 @@ import { useRoute } from './lib/useRoute';
 import ModuleTopBar from './components/ModuleTopBar';
 import Modal from './components/Modal';
 import { IconInfo, IconEdit } from './components/Icons';
-import { MODULES } from './modules';
 
 // Trainingsfokus zusätzlich zu BODY_REQUIRED_FIELDS: Profile.jsx ist die
 // allgemeine Seite für ALLE Module (auch Sport), core darf dafür aber
@@ -44,11 +42,7 @@ function memberSince(isoDate) {
 // migriert (dessen eigener "Profil"-Tab wurde entfernt, siehe
 // Projektkontext.md) — die zugehörigen Formeln/Datenzugriffe liegen
 // dafür jetzt in lib/bodyCalc.js und lib/dietProfileData.js.
-// Legt selbst keine Ziele an — liest nur die geteilte goals-Tabelle
-// ungefiltert und gruppiert nach source_module. Angelegt werden Ziele im
-// jeweiligen Modul (core/components/GoalsSection.jsx); Ernährung hat
-// aktuell bewusst keine eigene Ziele-Funktion (siehe Projektkontext.md).
-export default function Profile({ onOpenModule, hasWarnings }) {
+export default function Profile({ hasWarnings }) {
   const { view, navigate } = useRoute();
   const section = PROFILE_SECTIONS.some((s) => s.key === view) ? view : 'profil';
   const sectionTitle = PROFILE_SECTIONS.find((s) => s.key === section).label;
@@ -57,7 +51,6 @@ export default function Profile({ onOpenModule, hasWarnings }) {
 
   const [bodyProfile, setBodyProfile] = useState(null);
   const [dietProfile, setDietProfile] = useState(null);
-  const [goalsByModule, setGoalsByModule] = useState({});
   const [loading, setLoading] = useState(true);
   const [infoKey, setInfoKey] = useState(null); // welches Info-Modal offen ist
 
@@ -72,17 +65,13 @@ export default function Profile({ onOpenModule, hasWarnings }) {
     let aktiv = true;
     async function load() {
       try {
-        const [body, diet, goals] = await Promise.all([
+        const [body, diet] = await Promise.all([
           getBodyProfile(session),
           getDietProfile(session),
-          getGoals(session),
         ]);
         if (!aktiv) return;
         setBodyProfile(body);
         setDietProfile(diet);
-        const grouped = {};
-        for (const g of goals) (grouped[g.source_module] ||= []).push(g);
-        setGoalsByModule(grouped);
       } catch (e) {
         console.error('[Profile] Laden fehlgeschlagen:', e);
       } finally {
@@ -129,7 +118,6 @@ export default function Profile({ onOpenModule, hasWarnings }) {
     }
   }
 
-  const modulesWithGoals = MODULES.filter((m) => goalsByModule[m.id]?.length);
 
   return (
     <div className="hub with-topbar-space">
@@ -264,37 +252,6 @@ export default function Profile({ onOpenModule, hasWarnings }) {
           )}
         </div>
       )}
-
-      {/* Ziele-Vorschau je Modul */}
-      {section === 'ziele' && (<>
-      <div className="hub-activity-label">Ziele &amp; Meilensteine</div>
-      <div className="card hub-activity-card">
-        {!loading && modulesWithGoals.length === 0 && (
-          <div className="status-note">Noch keine Ziele — leg sie im jeweiligen Modul an.</div>
-        )}
-        {modulesWithGoals.map((m, i) => {
-          const goals = goalsByModule[m.id];
-          const erledigt = goals.filter((g) => g.milestones?.length > 0 && g.milestones.every((ms) => ms.done)).length;
-          return (
-            <div
-              key={m.id}
-              className="hub-activity-row"
-              style={{ cursor: 'pointer', borderBottom: i === modulesWithGoals.length - 1 ? 'none' : undefined }}
-              onClick={() => onOpenModule(m.id)}
-            >
-              <div className="hub-activity-left">
-                <span className="hub-module-dot" style={{ background: m.color }} />
-                <div>
-                  <div className="hub-activity-title">{m.name}</div>
-                  <div className="hub-activity-time">{erledigt} von {goals.length} erledigt</div>
-                </div>
-              </div>
-              <div className="hub-activity-value">{goals.length}</div>
-            </div>
-          );
-        })}
-      </div>
-      </>)}
 
       {avatarOpen && (
         <AvatarEditor avatar={avatar} initial={session.user.email?.[0]?.toUpperCase() || '?'} onClose={() => setAvatarOpen(false)} />

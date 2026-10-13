@@ -117,7 +117,7 @@ export default function App() {
 
         <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
           {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
-          {activeModule === 'profile' && <Profile onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'profile' && <Profile hasWarnings={hasWarnings} />}
           {activeModule === 'statistiken' && <Statistiken view={view} onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {mod && (ModuleComponent ? (
             // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconUserRound } from '../../../core/components/Icons';
 import BodyProfileForm from '../../../core/components/BodyProfileForm';
-import GoalsSection from '../../../core/components/GoalsSection';
 import RequiredDataBanner from '../../../core/components/RequiredDataBanner';
 import { getMissingFields } from '../../../core/lib/requiredData';
 import { BODY_REQUIRED_FIELDS } from '../../../core/lib/bodyProfileData';
@@ -71,8 +70,6 @@ export default function ProfilView({ profile, onSaveProfile, email }) {
           </div>
         </>
       )}
-
-      <GoalsSection sourceModule="nutrition" />
     </>
   );
 }

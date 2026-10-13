@@ -92,7 +92,6 @@ nicht verändert werden, sie existieren bereits:
 
 - `core/components/ModuleTopBar.jsx`
 - `core/components/ModuleTabs.jsx`
-- `core/components/GoalsSection.jsx`
 - `core/lib/supabaseClient.js` (inkl. `getSupabase()`)
 
 ---
