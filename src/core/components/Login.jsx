@@ -1,33 +1,116 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabaseConfigured } from '../lib/supabaseClient';
 import * as rawAuth from '../lib/rawAuth';
 import { useAuth } from '../lib/AuthContext';
 
+const RESEND_COOLDOWN_S = 60;
+
 export default function Login() {
-  const { setSession } = useAuth();
+  const { setSession, authNotice, clearAuthNotice } = useAuth();
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Gesetzt, sobald die Registrierung eine Bestätigungsmail ausgelöst hat
+  // (oder ein Login an „E-Mail nicht bestätigt“ scheitert) → Warte-Ansicht.
+  const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  async function submit(e) {
-    e.preventDefault();
+  useEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  function showConfirmation() {
+    setAwaitingConfirm(true);
+    setStatus(null);
+    setCooldown(RESEND_COOLDOWN_S);
+  }
+
+  async function resend() {
     setBusy(true);
     setStatus(null);
     try {
-      if (mode === 'signin') {
-        setSession(await rawAuth.signInWithPassword(email, password));
-      } else {
-        const data = await rawAuth.signUp(email, password);
-        if (data.access_token) setSession(data);
-        else setStatus({ type: 'ok', text: 'Konto erstellt — je nach Einstellung ggf. E-Mail bestätigen, dann einloggen.' });
-      }
+      await rawAuth.resendConfirmation(email);
+      setStatus({ type: 'ok', text: 'Mail erneut gesendet.' });
+      setCooldown(RESEND_COOLDOWN_S);
     } catch (err) {
       setStatus({ type: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
+  }
+
+  // „Ich habe bestätigt“ — Link evtl. auf einem anderen Gerät geöffnet,
+  // daher mit den noch im Formular stehenden Zugangsdaten anmelden.
+  async function checkConfirmed() {
+    setBusy(true);
+    setStatus(null);
+    try {
+      setSession(await rawAuth.signInWithPassword(email, password));
+    } catch (err) {
+      setStatus({
+        type: 'error',
+        text: err.code === 'email_not_confirmed' ? 'Noch nicht bestätigt — bitte den Link in der Mail öffnen.' : err.message,
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setStatus(null);
+    clearAuthNotice();
+    try {
+      if (mode === 'signin') {
+        setSession(await rawAuth.signInWithPassword(email, password));
+      } else {
+        const data = await rawAuth.signUp(email, password);
+        if (data.access_token) setSession(data); // Bestätigung serverseitig aus
+        else showConfirmation();
+      }
+    } catch (err) {
+      if (err.code === 'email_not_confirmed') showConfirmation();
+      else setStatus({ type: 'error', text: err.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (awaitingConfirm) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-wordmark">NESTUA</div>
+        <div className="auth-card">
+          <div>
+            <h1>Fast<br />geschafft.</h1>
+            <div className="sub">
+              Wir haben dir eine Mail an <strong>{email}</strong> geschickt. Öffne den Link darin,
+              um dein Konto zu bestätigen — danach richten wir dein Nest ein.
+            </div>
+          </div>
+
+          <div className="auth-msg">Nichts angekommen? Schau im Spam-Ordner nach.</div>
+          {status && <div className={`auth-msg ${status.type}`}>{status.text}</div>}
+
+          <div className="auth-actions">
+            <button type="button" className="btn btn-primary btn-block" disabled={busy} onClick={checkConfirmed}>
+              {busy ? 'Bitte warten…' : 'Ich habe bestätigt'}
+            </button>
+            <button type="button" className="btn btn-outline-block" disabled={busy || cooldown > 0} onClick={resend}>
+              {cooldown > 0 ? `Mail erneut senden (${cooldown}s)` : 'Mail erneut senden'}
+            </button>
+            <button type="button" className="btn btn-outline-block" onClick={() => { setAwaitingConfirm(false); setStatus(null); setMode('signup'); }}>
+              Andere E-Mail verwenden
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -71,6 +154,7 @@ export default function Login() {
           <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
 
+        {authNotice && <div className="auth-msg warn">{authNotice}</div>}
         {status && <div className={`auth-msg ${status.type}`}>{status.text}</div>}
 
         <div className="auth-actions">

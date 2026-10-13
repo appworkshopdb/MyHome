@@ -64,11 +64,21 @@ async function authRequest(path, body) {
     headers: { 'Content-Type': 'application/json', apikey: supabaseAnonKey },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
+  // /resend antwortet je nach GoTrue-Version mit leerem Body → tolerant parsen.
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error_description || data.msg || data.error || 'Anfrage fehlgeschlagen');
+    const err = new Error(data.error_description || data.msg || data.error || 'Anfrage fehlgeschlagen');
+    err.code = data.error_code || data.code || null; // z. B. 'email_not_confirmed'
+    throw err;
   }
   return data;
+}
+
+// Wohin der Link in der Bestätigungsmail zurückführt: die App selbst.
+// GoTrue akzeptiert das nur, wenn die URL in GOTRUE_URI_ALLOW_LIST steht
+// (sonst fällt es auf SITE_URL zurück) — siehe HOSTING.md.
+function confirmRedirect() {
+  return encodeURIComponent(window.location.origin + window.location.pathname);
 }
 
 export async function signInWithPassword(email, password) {
@@ -79,9 +89,11 @@ export async function signInWithPassword(email, password) {
 }
 
 export async function signUp(email, password) {
-  const data = await authRequest('signup', { email, password });
-  // Falls "Confirm email" aktiv ist, kommt hier noch kein access_token
-  // zurück — die Person muss erst die Bestätigungsmail nutzen.
+  const data = await authRequest(`signup?redirect_to=${confirmRedirect()}`, { email, password });
+  // Mit aktivem "Confirm email" kommt hier KEIN access_token zurück — die
+  // Person muss erst die Bestätigungsmail nutzen. Bei bereits registrierter
+  // (bestätigter) Adresse antwortet GoTrue absichtlich genauso, damit sich
+  // nicht erraten lässt, welche Adressen ein Konto haben.
   if (data.access_token) {
     const session = withExpiry(data);
     persist(session);
@@ -125,4 +137,68 @@ export async function updatePassword(session, newPassword) {
     throw new Error(data.error_description || data.msg || data.error || 'Passwort konnte nicht geändert werden');
   }
   return data;
+}
+
+// Bestätigungsmail nochmal senden (Cooldown/Rate-Limit erzwingt GoTrue).
+export function resendConfirmation(email) {
+  return authRequest(`resend?redirect_to=${confirmRedirect()}`, { type: 'signup', email });
+}
+
+// ── Rückkehr über den Link aus der Bestätigungsmail ─────────────────
+// GoTrue leitet auf  <redirect_to>#access_token=…&refresh_token=…&type=signup
+// (bzw. #error=…&error_code=otp_expired) zurück. Die App nutzt aber
+// Hash-Routing (#/profile …), also muss dieser Hash VOR dem ersten Render
+// weg — sonst hält useRoute die Tokens für eine Modul-Id. Deshalb wird er
+// synchron beim Import gelesen und sofort durch #/ ersetzt; die eigentliche
+// Verarbeitung (async: Nutzer nachladen) macht consumeAuthRedirect().
+let pendingRedirect = null;
+try {
+  const h = window.location.hash;
+  if (/^#(access_token|error)/.test(h)) {
+    pendingRedirect = new URLSearchParams(h.slice(1));
+    window.history.replaceState(null, '', window.location.pathname + window.location.search + '#/');
+  }
+} catch { /* kein window (Tests/SSR) */ }
+
+// → null (kein Redirect) | { session } | { error: 'deutscher Text' }
+// Das Promise wird gemerkt: React StrictMode (Dev) führt Effects doppelt
+// aus, der zweite Aufruf muss dasselbe Ergebnis bekommen statt „nichts“.
+let redirectResult = null;
+export function consumeAuthRedirect() {
+  if (!redirectResult) redirectResult = processRedirect(pendingRedirect);
+  return redirectResult;
+}
+
+async function processRedirect(p) {
+  if (!p) return null;
+
+  if (p.get('error') || !p.get('access_token')) {
+    return {
+      error: p.get('error_code') === 'otp_expired'
+        ? 'Der Bestätigungslink ist abgelaufen oder wurde schon benutzt. Melde dich an — falls die Adresse noch nicht bestätigt ist, kannst du dort eine neue Mail anfordern.'
+        : 'Die Bestätigung hat nicht geklappt. Bitte melde dich an oder fordere eine neue Mail an.',
+    };
+  }
+
+  const accessToken = p.get('access_token');
+  try {
+    // Der Link enthält nur die Tokens, nicht den Nutzer — App und RLS
+    // brauchen aber session.user (id, email, created_at).
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${accessToken}` },
+    });
+    const user = await res.json();
+    if (!res.ok) throw new Error('user');
+    const session = withExpiry({
+      access_token: accessToken,
+      refresh_token: p.get('refresh_token'),
+      expires_in: Number(p.get('expires_in')) || 3600,
+      token_type: 'bearer',
+      user,
+    });
+    persist(session);
+    return { session };
+  } catch {
+    return { error: 'E-Mail bestätigt, aber die Anmeldung ist fehlgeschlagen. Bitte melde dich mit deinem Passwort an.' };
+  }
 }

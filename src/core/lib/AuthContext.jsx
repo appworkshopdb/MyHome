@@ -1,17 +1,30 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { loadStoredSession, refreshSession, signOut, REFRESH_MARGIN_MS } from './rawAuth';
+import { loadStoredSession, consumeAuthRedirect, refreshSession, signOut, REFRESH_MARGIN_MS } from './rawAuth';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [ladeVorgang, setLadeVorgang] = useState(true);
+  // Hinweis nach Rückkehr aus der Bestätigungsmail (z. B. Link abgelaufen);
+  // Login.jsx zeigt ihn an.
+  const [authNotice, setAuthNotice] = useState(null);
   const timerRef = useRef(null);
 
   // Initiales Laden der gespeicherten Sitzung (einmalig beim App-Start).
+  // Kommt die Person über den Link aus der Bestätigungsmail zurück, steht
+  // die Sitzung noch nicht im Speicher — consumeAuthRedirect() legt sie an
+  // (und landet damit direkt im Onboarding statt auf dem Login).
   useEffect(() => {
-    setSession(loadStoredSession());
-    setLadeVorgang(false);
+    let aktiv = true;
+    (async () => {
+      const redirect = await consumeAuthRedirect();
+      if (!aktiv) return;
+      if (redirect?.error) setAuthNotice(redirect.error);
+      setSession(redirect?.session ?? loadStoredSession());
+      setLadeVorgang(false);
+    })();
+    return () => { aktiv = false; };
   }, []);
 
   // Automatisches Token-Refresh: läuft immer wieder neu an, sobald sich
@@ -50,7 +63,7 @@ export function AuthProvider({ children }) {
   }, [session]);
 
   return (
-    <AuthContext.Provider value={{ session, ladeVorgang, setSession }}>
+    <AuthContext.Provider value={{ session, ladeVorgang, setSession, authNotice, clearAuthNotice: () => setAuthNotice(null) }}>
       {children}
     </AuthContext.Provider>
   );

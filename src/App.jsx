@@ -22,9 +22,11 @@ import { lazy, Suspense } from 'react';
 import { useAuth } from './core/lib/AuthContext';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
+import { useOnboardingStatus } from './core/lib/onboardingData';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
 import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
+import ProfileWizard from './core/components/ProfileWizard';
 import BirdDefs from './core/components/birds/BirdDefs';
 import WelcomeWizard from './core/components/WelcomeWizard';
 import { useGamificationStore } from './core/lib/gamificationStore';
@@ -73,9 +75,14 @@ export default function App() {
   const { module: activeModule, view, navigate } = useRoute();
   const { warnings } = useRequiredDataStatus(session);
   const hasWarnings = warnings.length > 0;
+  const onboarding = useOnboardingStatus(session);
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
+  // Neue Konten (E-Mail bestätigt) richten zuerst ihr Profil ein; erst danach
+  // wird die App gerendert — und mit ihr der WelcomeWizard (Vogelwahl).
+  if (onboarding.loading) return <div className="loading-note">Lädt…</div>;
+  if (onboarding.needed) return <ProfileWizard />;
 
   // 'profile' und 'statistiken' sind Seiten des Cores, keine Module
   const isModule = activeModule && activeModule !== 'profile' && activeModule !== 'statistiken';
