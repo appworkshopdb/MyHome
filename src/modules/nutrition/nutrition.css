@@ -809,3 +809,16 @@
   font-size: 11px; font-weight: 700;
 }
 .meta-pill svg { width: 12px; height: 12px; flex: none; }
+
+/* Zutaten-Suche im Rezept-Editor: Treffer mit "+"-Knopf rechts */
+.ing-pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+.ing-pick-row:last-child { border-bottom: 0; }
+.ing-pick-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ing-pick-name { font-size: 0.88rem; font-weight: 600; }
+.ing-pick-kcal { font-size: 0.72rem; color: var(--text-muted); }
+.ing-add {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; padding: 0; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--action-primary); color: var(--text-on-accent);
+}
+.ing-add svg { display: block; width: 16px; height: 16px; flex: none; }

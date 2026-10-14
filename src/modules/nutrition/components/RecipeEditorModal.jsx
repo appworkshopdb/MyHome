@@ -130,15 +130,15 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
         {results.length > 0 && (
           <div className="card" style={{ margin: '0 0 10px', padding: 0 }}>
             {results.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => addIngredient(f)}
-                style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}
-              >
-                <IconPlus />
-                <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{f.name}</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{f.kcal}kcal/{basis(f.unit)}</span>
-              </button>
+              <div key={f.id} className="ing-pick-row">
+                <div className="ing-pick-info">
+                  <span className="ing-pick-name">{f.name}</span>
+                  <span className="ing-pick-kcal">{f.kcal} kcal/{basis(f.unit)}</span>
+                </div>
+                <button type="button" className="ing-add" aria-label={`${f.name} hinzufügen`} onClick={() => addIngredient(f)}>
+                  <IconPlus />
+                </button>
+              </div>
             ))}
           </div>
         )}
