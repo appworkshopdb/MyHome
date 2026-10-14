@@ -817,8 +817,9 @@
 .ing-pick-name { font-size: 0.88rem; font-weight: 600; }
 .ing-pick-kcal { font-size: 0.72rem; color: var(--text-muted); }
 .ing-add {
-  flex: none; width: 34px; height: 34px; border-radius: 50%; padding: 0; border: 0; cursor: pointer;
+  flex: none; width: 34px; height: 34px; border-radius: 10px; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: var(--action-primary); color: var(--text-on-accent);
+  background: transparent; color: var(--action-primary); border: 1.5px solid var(--action-primary);
 }
+.ing-add:active { background: var(--surface-sunken); }
 .ing-add svg { display: block; width: 16px; height: 16px; flex: none; }
