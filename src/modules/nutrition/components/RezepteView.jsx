@@ -5,6 +5,7 @@ import { TEMPLATE_RECIPES } from '../lib/data/templates';
 import { RecipeCover } from '../lib/recipeCovers';
 import { DIET_FILTERS, NUTRI_FILTERS, ART_GROUPS, SORTS, recipeFacts, applyRecipeFilters, searchScore } from '../lib/recipeFilter';
 import RecipeEditorModal from './RecipeEditorModal';
+import RecipeWizard from './RecipeWizard';
 import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeDetailModal from './RecipeDetailModal';
 
@@ -33,7 +34,7 @@ function RecipeMeta({ recipe, calc }) {
 }
 
 export default function RezepteView({
-  foods, recipes, currentUserId, onSaveRecipe, onDeleteRecipe, showToast,
+  foods, recipes, currentUserId, onSaveRecipe, onSaveFood, onDeleteRecipe, showToast,
   editing, setEditing, // lifted nach NutritionModule.jsx — siehe dort für Begründung
   onLogMeal,           // "Gegessen eintragen" → Dialog im NutritionModule
 }) {
@@ -216,7 +217,17 @@ export default function RezepteView({
         />
       )}
 
-      {editing !== undefined && (
+      {/* Neues Rezept: Wizard (Basis → Zutaten → Zusammenfassung). Bearbeiten: wie bisher der Editor. */}
+      {editing === null && (
+        <RecipeWizard
+          foods={foods}
+          foodsById={foodsById}
+          onSave={handleSave}
+          onSaveFood={onSaveFood}
+          onClose={() => setEditing(undefined)}
+        />
+      )}
+      {editing !== undefined && editing !== null && (
         <RecipeEditorModal
           recipe={editing}
           foods={foods}

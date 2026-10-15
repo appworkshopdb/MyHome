@@ -48,7 +48,7 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
       {open === 'todo' && (
         <TodoSheet
           onClose={() => setOpen(null)}
-          onSaved={(t) => { onTodoSaved?.(t); setOpen(null); }}
+          onSaved={(t) => { onTodoSaved?.(t); }} /* TodoSheet schließt selbst; bei "Speichern & neu" bleibt es offen */
         />
       )}
       {open === 'habit' && (

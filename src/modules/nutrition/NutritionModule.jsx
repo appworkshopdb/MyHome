@@ -157,8 +157,9 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   );
 
   async function handleSaveFood(food) {
-    await db.saveFood(session, food);
+    const saved = await db.saveFood(session, food);
     setFoods(await db.getFoods(session));
+    return saved; // der Rezept-Wizard braucht die neue Id, um die Zutat gleich hinzuzufügen
   }
 
   async function handleDeleteFood(food) {
@@ -225,6 +226,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
               recipes={recipes}
               currentUserId={session.user.id}
               onSaveRecipe={handleSaveRecipe}
+              onSaveFood={handleSaveFood}
               onDeleteRecipe={handleDeleteRecipe}
               showToast={showToast}
               editing={editingRecipe}

@@ -1,23 +1,31 @@
 // src/core/components/TodoSheet.jsx
-import { useState } from 'react';
+// Neue Aufgabe / Aufgabe bearbeiten — ein Schritt im gemeinsamen Wizard-Rahmen
+// (core/components/wizard/WizardKit.jsx). Fällig am ist ein Datum-Button mit Kalender.
+import { useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { saveTodo } from '../lib/todoData';
 import { fb } from '../lib/feedback';
 import SheetShell from './SheetShell';
+import { DateButton, WizardFoot, WizardFrame, WzIconStar, missingHint } from './wizard/WizardKit';
 
 export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
   const { session } = useAuth();
   const { showToast } = useUi();
+  const titleRef = useRef(null);
 
   const [title,    setTitle]    = useState(editTodo?.title    ?? '');
   const [note,     setNote]     = useState(editTodo?.note     ?? '');
   const [dueDate,  setDueDate]  = useState(editTodo?.due_date ?? '');
   const [priority, setPriority] = useState(editTodo?.priority ?? false);
+  const [showNote, setShowNote] = useState(Boolean(editTodo?.note));
   const [saving,   setSaving]   = useState(false);
 
-  async function submit() {
-    if (!title.trim()) return showToast('Bitte einen Titel eingeben');
+  const valid = Boolean(title.trim());
+
+  // keepOpen: "Speichern & neu" — Aufgabe speichern, Formular leeren, offen lassen
+  async function submit(keepOpen = false) {
+    if (!valid) return showToast('Bitte einen Titel eingeben');
     setSaving(true);
     try {
       const saved = await saveTodo(session, {
@@ -32,8 +40,14 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
       if (!editTodo?.id) {
         fb.todoCreate();
       }
-      onSaved(saved);
-      onClose();
+      onSaved?.(saved);
+      if (keepOpen) {
+        showToast('Aufgabe gespeichert');
+        setTitle(''); setNote(''); setDueDate(''); setPriority(false); setShowNote(false);
+        titleRef.current?.focus();
+      } else {
+        onClose();
+      }
     } catch (e) {
       console.error('[TodoSheet]', e);
       showToast('Konnte nicht gespeichert werden');
@@ -43,81 +57,56 @@ export default function TodoSheet({ onClose, onSaved, editTodo = null }) {
     }
   }
 
-  return (
-    <SheetShell onClose={onClose}>
-        {/* Header */}
-        <div className="sheet-header">
-          <span className="sheet-title">{editTodo ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</span>
-          <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
-        </div>
-
-        <div className="todo-sheet-body">
-          {/* Titel */}
-          <div className="todo-sheet-field">
-            <input
-              className="todo-sheet-input todo-sheet-input--title"
-              type="text"
-              placeholder="Was ist zu tun?"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && submit()}
-            />
-          </div>
-
-          {/* Notiz */}
-          <div className="todo-sheet-field">
-            <input
-              className="todo-sheet-input"
-              type="text"
-              placeholder="Notiz (optional)"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-
-          {/* Fälligkeitsdatum + Priorität */}
-          <div className="todo-sheet-row">
-            <div className="todo-sheet-field todo-sheet-field--half">
-              <label className="todo-sheet-label">Fällig am <span className="todo-sheet-optional">(optional)</span></label>
-              <div className="todo-sheet-date-row">
-                <input
-                  className="todo-sheet-input"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                {dueDate && (
-                  <button
-                    className="todo-sheet-date-clear"
-                    onClick={() => setDueDate('')}
-                    type="button"
-                    aria-label="Datum entfernen"
-                  >×</button>
-                )}
-              </div>
-            </div>
-
-            <button
-              className={`todo-priority-toggle ${priority ? 'active' : ''}`}
-              onClick={() => setPriority((p) => !p)}
-              type="button"
-            >
-              {priority ? '⬆ Wichtig' : '⬆ Wichtig'}
-            </button>
-          </div>
-        </div>
-
-        {/* Speichern */}
-        <button
-          className={`sheet-save ${(!title.trim() || saving) ? 'disabled' : ''}`}
-          onClick={submit}
-          disabled={!title.trim() || saving}
-        >
-          {saving ? 'Wird gespeichert…' : editTodo ? 'Speichern' : 'Aufgabe hinzufügen'}
+  const footer = (
+    <WizardFoot one={Boolean(editTodo)} hint={valid ? '' : missingHint([['Aufgabe', true]])}>
+      {!editTodo && (
+        <button type="button" className="btn btn-secondary" disabled={!valid || saving} onClick={() => submit(true)}>
+          Speichern &amp; neu
         </button>
-      </SheetShell>
-    
+      )}
+      <button type="button" className="btn btn-primary" disabled={!valid || saving} onClick={() => submit(false)}>
+        {saving ? 'Wird gespeichert…' : 'Speichern'}
+      </button>
+    </WizardFoot>
+  );
+
+  return (
+    <SheetShell onClose={onClose} wizard>
+      <WizardFrame title={editTodo ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'} onClose={onClose} footer={footer}>
+        <label className="wz-lbl" htmlFor="wz-todo-title">Aufgabe</label>
+        <input
+          id="wz-todo-title"
+          ref={titleRef}
+          className="wz-input hero"
+          type="text"
+          placeholder="Was ist zu tun?"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          autoFocus
+          autoComplete="off"
+          enterKeyHint="done"
+          onKeyDown={(e) => e.key === 'Enter' && submit(false)}
+        />
+
+        <div className="wz-lbl">Fällig am <span className="opt">optional</span></div>
+        <DateButton value={dueDate} onChange={setDueDate} optional placeholder="Datum wählen" label="Fällig am" />
+
+        <div className="wz-lbl">Markierung</div>
+        <div className="wz-chips">
+          <button type="button" className={`wz-chip${priority ? ' on' : ''}`} aria-pressed={priority} onClick={() => setPriority((p) => !p)}>
+            <WzIconStar />Wichtig
+          </button>
+        </div>
+
+        {showNote ? (
+          <>
+            <label className="wz-lbl" htmlFor="wz-todo-note">Notiz <span className="opt">optional</span></label>
+            <textarea id="wz-todo-note" className="wz-input" placeholder="Notiz" value={note} onChange={(e) => setNote(e.target.value)} />
+          </>
+        ) : (
+          <button type="button" className="wz-link" onClick={() => setShowNote(true)}>＋ Notiz hinzufügen</button>
+        )}
+      </WizardFrame>
+    </SheetShell>
   );
 }

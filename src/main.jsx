@@ -11,6 +11,7 @@ import './styles/layout.css';
 import './styles/components.css';
 import './styles/app-extra.css';
 import './styles/onboarding.css';
+import './styles/wizard.css';
 import './modules/finance/finance.css';
 
 // Früh registrieren (nicht erst beim Klick auf "Aktivieren" in Profile.jsx)

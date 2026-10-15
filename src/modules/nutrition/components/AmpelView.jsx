@@ -3,6 +3,7 @@ import { IconSearch, IconChevronDown } from '../../../core/components/Icons';
 import { AMPEL_CATS, GROUP_COLORS, TAG_COLORS, FOOD_TAGS, basis } from '../lib/nutrition';
 import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
+import FoodWizard from './FoodWizard';
 import CompareModal from './CompareModal';
 
 // initialSearch: Startwert des Suchfelds. Ohne Angabe wie bisher leer.
@@ -180,7 +181,15 @@ export default function AmpelView({
         />
       )}
 
-      {showForm && (
+      {/* Neues Lebensmittel: Wizard (Basis → Nährwerte → Zusammenfassung). Bearbeiten: wie bisher das Formular. */}
+      {showForm && !formFood && (
+        <FoodWizard
+          allGroups={allGroups}
+          onSave={handleSave}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+      {showForm && formFood && (
         <FoodFormModal
           food={formFood}
           allGroups={allGroups}
