@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
-import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
+import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid, isInstantMethod } from '../../modules/finance/lib/finance';
 import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
 import ReceiptScanChoice from './ReceiptScanChoice';
 import { formatReceiptDate } from '../lib/photoScan';
@@ -48,6 +48,7 @@ function FinanceWizard({ onClose }) {
   const [split,    setSplit]    = useState(false);
   const [splitAmt, setSplitAmt] = useState('');
   const [pay2,     setPay2]     = useState('Bar');
+  const [mids,     setMids]     = useState([]); // weitere Teilzahlungen zwischen erster und letzter (Rest)
   const [dueDate,  setDueDate]  = useState('');
   const [note,     setNote]     = useState('');
   const [showMore, setShowMore] = useState(false);
@@ -77,6 +78,7 @@ function FinanceWizard({ onClose }) {
     const method = (Array.isArray(h.payments) && h.payments[0]?.method) || h.payment;
     if (method && PAYMENTS.includes(method)) setPay1(method);
     setSplit(false);
+    setMids([]);
     setShowSuggest(false);
     setTimeout(() => amountRef.current?.focus(), 0);
   }
@@ -91,6 +93,7 @@ function FinanceWizard({ onClose }) {
     setAmount(r.total != null ? String(r.total).replace('.', ',') : '');
     setPay1(RECEIPT_PAYMENT_MAP[r.payment_method] || 'Bank'); // sonstige/unbekannt: Voreinstellung Bank
     setSplit(false);
+    setMids([]);
     const d = formatReceiptDate(r.date);
     setNote(d ? `Beleg vom ${d}` : '');
     setScanned(r);
@@ -100,22 +103,42 @@ function FinanceWizard({ onClose }) {
   const amountNum = parseNum(amount);
   const splitNum  = parseNum(splitAmt);
   const baseValid = Boolean(name.trim()) && amountNum > 0;
-  const splitValid = !split || (splitNum > 0 && splitNum < amountNum && pay1 !== pay2);
+  // Teilzahlungen: erste (Betrag splitAmt), weitere (mids), letzte = Rest (pay2)
+  const midNums   = mids.map((m) => parseNum(m.amount));
+  const restNum   = amountNum - splitNum - midNums.reduce((a, b) => a + b, 0);
+  const splitMethods = [pay1, ...mids.map((m) => m.method), pay2];
+  const splitValid = !split || (
+    splitNum > 0 && midNums.every((n) => n > 0) && restNum > 0.004
+    && new Set(splitMethods).size === splitMethods.length
+  );
   const valid = baseValid && splitValid;
 
   // Zahlungen für das Speichern: eine Zahlungsart = ganzer Betrag; geteilt =
   // Teilbetrag + Rest (der Rest geht an die zweite Zahlungsart).
   const payments = split
-    ? [{ method: pay1, amount: splitNum }, { method: pay2, amount: Math.max(0, amountNum - splitNum) }]
+    ? [
+      { method: pay1, amount: splitNum },
+      ...mids.map((m, i) => ({ method: m.method, amount: midNums[i] })),
+      { method: pay2, amount: Math.max(0, restNum) },
+    ]
     : [{ method: pay1, amount: amountNum }];
 
   function toggleSplit() {
-    if (split) { setSplit(false); return; }
+    if (split) { setSplit(false); setMids([]); return; }
     setSplit(true);
     setShowMore(true);
     if (!splitAmt && amountNum > 0) setSplitAmt(String(Math.round(amountNum / 2 * 100) / 100).replace('.', ','));
     if (pay2 === pay1) setPay2(PAYMENTS.find((p) => p !== pay1) || 'Bar');
   }
+
+  function addMid() {
+    const used = new Set(splitMethods);
+    const method = PAYMENTS.find((p) => !used.has(p));
+    if (!method) return;
+    setMids((prev) => [...prev, { method, amount: '' }]);
+  }
+  const setMid = (i, patch) => setMids((prev) => prev.map((m, j) => (j === i ? { ...m, ...patch } : m)));
+  const removeMid = (i) => setMids((prev) => prev.filter((_, j) => j !== i));
 
   async function submit() {
     setSaving(true);
@@ -123,7 +146,7 @@ function FinanceWizard({ onClose }) {
       await finData.saveEntry(session, {
         category,
         name:     name.trim(),
-        payments,
+        payments: payments.map((p) => ({ ...p, paid: isInstantMethod(p.method) })),
         payment:  payments[0].method, // Abwärtskompatibilität
         amount:   amountNum,
         paid:     isInstantPaid(payments),
@@ -148,6 +171,7 @@ function FinanceWizard({ onClose }) {
       setCategory('variable_kosten');
       setPay1('Sparschwein');
       setSplit(false);
+      setMids([]);
     }
     setView('review');
   }
@@ -189,7 +213,7 @@ function FinanceWizard({ onClose }) {
           <div className="wz-rv-row"><span>Kategorie</span><span>{catLabel}</span></div>
           <div className="wz-rv-row">
             <span>Zahlungsart</span>
-            <span>{split ? `${pay1} ${eur(splitNum)} + ${pay2} ${eur(Math.max(0, amountNum - splitNum))}` : pay1}</span>
+            <span>{split ? payments.map((p) => `${p.method} ${eur(p.amount)}`).join(' + ') : pay1}</span>
           </div>
           <div className="wz-rv-row"><span>Gebucht in</span><span>{MONTHS_DE[activeMonth - 1]} {activeYear}</span></div>
           <div className="wz-rv-row"><span>Fällig am</span><span>{dueDate ? fmtDate(dueDate) : '—'}</span></div>
@@ -203,7 +227,7 @@ function FinanceWizard({ onClose }) {
   // ── Schritt 1: Eingeben ──
   const hint = !baseValid
     ? missingHint([['Name', !name.trim()], ['Betrag', !(amountNum > 0)]])
-    : (!splitValid ? 'Teilbetrag muss kleiner als der Betrag sein, die Zahlungsarten verschieden' : '');
+    : (!splitValid ? 'Teilbeträge müssen zusammen kleiner als der Betrag sein, die Zahlungsarten verschieden' : '');
   const showSuggestList = showSuggest && suggestions.length > 0;
 
   return (
@@ -289,29 +313,54 @@ function FinanceWizard({ onClose }) {
             {split ? '⚖ Aufteilung entfernen' : '⚖ Zahlung aufteilen'}
           </button>
           {split && (
-            <div>
+            <div className="wz-parts">
               <div className="wz-two">
-                <div className="wz-input" style={{ display: 'grid', alignContent: 'center' }}>{pay1}</div>
-                <div className="wz-amount" style={{ padding: '2px 12px' }}>
+                <div className="wz-input wz-part-method">{pay1}</div>
+                <label className="wz-input wz-part-amt">
                   <input
                     type="text"
                     inputMode="decimal"
                     aria-label={`Teilbetrag ${pay1}`}
                     value={splitAmt}
                     onChange={(e) => setSplitAmt(e.target.value.replace(/[^\d.,]/g, ''))}
-                    style={{ fontSize: 22 }}
                   />
-                  <span style={{ fontSize: 15 }}>€</span>
-                </div>
+                  <span>€</span>
+                </label>
               </div>
-              <div className="wz-two" style={{ marginTop: 8 }}>
-                <select className="wz-input" value={pay2} onChange={(e) => setPay2(e.target.value)} aria-label="Zweite Zahlungsart">
-                  {PAYMENTS.filter((p) => p !== pay1).map((p) => <option key={p} value={p}>{p}</option>)}
+              {mids.map((m, i) => (
+                <div className="wz-two" key={i}>
+                  <select
+                    className="wz-input"
+                    value={m.method}
+                    onChange={(e) => setMid(i, { method: e.target.value })}
+                    aria-label={`Zahlungsart ${i + 2}`}
+                  >
+                    {PAYMENTS.filter((p) => p === m.method || !splitMethods.includes(p)).map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <div className="wz-input wz-part-amt">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      aria-label={`Teilbetrag ${m.method}`}
+                      value={m.amount}
+                      onChange={(e) => setMid(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
+                    />
+                    <span>€</span>
+                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}>×</button>
+                  </div>
+                </div>
+              ))}
+              <div className="wz-two">
+                <select className="wz-input" value={pay2} onChange={(e) => setPay2(e.target.value)} aria-label="Letzte Zahlungsart">
+                  {PAYMENTS.filter((p) => p === pay2 || !splitMethods.includes(p)).map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <div className="wz-input" style={{ display: 'grid', alignContent: 'center', fontWeight: 700 }}>
-                  Rest {eur(Math.max(0, amountNum - splitNum))}
+                <div className="wz-input wz-part-amt wz-part-rest">
+                  Rest {eur(Math.max(0, restNum))}
                 </div>
               </div>
+              {splitMethods.length < PAYMENTS.length && (
+                <button type="button" className="wz-link wz-part-add" onClick={addMid}>+ Weitere Teilzahlung</button>
+              )}
             </div>
           )}
 

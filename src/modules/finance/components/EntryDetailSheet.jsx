@@ -66,7 +66,7 @@ function initialPayments(entry) {
 const setAllPaid = (payments, paid) => payments.map((p) => ({ ...p, paid: isInstantMethod(p.method) ? true : paid }));
 const draftPaidFlag = (p) => isInstantMethod(p.method) || !!p.paid;
 
-export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, showToast }) {
+export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, onTogglePart, showToast }) {
   const [draft, setDraft] = useState(null); // null = Ansicht, sonst Entwurf beim Bearbeiten
   const [focus, setFocus] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -159,11 +159,6 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
     setSaving(false);
   }
 
-  // Eine einzelne Teilzahlung im Entwurf abhaken / wieder öffnen
-  function setPartPaid(idx, paid) {
-    set({ payments: draft.payments.map((p, i) => (i === idx ? { ...p, paid } : p)) });
-  }
-
   function onStatus() {
     if (allInstant) return undefined;
     if (!editing) return onTogglePaid(entry);
@@ -237,7 +232,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
           </button>
         )}
 
-        {editing && canPay && parts.length > 1 && (
+        {!editing && canPay && parts.length > 1 && (
           <ul className="ed-checks" aria-label="Teilzahlungen">
             {parts.map((p, i) => {
               const instant = isInstantMethod(p.method);
@@ -249,7 +244,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
                     aria-checked={p.paid}
                     disabled={instant}
                     className={`ed-check ${p.paid ? 'is-paid' : ''}`}
-                    onClick={() => setPartPaid(i, !p.paid)}
+                    onClick={() => onTogglePart(entry, i)}
                   >
                     <span className="ed-box" aria-hidden="true">{p.paid && <IconCheck />}</span>
                     <span className="ed-check-t">
@@ -282,7 +277,6 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
                     {parts.map((p, i) => (
                       <span key={i} className="ed-part">
                         <span>{p.method} {NF.format(p.amount)} €</span>
-                        {canPay && <em className={p.paid ? 'is-paid' : 'is-open'}>{p.paid ? '✓ bezahlt' : 'offen'}</em>}
                       </span>
                     ))}
                   </span>

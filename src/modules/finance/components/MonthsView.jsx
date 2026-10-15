@@ -5,7 +5,7 @@ import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
   MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, entryParts, openAmount, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  formatPayments, isInstantMethod, entryParts, openAmount, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
@@ -287,6 +287,21 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     });
   }
 
+  // Eine einzelne Teilzahlung abhaken / wieder öffnen (Ansicht des Postens).
+  // Sofort bezahlte Arten (Bar, Gutschein, Sparschwein) lassen sich nicht öffnen.
+  function handleTogglePart(entry, idx) {
+    const parts = entryParts(entry);
+    if (!parts[idx] || isInstantMethod(parts[idx].method)) return;
+    const payments = parts.map((p, i) => ({ method: p.method, amount: p.amount, paid: i === idx ? !p.paid : p.paid }));
+    const paid = payments.every((p) => p.paid);
+    const updated = { ...entry, paid, payments };
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? updated : e)));
+    db.togglePaid(entry.id, paid, payments).catch(() => {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
+      showToast('Fehler beim Speichern');
+    });
+  }
+
   const detailEntry = detailId ? entries.find((e) => e.id === detailId) : null;
 
   // Dynamisches Saldo-Label: "diesen Monat" nur wenn wir im aktuellen Monat sind
@@ -404,6 +419,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
           showToast={showToast}
           onDelete={handleDelete}
           onTogglePaid={handleTogglePaid}
+          onTogglePart={handleTogglePart}
         />
       )}
     </>
