@@ -2,14 +2,17 @@
 //
 // Ansicht eines bereits angelegten Postens: erst ansehen, dann bearbeiten.
 // Oben Name und Betrag, darunter der Status (ein Tipp setzt offen ↔ bezahlt),
-// die Details und unten "Bearbeiten" / "Eintrag löschen". Das eigentliche
-// Formular (EntryModal) öffnet erst "Bearbeiten" — oder ein Tipp auf eine
-// leere Zeile wie "+ Notiz hinzufügen".
+// die Details und unten "Bearbeiten" / "Eintrag löschen". "Bearbeiten" (oder
+// ein Tipp auf eine Zeile wie "+ Notiz hinzufügen") schaltet im SELBEN Sheet
+// auf die Bearbeiten-Ansicht (EntryEditForm) um; nach "Speichern" ist man
+// wieder in der Ansicht.
 //
 // Der Eintrag kommt "live" aus der Monatsliste, damit der Status-Knopf sofort
 // den neuen Stand zeigt.
 
+import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell';
+import EntryEditForm from './EntryEditForm';
 import { IconClose, IconEdit, IconChevronRight, IconCheck } from '../../../core/components/Icons';
 import { CATEGORIES, formatDateTime, formatPayments, isSparschweinDeposit } from '../lib/finance';
 import { toDateStr } from '../lib/analytics';
@@ -38,7 +41,25 @@ function paymentText(entry) {
   return formatPayments(entry) || '—';
 }
 
-export default function EntryDetailSheet({ entry, onClose, onEdit, onDelete, onTogglePaid }) {
+export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, showToast }) {
+  // null = Ansicht, sonst Bearbeiten-Ansicht (focus = Feld, das zuerst angesteuert wird)
+  const [edit, setEdit] = useState(null);
+
+  if (edit) {
+    return (
+      <SheetShell onClose={onClose} labelledBy="ed-title">
+        <EntryEditForm
+          entry={entry}
+          focus={edit.focus}
+          onCancel={() => setEdit(null)}
+          onSave={async (changed) => { await onSave(changed); setEdit(null); }}
+          onDelete={onDelete}
+          showToast={showToast}
+        />
+      </SheetShell>
+    );
+  }
+
   const isIncome = INCOME.has(entry.category);
   const canPay = !isIncome && !isSparschweinDeposit(entry);
   const overdue = canPay && !entry.paid && entry.due_date && String(entry.due_date).slice(0, 10) < toDateStr(new Date());
@@ -74,17 +95,17 @@ export default function EntryDetailSheet({ entry, onClose, onEdit, onDelete, onT
         )}
 
         <div className="ed-list">
-          <button type="button" className="ed-li" onClick={() => onEdit(entry)}>
+          <button type="button" className="ed-li" onClick={() => setEdit({ focus: 'payment' })}>
             <span className="ed-k">Zahlungsart</span>
             <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
           </button>
-          <button type="button" className="ed-li" onClick={() => onEdit(entry)}>
+          <button type="button" className="ed-li" onClick={() => setEdit({ focus: 'due' })}>
             <span className="ed-k">Fällig am</span>
             {entry.due_date
               ? <span className={`ed-v ${overdue ? 'ed-v--bad' : ''}`}>{fmtDue(entry.due_date)}{overdue ? ' · überfällig' : ''}<span className="ed-chev"><IconChevronRight /></span></span>
               : <span className="ed-v ed-v--mut">+ Datum setzen</span>}
           </button>
-          <button type="button" className="ed-li ed-li--note" onClick={() => onEdit(entry)}>
+          <button type="button" className="ed-li ed-li--note" onClick={() => setEdit({ focus: 'note' })}>
             <span className="ed-k">Notiz</span>
             {entry.note
               ? <span className="ed-v ed-v--note">{entry.note}</span>
@@ -103,7 +124,7 @@ export default function EntryDetailSheet({ entry, onClose, onEdit, onDelete, onT
         </div>
 
         <div className="ed-actions">
-          <button type="button" className="ed-edit" onClick={() => onEdit(entry)}>
+          <button type="button" className="ed-edit" onClick={() => setEdit({ focus: null })}>
             <span className="ed-edit-ic"><IconEdit /></span>Bearbeiten
           </button>
           <button type="button" className="ed-delete" onClick={() => onDelete(entry.id)}>Eintrag löschen</button>

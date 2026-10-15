@@ -1,5 +1,5 @@
 // core/components/PaymentsEditor.jsx
-// Wiederverwendbar für EntrySheet (Wizard) und EntryModal (Bearbeiten).
+// Wiederverwendbar für EntrySheet (Wizard) und EntryEditForm (Bearbeiten).
 
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 

@@ -228,8 +228,8 @@ einklapp- und sortierbar; Ansicht + Filter liegen pro Nutzer in `fin_report_pref
 einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
 `SECTIONS` (sections.jsx), welche globalen Filter er beachtet.
 
-Buchungen (`MonthsView`): Tipp auf einen Posten öffnet zuerst `EntryDetailSheet` (Status
-offen/bezahlt per Tipp, Details, Löschen); erst "Bearbeiten" öffnet das Formular `EntryModal`.
+Buchungen (`MonthsView`): Tipp auf einen Posten öffnet `EntryDetailSheet` (Status offen/bezahlt
+per Tipp, Details, Löschen); "Bearbeiten" schaltet im selben Sheet auf `EntryEditForm` um.
 `saveEntry` übernimmt ein ausdrücklich übergebenes `paid`; nur ohne Angabe wird es aus den
 Zahlungsarten abgeleitet (Bar/Gutschein/Sparschwein = sofort bezahlt).
 

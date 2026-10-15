@@ -96,3 +96,32 @@
 .ed-edit-ic svg { width:18px; height:18px; }
 .ed-delete { display:block; width:100%; min-height:48px; margin-top:6px; border:0; background:none; color:var(--status-critical); font-size:14px; font-weight:800; cursor:pointer; }
 .ed-status:focus-visible, .ed-li:focus-visible, .ed-edit:focus-visible, .ed-delete:focus-visible, .ed-close:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+
+/* Posten bearbeiten (EntryEditForm) — im selben Sheet wie die Ansicht */
+.ed-title { font-size:17px; font-weight:800; color:var(--text-primary); }
+.ed-cancel { min-height:44px; padding:0 4px; border:0; background:none; font-size:14px; font-weight:700; color:var(--text-muted); cursor:pointer; }
+.ee-cats { display:flex; flex-wrap:wrap; gap:6px; }
+.ee-cats button { flex:1 1 0; min-width:0; min-height:40px; padding:0 8px; border:1px solid var(--border-hairline); border-radius:var(--r-pill); background:var(--surface-sunken); color:var(--text-secondary); font-size:13px; font-weight:700; cursor:pointer; }
+.ee-cats button.is-on { background:var(--action-primary); border-color:var(--action-primary); color:var(--text-on-accent); }
+.ee-hero { margin-top:14px; padding:14px 14px 8px; border-radius:var(--r-2xl); background:var(--surface-sunken); text-align:center; }
+.ee-lbl { display:block; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); }
+.ee-opt { text-transform:none; letter-spacing:0; font-weight:600; }
+.ee-amt { display:flex; align-items:baseline; justify-content:center; gap:6px; margin-top:2px; }
+.ee-amt input { max-width:230px; min-width:0; padding:0; border:0; outline:0; background:none; text-align:right; font-family:inherit; font-size:44px; font-weight:800; letter-spacing:-.02em; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.ee-amt span { font-size:28px; font-weight:800; color:var(--text-muted); }
+.ee-name { display:block; width:100%; box-sizing:border-box; margin-top:6px; padding:10px 0; border:0; border-top:1px solid var(--border-hairline); outline:0; background:none; text-align:center; font-family:inherit; font-size:19px; font-weight:700; color:var(--text-primary); }
+.ee-card { margin-top:14px; padding:4px 14px; border-radius:var(--r-xl); background:var(--surface-sunken); }
+.ee-row { padding:12px 0; border-top:1px solid var(--border-hairline); }
+.ee-row:first-child { border-top:0; }
+.ee-row .ee-lbl { margin-bottom:8px; }
+.ee-line { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ee-line .ee-lbl { margin-bottom:0; }
+.ee-seg { display:flex; gap:6px; }
+.ee-seg button { min-height:36px; padding:0 16px; border:1px solid var(--border-hairline); border-radius:var(--r-pill); background:var(--surface-raised); color:var(--text-secondary); font-size:13px; font-weight:700; cursor:pointer; }
+.ee-seg button.is-on { background:var(--action-primary); border-color:var(--action-primary); color:var(--text-on-accent); }
+.ee-seg button:disabled { opacity:.6; cursor:default; }
+.ee-hint { margin:8px 0 0; font-size:12px; font-weight:600; line-height:1.4; color:var(--text-muted); }
+.ee-note { margin-top:14px; }
+.ee-note .ee-lbl { margin-bottom:6px; }
+.ed-cancel:focus-visible, .ee-cats button:focus-visible, .ee-seg button:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+.ed-edit:disabled, .ed-delete:disabled, .ed-cancel:disabled { opacity:.6; cursor:default; }
