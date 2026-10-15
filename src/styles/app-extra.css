@@ -4843,3 +4843,15 @@
 .prof-row-body > div { overflow: hidden; min-height: 0; }
 .prof-row-inner { padding: 2px 14px 16px; }
 @media (prefers-reduced-motion: reduce) { .prof-row-body, .prof-chev { transition: none; } }
+
+/* ===== Wählregler (core/components/WheelPicker.jsx) ===== */
+.wheel { --wheel-item: 38px; position: relative; height: calc(var(--wheel-item) * 5); }
+.wheel::before { content: ''; position: absolute; left: 0; right: 0; top: calc(var(--wheel-item) * 2); height: var(--wheel-item); border-radius: 12px; background: var(--surface-sunken); border: 1.5px solid transparent; pointer-events: none; }
+.wheel-scroll { position: relative; height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding-block: calc(var(--wheel-item) * 2); overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; outline: none; mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); }
+.wheel-scroll::-webkit-scrollbar { display: none; }
+.wheel-scroll:focus-visible { box-shadow: 0 0 0 2px var(--action-primary); border-radius: 12px; }
+.wheel-item { height: var(--wheel-item); display: flex; align-items: center; justify-content: center; scroll-snap-align: center; scroll-snap-stop: always; font-size: 1.02rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; cursor: pointer; user-select: none; -webkit-user-select: none; transition: color .15s, font-size .15s; }
+.wheel-item.sel { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); }
+.wheel.is-empty .wheel-item.sel { color: var(--text-muted); font-weight: 600; font-size: 1.02rem; }
+.form-group.required-empty .wheel::before { border-color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .wheel-item { transition: none; } }
