@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUi } from './lib/UiContext';
 import { MODES } from './lib/theme';
+import { isSoundEnabled, isHapticEnabled, setSoundEnabled, setHapticEnabled, fb } from './lib/feedback';
 import {
   isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush,
   getNotificationPrefs, saveNotificationPrefs,
@@ -33,6 +34,8 @@ function NotifToggle({ checked, onChange, label, hint }) {
 export default function AppMenu() {
   const { session } = useAuth();
   const { mode, setMode, showToast } = useUi();
+  const [sound, setSound] = useState(isSoundEnabled());
+  const [haptik, setHaptik] = useState(isHapticEnabled());
   const [pushStatus, setPushStatus] = useState('laedt');
   const [pushBusy, setPushBusy] = useState(false);
   const [prefs, setPrefs] = useState(null);
@@ -112,6 +115,14 @@ export default function AppMenu() {
       <div className="app-menu-heading">Einstellungen</div>
       <div className="app-menu-section-label">Design</div>
       <div className="mode-toggle">{MODES.map((m) => <button key={m.key} className={m.key === mode ? 'active' : ''} onClick={() => setMode(m.key)}>{m.label}</button>)}</div>
+
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Rückmeldung</div>
+      <div className="notif-toggle-list">
+        <NotifToggle checked={sound} label="Töne" hint="Kurze Klänge beim Abhaken und beim Drehen der Wählregler"
+          onChange={() => { const v = !sound; setSound(v); setSoundEnabled(v); if (v) fb.todoCheck(); }} />
+        <NotifToggle checked={haptik} label="Haptik" hint="Spürbares Feedback, z. B. beim Drehen der Wählregler"
+          onChange={() => { const v = !haptik; setHaptik(v); setHapticEnabled(v); if (v) fb.tick(); }} />
+      </div>
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Kalender</div>
       {gcalStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}

@@ -149,6 +149,53 @@ function playSound(name) {
   } catch { /* still fail */ }
 }
 
+// Kurzer Klick für Wählregler, ohne Datei: 12 ms Rauschen + 1,8 kHz, schnell
+// abklingend. Wird einmal erzeugt und danach wiederverwendet.
+let _letzterTick = 0;
+function tickBuffer() {
+  if (_buffers.__tick) return _buffers.__tick;
+  const ctx = getCtx();
+  if (!ctx) return null;
+  const n = Math.floor(ctx.sampleRate * 0.012);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const t = i / ctx.sampleRate;
+    d[i] = ((Math.random() * 2 - 1) * 0.5 + Math.sin(2 * Math.PI * 1800 * t) * 0.5) * Math.exp(-t * 380);
+  }
+  _buffers.__tick = buf;
+  return buf;
+}
+
+/**
+ * Muss in einer Berührung (pointerdown/touchstart) aufgerufen werden:
+ * iOS und Chrome starten Audio erst nach einer Geste. Erzeugt den
+ * AudioContext und weckt ihn auf; danach dürfen Töne auch aus dem
+ * Scroll-Ereignis kommen.
+ */
+export function primeFeedback() {
+  try {
+    const ctx = getCtx();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  } catch { /* still fail */ }
+}
+
+function playTick() {
+  if (!isSoundEnabled()) return;
+  try {
+    const ctx = getCtx();
+    const buffer = tickBuffer();
+    if (!ctx || !buffer) return;
+    const quelle = ctx.createBufferSource();
+    const lautstaerke = ctx.createGain();
+    quelle.buffer = buffer;
+    lautstaerke.gain.value = 0.22;
+    quelle.connect(lautstaerke).connect(ctx.destination);
+    quelle.start(0);
+    quelle.onended = () => { try { quelle.disconnect(); lautstaerke.disconnect(); } catch { /* egal */ } };
+  } catch { /* still fail */ }
+}
+
 /**
  * Optional beim App-Start aufrufbar, um die häufigsten Töne im
  * Hintergrund vorzubereiten — ohne sie abzuspielen. Nicht automatisch,
@@ -159,13 +206,45 @@ export function warmeSoundsVor(namen = ['erledigt', 'click', 'click2']) {
   namen.forEach((n) => { ladeBuffer(n); });
 }
 
-// ── Haptik (Vibration API) ────────────────────────────────────────────────────
-// Funktioniert auf Android Chrome/TWA. iOS Safari ignoriert das stillschweigend.
+// ── Haptik ────────────────────────────────────────────────────────────────────
+// Android (Chrome/TWA/PWA): Vibration API.
+// iPhone: Safari kennt navigator.vibrate NICHT. Ab iOS 17.4 gibt es aber einen
+// bekannten Umweg — ein Schalter (<input type="checkbox" switch>) löst beim
+// Umschalten das System-Haptik-Tick aus; ein unsichtbares <label> darauf per
+// click() anstoßen reicht. Das ist KEINE offizielle API: sie greift nur in/kurz
+// nach einer Berührung (Touch-Aktivierung), nur auf iOS ≥ 17.4, und Apple kann
+// es ändern. Wo nichts geht (ältere iPhones, Desktop), bleibt es still.
+
+let _iosSwitch = null;
+const IST_IOS = typeof navigator !== 'undefined'
+  && (/iP(hone|ad|od)/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+function iosHaptic() {
+  try {
+    if (!_iosSwitch) {
+      const label = document.createElement('label');
+      label.setAttribute('aria-hidden', 'true');
+      label.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.setAttribute('switch', '');
+      input.tabIndex = -1;
+      label.appendChild(input);
+      document.body.appendChild(label);
+      _iosSwitch = label;
+    }
+    _iosSwitch.click();
+  } catch { /* still fail */ }
+}
 
 export function haptic(pattern = 30) {
   if (!isHapticEnabled()) return;
   if ('vibrate' in navigator) {
     navigator.vibrate(pattern);
+  } else if (IST_IOS) {
+    // ein Tick je Aufruf; Muster ([50,80,50]) werden auf EINEN Tick abgebildet
+    iosHaptic();
   }
 }
 
@@ -200,6 +279,15 @@ const HAPTIC = {
 // Fix+Variable+Sonstige alle abgehakt         → fixkosten_alle.mp3
 
 export const fb = {
+
+  // ── Wählregler: ein Tick je Zeile ─────────────────────────────────
+  tick: () => {
+    const jetzt = performance.now();
+    if (jetzt - _letzterTick < 40) return; // bei schnellem Wischen nicht rattern
+    _letzterTick = jetzt;
+    haptic(8);
+    playTick();
+  },
 
   // ── Gewohnheiten ──────────────────────────────────────────────────
   habitCheck: () => {

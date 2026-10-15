@@ -8,6 +8,7 @@
 // mittlere Zeile antippt (sonst würde ein Pflichtfeld unbemerkt „ausgefüllt").
 
 import { useEffect, useMemo, useRef } from 'react';
+import { fb, primeFeedback } from '../lib/feedback';
 
 const ITEM = 38; // px — muss zu --wheel-item in app-extra.css passen
 
@@ -27,6 +28,7 @@ export default function WheelPicker({ value, min, max, step = 1, fallback, forma
   const settle = useRef(null);
   const touched = useRef(false);
   const lastIdx = useRef(currentIdx);
+  const tickIdx = useRef(currentIdx);
 
   function paint(idx) {
     const el = scrollRef.current;
@@ -40,6 +42,7 @@ export default function WheelPicker({ value, min, max, step = 1, fallback, forma
     if (!el) return;
     if (Math.round(el.scrollTop / ITEM) !== currentIdx) el.scrollTop = currentIdx * ITEM;
     lastIdx.current = currentIdx;
+    tickIdx.current = currentIdx;
     paint(currentIdx);
   }, [currentIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -48,13 +51,16 @@ export default function WheelPicker({ value, min, max, step = 1, fallback, forma
     if (idx === lastIdx.current && !empty) return;
     lastIdx.current = idx;
     onChange(options[idx]);
-    try { navigator.vibrate?.(4); } catch { /* ignorieren */ }
   }
 
   function onScroll() {
     const el = scrollRef.current;
     const idx = Math.max(0, Math.min(options.length - 1, Math.round(el.scrollTop / ITEM)));
     paint(idx);
+    // Tick (Haptik + leiser Klick), sobald eine neue Zeile in die Mitte rückt —
+    // nur bei echter Bedienung, nicht wenn der Regler sich selbst positioniert.
+    if (touched.current && idx !== tickIdx.current) fb.tick();
+    tickIdx.current = idx;
     clearTimeout(settle.current);
     settle.current = setTimeout(() => { if (touched.current) commit(idx); }, 120);
   }
@@ -85,8 +91,8 @@ export default function WheelPicker({ value, min, max, step = 1, fallback, forma
         aria-valuenow={empty ? undefined : value}
         aria-valuetext={empty ? 'nicht gesetzt' : fmt(value)}
         onScroll={onScroll}
-        onPointerDown={() => { touched.current = true; }}
-        onTouchStart={() => { touched.current = true; }}
+        onPointerDown={() => { touched.current = true; primeFeedback(); }}
+        onTouchStart={() => { touched.current = true; primeFeedback(); }}
         onWheel={() => { touched.current = true; }}
         onKeyDown={onKeyDown}
       >
