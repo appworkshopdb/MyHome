@@ -228,6 +228,8 @@ einklapp- und sortierbar; Ansicht + Filter liegen pro Nutzer in `fin_report_pref
 einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
 `SECTIONS` (sections.jsx), welche globalen Filter er beachtet.
 
+Teilzahlungen: Logik zentral in `core/lib/paymentParts.js` (`openAmount`, `entryParts`, `setPartsPaid`). Bar/Gutschein/Sparschwein gelten sofort als bezahlt; "offen" ist nur die Summe der unbezahlten Teilzahlungen (`payments[].paid`, jsonb, keine Migration). Zeilen-`paid` = alles bezahlt und maßgeblich, wenn `true`. Offen-Listen, Zähler, Hub, Auswertung und `send-notifications` (dupliziert) nutzen den offenen Betrag; der Saldo bleibt unverändert (alle Ausgaben abgezogen).
+
 Buchungen (`MonthsView`): Tipp auf einen Posten öffnet `EntryDetailSheet` (Status offen/bezahlt
 per Tipp, Details, Löschen); "Bearbeiten" macht dieselbe Ansicht an Ort und Stelle änderbar (Entwurf, Speichern/Abbrechen).
 `saveEntry` übernimmt ein ausdrücklich übergebenes `paid`; nur ohne Angabe wird es aus den

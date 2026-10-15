@@ -7,9 +7,13 @@
 // zweites Formular, kein Seitenwechsel. "Speichern" übernimmt, "Abbrechen"
 // verwirft.
 //
+// Teilzahlungen: Bar, Gutschein und Sparschwein gelten SOFORT als bezahlt, offen
+// ist nur der Rest (core/lib/paymentParts.js). Bei geteilter Zahlung zeigt die
+// Ansicht jede Teilzahlung mit ihrem Status, und beim Bearbeiten kann jede
+// einzeln als bezahlt markiert werden. Der Status-Knopf setzt alles auf einmal.
+//
 // Ansicht: Der Status-Knopf setzt offen ↔ bezahlt sofort (wie in der Liste).
 // Bearbeiten: Er ändert nur den Entwurf und wird mit "Speichern" übernommen.
-// Bar, Gutschein und Sparschwein gelten sofort als bezahlt (Haken gesperrt).
 //
 // Der Eintrag kommt "live" aus der Monatsliste, damit nach dem Speichern sofort
 // die neuen Werte stehen.
@@ -19,7 +23,8 @@ import SheetShell from '../../../core/components/SheetShell';
 import PaymentsEditor from '../../../core/components/PaymentsEditor';
 import { IconClose, IconEdit, IconChevronRight, IconCheck } from '../../../core/components/Icons';
 import {
-  CATEGORIES, formatDateTime, formatPayments, isInstantPaid, isSparschweinDeposit,
+  CATEGORIES, formatDateTime, formatPayments, formatEur, isSparschweinDeposit,
+  isInstantMethod, entryParts, openAmount, isFullyPaid, isPartlyPaid,
 } from '../lib/finance';
 import { toDateStr } from '../lib/analytics';
 
@@ -48,11 +53,18 @@ function paymentText(entry) {
   return formatPayments(entry) || '—';
 }
 
+// Entwurf der Zahlungen: mit Bezahlt-Status je Teilzahlung
 function initialPayments(entry) {
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) return entry.payments;
-  if (entry.payment) return [{ method: entry.payment, amount: null }];
-  return [{ method: 'Bank', amount: null }];
+  const parts = entryParts(entry);
+  const raw = Array.isArray(entry.payments) && entry.payments.length > 0
+    ? entry.payments
+    : [{ method: entry.payment || 'Bank', amount: null }];
+  return raw.map((p, i) => ({ ...p, paid: parts[i].paid }));
 }
+
+// Alle (nicht sofort bezahlten) Teilzahlungen auf bezahlt/offen setzen
+const setAllPaid = (payments, paid) => payments.map((p) => ({ ...p, paid: isInstantMethod(p.method) ? true : paid }));
+const draftPaidFlag = (p) => isInstantMethod(p.method) || !!p.paid;
 
 export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, showToast }) {
   const [draft, setDraft] = useState(null); // null = Ansicht, sonst Entwurf beim Bearbeiten
@@ -73,17 +85,13 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   }, [editing, focus]);
 
   function startEdit(target = null) {
-    const payments = initialPayments(entry);
     setDraft({
       category: entry.category,
       name: entry.name || '',
       amount: entry.amount != null ? String(entry.amount).replace('.', ',') : '',
-      payments,
+      payments: initialPayments(entry),
       dueDate: entry.due_date || '',
       note: entry.note || '',
-      // Eigene Entscheidung nur, wenn der Posten nicht ohnehin durch eine sofort
-      // bezahlte Zahlungsart als bezahlt galt.
-      paidDraft: !!entry.paid && !isInstantPaid(payments),
     });
     setFocus(target);
   }
@@ -92,11 +100,18 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   const category = editing ? draft.category : entry.category;
   const canPay = !INCOME.has(category)
     && !isSparschweinDeposit(editing ? { category, name: draft.name } : entry);
-  const instant = editing && isInstantPaid(draft.payments);
-  const paid = editing ? (canPay ? instant || draft.paidDraft : !!entry.paid) : !!entry.paid;
   const amountNorm = editing ? String(draft.amount).replace(',', '.') : '';
-  const overdue = !editing && canPay && !entry.paid && entry.due_date
+  const overdue = !editing && canPay && !isFullyPaid(entry) && entry.due_date
     && String(entry.due_date).slice(0, 10) < toDateStr(new Date());
+
+  // Status: in der Ansicht aus dem Posten, beim Bearbeiten aus dem Entwurf
+  const parts = editing
+    ? draft.payments.map((p) => ({ method: p.method, amount: Number(p.amount) || 0, paid: draftPaidFlag(p) }))
+    : entryParts(entry);
+  const fully = editing ? parts.every((p) => p.paid) : isFullyPaid(entry);
+  const partly = editing ? !fully && parts.some((p) => p.paid) : isPartlyPaid(entry);
+  const allInstant = parts.every((p) => isInstantMethod(p.method));
+  const open = editing ? 0 : openAmount(entry);
 
   async function submit() {
     if (!draft.name.trim()) return showToast('Bitte Name eingeben');
@@ -106,13 +121,13 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
     // Zahlungen auflösen: der letzte Eintrag bekommt den Rest vom Gesamtbetrag
     const ps = draft.payments;
     const resolved = ps.length === 1
-      ? [{ method: ps[0].method, amount: amt }]
+      ? [{ method: ps[0].method, amount: amt, paid: draftPaidFlag(ps[0]) }]
       : ps.map((p, idx) => {
         if (idx === ps.length - 1) {
           const others = ps.slice(0, -1).reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
-          return { method: p.method, amount: Math.max(0, amt - others) };
+          return { method: p.method, amount: Math.max(0, amt - others), paid: draftPaidFlag(p) };
         }
-        return { method: p.method, amount: parseFloat(p.amount) || 0 };
+        return { method: p.method, amount: parseFloat(p.amount) || 0, paid: draftPaidFlag(p) };
       });
 
     setSaving(true);
@@ -124,7 +139,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
         payments: resolved,
         payment: resolved[0].method, // Abwärtskompatibilität (altes Einzelfeld)
         amount: amt,
-        paid,
+        paid: resolved.every((p) => p.paid), // Zeile: alles bezahlt
         note: draft.note.trim() || null,
         due_date: draft.dueDate || null,
       });
@@ -137,8 +152,10 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   }
 
   function onStatus() {
+    if (allInstant) return undefined;
     if (!editing) return onTogglePaid(entry);
-    if (!instant) set({ paidDraft: !draft.paidDraft });
+    // Entwurf: alles bezahlt <-> alles wieder offen (sofort Bezahltes bleibt bezahlt)
+    set({ payments: setAllPaid(draft.payments, !fully) });
     return undefined;
   }
 
@@ -186,20 +203,22 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
         {canPay && (
           <button
             type="button"
-            className={`ed-status ${paid ? 'is-paid' : ''}`}
-            aria-pressed={paid}
-            disabled={instant}
+            className={`ed-status ${fully ? 'is-paid' : ''} ${partly ? 'is-part' : ''}`}
+            aria-pressed={partly ? 'mixed' : fully}
+            disabled={allInstant}
             onClick={onStatus}
           >
-            {paid
+            {fully
               ? <span className="ed-tick" aria-hidden="true"><IconCheck /></span>
-              : <span className="ed-ring" aria-hidden="true" />}
+              : <span className={`ed-ring ${partly ? 'ed-ring--part' : ''}`} aria-hidden="true" />}
             <span>
-              <b>{paid ? 'Bezahlt' : 'Offen'}</b>
+              <b>{fully ? 'Bezahlt' : partly ? 'Teilweise bezahlt' : 'Offen'}</b>
               <small>
-                {instant
+                {allInstant
                   ? 'Bar, Gutschein und Sparschwein gelten sofort als bezahlt'
-                  : paid ? 'Tippen, um wieder auf offen zu setzen' : 'Tippen, um als bezahlt zu markieren'}
+                  : fully ? 'Tippen, um wieder auf offen zu setzen'
+                    : partly ? `${editing ? 'Noch offen' : `${formatEur(open)} noch offen`} · Tippen, um alles als bezahlt zu markieren`
+                      : 'Tippen, um als bezahlt zu markieren'}
               </small>
             </span>
           </button>
@@ -209,12 +228,31 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
           {editing ? (
             <div className="ed-ed" ref={payRef}>
               <span className="ed-k">Zahlungsart</span>
-              <PaymentsEditor payments={draft.payments} onChange={(payments) => set({ payments })} totalAmount={amountNorm} />
+              <PaymentsEditor
+                payments={draft.payments}
+                onChange={(payments) => set({ payments })}
+                totalAmount={amountNorm}
+                showPaid={canPay}
+              />
             </div>
           ) : (
-            <button type="button" className="ed-li" onClick={() => startEdit('payment')}>
+            <button type="button" className="ed-li ed-li--parts" onClick={() => startEdit('payment')}>
               <span className="ed-k">Zahlungsart</span>
-              <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
+              {parts.length > 1 ? (
+                <span className="ed-v ed-v--parts">
+                  <span className="ed-parts">
+                    {parts.map((p, i) => (
+                      <span key={i} className="ed-part">
+                        <span>{p.method} {NF.format(p.amount)} €</span>
+                        {canPay && <em className={p.paid ? 'is-paid' : 'is-open'}>{p.paid ? '✓ bezahlt' : 'offen'}</em>}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="ed-chev"><IconChevronRight /></span>
+                </span>
+              ) : (
+                <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
+              )}
             </button>
           )}
 

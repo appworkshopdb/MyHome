@@ -1,6 +1,8 @@
 // Zentrale Konstanten für das Finanzen-Modul. 1:1 aus dem Original-Tool
 // übernommen, damit sich Nutzer sofort zurechtfinden.
 
+import { isInstantMethod } from '../../../core/lib/paymentParts.js';
+
 export const MONTHS_DE = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
@@ -119,14 +121,17 @@ export function formatPayments(entry) {
 
 // Gibt true wenn der Eintrag sofort als bezahlt gilt:
 // Alle Zahlungsarten müssen in INSTANT_PAID sein.
-const INSTANT_PAID_SET = new Set(['Bar', 'Sparschwein', 'Gutschein']);
+// (Teilzahlungs-Rechnung: core/lib/paymentParts.js — hier nur für das Modul zugänglich)
 export function isInstantPaid(paymentsOrMethod) {
   if (Array.isArray(paymentsOrMethod)) {
     return paymentsOrMethod.length > 0 &&
-      paymentsOrMethod.every((p) => INSTANT_PAID_SET.has(p.method));
+      paymentsOrMethod.every((p) => isInstantMethod(p.method));
   }
-  return INSTANT_PAID_SET.has(paymentsOrMethod);
+  return isInstantMethod(paymentsOrMethod);
 }
+export {
+  isInstantMethod, entryParts, openAmount, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+} from '../../../core/lib/paymentParts.js';
 
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
 

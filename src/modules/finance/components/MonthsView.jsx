@@ -3,7 +3,10 @@ import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
-import { MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal } from '../lib/finance';
+import {
+  MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
+  formatPayments, entryParts, openAmount, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+} from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
@@ -31,11 +34,18 @@ function sortByCreated(arr, dir = 'asc') {
 
 // ── Aufklappbare Kategorie-Sektion ───────────────────────────────────────────
 // Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
-function EntryRow({ e, onOpenModal, onTogglePaid }) {
+function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
   const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
   // Lokaler Animations-State: kurz "flash" nach Abhaken, unabhängig vom
   // globalen Reload. Verhindert Flackern/Kollabieren der Dropdowns.
   const [flashing, setFlashing] = useState(false);
+
+  // Teilzahlungen: Bar/Gutschein/Sparschwein gelten sofort als bezahlt, offen
+  // ist nur der Rest (core/lib/paymentParts.js).
+  const fully = isFullyPaid(e);
+  const partly = isPartlyPaid(e);
+  const shownAmount = showOpen ? openAmount(e) : e.amount;
+  const paidMethods = entryParts(e).filter((p) => p.paid).map((p) => p.method).join(' · ');
 
   function handleCheck(ev) {
     ev.stopPropagation();
@@ -51,23 +61,30 @@ function EntryRow({ e, onOpenModal, onTogglePaid }) {
     >
       {!isIncome && (
         <div
-          className={`fin-row-check ${e.paid ? 'checked' : ''} ${flashing ? 'flash' : ''}`}
+          className={`fin-row-check ${fully ? 'checked' : ''} ${partly ? 'partial' : ''} ${flashing ? 'flash' : ''}`}
           onClick={handleCheck}
           role="checkbox"
-          aria-checked={e.paid}
+          aria-checked={partly ? 'mixed' : fully}
         >
-          {e.paid && '✓'}
+          {fully ? '✓' : partly ? '–' : ''}
         </div>
       )}
       <div className="fin-row-info">
-        <div className={`fin-row-name ${e.paid ? 'paid' : ''}`}>{e.name}</div>
+        <div className={`fin-row-name ${fully ? 'paid' : ''}`}>{e.name}</div>
         <div className="fin-row-meta">
-          {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          {formatPayments(e)}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          {partly && !showOpen ? ' · teilweise bezahlt' : ''}
         </div>
+        {showOpen && partly && (
+          <div className="fin-row-meta fin-row-meta--part">
+            {formatEur(paidAmount(e))} bezahlt ({paidMethods})
+          </div>
+        )}
         {e.note && <div className="fin-row-note">{e.note}</div>}
       </div>
-      <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>
-        {formatEur(e.amount).replace('€', '').trim()}
+      <div className={`fin-row-amount ${fully ? 'paid' : ''}`}>
+        {formatEur(shownAmount).replace('€', '').trim()}
+        {showOpen && partly && <span className="fin-row-of">von {formatEur(e.amount)}</span>}
       </div>
     </div>
   );
@@ -76,13 +93,15 @@ function EntryRow({ e, onOpenModal, onTogglePaid }) {
 // Flache Offen-Liste — keine Dropdowns, direkte Auflistung aller offenen
 // Ausgaben-Einträge mit Gesamtbetrag oben und Abhak-Funktion.
 function OffenList({ entries, onOpenModal, onTogglePaid }) {
+  // Offen ist nur, was noch nicht bezahlt ist: bei geteilter Zahlung der Rest
+  // ohne die Bar-/Gutschein-/Sparschwein-Anteile.
   const offene = entries.filter(
-    (e) => !e.paid
+    (e) => openAmount(e) > 0
       && e.category !== 'fixeinnahmen'
       && e.category !== 'sonstige_einnahmen'
       && !isSparschweinDeposit(e)   // Sparschwein-Einlagen nicht als "offene Posten" zeigen
   );
-  const gesamtOffen = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const gesamtOffen = offene.reduce((s, e) => s + openAmount(e), 0);
   const sorted = sortByCreated(offene, 'asc');
 
   if (offene.length === 0) {
@@ -111,6 +130,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
           e={e}
           onOpenModal={onOpenModal}
           onTogglePaid={onTogglePaid}
+          showOpen
         />
       ))}
     </div>
@@ -247,16 +267,22 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     // load() → kompletter State-Reset → Dropdowns klappen zu.
     // paid/unpaid ist eine rein lokale Änderung, andere Views
     // (OverviewSection, SparschweinFab) müssen das nicht wissen.
-    const newPaid = !entry.paid;
-    setEntries((prev) =>
-      prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e)
-    );
-    showToast(newPaid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
+    //
+    // Ist noch etwas offen (auch nur ein Teil), markiert der Tipp ALLES als
+    // bezahlt; ist schon alles bezahlt, setzt er die nicht-sofort-bezahlten
+    // Teilzahlungen wieder auf offen. Bar/Gutschein/Sparschwein bleiben bezahlt.
+    const target = !isFullyPaid(entry);
+    const next = setPartsPaid(entry, target);
+    const updated = { ...entry, paid: next.paid, ...(next.payments ? { payments: next.payments } : {}) };
+    if (!target && isFullyPaid(updated)) {
+      showToast('Bar-, Gutschein- und Sparschwein-Zahlungen gelten sofort als bezahlt');
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? updated : e)));
+    showToast(target ? '✓ Als bezahlt markiert' : 'Als offen markiert');
     // DB-Schreiben im Hintergrund — bei Fehler State zurückrollen
-    db.togglePaid(entry.id, newPaid).catch(() => {
-      setEntries((prev) =>
-        prev.map((e) => e.id === entry.id ? { ...e, paid: entry.paid } : e)
-      );
+    db.togglePaid(entry.id, next.paid, next.payments).catch(() => {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
       showToast('Fehler beim Speichern');
     });
   }
@@ -287,8 +313,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
   // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
   // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
-  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e));
-  const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const offene      = entries.filter((e) => openAmount(e) > 0 && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e));
+  const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
   const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
   const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 

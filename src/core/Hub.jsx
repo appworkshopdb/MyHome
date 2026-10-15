@@ -6,6 +6,7 @@ import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
+import { openAmount } from './lib/paymentParts';
 import { DayPlanSection } from './components/DayPlan';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
@@ -54,7 +55,8 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 // würde dort eine zu kleine Zahl zeigen, deshalb neuer Schlüssel.
 // v5: openPosten enthält zusätzlich due_date (Tagesplan zeigt nur Posten
 // mit Fälligkeit heute/überfällig) — v4-Einträge hätten kein Datum.
-const CACHE_KEY = 'hub-cache-v5';
+// v6: openPosten-amount ist jetzt der noch offene Teil (nicht der Gesamtbetrag).
+const CACHE_KEY = 'hub-cache-v6';
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
@@ -130,15 +132,19 @@ async function loadOpenPosten() {
   const now = new Date();
   const { data, error } = await sb
     .from('fin_entries')
-    .select('id, name, amount, category, paid, due_date')
+    .select('id, name, amount, category, paid, due_date, payment, payments')
     .eq('year', now.getFullYear())
     .eq('month', now.getMonth() + 1)
     .eq('paid', false)
     .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
-    .is('deleted_at', null)
-    .order('amount', { ascending: false });
+    .is('deleted_at', null);
   if (error) throw error;
-  return data ?? [];
+  // Offen ist nur der noch nicht bezahlte Teil: bei geteilter Zahlung zählen
+  // Bar-/Gutschein-/Sparschwein-Anteile nicht mit (core/lib/paymentParts.js).
+  return (data ?? [])
+    .map((e) => ({ id: e.id, name: e.name, amount: openAmount(e), category: e.category, paid: e.paid, due_date: e.due_date }))
+    .filter((e) => e.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
 }
 
 export default function Hub({ onOpenModule, hasWarnings }) {

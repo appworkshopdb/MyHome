@@ -7,7 +7,7 @@
 
 import { useMemo, useState } from 'react';
 import FocusCard from '../../../../core/components/FocusCard.jsx';
-import { formatEur, formatDate, MONTHS_DE, INTERVALS } from '../../lib/finance.js';
+import { formatEur, formatDate, MONTHS_DE, INTERVALS, openAmount } from '../../lib/finance.js';
 import {
   HONOR, DEFAULT_FILTERS, CAT_TAG, PAYMENT_LABEL, INTERVAL_ADVERB, MONTHS_SHORT,
   applyFilters, inRange, totals, monthlySeries, withForecast, cumulative, chartRange,
@@ -57,10 +57,11 @@ function KpiSection({ ctx }) {
   );
   const open = useMemo(() => {
     const rows = applyFilters(inRange(allEntries, eff), { ...f, status: 'alle' }, HONOR.all)
-      .filter((e) => classify(e, mode) === 'ausgabe' && !e.paid);
+      .filter((e) => classify(e, mode) === 'ausgabe' && openAmount(e) > 0);
     const today = toDateStr(now);
     const dues = rows.map((e) => e.due_date).filter((d) => d && d >= today).sort();
-    return { count: rows.length, sum: rows.reduce((s, e) => s + Number(e.amount || 0), 0), next: dues[0] || null };
+    // Summe = noch offener Betrag (Bar/Gutschein/Sparschwein-Anteile zählen nicht mit)
+    return { count: rows.length, sum: rows.reduce((s, e) => s + openAmount(e), 0), next: dues[0] || null };
   }, [allEntries, eff, f, mode, now]);
 
   const q = quotaAvailable(f);

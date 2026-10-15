@@ -1,9 +1,13 @@
 // core/components/PaymentsEditor.jsx
 // Wiederverwendbar für EntrySheet (Wizard) und EntryDetailSheet (Bearbeiten).
 
+import { isInstantMethod } from '../lib/paymentParts';
+
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 
-export default function PaymentsEditor({ payments, onChange, totalAmount }) {
+// showPaid: bei mehreren Zahlungen zeigt jede einen Schalter "Bezahlt/Offen"
+// (Bar, Gutschein und Sparschwein gelten sofort als bezahlt und sind gesperrt).
+export default function PaymentsEditor({ payments, onChange, totalAmount, showPaid = false }) {
   const multi = payments.length > 1;
 
   function getRestAmount() {
@@ -14,7 +18,17 @@ export default function PaymentsEditor({ payments, onChange, totalAmount }) {
   }
 
   function setMethod(idx, method) {
-    onChange(payments.map((p, i) => i === idx ? { ...p, method } : p));
+    onChange(payments.map((p, i) => {
+      if (i !== idx) return p;
+      // Sofort bezahlte Art => bezahlt; von sofort bezahlt auf eine andere Art
+      // => wieder offen; sonst bleibt der bisherige Stand.
+      const paid = isInstantMethod(method) ? true : (isInstantMethod(p.method) ? false : !!p.paid);
+      return { ...p, method, paid };
+    }));
+  }
+
+  function setPaid(idx, paid) {
+    onChange(payments.map((p, i) => i === idx ? { ...p, paid } : p));
   }
 
   function setAmount(idx, val) {
@@ -22,7 +36,7 @@ export default function PaymentsEditor({ payments, onChange, totalAmount }) {
   }
 
   function addPayment() {
-    onChange([...payments, { method: 'Bank', amount: '' }]);
+    onChange([...payments, { method: 'Bank', amount: '', paid: false }]);
   }
 
   function removePayment(idx) {
@@ -48,6 +62,19 @@ export default function PaymentsEditor({ payments, onChange, totalAmount }) {
                 </button>
               ))}
             </div>
+
+            {/* Bezahlt-Schalter je Teilzahlung — nur bei mehreren Zahlungsarten */}
+            {showPaid && multi && (
+              <button
+                type="button"
+                className={`wiz-payment-paid ${(isInstantMethod(p.method) || p.paid) ? 'is-paid' : ''}`}
+                aria-pressed={isInstantMethod(p.method) || !!p.paid}
+                disabled={isInstantMethod(p.method)}
+                onClick={() => setPaid(idx, !p.paid)}
+              >
+                {isInstantMethod(p.method) ? '✓ Bezahlt (sofort)' : p.paid ? '✓ Bezahlt' : 'Offen — tippen, um als bezahlt zu markieren'}
+              </button>
+            )}
 
             {/* Betrag + Entfernen — nur bei mehreren Zahlungsarten */}
             {multi && (

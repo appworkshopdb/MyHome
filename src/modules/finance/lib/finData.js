@@ -1,5 +1,5 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantPaid } from './finance';
+import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
 
 function ownerId(session) {
   return session.user.id;
@@ -119,13 +119,19 @@ export async function getNameSuggestions(session) {
 }
 
 export async function saveEntry(session, entry) {
-  // paid: ein ausdrücklich übergebenes true/false gilt (der Aufrufer weiß, ob
-  // der Posten schon abgehakt war). Nur ohne Angabe wird es aus den
-  // Zahlungsarten abgeleitet: alle "sofort bezahlt" (Bar, Sparschwein,
-  // Gutschein) -> bezahlt.
+  // Bezahlt-Status je Teilzahlung (core/lib/paymentParts.js): Bar, Sparschwein
+  // und Gutschein gelten sofort als bezahlt; sonst zählt das paid-Flag der
+  // Teilzahlung, und ein ausdrücklich übergebenes paid:true der Zeile setzt alle
+  // Teilzahlungen auf bezahlt. `paid` an der Zeile ist dann "alles bezahlt".
+  // Ohne payments-Array gilt ein übergebenes paid unverändert.
   let resolvedPaid = entry.paid;
-  if (typeof resolvedPaid !== 'boolean' && Array.isArray(entry.payments) && entry.payments.length > 0) {
-    resolvedPaid = isInstantPaid(entry.payments);
+  let resolvedPayments = entry.payments;
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    resolvedPayments = entry.payments.map((p) => ({
+      ...p,
+      paid: isInstantMethod(p.method) || entry.paid === true || p.paid === true,
+    }));
+    resolvedPaid = resolvedPayments.every((p) => p.paid);
   }
 
   // payment-Feld (alter ENUM) für Abwärtskompatibilität:
@@ -141,6 +147,7 @@ export async function saveEntry(session, entry) {
     owner_id: ownerId(session),
     paid: resolvedPaid,
     payment: legacyPayment,
+    ...(resolvedPayments !== undefined ? { payments: resolvedPayments } : {}),
   };
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
   if (error) throw error;
@@ -155,8 +162,12 @@ export async function deleteEntry(id) {
   if (error) throw error;
 }
 
-export async function togglePaid(id, paid) {
-  const { error } = await getSupabase().from('fin_entries').update({ paid }).eq('id', id);
+// Ganzen Posten auf bezahlt/offen setzen. `payments` (optional) sind die dazu
+// passend umgesetzten Teilzahlungen (setPartsPaid aus paymentParts.js), damit
+// Zeile und Teilzahlungen nicht auseinanderlaufen.
+export async function togglePaid(id, paid, payments) {
+  const patch = Array.isArray(payments) ? { paid, payments } : { paid };
+  const { error } = await getSupabase().from('fin_entries').update(patch).eq('id', id);
   if (error) throw error;
 }
 

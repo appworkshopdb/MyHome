@@ -15,6 +15,7 @@ import {
   getTemplateStatus,
   isSparschweinDeposit,
   isSparschweinDirectWithdrawal,
+  openAmount,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -91,10 +92,12 @@ export default function OverviewSection({ onNavigate }) {
   // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
   // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
   // offene Posten auf (Übersicht + "Offene Posten"-Bereich).
+  // Offen ist nur der noch nicht bezahlte Teil (Bar/Gutschein/Sparschwein gelten
+  // sofort als bezahlt, auch bei geteilter Zahlung).
   const offene = entries.filter(
-    (e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e)
+    (e) => openAmount(e) > 0 && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e)
   );
-  const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
 
   const expiring =
     templates.filter((t) => getTemplateStatus(t) === 'expiring').length +

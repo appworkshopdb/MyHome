@@ -168,6 +168,23 @@ function isScheduledNow(category, berlin) {
 // Wurde diese Kategorie für diesen Nutzer in den letzten `days` Tagen
 // bereits gesendet? days=0 → nie geblockt.
 // Wählt zufällig einen Eintrag aus einem Array — für rotierende Texte.
+// Noch offener Betrag eines Postens (dupliziert aus src/core/lib/paymentParts.js):
+// Bar, Gutschein und Sparschwein gelten sofort als bezahlt, auch bei geteilter
+// Zahlung — offen ist nur der Rest. paid=true an der Zeile = alles bezahlt.
+const INSTANT_METHODS = new Set(['Bar', 'Sparschwein', 'Gutschein']);
+function openAmount(e: { amount?: unknown; paid?: boolean | null; payment?: string | null; payments?: Array<{ method?: string; amount?: unknown; paid?: boolean }> | null }): number {
+  const total = Number(e.amount ?? 0);
+  const list = Array.isArray(e.payments) && e.payments.length > 0
+    ? e.payments
+    : [{ method: e.payment ?? 'Bank', amount: total }];
+  const hasAll = list.every((p) => p.amount !== null && p.amount !== undefined && p.amount !== '' && !Number.isNaN(Number(p.amount)));
+  const open = list.reduce((sum, p) => {
+    const paid = e.paid === true || INSTANT_METHODS.has(String(p.method)) || p.paid === true;
+    return paid ? sum : sum + (hasAll ? Number(p.amount) : total / list.length);
+  }, 0);
+  return open < 0.005 ? 0 : open;
+}
+
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -311,7 +328,7 @@ async function checkCategory(category, ownerId, berlin) {
     // Jahr/Monat aus Berlin-Sicht (wichtig an Monatsgrenzen).
     const { data: openEntries } = await supabase
       .from('fin_entries')
-      .select('id')
+      .select('id, amount, paid, payment, payments')
       .eq('owner_id', ownerId)
       .eq('year', berlin.year)
       .eq('month', berlin.month)
@@ -319,20 +336,22 @@ async function checkCategory(category, ownerId, berlin) {
       .not('from_template', 'is', null)
       .is('deleted_at', null);
 
-    if ((openEntries?.length ?? 0) === 0) return null;
+    // Nur Posten, bei denen wirklich noch etwas offen ist (Bar-Anteile zählen nicht)
+    const reallyOpen = (openEntries ?? []).filter((e) => openAmount(e) > 0);
+    if (reallyOpen.length === 0) return null;
     return {
       ...pickRandom([
         {
           title: 'Offene Posten diesen Monat',
-          body:  `${openEntries.length} ${openEntries.length === 1 ? 'Zahlung ist' : 'Zahlungen sind'} noch offen. Jetzt einen kurzen Blick werfen.`,
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'Zahlung ist' : 'Zahlungen sind'} noch offen. Jetzt einen kurzen Blick werfen.`,
         },
         {
           title: 'Noch nicht beglichen',
-          body:  `${openEntries.length} ${openEntries.length === 1 ? 'unbezahlte Buchung' : 'unbezahlte Buchungen'} diesen Monat — bitte prüfen.`,
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'unbezahlte Buchung' : 'unbezahlte Buchungen'} diesen Monat — bitte prüfen.`,
         },
         {
           title: 'Fixkosten ausstehend',
-          body:  `${openEntries.length} ${openEntries.length === 1 ? 'Posten steht' : 'Posten stehen'} diesen Monat noch aus.`,
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'Posten steht' : 'Posten stehen'} diesen Monat noch aus.`,
         },
       ]),
       url:   './#/finance/buchungen',
@@ -478,7 +497,7 @@ async function checkCategory(category, ownerId, berlin) {
         .select('id, frequency, frequency_days, created_at')
         .eq('owner_id', ownerId).eq('active', true).is('deleted_at', null),
       supabase.from('fin_entries')
-        .select('name, amount, due_date')
+        .select('name, amount, due_date, paid, payment, payments')
         .eq('owner_id', ownerId).eq('paid', false)
         .not('due_date', 'is', null).lte('due_date', today)
         .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
@@ -524,7 +543,10 @@ async function checkCategory(category, ownerId, berlin) {
       lines.push(`🌿 ${dueHabits.length} ${dueHabits.length === 1 ? 'Gewohnheit' : 'Gewohnheiten'}`);
     }
 
-    const posten = postenRes.data ?? [];
+    // Fällig ist nur der noch offene Teil eines Postens
+    const posten = (postenRes.data ?? [])
+      .map((p) => ({ ...p, amount: openAmount(p) }))
+      .filter((p) => p.amount > 0);
     if (posten.length > 0) {
       const eur = (n) => Number(n).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
       const sum = posten.reduce((a, p) => a + Number(p.amount || 0), 0);

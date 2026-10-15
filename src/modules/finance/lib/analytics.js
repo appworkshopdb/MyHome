@@ -20,6 +20,7 @@ import {
   MONTHS_DE, PAYMENTS, CATEGORIES, INTERVALS, monthlyAmount, templateAppliesTo,
   getContractStatus, getContractEndDate, getTemplateStatus, getTemplateEndDate,
   isSparschweinDeposit, isSparschweinDirectWithdrawal,
+  entryParts, openAmount, isFullyPaid, isPartlyPaid,
 } from './finance.js';
 
 export { PAYMENTS };
@@ -206,8 +207,9 @@ export function applyFilters(entries, f, honors = HONOR.all) {
     // Bezahlt/Offen gibt es nur bei Ausgaben (Einnahmen haben kein Häkchen);
     // Sparschwein-Einzahlungen sind nie "offen".
     if (honors.status && kind === 'ausgabe' && !isSparschweinDeposit(e)) {
-      if (f.status === 'bezahlt' && !e.paid) return false;
-      if (f.status === 'offen' && e.paid) return false;
+      // "Offen" = es ist noch etwas offen (auch nur ein Teil einer geteilten Zahlung)
+      if (f.status === 'bezahlt' && !isFullyPaid(e)) return false;
+      if (f.status === 'offen' && isFullyPaid(e)) return false;
     }
     if (honors.origin && f.origin !== 'alle' && (f.origin === 'vorlage') !== !!e.from_template) return false;
     if (honors.amount) {
@@ -397,20 +399,11 @@ export function paymentSplit(entries, mode = 'separat') {
   let total = 0;
   for (const e of entries) {
     if (classify(e, mode) !== 'ausgabe') continue;
-    const amount = Number(e.amount || 0);
-    let parts;
-    if (Array.isArray(e.payments) && e.payments.length > 0) {
-      const withAmt = e.payments.filter((p) => p.amount != null && p.amount !== '');
-      parts = withAmt.length === e.payments.length
-        ? e.payments.map((p) => ({ method: p.method, amount: Number(p.amount) }))
-        : e.payments.map((p) => ({ method: p.method, amount: amount / e.payments.length }));
-    } else {
-      parts = [{ method: e.payment || 'Bank', amount }];
-    }
-    for (const p of parts) {
+    // Teilzahlungen mit Betrag und Bezahlt-Status (Bar/Gutschein/Sparschwein = sofort bezahlt)
+    for (const p of entryParts(e)) {
       const m = p.method || 'Bank';
       const g = map.get(m) || { method: m, sum: 0, open: 0 };
-      g.sum += p.amount; if (!e.paid) g.open += p.amount;
+      g.sum += p.amount; if (!p.paid) g.open += p.amount;
       map.set(m, g); total += p.amount;
     }
   }
@@ -449,14 +442,14 @@ export function buildInsights({ all, range, now = new Date(), mode = 'separat', 
   // 2) Offene Festposten im laufenden Monat
   if (n >= range.from && n <= range.to) {
     const { year, month } = idxToYM(n);
-    const open = all.filter((e) => e.year === year && e.month === month && !e.paid && e.from_template
+    const open = all.filter((e) => e.year === year && e.month === month && openAmount(e) > 0 && e.from_template
       && classify(e, mode) === 'ausgabe' && !isSparschweinDeposit(e));
     if (open.length > 0) {
       const names = open.slice(0, 3).map((e) => e.name).join(', ');
       out.push({
         tone: 'warn', lead: `${MONTHS_DE[month - 1]}:`,
         text: `${open.length} ${open.length === 1 ? 'Festposten' : 'Festposten'} noch nicht bezahlt`,
-        sub: `${names}${open.length > 3 ? ' …' : ''} · ${formatEur(open.reduce((s, e) => s + Number(e.amount || 0), 0))}`,
+        sub: `${names}${open.length > 3 ? ' …' : ''} · ${formatEur(open.reduce((s, e) => s + openAmount(e), 0))}`,
       });
     }
   }
@@ -574,7 +567,7 @@ export function entriesToCsv(entries) {
     .sort((a, b) => entryIdx(a) - entryIdx(b))
     .map((e) => [
       e.year, e.month, CATEGORIES[e.category] || e.category, e.name, num(e.amount),
-      entryMethods(e).join(' + '), e.paid ? 'ja' : 'nein', e.from_template ? 'ja' : 'nein', e.note || '',
+      entryMethods(e).join(' + '), (isFullyPaid(e) ? 'ja' : isPartlyPaid(e) ? 'teilweise' : 'nein'), e.from_template ? 'ja' : 'nein', e.note || '',
     ].map(esc).join(';'));
   return `﻿${[head.join(';'), ...rows].join('\r\n')}`;
 }
