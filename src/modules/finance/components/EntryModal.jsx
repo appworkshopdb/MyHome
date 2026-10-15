@@ -48,6 +48,17 @@ export default function EntryModal({ entry, defaultCategory, onSave, onDelete, o
           return { method: p.method, amount: parseFloat(p.amount) || 0 };
         });
 
+    // Bezahlt-Status: sofort bezahlte Zahlungsarten (Bar, Gutschein, Sparschwein)
+    // gelten als bezahlt. Sonst bleibt der bisherige Stand erhalten, solange die
+    // Zahlungsarten gleich bleiben — vorher wurde ein abgehakter Bank-Posten beim
+    // Speichern (z. B. nur Notiz geändert) wieder auf "offen" gesetzt.
+    const methodsKey = (list) => list.map((p) => p.method).sort().join('|');
+    const before = Array.isArray(entry?.payments) && entry.payments.length > 0
+      ? entry.payments
+      : (entry?.payment ? [{ method: entry.payment }] : []);
+    const paid = isInstantPaid(resolvedPayments)
+      || (!!entry && methodsKey(before) === methodsKey(resolvedPayments) && !!entry.paid);
+
     onSave({
       ...(entry || {}),
       category,
@@ -55,7 +66,7 @@ export default function EntryModal({ entry, defaultCategory, onSave, onDelete, o
       payments: resolvedPayments,
       payment:  resolvedPayments[0].method, // Abwärtskompatibilität
       amount:   amt,
-      paid:     isInstantPaid(resolvedPayments),
+      paid,
       note:     note.trim() || null,
       due_date: dueDate || null,
     });

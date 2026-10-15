@@ -119,11 +119,12 @@ export async function getNameSuggestions(session) {
 }
 
 export async function saveEntry(session, entry) {
-  // paid automatisch setzen wenn alle Zahlungsarten "sofort bezahlt" sind
-  // (Bar, Sparschwein, Gutschein) — vorhandenes paid-Flag des Aufrufers
-  // wird nur überschrieben wenn payments gesetzt sind.
+  // paid: ein ausdrücklich übergebenes true/false gilt (der Aufrufer weiß, ob
+  // der Posten schon abgehakt war). Nur ohne Angabe wird es aus den
+  // Zahlungsarten abgeleitet: alle "sofort bezahlt" (Bar, Sparschwein,
+  // Gutschein) -> bezahlt.
   let resolvedPaid = entry.paid;
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+  if (typeof resolvedPaid !== 'boolean' && Array.isArray(entry.payments) && entry.payments.length > 0) {
     resolvedPaid = isInstantPaid(entry.payments);
   }
 

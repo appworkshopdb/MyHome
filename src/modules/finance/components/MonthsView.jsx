@@ -7,6 +7,7 @@ import { MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirect
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryModal from './EntryModal';
+import EntryDetailSheet from './EntryDetailSheet';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
 // 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
@@ -179,6 +180,9 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
+  // Tipp auf einen Posten öffnet zuerst die Ansicht (EntryDetailSheet); erst
+  // "Bearbeiten" öffnet das Formular (modal).
+  const [detailId, setDetailId] = useState(null);
   const [filter,  setFilter]  = useState(initialFilter);
 
   // useRef-Muster: session-Objekt stabilisieren, damit load() sich nicht
@@ -231,10 +235,13 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     if (!confirm('Eintrag löschen?')) return;
     await db.deleteEntry(id);
     setModal(null);
+    setDetailId(null);
     showToast('Eintrag gelöscht');
     load();
     notifySaved();
   }
+
+  function openEntry({ entry }) { setDetailId(entry.id); }
 
   function handleTogglePaid(entry) {
     // Optimistischer Update: entries sofort lokal umschalten.
@@ -255,6 +262,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       showToast('Fehler beim Speichern');
     });
   }
+
+  const detailEntry = detailId ? entries.find((e) => e.id === detailId) : null;
 
   // Dynamisches Saldo-Label: "diesen Monat" nur wenn wir im aktuellen Monat sind
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
@@ -346,7 +355,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       ) : filter === 'offen' ? (
         <OffenList
           entries={entries}
-          onOpenModal={setModal}
+          onOpenModal={openEntry}
           onTogglePaid={handleTogglePaid}
         />
       ) : (
@@ -356,11 +365,21 @@ export default function MonthsView({ initialFilter = 'alle' }) {
               key={col.key}
               col={col}
               entries={entries}
-              onOpenModal={setModal}
+              onOpenModal={openEntry}
               onTogglePaid={handleTogglePaid}
             />
           ))}
         </div>
+      )}
+
+      {detailEntry && (
+        <EntryDetailSheet
+          entry={detailEntry}
+          onClose={() => setDetailId(null)}
+          onEdit={(e) => { setDetailId(null); setModal({ entry: e, defaultCategory: e.category }); }}
+          onDelete={handleDelete}
+          onTogglePaid={handleTogglePaid}
+        />
       )}
 
       {modal && (
