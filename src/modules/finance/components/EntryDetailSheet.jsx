@@ -1,23 +1,30 @@
 // modules/finance/components/EntryDetailSheet.jsx
 //
-// Ansicht eines bereits angelegten Postens: erst ansehen, dann bearbeiten.
-// Oben Name und Betrag, darunter der Status (ein Tipp setzt offen ↔ bezahlt),
-// die Details und unten "Bearbeiten" / "Eintrag löschen". "Bearbeiten" (oder
-// ein Tipp auf eine Zeile wie "+ Notiz hinzufügen") schaltet im SELBEN Sheet
-// auf die Bearbeiten-Ansicht (EntryEditForm) um; nach "Speichern" ist man
-// wieder in der Ansicht.
+// Ansicht eines bereits angelegten Postens — und dieselbe Ansicht zum Bearbeiten.
+// "Bearbeiten" (oder ein Tipp auf eine Zeile) macht die Felder genau dort
+// änderbar, wo sie stehen: Ausgabenart (Auswahl im Etikett), Name, Betrag,
+// Status (Haken offen/bezahlt), Zahlungsart(en), Fälligkeit und Notiz. Kein
+// zweites Formular, kein Seitenwechsel. "Speichern" übernimmt, "Abbrechen"
+// verwirft.
 //
-// Der Eintrag kommt "live" aus der Monatsliste, damit der Status-Knopf sofort
-// den neuen Stand zeigt.
+// Ansicht: Der Status-Knopf setzt offen ↔ bezahlt sofort (wie in der Liste).
+// Bearbeiten: Er ändert nur den Entwurf und wird mit "Speichern" übernommen.
+// Bar, Gutschein und Sparschwein gelten sofort als bezahlt (Haken gesperrt).
+//
+// Der Eintrag kommt "live" aus der Monatsliste, damit nach dem Speichern sofort
+// die neuen Werte stehen.
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell';
-import EntryEditForm from './EntryEditForm';
+import PaymentsEditor from '../../../core/components/PaymentsEditor';
 import { IconClose, IconEdit, IconChevronRight, IconCheck } from '../../../core/components/Icons';
-import { CATEGORIES, formatDateTime, formatPayments, isSparschweinDeposit } from '../lib/finance';
+import {
+  CATEGORIES, formatDateTime, formatPayments, isInstantPaid, isSparschweinDeposit,
+} from '../lib/finance';
 import { toDateStr } from '../lib/analytics';
 
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
+const CAT_ORDER = ['fixeinnahmen', 'sonstige_einnahmen', 'fixkosten', 'variable_kosten', 'sonstige_ausgaben'];
 const DOT = {
   fixeinnahmen: 'var(--status-positive)',
   sonstige_einnahmen: 'var(--status-positive)',
@@ -41,76 +48,210 @@ function paymentText(entry) {
   return formatPayments(entry) || '—';
 }
 
-export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, showToast }) {
-  // null = Ansicht, sonst Bearbeiten-Ansicht (focus = Feld, das zuerst angesteuert wird)
-  const [edit, setEdit] = useState(null);
+function initialPayments(entry) {
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) return entry.payments;
+  if (entry.payment) return [{ method: entry.payment, amount: null }];
+  return [{ method: 'Bank', amount: null }];
+}
 
-  if (edit) {
-    return (
-      <SheetShell onClose={onClose} labelledBy="ed-title">
-        <EntryEditForm
-          entry={entry}
-          focus={edit.focus}
-          onCancel={() => setEdit(null)}
-          onSave={async (changed) => { await onSave(changed); setEdit(null); }}
-          onDelete={onDelete}
-          showToast={showToast}
-        />
-      </SheetShell>
-    );
+export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, showToast }) {
+  const [draft, setDraft] = useState(null); // null = Ansicht, sonst Entwurf beim Bearbeiten
+  const [focus, setFocus] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const noteRef = useRef(null);
+  const dueRef = useRef(null);
+  const payRef = useRef(null);
+  const editing = draft !== null;
+
+  // Tipp auf eine Zeile springt nach dem Umschalten direkt ins passende Feld
+  useEffect(() => {
+    if (!editing || !focus) return;
+    const el = { note: noteRef.current, due: dueRef.current, payment: payRef.current }[focus];
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    if (focus !== 'payment') el.focus({ preventScroll: true });
+  }, [editing, focus]);
+
+  function startEdit(target = null) {
+    const payments = initialPayments(entry);
+    setDraft({
+      category: entry.category,
+      name: entry.name || '',
+      amount: entry.amount != null ? String(entry.amount).replace('.', ',') : '',
+      payments,
+      dueDate: entry.due_date || '',
+      note: entry.note || '',
+      // Eigene Entscheidung nur, wenn der Posten nicht ohnehin durch eine sofort
+      // bezahlte Zahlungsart als bezahlt galt.
+      paidDraft: !!entry.paid && !isInstantPaid(payments),
+    });
+    setFocus(target);
+  }
+  const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
+
+  const category = editing ? draft.category : entry.category;
+  const canPay = !INCOME.has(category)
+    && !isSparschweinDeposit(editing ? { category, name: draft.name } : entry);
+  const instant = editing && isInstantPaid(draft.payments);
+  const paid = editing ? (canPay ? instant || draft.paidDraft : !!entry.paid) : !!entry.paid;
+  const amountNorm = editing ? String(draft.amount).replace(',', '.') : '';
+  const overdue = !editing && canPay && !entry.paid && entry.due_date
+    && String(entry.due_date).slice(0, 10) < toDateStr(new Date());
+
+  async function submit() {
+    if (!draft.name.trim()) return showToast('Bitte Name eingeben');
+    const amt = parseFloat(amountNorm);
+    if (isNaN(amt) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
+
+    // Zahlungen auflösen: der letzte Eintrag bekommt den Rest vom Gesamtbetrag
+    const ps = draft.payments;
+    const resolved = ps.length === 1
+      ? [{ method: ps[0].method, amount: amt }]
+      : ps.map((p, idx) => {
+        if (idx === ps.length - 1) {
+          const others = ps.slice(0, -1).reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
+          return { method: p.method, amount: Math.max(0, amt - others) };
+        }
+        return { method: p.method, amount: parseFloat(p.amount) || 0 };
+      });
+
+    setSaving(true);
+    try {
+      await onSave({
+        ...entry,
+        category: draft.category,
+        name: draft.name.trim(),
+        payments: resolved,
+        payment: resolved[0].method, // Abwärtskompatibilität (altes Einzelfeld)
+        amount: amt,
+        paid,
+        note: draft.note.trim() || null,
+        due_date: draft.dueDate || null,
+      });
+      setDraft(null);
+    } catch (e) {
+      console.error(e);
+      showToast('Speichern fehlgeschlagen');
+    }
+    setSaving(false);
   }
 
-  const isIncome = INCOME.has(entry.category);
-  const canPay = !isIncome && !isSparschweinDeposit(entry);
-  const overdue = canPay && !entry.paid && entry.due_date && String(entry.due_date).slice(0, 10) < toDateStr(new Date());
+  function onStatus() {
+    if (!editing) return onTogglePaid(entry);
+    if (!instant) set({ paidDraft: !draft.paidDraft });
+    return undefined;
+  }
 
   return (
     <SheetShell onClose={onClose} labelledBy="ed-title">
       <div className="ed-root">
         <div className="ed-top">
-          <span className="ed-tag" style={{ '--dot': DOT[entry.category] }}>
-            <i aria-hidden="true" />{CATEGORIES[entry.category] || entry.category}
-          </span>
+          {editing ? (
+            <label className="ed-tag ed-tag--select" style={{ '--dot': DOT[category] }}>
+              <i aria-hidden="true" />
+              <select value={category} onChange={(e) => set({ category: e.target.value })} aria-label="Ausgabenart">
+                {CAT_ORDER.map((k) => <option key={k} value={k}>{CATEGORIES[k]}</option>)}
+              </select>
+            </label>
+          ) : (
+            <span className="ed-tag" style={{ '--dot': DOT[category] }}>
+              <i aria-hidden="true" />{CATEGORIES[category] || category}
+            </span>
+          )}
           <button type="button" className="ed-close" onClick={onClose} aria-label="Schließen"><IconClose /></button>
         </div>
 
-        <h1 className="ed-name" id="ed-title">{entry.name}</h1>
-        <div className="ed-amount">{NF.format(Number(entry.amount || 0))} <span>€</span></div>
+        {editing ? (
+          <input
+            className="ed-name ed-in" id="ed-title" type="text" autoComplete="off" aria-label="Name"
+            value={draft.name} onChange={(e) => set({ name: e.target.value })} placeholder="Name"
+          />
+        ) : (
+          <h1 className="ed-name" id="ed-title">{entry.name}</h1>
+        )}
+
+        {editing ? (
+          <div className="ed-amount">
+            <input
+              className="ed-in" type="text" inputMode="decimal" autoComplete="off" aria-label="Betrag in Euro"
+              style={{ width: `${Math.max(4, draft.amount.length) + 0.5}ch` }}
+              value={draft.amount} onChange={(e) => set({ amount: e.target.value })} placeholder="0,00"
+            />
+            {' '}<span>€</span>
+          </div>
+        ) : (
+          <div className="ed-amount">{NF.format(Number(entry.amount || 0))} <span>€</span></div>
+        )}
 
         {canPay && (
           <button
             type="button"
-            className={`ed-status ${entry.paid ? 'is-paid' : ''}`}
-            aria-pressed={!!entry.paid}
-            onClick={() => onTogglePaid(entry)}
+            className={`ed-status ${paid ? 'is-paid' : ''}`}
+            aria-pressed={paid}
+            disabled={instant}
+            onClick={onStatus}
           >
-            {entry.paid
+            {paid
               ? <span className="ed-tick" aria-hidden="true"><IconCheck /></span>
               : <span className="ed-ring" aria-hidden="true" />}
             <span>
-              <b>{entry.paid ? 'Bezahlt' : 'Offen'}</b>
-              <small>{entry.paid ? 'Tippen, um wieder auf offen zu setzen' : 'Tippen, um als bezahlt zu markieren'}</small>
+              <b>{paid ? 'Bezahlt' : 'Offen'}</b>
+              <small>
+                {instant
+                  ? 'Bar, Gutschein und Sparschwein gelten sofort als bezahlt'
+                  : paid ? 'Tippen, um wieder auf offen zu setzen' : 'Tippen, um als bezahlt zu markieren'}
+              </small>
             </span>
           </button>
         )}
 
         <div className="ed-list">
-          <button type="button" className="ed-li" onClick={() => setEdit({ focus: 'payment' })}>
-            <span className="ed-k">Zahlungsart</span>
-            <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
-          </button>
-          <button type="button" className="ed-li" onClick={() => setEdit({ focus: 'due' })}>
-            <span className="ed-k">Fällig am</span>
-            {entry.due_date
-              ? <span className={`ed-v ${overdue ? 'ed-v--bad' : ''}`}>{fmtDue(entry.due_date)}{overdue ? ' · überfällig' : ''}<span className="ed-chev"><IconChevronRight /></span></span>
-              : <span className="ed-v ed-v--mut">+ Datum setzen</span>}
-          </button>
-          <button type="button" className="ed-li ed-li--note" onClick={() => setEdit({ focus: 'note' })}>
-            <span className="ed-k">Notiz</span>
-            {entry.note
-              ? <span className="ed-v ed-v--note">{entry.note}</span>
-              : <span className="ed-v ed-v--mut">+ Notiz hinzufügen</span>}
-          </button>
+          {editing ? (
+            <div className="ed-ed" ref={payRef}>
+              <span className="ed-k">Zahlungsart</span>
+              <PaymentsEditor payments={draft.payments} onChange={(payments) => set({ payments })} totalAmount={amountNorm} />
+            </div>
+          ) : (
+            <button type="button" className="ed-li" onClick={() => startEdit('payment')}>
+              <span className="ed-k">Zahlungsart</span>
+              <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
+            </button>
+          )}
+
+          {editing ? (
+            <label className="ed-ed ed-ed--row">
+              <span className="ed-k">Fällig am</span>
+              <input
+                ref={dueRef} className="ed-date" type="date" value={draft.dueDate}
+                onChange={(e) => set({ dueDate: e.target.value })}
+              />
+            </label>
+          ) : (
+            <button type="button" className="ed-li" onClick={() => startEdit('due')}>
+              <span className="ed-k">Fällig am</span>
+              {entry.due_date
+                ? <span className={`ed-v ${overdue ? 'ed-v--bad' : ''}`}>{fmtDue(entry.due_date)}{overdue ? ' · überfällig' : ''}<span className="ed-chev"><IconChevronRight /></span></span>
+                : <span className="ed-v ed-v--mut">+ Datum setzen</span>}
+            </button>
+          )}
+
+          {editing ? (
+            <label className="ed-ed">
+              <span className="ed-k">Notiz</span>
+              <textarea
+                ref={noteRef} className="ed-ta" value={draft.note} placeholder="Zusatzinfo …"
+                onChange={(e) => set({ note: e.target.value })}
+              />
+            </label>
+          ) : (
+            <button type="button" className="ed-li ed-li--note" onClick={() => startEdit('note')}>
+              <span className="ed-k">Notiz</span>
+              {entry.note
+                ? <span className="ed-v ed-v--note">{entry.note}</span>
+                : <span className="ed-v ed-v--mut">+ Notiz hinzufügen</span>}
+            </button>
+          )}
+
           <div className="ed-ro">
             <span className="ed-k">Herkunft</span>
             <span className="ed-v">{entry.from_template ? 'Festposten (aus Vorlage)' : 'Einzelbuchung'}</span>
@@ -124,10 +265,22 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
         </div>
 
         <div className="ed-actions">
-          <button type="button" className="ed-edit" onClick={() => setEdit({ focus: null })}>
-            <span className="ed-edit-ic"><IconEdit /></span>Bearbeiten
-          </button>
-          <button type="button" className="ed-delete" onClick={() => onDelete(entry.id)}>Eintrag löschen</button>
+          {editing ? (
+            <>
+              <button type="button" className="ed-edit" onClick={submit} disabled={saving}>Speichern</button>
+              <div className="ed-sub">
+                <button type="button" className="ed-cancel" onClick={() => setDraft(null)} disabled={saving}>Abbrechen</button>
+                <button type="button" className="ed-delete" onClick={() => onDelete(entry.id)} disabled={saving}>Eintrag löschen</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <button type="button" className="ed-edit" onClick={() => startEdit(null)}>
+                <span className="ed-edit-ic"><IconEdit /></span>Bearbeiten
+              </button>
+              <button type="button" className="ed-delete" onClick={() => onDelete(entry.id)}>Eintrag löschen</button>
+            </>
+          )}
         </div>
       </div>
     </SheetShell>

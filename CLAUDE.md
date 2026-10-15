@@ -229,7 +229,7 @@ einspielen — ohne Tabelle speichert die App nur lokal). Jeder Bereich nennt in
 `SECTIONS` (sections.jsx), welche globalen Filter er beachtet.
 
 Buchungen (`MonthsView`): Tipp auf einen Posten öffnet `EntryDetailSheet` (Status offen/bezahlt
-per Tipp, Details, Löschen); "Bearbeiten" schaltet im selben Sheet auf `EntryEditForm` um.
+per Tipp, Details, Löschen); "Bearbeiten" macht dieselbe Ansicht an Ort und Stelle änderbar (Entwurf, Speichern/Abbrechen).
 `saveEntry` übernimmt ein ausdrücklich übergebenes `paid`; nur ohne Angabe wird es aus den
 Zahlungsarten abgeleitet (Bar/Gutschein/Sparschwein = sofort bezahlt).
 
