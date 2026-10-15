@@ -136,3 +136,16 @@
 .fin-row-check.partial { border-color:var(--status-caution); color:var(--status-caution); }
 .fin-row-meta--part { color:var(--status-positive); }
 .fin-row-of { display:block; font-size:11px; font-weight:600; color:var(--text-muted); }
+
+/* Teilzahlungen einzeln abhaken (Bearbeiten, direkt unter dem Status) */
+.ed-checks { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.ed-check { width:100%; min-height:52px; display:flex; align-items:center; gap:12px; padding:0 14px; border:1.5px solid var(--border-hairline); border-radius:var(--r-lg); background:var(--surface-raised); color:var(--text-primary); text-align:left; cursor:pointer; }
+.ed-check b { display:block; font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; }
+.ed-check small { display:block; margin-top:1px; font-size:12px; font-weight:600; color:var(--text-muted); }
+.ed-check.is-paid { background:var(--status-positive-bg); border-color:transparent; }
+.ed-check.is-paid small { color:var(--status-positive); }
+.ed-check:disabled { cursor:default; }
+.ed-check:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+.ed-box { width:24px; height:24px; flex:0 0 24px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; border:2px solid var(--border-strong); border-radius:var(--r-sm,6px); color:var(--surface-raised); }
+.ed-check.is-paid .ed-box { background:var(--status-positive); border-color:var(--status-positive); }
+.ed-box svg { width:14px; height:14px; stroke-width:3; }
