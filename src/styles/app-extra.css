@@ -4363,39 +4363,6 @@
   color: var(--text-on-accent);
 }
 
-/* ===== Profil-Dropdown (Avatar in der Chrome) ===== */
-.profile-menu {
-  position: fixed;
-  top: calc(16px + 42px + 8px + env(safe-area-inset-top));
-  right: 12px;
-  z-index: 210;
-  min-width: 232px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-float);
-  padding: 6px;
-}
-.profile-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 12px 12px;
-  border-radius: var(--r-sm, 10px);
-  font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: left;
-}
-.profile-menu-item:active,
-.profile-menu-item.active { background: var(--surface-sunken); }
-.profile-menu-item.active { color: var(--action-primary); font-weight: 600; }
-.profile-menu-item .warn-dot-inline {
-  width: 8px; height: 8px; border-radius: var(--r-pill);
-  background: var(--status-critical);
-}
-
 .profile-section-hint {
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -4839,3 +4806,40 @@
 /* Kopf-Ausschnitte: Nest/Aura nicht über den Rand hinaus zeichnen */
 .nbird--head .nbird-svg { overflow: hidden; }
 .wiz-info { margin: 0; padding: 10px 14px; border-radius: 14px; background: rgba(226, 130, 58, .14); color: var(--text-primary); font-size: .8rem; line-height: 1.45; width: 100%; }
+
+/* ===== Profilseite: Konto, Kalorienziel, aufklappbare Bereiche ===== */
+.prof-ident { display: flex; gap: 14px; align-items: center; }
+.prof-avatar-pick { position: relative; display: inline-block; flex: none; padding: 0; background: none; border: none; cursor: pointer; }
+.prof-avatar-pick .profile-avatar { width: 78px; height: 78px; font-size: 1.9rem; }
+.prof-who { min-width: 0; }
+.prof-mail { font-size: 0.82rem; font-weight: 700; overflow-wrap: anywhere; color: var(--text-primary); }
+.prof-since { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+.prof-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.prof-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 800; padding: 4px 9px; border-radius: 99px; background: var(--surface-sunken); color: var(--text-primary); }
+.prof-chip.warm { background: rgba(226, 130, 58, .16); color: #E2823A; }
+.prof-chip .nbird { width: 18px; height: 18px; }
+.prof-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+.prof-hero { background: var(--action-primary); color: var(--text-on-accent); border-radius: 22px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: end; margin-top: 12px; }
+.prof-hero-k { font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; opacity: .75; }
+.prof-hero-v { font-size: 2.1rem; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.prof-hero-v small { font-size: .85rem; font-weight: 700; opacity: .75; }
+.prof-hero-mini { display: flex; gap: 14px; text-align: right; }
+.prof-hero-mini div { font-size: .68rem; opacity: .85; font-weight: 700; }
+.prof-hero-mini b { display: block; font-size: 1.05rem; font-weight: 900; opacity: 1; }
+
+.prof-acc { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.prof-row { background: var(--bg-secondary); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden; }
+.prof-row-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; text-align: left; color: var(--text-primary); }
+.prof-ico { width: 38px; height: 38px; border-radius: 13px; background: var(--surface-sunken); color: var(--action-primary); display: grid; place-items: center; flex: none; }
+.prof-row-text { min-width: 0; flex: 1; }
+.prof-row-text b { display: block; font-size: .95rem; }
+.prof-row-text span { display: block; font-size: .78rem; color: var(--text-muted); margin-top: 1px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-row-text span.bad { color: var(--status-critical); font-weight: 700; }
+.prof-chev { color: var(--text-muted); transition: transform .25s; flex: none; }
+.prof-row.open .prof-chev { transform: rotate(90deg); }
+.prof-row-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.prof-row.open .prof-row-body { grid-template-rows: 1fr; }
+.prof-row-body > div { overflow: hidden; min-height: 0; }
+.prof-row-inner { padding: 2px 14px 16px; }
+@media (prefers-reduced-motion: reduce) { .prof-row-body, .prof-chev { transition: none; } }

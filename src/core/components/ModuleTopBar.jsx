@@ -19,7 +19,7 @@
 // Rechts: EINE Pille (`.chrome-top-right`), zwei Tippflächen getrennt durch
 //         eine Haarlinie: GamificationBadges (Vogel+Level, Nest+Streak,
 //         öffnet GamificationSheet) und Profil-Avatar (Initiale auf
-//         --action-primary) → Dropdown (ProfileMenu) mit Profil-Bereichen, Warnpunkt bei fehlenden
+//         --action-primary) → #/profile (eine Seite mit aufklappbaren Bereichen), Warnpunkt bei fehlenden
 //         Pflichtdaten. Bleibt auf JEDER Modul-Hauptansicht UND jedem
 //         Detail-Screen sichtbar — verschwindet nur hinter dem Backdrop
 //         eines offenen FAB-Sheets (SheetShell deckt den ganzen Screen ab),
@@ -36,7 +36,6 @@ import { useRoute } from '../lib/useRoute';
 import AppMenu from '../AppMenu';
 import GamificationBadges from './GamificationBadges.jsx';
 import { useAvatar } from '../lib/avatarData';
-import ProfileMenu from './ProfileMenu.jsx';
 
 // Zahnrad-Icon — 20px, 1.8px Stroke, stroke-linecap: round
 function IconGear() {
@@ -61,9 +60,8 @@ function IconArrowLeft() {
 
 export default function ModuleTopBar({ onBack, title, hasWarnings }) {
   const { session } = useAuth();
-  const { module: routeModule, view: routeView, navigate } = useRoute();
+  const { module: routeModule, navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const avatar = useAvatar(session);
   const initial = session?.user?.email?.[0]?.toUpperCase() || '?';
 
@@ -108,13 +106,12 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
 
           <button
             className="chrome-top-profile-zone"
-            onClick={() => setProfileMenuOpen((o) => !o)}
-            aria-expanded={profileMenuOpen}
-            aria-haspopup="menu"
+            onClick={() => navigate('profile')}
+            aria-current={routeModule === 'profile' ? 'page' : undefined}
             aria-label={
               hasWarnings
-                ? 'Profilmenü — Pflichtdaten unvollständig'
-                : 'Profilmenü'
+                ? 'Zum Profil — Pflichtdaten unvollständig'
+                : 'Zum Profil'
             }
           >
             <span className="chrome-top-avatar">
@@ -126,15 +123,6 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
           </button>
         </div>
       </div>
-
-      {profileMenuOpen && (
-        <ProfileMenu
-          active={routeModule === 'profile' ? routeView : null}
-          hasWarnings={hasWarnings}
-          onClose={() => setProfileMenuOpen(false)}
-          onSelect={(key) => { setProfileMenuOpen(false); navigate(`profile/${key}`); }}
-        />
-      )}
 
       {/* AppMenu — öffnet sich unterhalb der Chrome */}
       {menuOpen && (
