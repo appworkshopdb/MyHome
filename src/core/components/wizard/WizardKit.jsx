@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MONTHS_FULL, fmtDate, isoLocal, parseIso, todayIso } from '../../lib/wizardDates';
+import { fb, primeFeedback } from '../../lib/feedback';
 
 // ── Icons ────────────────────────────────────────────────────
 const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -151,6 +152,8 @@ export function WheelPicker({ items, value, onChange, label }) {
   const timer = useRef(null);
   const drag = useRef(null);
   const moved = useRef(false);
+  const touched = useRef(false);   // echte Bedienung (nicht, wenn sich der Regler selbst positioniert)
+  const tickIdx = useRef(-1);
 
   // Zeilen nach Abstand zur Mitte ausblenden und kippen (Trommel-Effekt)
   const mark = useCallback(() => {
@@ -174,6 +177,7 @@ export function WheelPicker({ items, value, onChange, label }) {
       list.scrollTop = i * ITEM_H;
       list.style.scrollSnapType = '';
     }
+    tickIdx.current = i;
     mark();
   }, [value, norm, mark]);
 
@@ -183,11 +187,16 @@ export function WheelPicker({ items, value, onChange, label }) {
 
   function commit() {
     const v = norm[idxNow()]?.value;
+    touched.current = false;
     if (v !== undefined && v !== String(value)) onChange(v);
   }
 
   function onScroll() {
     mark();
+    // Tick (Haptik + leiser Klick) wie bei den Wählreglern im Profil, sobald eine neue Zeile in die Mitte rückt
+    const i = idxNow();
+    if (touched.current && i !== tickIdx.current) fb.tick();
+    tickIdx.current = i;
     clearTimeout(timer.current);
     timer.current = setTimeout(() => { if (!drag.current) commit(); }, 90);
   }
@@ -201,6 +210,8 @@ export function WheelPicker({ items, value, onChange, label }) {
 
   // Maus: Ziehen wie auf dem Touchscreen
   function onPointerDown(e) {
+    touched.current = true;
+    primeFeedback();
     if (e.pointerType !== 'mouse') return;
     drag.current = { y: e.clientY, top: listRef.current.scrollTop };
     moved.current = false;
@@ -238,7 +249,9 @@ export function WheelPicker({ items, value, onChange, label }) {
         role="listbox"
         aria-label={label}
         onScroll={onScroll}
-        onKeyDown={onKeyDown}
+        onKeyDown={(e) => { touched.current = true; onKeyDown(e); }}
+        onWheel={() => { touched.current = true; }}
+        onTouchStart={() => { touched.current = true; primeFeedback(); }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
