@@ -28,17 +28,20 @@ const RowIcon = ({ children }) => (
 );
 const ICONS = {
   koerper: <RowIcon><circle cx="12" cy="5" r="2.5" /><path d="M12 8v7M7 11h10M9 21l3-6 3 6" /></RowIcon>,
+  // Geschlechtssymbole fürs Körperdaten-Icon (Mars/Venus), je nach Auswahl
+  mars: <RowIcon><circle cx="10" cy="14" r="5.5" /><path d="M14 10l6-6M15 4h5v5" /></RowIcon>,
+  venus: <RowIcon><circle cx="12" cy="9" r="5.5" /><path d="M12 14.5V22M9 18.5h6" /></RowIcon>,
   ziel: <RowIcon><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></RowIcon>,
   ernaehrung: <RowIcon><path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15z" /><path d="M5 19l8-8" /></RowIcon>,
   werte: <RowIcon><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></RowIcon>,
 };
 
 // Eine aufklappbare Zeile: Kurzwerte im Kopf, Bearbeiten im Körper.
-function Row({ id, open, onToggle, title, summary, bad, children }) {
+function Row({ id, icon, open, onToggle, title, summary, bad, children }) {
   return (
     <div className={`prof-row${open ? ' open' : ''}`}>
       <button className="prof-row-head" onClick={() => onToggle(id)} aria-expanded={open}>
-        <span className="prof-ico">{ICONS[id]}</span>
+        <span className="prof-ico">{icon || ICONS[id]}</span>
         <span className="prof-row-text">
           <b>{title}</b>
           <span className={bad ? 'bad' : ''}>{summary}</span>
@@ -252,7 +255,7 @@ export default function Profile({ hasWarnings }) {
       )}
 
       <div className="prof-acc">
-        <Row id="koerper" open={openRow === 'koerper'} onToggle={toggle} title="Körperdaten" summary={bodySummary} bad={missingBody.length > 0}>
+        <Row id="koerper" icon={bp?.gender === 'm' ? ICONS.mars : bp?.gender === 'w' ? ICONS.venus : null} open={openRow === 'koerper'} onToggle={toggle} title="Körperdaten" summary={bodySummary} bad={missingBody.length > 0}>
           {bp && <BodyDataForm value={bp} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />}
           <p className="profile-section-hint">Gilt app-weit — für Ernährung und Sport.</p>
         </Row>

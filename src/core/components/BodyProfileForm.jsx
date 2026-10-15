@@ -1,4 +1,5 @@
 import SportsSelect from './SportsSelect';
+import WheelPicker from './WheelPicker';
 import { BODY_REQUIRED_FIELDS } from '../lib/bodyProfileData';
 
 export const GENDER = [{ key: 'm', label: 'Männlich' }, { key: 'w', label: 'Weiblich' }];
@@ -16,10 +17,12 @@ export const GOAL = [
 export const TRAINING_FOCUS = [
   { key: 'kraft', label: 'Kraft' }, { key: 'ausdauer', label: 'Ausdauer' }, { key: 'beides', label: 'Beides' },
 ];
+// key, Label, Einheit, min, max, Schritt, Startposition bei leerem Wert, Anzeige
+const comma = (n) => String(n).replace('.', ',');
 const NUMBER_FIELDS = [
-  ['age', 'Alter', 'Jahre', 1, 120],
-  ['height', 'Größe', 'cm', 100, 230],
-  ['weight', 'Gewicht', 'kg', 30, 300],
+  ['age', 'Alter', 'Jahre', 1, 120, 1, 25, String],
+  ['height', 'Größe', 'cm', 100, 230, 1, 170, String],
+  ['weight', 'Gewicht', 'kg', 30, 300, 0.5, 70, comma],
 ];
 
 // Körperdaten-Formular — lebt in core/, weil die Daten seit der
@@ -72,13 +75,13 @@ export function BodyDataForm({ value, onChange, requiredFields = BODY_REQUIRED_F
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-        {NUMBER_FIELDS.map(([key, label, unit, min, max]) => (
+        {NUMBER_FIELDS.map(([key, label, unit, min, max, step, fallback, format]) => (
           <div className={`form-group ${flagged(key) ? 'required-empty' : ''}`} key={key}>
             <label>{label} ({unit}){mark(key)}</label>
-            <input
-              type="number" min={min} max={max} style={{ textAlign: 'center' }}
-              value={value[key] || ''}
-              onChange={(e) => set(key, +e.target.value || '')}
+            <WheelPicker
+              value={value[key]} min={min} max={max} step={step} fallback={fallback} format={format}
+              ariaLabel={`${label} in ${unit}`}
+              onChange={(v) => set(key, v)}
             />
           </div>
         ))}
