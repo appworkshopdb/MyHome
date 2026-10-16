@@ -212,7 +212,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     // KEIN notifySaved() — das würde version erhöhen → useEffect →
     // load() → kompletter State-Reset → Dropdowns klappen zu.
     // paid/unpaid ist eine rein lokale Änderung, andere Views
-    // (OverviewSection, SparschweinFab) müssen das nicht wissen.
+    // (OverviewSection, SparschweinSection) müssen das nicht wissen.
     const newPaid = !entry.paid;
     setEntries((prev) =>
       prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e)

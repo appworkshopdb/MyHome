@@ -2433,18 +2433,19 @@
   bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px);
   width: 52px;
   height: 52px;
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-  border: none;
+  /* Nur Umrandung + Plus, keine Füllung und kein Schatten — der Inhalt
+     dahinter bleibt sichtbar, auch wenn der Knopf darüber schwebt. */
+  background: transparent;
+  color: var(--action-primary);
+  border: 2px solid var(--action-primary);
   border-radius: var(--r-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 190;
   cursor: pointer;
-  box-shadow: var(--shadow-fab);
 }
-.global-fab:active { opacity: 0.75; }
+.global-fab:active { opacity: 0.6; }
 .global-fab--disabled {
   background: var(--bg-card);
   color: var(--text-muted);
@@ -2452,47 +2453,17 @@
 }
 .global-fab-plus {
   font-size: 28px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1;
 }
 
-/* ── Sparschwein — schwebender Button über dem globalen FAB ──────────── */
-.sparschwein-fab {
-  position: fixed;
-  right: 20px;
-  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px + 52px + 12px);
-  width: 44px;
-  height: 44px;
-  background: var(--surface-raised);
-  border: 1.5px solid var(--border-hairline);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 190;
-  cursor: pointer;
-  box-shadow: var(--shadow-float);
-  padding: 0;
-}
-.sparschwein-fab:active { transform: scale(0.93); }
-.sparschwein-fab-icon {
+/* ── Sparschwein — Zeile in der Finanzen-Übersicht ────────────────────── */
+.area-row-icon {
   width: 22px;
   height: 22px;
   object-fit: contain;
-}
-.sparschwein-fab-badge {
-  position: absolute;
-  bottom: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: var(--r-pill);
-  white-space: nowrap;
-  line-height: 1.4;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
 /* ── Sparschwein — Sheet-Inhalt ───────────────────────────────────────── */

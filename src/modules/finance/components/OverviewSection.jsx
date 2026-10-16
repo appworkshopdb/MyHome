@@ -1,7 +1,7 @@
 // modules/finance/components/OverviewSection.jsx
 // Modul-Übersicht für Finanzen — passt ohne Scrollen auf einen Screen
 // (siehe UMBAU-PLAN.md Schritt 6): Kopfzeile mit Monatswechsler,
-// Saldo-Fokuskarte, "Wohin es geht" und die Bereiche-Liste.
+// Saldo-Fokuskarte, Sparschwein, "Wohin es geht" und die Bereiche-Liste.
 //
 // Datenzugriff: dieselben Abfragen, die vorher MonthsView/ContractsView
 // auf der Modulseite ausgelöst haben — kein zusätzlicher Netzwerk-Zugriff
@@ -29,6 +29,7 @@ import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import SparschweinSection from './SparschweinSection.jsx';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
 // Die drei Ausgabenblöcke des Monats — Reihenfolge und Farbe entsprechen
@@ -127,6 +128,9 @@ export default function OverviewSection({ onNavigate }) {
         </FocusCard.Meta>
         <FocusCard.Progress value={spentRatio} />
       </FocusCard>
+
+      {/* Sparschwein — direkt unter dem Saldo */}
+      <SparschweinSection />
 
       {/* Wohin es geht — gestapelter Balken + Legende */}
       <PageSection

@@ -1,16 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../lib/AuthContext';
-import { useEntrySheet } from '../lib/EntrySheetContext';
-import * as finData from '../../modules/finance/lib/finData';
-import { formatEur, formatDate, MONTHS_DE } from '../../modules/finance/lib/finance';
-
-// Schwebender Sparschwein-Button, sitzt über dem globalen "+"-FAB.
-// Nur im Finanzen-Modul sichtbar (activeModule === 'finance').
+// modules/finance/components/SparschweinSection.jsx
+// Bereich "Sparschwein" in der Finanzen-Übersicht: direkt unter der
+// Saldo-Karte, eine Zeile mit dem aktuellen Stand. Tippen öffnet das
+// Sparschwein-Sheet (Stand, Ein-/Auszahlungen, Verlauf).
 //
-// Bekannte Regelverletzung wie bei EntrySheet.jsx: importiert direkt aus
-// modules/finance/lib — core kennt damit strenggenommen ein Modul. Bewusst
-// in Kauf genommen, analog zum bestehenden Muster, siehe Projektkontext.md.
-export default function SparschweinFab() {
+// Ersetzt den früheren schwebenden Sparschwein-Button (core/components/
+// SparschweinFab.jsx), der Inhalt hinter dem "+" verdeckt hat. Liegt jetzt
+// im Finanzen-Modul statt in core/ — damit entfällt auch der Import von
+// core nach modules/finance.
+//
+// Das Sheet wird per Portal an <body> gehängt (wie SheetShell), damit
+// position:fixed nicht von einem Elternelement der Übersicht beeinflusst wird.
+
+import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useAuth } from '../../../core/lib/AuthContext';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import PageSection from '../../../core/components/PageSection.jsx';
+import AreaList from '../../../core/components/AreaList.jsx';
+import * as finData from '../lib/finData';
+import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
+
+export default function SparschweinSection() {
   const { session } = useAuth();
   const { version } = useEntrySheet(); // steigt nach jedem gespeicherten Eintrag
   const [balance, setBalance] = useState(null);
@@ -28,20 +38,27 @@ export default function SparschweinFab() {
 
   useEffect(() => { load(); }, [load, version]);
 
-  if (balance === null) return null; // noch nicht geladen — kein Flackern
-
   return (
     <>
-      <button
-        className="sparschwein-fab"
-        onClick={() => setOpen(true)}
-        aria-label={`Sparschwein, aktueller Stand ${formatEur(balance)}`}
-      >
-        <img src="./icons/piggy-bank.png" alt="" className="sparschwein-fab-icon" />
-        <span className="sparschwein-fab-badge">{Math.round(balance)}€</span>
-      </button>
+      <PageSection title="Sparschwein">
+        <AreaList>
+          <button
+            className="area-row"
+            onClick={() => setOpen(true)}
+            disabled={balance === null}
+            aria-label={balance === null ? 'Sparschwein' : `Sparschwein, aktueller Stand ${formatEur(balance)}`}
+          >
+            <img src="./icons/piggy-bank.png" alt="" className="area-row-icon" />
+            <span className="area-row-label">Aktueller Stand</span>
+            <span className="area-row-value area-row-value--neutral">
+              {balance === null ? '—' : formatEur(balance)}
+            </span>
+            <span className="area-row-chevron" aria-hidden="true">›</span>
+          </button>
+        </AreaList>
+      </PageSection>
 
-      {open && (
+      {open && createPortal(
         <div className="sheet-overlay" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
           <div className="sheet">
             <div className="sheet-header">
@@ -102,7 +119,8 @@ export default function SparschweinFab() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
