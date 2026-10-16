@@ -43,7 +43,8 @@ function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
   // Teilzahlungen: Bar/Gutschein/Sparschwein gelten sofort als bezahlt, offen
   // ist nur der Rest (core/lib/paymentParts.js).
   const fully = isFullyPaid(e);
-  const partly = isPartlyPaid(e);
+  // Durchgestrichen/gedämpft wird nur bei Ausgaben — Einnahmen immer normal.
+  const partly = !isIncome && isPartlyPaid(e);
   const shownAmount = showOpen ? openAmount(e) : e.amount;
   const paidMethods = entryParts(e).filter((p) => p.paid).map((p) => p.method).join(' · ');
 
@@ -70,7 +71,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
         </div>
       )}
       <div className="fin-row-info">
-        <div className={`fin-row-name ${fully ? 'paid' : ''}`}>{e.name}</div>
+        <div className={`fin-row-name ${fully && !isIncome ? 'paid' : ''}`}>{e.name}</div>
         <div className="fin-row-meta">
           {formatPayments(e)}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
           {partly && !showOpen ? ' · teilweise bezahlt' : ''}
@@ -82,7 +83,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
         )}
         {e.note && <div className="fin-row-note">{e.note}</div>}
       </div>
-      <div className={`fin-row-amount ${fully ? 'paid' : ''}`}>
+      <div className={`fin-row-amount ${fully && !isIncome ? 'paid' : ''}`}>
         {formatEur(shownAmount).replace('€', '').trim()}
         {showOpen && partly && <span className="fin-row-of">von {formatEur(e.amount)}</span>}
       </div>
