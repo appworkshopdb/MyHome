@@ -166,7 +166,7 @@ export default function OverviewSection({ onNavigate }) {
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Buchungen"
             value={`${entries.length} im Monat`}

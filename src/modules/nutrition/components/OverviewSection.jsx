@@ -101,7 +101,7 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Lebensmittel"
             value={`${foods.length}`}

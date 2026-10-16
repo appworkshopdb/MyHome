@@ -3,15 +3,10 @@
 // "Bereiche"-Sektion jeder Modul-Übersicht). Trennlinien statt Abstände
 // zwischen den Zeilen, siehe area-row-CSS.
 //
-// fabClearance: true reserviert in der LETZTEN Zeile 76px Platz rechts,
-// damit der schwebende FAB (56px, right:18px) keinen Chevron/Text verdeckt.
-// Absichtlich als Klasse auf der Liste, nicht als Prop pro Zeile — die
-// aufrufende Übersicht muss nicht wissen, welche Zeile zufällig die letzte
-// ist.
-export default function AreaList({ children, fabClearance = false }) {
-  return (
-    <div className={`area-list ${fabClearance ? 'area-list--fab-clearance' : ''}`}>
-      {children}
-    </div>
-  );
+// Alle Zeilen haben dasselbe rechte Padding, damit die Chevrons bündig in
+// einer Spalte stehen. Der schwebende FAB wird NICHT über Zeilen-Padding
+// umgangen (das hat die Chevron-Spalte der letzten Zeile eingerückt),
+// sondern über den Scroll-Abstand unten (.main-content.has-fab).
+export default function AreaList({ children }) {
+  return <div className="area-list">{children}</div>;
 }

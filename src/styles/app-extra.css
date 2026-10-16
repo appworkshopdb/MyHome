@@ -2963,12 +2963,6 @@
   flex-shrink: 0;
 }
 
-/* FAB-Freiraum: nur die letzte Zeile bekommt zusätzlichen Platz rechts,
-   damit der schwebende FAB (56px, right:18px) nichts verdeckt. */
-.area-list--fab-clearance .area-row:last-child {
-  padding-right: 76px;
-}
-
 /* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
    Gamification (links) + Trennlinie + Profil (rechts). Ersetzt die
    frühere Aufteilung in zwei freistehende Elemente — siehe Mockup
