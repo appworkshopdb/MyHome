@@ -83,7 +83,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Ampel"
             value={(

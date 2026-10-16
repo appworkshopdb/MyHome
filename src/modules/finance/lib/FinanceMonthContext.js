@@ -1,9 +1,9 @@
 // src/modules/finance/lib/FinanceMonthContext.js
 //
-// Teilt den aktuell in MonthsView angezeigten Monat mit dem
-// SparschweinFab — ohne Prop-Drilling durch GlobalFab/FinanceModule.
+// Teilt den aktuell in MonthsView angezeigten Monat mit dem EntrySheet
+// (globaler "+") — ohne Prop-Drilling durch GlobalFab/FinanceModule.
 // MonthsView schreibt bei jedem Monatswechsel rein,
-// SparschweinFab liest beim Einzahlen raus.
+// EntrySheet liest beim Anlegen raus.
 // Solange MonthsView nicht gemountet ist (Übersicht, andere Screens)
 // bleibt der Wert auf dem echten aktuellen Monat.
 //

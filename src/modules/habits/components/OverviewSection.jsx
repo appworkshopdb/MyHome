@@ -148,7 +148,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Meine Gewohnheiten"
             value={`${activeHabits.length} aktiv`}

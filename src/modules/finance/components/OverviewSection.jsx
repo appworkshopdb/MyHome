@@ -21,6 +21,7 @@ import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import SparschweinSection from './SparschweinSection.jsx';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -130,6 +131,9 @@ export default function OverviewSection({ onNavigate }) {
         <FocusCard.Progress value={spentRatio} />
       </FocusCard>
 
+      {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
+      <SparschweinSection year={year} month={month} />
+
       {/* ── Schnellübersicht ──────────────────────────────────────────
           Gesamter Block antippbar → navigiert zu Buchungen.
           Einnahmen als 4. Kategorie (Ton "d") neben den drei Ausgabenblöcken.
@@ -188,7 +192,7 @@ export default function OverviewSection({ onNavigate }) {
 
       {/* ── Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Buchungen"
             value={`${entries.length} im Monat`}

@@ -5,7 +5,6 @@ import SportQuickSheet    from './SportQuickSheet';
 import ShoppingQuickSheet from './ShoppingQuickSheet';
 import NutritionFabMenu   from './NutritionFabMenu';
 import TodoSheet          from './TodoSheet';
-import SparschweinFab     from './SparschweinFab';
 
 // Globaler FAB — rendert sich je nach aktivem Modul anders.
 // Erscheint auf allen Screens außer Profil.
@@ -35,8 +34,6 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
 
   return (
     <>
-      {activeModule === 'finance' && <SparschweinFab />}
-
       <button
         className="global-fab"
         onClick={handlePress}

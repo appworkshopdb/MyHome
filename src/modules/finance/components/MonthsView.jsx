@@ -228,7 +228,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
     setMonth(m); setYear(y);
-    setGlobalActiveMonth(y, m); // SparschweinFab weiß, in welchem Monat wir sind
+    setGlobalActiveMonth(y, m); // EntrySheet weiß, in welchem Monat wir sind
   }
 
   // Beim ersten Mount den initialen Monat in den Context schreiben
@@ -267,7 +267,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     // KEIN notifySaved() — das würde version erhöhen → useEffect →
     // load() → kompletter State-Reset → Dropdowns klappen zu.
     // paid/unpaid ist eine rein lokale Änderung, andere Views
-    // (OverviewSection, SparschweinFab) müssen das nicht wissen.
+    // (OverviewSection, SparschweinSection) müssen das nicht wissen.
     //
     // Ist noch etwas offen (auch nur ein Teil), markiert der Tipp ALLES als
     // bezahlt; ist schon alles bezahlt, setzt er die nicht-sofort-bezahlten

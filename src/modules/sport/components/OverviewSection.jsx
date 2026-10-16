@@ -143,7 +143,7 @@ export default function OverviewSection({
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Einheiten"
             value={`${units.length}`}
