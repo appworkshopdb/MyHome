@@ -1,22 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../lib/AuthContext';
-import { useEntrySheet } from '../lib/EntrySheetContext';
-import * as finData from '../../modules/finance/lib/finData';
-import { formatEur, formatDate, MONTHS_DE } from '../../modules/finance/lib/finance';
-import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
-import SheetShell from './SheetShell';
+import { useAuth } from '../../../core/lib/AuthContext';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import SheetShell from '../../../core/components/SheetShell';
+import PageSection from '../../../core/components/PageSection.jsx';
+import AreaList from '../../../core/components/AreaList.jsx';
+import * as finData from '../lib/finData';
+import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
 
-// Schwebender Sparschwein-Button, sitzt über dem globalen "+"-FAB.
-// Nur im Finanzen-Modul sichtbar (activeModule === 'finance').
+// Bereich "Sparschwein" in der Finanzen-Übersicht: direkt unter der Saldo-
+// Karte, eine Zeile mit dem aktuellen Stand. Tippen öffnet das Sparschwein-
+// Sheet (Stand, Einzahlen/Entnehmen, Verlauf).
 //
-// NEU: Direkte "Sparen"-Funktion — Betrag eingeben → erstellt automatisch
+// Ersetzt den früheren schwebenden Sparschwein-Button über dem "+"
+// (core/components/SparschweinFab.jsx), der Inhalte verdeckt hat. Liegt jetzt
+// im Finanzen-Modul statt in core/ — das beseitigt auch den Import von core
+// nach modules/finance.
+//
+// year/month: der Monat, den die Übersicht zeigt (immer der aktuelle) — dort
+// landen Einzahlung und Entnahme, damit der Saldo darüber sich sofort ändert.
+//
+// Direkte "Sparen"-Funktion — Betrag eingeben → erstellt automatisch
 // eine "Ersparnisse"-Buchung im aktuellen Monat, ohne dass der Nutzer
 // wissen muss, welche Kategorie er wählen soll.
 // Entnahme weiterhin über Zahlungsart "Sparschwein" bei einer Ausgabe.
-export default function SparschweinFab() {
+export default function SparschweinSection({ year, month }) {
   const { session } = useAuth();
   const { version, notifySaved } = useEntrySheet();
-  const { activeYear, activeMonth } = useFinanceMonth(); // Monat aus MonthsView (oder aktuell)
   const [balance, setBalance] = useState(null);
   const [ledger,  setLedger]  = useState([]);
   const [totals,  setTotals]  = useState({ totalIn: 0, totalOut: 0 });
@@ -51,8 +60,8 @@ export default function SparschweinFab() {
     }
     try {
       await finData.saveEntry(sessionRef.current, {
-        year:     activeYear,   // Monat aus MonthsView — nicht immer "heute"
-        month:    activeMonth,
+        year,         // Monat der Übersicht
+        month,
         category: 'variable_kosten', // Ausgaben-Kategorie — wird von isSparschweinDeposit erkannt
         name:     'Ersparnisse',     // Genauer Name — Erkennungsmerkmal
         payment:  'Bank',
@@ -88,8 +97,8 @@ export default function SparschweinFab() {
     }
     try {
       await finData.saveEntry(sessionRef.current, {
-        year:     activeYear,   // Monat aus MonthsView — nicht immer "heute"
-        month:    activeMonth,
+        year,         // Monat der Übersicht
+        month,
         category: 'sonstige_einnahmen', // Einnahme-Kategorie — von isSparschweinDirectWithdrawal erkannt
         name:     'Sparschwein',        // Genauer Name — Erkennungsmerkmal
         payment:  'Bank',
@@ -108,18 +117,25 @@ export default function SparschweinFab() {
     }
   }
 
-  if (balance === null) return null;
-
   return (
     <>
-      <button
-        className="sparschwein-fab"
-        onClick={() => setOpen(true)}
-        aria-label={`Sparschwein, aktueller Stand ${formatEur(balance)}`}
-      >
-        <img src="./icons/piggy-bank.png" alt="" className="sparschwein-fab-icon" />
-        <span className="sparschwein-fab-badge">{Math.round(balance)}€</span>
-      </button>
+      <PageSection title="Sparschwein">
+        <AreaList>
+          <button
+            className="area-row"
+            onClick={() => setOpen(true)}
+            disabled={balance === null}
+            aria-label={balance === null ? 'Sparschwein' : `Sparschwein, aktueller Stand ${formatEur(balance)}`}
+          >
+            <img src="./icons/piggy-bank.png" alt="" className="area-row-icon" />
+            <span className="area-row-label">Aktueller Stand</span>
+            <span className="area-row-value area-row-value--neutral">
+              {balance === null ? '—' : formatEur(balance)}
+            </span>
+            <span className="area-row-chevron" aria-hidden="true">›</span>
+          </button>
+        </AreaList>
+      </PageSection>
 
       {/* ── Hauptsheet: Kontostand + Verlauf ── */}
       {open && (

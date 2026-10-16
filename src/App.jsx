@@ -108,7 +108,7 @@ export default function App() {
       <FirstRunWizard />
       <ModuleTutorial activeModule={activeModule} />
       {/* FinanceMonthProvider umschließt sowohl <main> (MonthsView schreibt
-          den aktiven Monat rein) als auch GlobalFab (SparschweinFab liest
+          den aktiven Monat rein) als auch EntrySheet/GlobalFab (lesen
           ihn raus). Beide MÜSSEN unter derselben Provider-Instanz hängen,
           sonst bekommt der FAB nur den Default-Wert (aktueller Kalender-
           monat) und bucht immer in den heutigen Monat statt in den, der

@@ -734,10 +734,9 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
             {/* Statistiken — ein einzelner Bereich unter dem Kalender; dort die
                 Auswahl Wochen-/Monatsüberblick (eigene Route #/statistiken, damit
-                die Rückblick-Pushes direkt verlinken können). fabClearance: der
-                schwebende + liegt sonst über dem Pfeil. */}
+                die Rückblick-Pushes direkt verlinken können). */}
             <section className="page-section">
-              <AreaList fabClearance>
+              <AreaList>
                 <AreaRow label="Statistiken" onPress={() => onOpenModule('statistiken')} />
               </AreaList>
             </section>

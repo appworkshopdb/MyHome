@@ -14,7 +14,7 @@
 // legen etwas anderes an (wiederkehrende Vorlagen) und bleiben dort.
 //
 // HINWEIS: FinanceMonthProvider hängt NICHT hier, sondern in App.jsx —
-// er muss auch GlobalFab/SparschweinFab umschließen, das außerhalb des
+// er muss auch GlobalFab/EntrySheet umschließen, das außerhalb des
 // Moduls gerendert wird.
 
 import { lazy, Suspense } from 'react';

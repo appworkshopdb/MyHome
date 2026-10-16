@@ -9,7 +9,7 @@
 
 /* ── Haupt-Inhaltsbereich ────────────────────────────────────
    74px oben (TopBar-Chrome) + 108px unten (BottomNav-Chrome).
-   Seiten mit Eintrag-Knopf setzen .has-fab → 152px unten.    */
+   Seiten mit Eintrag-Knopf: 152px unten (siehe .module-active). */
 
 .main-content {
   padding-top: 74px;
@@ -20,8 +20,12 @@
   margin: 0 auto;
 }
 
-/* Seiten mit schwebendem Eintrag-Knopf (Finanzen, Sport, Ernährung) */
-.main-content.has-fab {
+/* Fast alle Seiten tragen den schwebenden "+" (GlobalFab, nur Profil und
+   Statistiken nicht — dort ist etwas mehr Luft unten harmlos;
+   Oberkante 136px über der Bildschirmunterkante). 152px unten, damit die letzte
+   Zeile beim Ende-Scrollen komplett über dem Knopf landet — statt per
+   Zeilen-Padding auszuweichen (das hat die Pfeile eingerückt). */
+.main-content.module-active {
   padding-bottom: 152px;
 }
 
@@ -397,7 +401,7 @@
     padding-left: 12px;
     padding-right: 12px;
   }
-  .main-content.has-fab { padding-bottom: 152px; }
+  .main-content.module-active { padding-bottom: 152px; }
 
   .page-header { margin-bottom: 14px; }
   .page-header h1 { font-size: 17px; }
