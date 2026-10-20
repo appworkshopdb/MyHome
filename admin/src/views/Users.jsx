@@ -1,10 +1,24 @@
 import { useState } from 'react';
 import {
   Card, Bar, State, Icon, useRpc, areaName, screenLabel, shortId, initials, timeOf, dateTimeOf, dateOf, nf, UUID_RE,
+  isOnline, ago,
 } from '../ui';
+
+const LIVE_REFRESH_MS = 30_000;
+
+// Live-Status: grüner Punkt + aktueller Bildschirm, sonst "zuletzt vor …".
+function Status({ lastSeen, screen }) {
+  const on = isOnline(lastSeen);
+  return (
+    <span className={`status ${on ? 'on' : 'off'}`}>
+      <i />{on ? `online${screen ? ` · ${screen}` : ''}` : `zuletzt ${ago(lastSeen)}`}
+    </span>
+  );
+}
 
 const FILTERS = [
   ['all', 'Alle'],
+  ['online', 'Online'],
   ['today', 'Heute aktiv'],
   ['app', 'App'],
   ['browser', 'Browser'],
@@ -31,7 +45,7 @@ function describe(e) {
 }
 
 function Detail({ userId }) {
-  const state = useRpc('analytics_user', { p_user: userId });
+  const state = useRpc('analytics_user', { p_user: userId }, LIVE_REFRESH_MS);
   const [copied, setCopied] = useState(false);
 
   function copyId() {
@@ -48,6 +62,7 @@ function Detail({ userId }) {
         const acc = u.account;
         const maxMin = Math.max(1, ...u.areas.map((a) => a.minutes));
         const first = u.events[0], last = u.events[u.events.length - 1];
+        const lastScreen = [...u.events].reverse().find((e) => e.module);
         // Ältere Datenbankfunktion (vor Migration 103): Feld "account" fehlt ganz.
         const accountMissing = !('account' in u);
         const usage = 'uses_app' in s
@@ -73,6 +88,7 @@ function Detail({ userId }) {
                 <div className="avatar avatar-lg">{initials(u.user_id)}</div>
                 <div>
                   <h2>{shortId(u.user_id)}</h2>
+                  <Status lastSeen={s.last_seen} screen={lastScreen ? screenLabel(lastScreen.module, lastScreen.view) : null} />
                   <div className="detail-sub">{s.consent_at ? `Einwilligung am ${dateOf(s.consent_at)}` : `erste Daten ${dateTimeOf(s.first_seen)}`}</div>
                 </div>
               </div>
@@ -131,12 +147,13 @@ function Detail({ userId }) {
 export default function Users({ param }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const list = useRpc('analytics_users', { p_search: search || null, p_limit: 50 });
+  const list = useRpc('analytics_users', { p_search: search || null, p_limit: 50 }, LIVE_REFRESH_MS);
   const selected = param && UUID_RE.test(param) ? param : null;
   const today = dateOf(new Date().toISOString());
 
   const match = (u) => (
     filter === 'all'
+    || (filter === 'online' && isOnline(u.last_seen))
     || (filter === 'today' && dateOf(u.last_seen) === today)
     || (filter === 'app' && u.standalone)
     || (filter === 'browser' && !u.standalone)
@@ -149,7 +166,7 @@ export default function Users({ param }) {
           <label htmlFor="usersearch" className="label">Nutzer suchen</label>
           <input id="usersearch" type="text" value={search} placeholder="Kennung oder UUID" autoComplete="off"
                  onChange={(e) => setSearch(e.target.value)} />
-          <div className="hint tight">Gesucht wird nach dem Anfang der UUID. E-Mail-Adressen zeigt das Dashboard nicht.</div>
+          <div className="hint tight">Gesucht wird nach dem Anfang der UUID. E-Mail-Adressen zeigt das Dashboard nicht. Online = Aktivität in den letzten 3 Minuten, Aktualisierung alle 30 s.</div>
         </div>
 
         <div className="chips" role="group" aria-label="Filter">
@@ -165,11 +182,15 @@ export default function Users({ param }) {
               <>
                 {shown.map((u) => (
                   <a key={u.user_id} href={`#/users/${u.user_id}`} className={`user-item${selected === u.user_id ? ' active' : ''}`}>
-                    <span className="avatar">{initials(u.user_id)}</span>
+                    <span className="avatar-wrap">
+                      <span className="avatar">{initials(u.user_id)}</span>
+                      <i className={`live-dot ${isOnline(u.last_seen) ? 'on' : ''}`} aria-hidden="true" />
+                    </span>
                     <span className="user-main">
                       <span className="user-top"><b>{shortId(u.user_id)}</b><span className={`chip-tag ${u.standalone ? 'tag-app' : 'tag-browser'}`}>{u.standalone ? 'App' : 'Browser'}</span></span>
                       <span className="uuid-small">{u.user_id}</span>
-                      <span className="muted small">zuletzt {dateTimeOf(u.last_seen)} · {u.sessions} {u.sessions === 1 ? 'Sitzung' : 'Sitzungen'}</span>
+                      <Status lastSeen={u.last_seen} screen={u.last_module ? screenLabel(u.last_module, u.last_view) : null} />
+                      <span className="muted small">{u.sessions} {u.sessions === 1 ? 'Sitzung' : 'Sitzungen'}</span>
                     </span>
                     <span className="chev"><Icon name="chevron" size={18} /></span>
                   </a>

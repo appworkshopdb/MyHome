@@ -58,7 +58,7 @@ function AreaChart({ series }) {
 }
 
 export default function Overview({ days }) {
-  const overview = useRpc('analytics_overview', { p_days: days });
+  const overview = useRpc('analytics_overview', { p_days: days }, 60_000);
   const live = useRpc('analytics_live', {}, 30_000);
 
   return (

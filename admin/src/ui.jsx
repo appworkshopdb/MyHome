@@ -30,6 +30,24 @@ export function dateOf(iso) {
   return new Date(iso).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// "Online": letztes Ereignis liegt weniger als 3 Minuten zurück (wie "Gerade aktiv").
+// Die App sendet jede Minute einen Heartbeat, solange sie sichtbar und bedient wird.
+export const ONLINE_MS = 3 * 60 * 1000;
+
+export function isOnline(iso) {
+  return Boolean(iso) && Date.now() - new Date(iso).getTime() < ONLINE_MS;
+}
+
+export function ago(iso) {
+  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return 'vor wenigen Sekunden';
+  const m = Math.round(s / 60);
+  if (m < 60) return `vor ${m} Min.`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `vor ${h} Std.`;
+  return `vor ${Math.round(h / 24)} Tagen`;
+}
+
 export function shortId(userId) {
   return `u_${String(userId).replace(/-/g, '').slice(0, 4)}`;
 }
