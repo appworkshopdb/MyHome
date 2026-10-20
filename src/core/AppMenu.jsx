@@ -11,6 +11,8 @@ import {
   getGoogleCalendarStatus, connectGoogleCalendar, syncGoogleCalendar, disconnectGoogleCalendar,
 } from './lib/googleCalendar';
 import { ago } from './lib/calendarUtils';
+import { setConsent, track } from './lib/analytics';
+import { useAnalyticsConsent } from './lib/useAnalyticsConsent';
 
 const NOTIFICATION_CATEGORIES = [
   { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
@@ -42,6 +44,7 @@ export default function AppMenu() {
   const [gcalStatus, setGcalStatus] = useState('laedt');
   const [gcalConnection, setGcalConnection] = useState(null);
   const [gcalBusy, setGcalBusy] = useState(false);
+  const analyticsConsent = useAnalyticsConsent();
 
   useEffect(() => {
     let aktiv = true;
@@ -66,7 +69,7 @@ export default function AppMenu() {
 
   async function handleEnablePush() {
     setPushBusy(true);
-    try { await subscribeToPush(session); setPushStatus('subscribed'); setPrefs(await getNotificationPrefs(session)); showToast('Benachrichtigungen aktiviert'); }
+    try { await subscribeToPush(session); setPushStatus('subscribed'); setPrefs(await getNotificationPrefs(session)); track('push_enabled'); showToast('Benachrichtigungen aktiviert'); }
     catch (e) { showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus()); }
     finally { setPushBusy(false); }
   }
@@ -148,6 +151,14 @@ export default function AppMenu() {
       {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.</p>}
       {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button></>}
       {pushStatus === 'subscribed' && prefs && <><div className="notif-toggle-list">{NOTIFICATION_CATEGORIES.map((c) => <NotifToggle key={c.key} checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} label={c.label} hint={c.hint} />)}</div><button className="btn btn-secondary" style={{ marginTop: 14, width: '100%' }} disabled={pushBusy} onClick={handleDisablePush}>Deaktivieren</button></>}
+
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Nutzungsdaten</div>
+      <NotifToggle
+        checked={analyticsConsent === 'granted'}
+        onChange={() => setConsent(analyticsConsent !== 'granted')}
+        label="Nutzungsstatistik teilen"
+        hint="Welche Bereiche du öffnest, Klicks, Fehler — nie Inhalte wie Beträge oder Einträge."
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { track } from './analytics';
 
 // Steuert das globale Erfassen-Sheet (siehe core/components/EntrySheet.jsx).
 // Finance-Views können den aktuell angezeigten Buchungsmonat hinterlegen.
@@ -15,7 +16,10 @@ export function EntrySheetProvider({ children }) {
   // des noch nicht neu gerenderten State.
   const versionRef = useRef(0);
 
-  const open = useCallback((moduleId) => setOpenFor(moduleId), []);
+  const open = useCallback((moduleId) => {
+    track('sheet_open', { target: String(moduleId) });
+    setOpenFor(moduleId);
+  }, []);
   const close = useCallback(() => setOpenFor(null), []);
   const notifySaved = useCallback(() => {
     versionRef.current += 1;

@@ -1,4 +1,5 @@
 import { getSupabase } from './supabaseClient';
+import { track } from './analytics';
 
 // Körperdaten (Geschlecht, Alter, Größe, Gewicht, Aktivität, Ziel) —
 // bewusst in core/, nicht in einem Modul: die Daten gehören mehreren
@@ -55,6 +56,7 @@ export async function saveBodyProfile(session, profile) {
   };
   const { error } = await getSupabase().from('body_profile').upsert(payload, { onConflict: 'owner_id' });
   if (error) throw error;
+  track('body_profile_saved');
   // Popup/Warnpunkt sofort aktualisieren, egal von wo aus gespeichert
   // wurde (Profil, Ernährung, Sport) — siehe useRequiredDataStatus.js,
   // das auf dieses Event hört. Body-Daten sind der einzige aktuell
