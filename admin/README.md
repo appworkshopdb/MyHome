@@ -62,6 +62,14 @@ Optional als zweite Schranke: **Cloudflare Zero Trust → Access**, Anwendung f�
 diese Adresse anlegen und nur deine E-Mail zulassen (Einmal-Code per Mail).
 Preise und Free-Limits bitte bei Cloudflare prüfen.
 
+### Wenn der Build fehlschlägt
+
+| Meldung | Ursache |
+|---|---|
+| `Failed: root directory not found` | Der gebaute Branch enthält `admin/` nicht. Unter **Settings → Build → Production branch** den Branch einstellen, in dem der Ordner liegt (solange nicht in `main`: `claude/stoic-dijkstra-ri8fz7`). **Retry build** wiederholt den alten Build desselben Branches, ein neuer Branch-Stand braucht einen neuen Push. |
+| Login-Seite meldet fehlende `VITE_SUPABASE_…` | Build variables fehlen. Nach dem Eintragen neu bauen, die Werte werden beim Build eingebaut. |
+| Name-Konflikt mit `wrangler.jsonc` | Projektname muss `nestua-admin` sein (oder `name` in `admin/wrangler.jsonc` anpassen). |
+
 ### Lokal ausprobieren
 
 ```bash
