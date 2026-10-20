@@ -25,6 +25,11 @@ export function dateTimeOf(iso) {
   return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+export function dateOf(iso) {
+  if (!iso) return '–';
+  return new Date(iso).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export function shortId(userId) {
   return `u_${String(userId).replace(/-/g, '').slice(0, 4)}`;
 }
