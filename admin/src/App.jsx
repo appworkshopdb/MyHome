@@ -95,7 +95,7 @@ function Dashboard() {
   const [menu, setMenu] = useState(false);
 
   return (
-    <div className="app">
+    <div className="layout">
       <aside className="sidebar">
         <Brand light />
         <nav aria-label="Bereiche">

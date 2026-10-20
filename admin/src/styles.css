@@ -50,7 +50,7 @@ button { cursor: pointer; }
 .span2 { grid-column: span 2; }
 
 /* ── Rahmen ─────────────────────────────────────────────── */
-.app { display: flex; min-height: 100vh; }
+.layout { display: flex; min-height: 100vh; }
 
 .sidebar {
   flex: 0 0 var(--nav-w);
@@ -191,8 +191,8 @@ input[type='text'], input[type='email'], input[type='password'] {
 .user-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .user-top { display: flex; align-items: center; gap: 8px; }
 .chip-tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
-.chip-tag.app { background: var(--navy-100); color: var(--navy-800); }
-.chip-tag.browser { background: var(--ochre-100); color: var(--ochre); }
+.chip-tag.tag-app { background: var(--navy-100); color: var(--navy-800); }
+.chip-tag.tag-browser { background: var(--ochre-100); color: var(--ochre); }
 .uuid-small, .uuid-row code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; word-break: break-all; }
 .uuid-small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chev { display: none; color: var(--muted); }

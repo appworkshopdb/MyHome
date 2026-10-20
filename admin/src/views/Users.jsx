@@ -156,7 +156,7 @@ export default function Users({ param }) {
                   <a key={u.user_id} href={`#/users/${u.user_id}`} className={`user-item${selected === u.user_id ? ' active' : ''}`}>
                     <span className="avatar">{initials(u.user_id)}</span>
                     <span className="user-main">
-                      <span className="user-top"><b>{shortId(u.user_id)}</b><span className={`chip-tag ${u.standalone ? 'app' : 'browser'}`}>{u.standalone ? 'App' : 'Browser'}</span></span>
+                      <span className="user-top"><b>{shortId(u.user_id)}</b><span className={`chip-tag ${u.standalone ? 'tag-app' : 'tag-browser'}`}>{u.standalone ? 'App' : 'Browser'}</span></span>
                       <span className="uuid-small">{u.user_id}</span>
                       <span className="muted small">zuletzt {dateTimeOf(u.last_seen)} · {u.sessions} {u.sessions === 1 ? 'Sitzung' : 'Sitzungen'}</span>
                     </span>
