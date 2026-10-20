@@ -7,24 +7,21 @@ export default function Errors({ days }) {
     <Card title="JavaScript-Fehler" aside={`letzte ${days} Tage · gruppiert nach Meldung`}>
       <State state={state}>
         {(rows) => (
-          <div className="table-scroll">
-            <table>
-              <thead><tr><th>Meldung</th><th>Datei</th><th>Anzahl</th><th>Nutzer</th><th>Zuletzt</th><th>Version</th></tr></thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td className="wrap"><b>{r.message || '(ohne Text)'}</b></td>
-                    <td>{r.file || '–'}</td>
-                    <td>{nf.format(r.count)}</td>
-                    <td>{nf.format(r.users)}</td>
-                    <td>{dateTimeOf(r.last)}</td>
-                    <td>{r.version || '–'}</td>
-                  </tr>
-                ))}
-                {!rows.length && <tr><td colSpan="6" className="muted">Keine Fehler im Zeitraum.</td></tr>}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {rows.map((r, i) => (
+              <div key={i} className="error-item">
+                <div className="error-msg">{r.message || '(ohne Text)'}</div>
+                <div className="error-meta">
+                  <span className="pill down">{nf.format(r.count)}×</span>
+                  <span>{nf.format(r.users)} Nutzer</span>
+                  <span>{r.file || '–'}</span>
+                  <span>zuletzt {dateTimeOf(r.last)}</span>
+                  <span>Version {r.version || '–'}</span>
+                </div>
+              </div>
+            ))}
+            {!rows.length && <div className="note">Keine Fehler im Zeitraum.</div>}
+          </>
         )}
       </State>
     </Card>

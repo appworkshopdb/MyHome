@@ -1,27 +1,45 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { configured, configInfo, getSession, subscribe, signIn, signOut, rpc } from './api';
+import { Icon, RangeControl } from './ui';
 import Overview from './views/Overview';
 import Funnels from './views/Funnels';
 import Users from './views/Users';
 import Errors from './views/Errors';
 
 const TABS = [
-  { id: 'overview', label: 'Übersicht', View: Overview, ranged: true },
-  { id: 'funnels', label: 'Funnels & Abbruch', View: Funnels, ranged: true },
-  { id: 'users', label: 'Nutzer', View: Users, ranged: false },
-  { id: 'errors', label: 'Fehler', View: Errors, ranged: true },
+  { id: 'overview', label: 'Übersicht', short: 'Übersicht', icon: 'grid', View: Overview, ranged: true, sub: 'stand' },
+  { id: 'funnels', label: 'Funnels & Abbruch', short: 'Funnels', icon: 'funnel', View: Funnels, ranged: true, sub: 'Wo Nutzer abspringen' },
+  { id: 'users', label: 'Nutzer', short: 'Nutzer', icon: 'users', View: Users, ranged: false, sub: 'Pseudonym über UUID · keine E-Mail-Adressen' },
+  { id: 'errors', label: 'Fehler', short: 'Fehler', icon: 'alert', View: Errors, ranged: true, sub: 'JavaScript-Fehler aus der App' },
 ];
-const RANGES = [7, 30, 90];
 
-function useTab() {
-  const read = () => TABS.find((t) => t.id === window.location.hash.replace(/^#\/?/, '')) || TABS[0];
-  const [tab, setTab] = useState(read);
+// Adresse: #/<tab>[/<param>], z.B. #/users/<uuid>
+function readRoute() {
+  const [id, param] = window.location.hash.replace(/^#\/?/, '').split('/');
+  return { tab: TABS.find((t) => t.id === id) || TABS[0], param: param || null };
+}
+
+function useRoute() {
+  const [route, setRoute] = useState(readRoute);
   useEffect(() => {
-    const on = () => setTab(read());
+    const on = () => setRoute(readRoute());
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  return tab;
+  return route;
+}
+
+function standText() {
+  const now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short' });
+  return `Stand ${now} · nur Nutzer mit Einwilligung`;
+}
+
+function Brand({ light = false }) {
+  return (
+    <div className={`brand${light ? ' brand-light' : ''}`}>
+      <span className="brand-name">NESTUA</span><span className="brand-sub">Analytics</span>
+    </div>
+  );
 }
 
 function Login() {
@@ -39,8 +57,8 @@ function Login() {
 
   return (
     <main className="login">
-      <form className="card login-card" onSubmit={submit}>
-        <div className="brand">NESTUA <span>Analytics</span></div>
+      <form className="login-card" onSubmit={submit}>
+        <Brand />
         <p className="muted">Interner Zugang. Anmeldung mit deinem Nestua-Konto, das als Admin freigeschaltet ist.</p>
         {!configured && (
           <div className="note error">
@@ -53,7 +71,7 @@ function Login() {
         <label className="label" htmlFor="password">Passwort</label>
         <input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         {error && <div className="note error" role="alert">{error}</div>}
-        <button className="btn primary" disabled={busy || !configured}>{busy ? 'Bitte warten…' : 'Anmelden'}</button>
+        <button className="btn primary block" disabled={busy || !configured}>{busy ? 'Bitte warten…' : 'Anmelden'}</button>
       </form>
     </main>
   );
@@ -62,40 +80,64 @@ function Login() {
 function Denied() {
   return (
     <main className="login">
-      <div className="card login-card">
-        <div className="brand">NESTUA <span>Analytics</span></div>
+      <div className="login-card">
+        <Brand />
         <div className="note error" role="alert">Dieses Konto hat keinen Zugriff auf die Analyse.</div>
-        <button className="btn" onClick={signOut}>Abmelden</button>
+        <button className="btn block" onClick={signOut}>Abmelden</button>
       </div>
     </main>
   );
 }
 
 function Dashboard() {
-  const tab = useTab();
+  const { tab, param } = useRoute();
   const [days, setDays] = useState(30);
+  const [menu, setMenu] = useState(false);
 
   return (
-    <div className="shell">
-      <header className="top">
-        <div className="brand">NESTUA <span>Analytics</span></div>
-        <nav className="tabs" aria-label="Bereiche">
+    <div className="app">
+      <aside className="sidebar">
+        <Brand light />
+        <nav aria-label="Bereiche">
           {TABS.map((t) => (
-            <a key={t.id} href={`#/${t.id}`} className={t.id === tab.id ? 'active' : ''} aria-current={t.id === tab.id ? 'page' : undefined}>{t.label}</a>
+            <a key={t.id} href={`#/${t.id}`} className={t.id === tab.id ? 'active' : ''} aria-current={t.id === tab.id ? 'page' : undefined}>
+              <Icon name={t.icon} />{t.label}
+            </a>
           ))}
         </nav>
-        <div className="top-right">
-          {tab.ranged && (
-            <div className="range" role="group" aria-label="Zeitraum">
-              {RANGES.map((r) => (
-                <button key={r} className={r === days ? 'active' : ''} onClick={() => setDays(r)}>{r} Tage</button>
-              ))}
-            </div>
-          )}
-          <button className="btn small" onClick={signOut}>Abmelden</button>
+        <div className="sidebar-foot">
+          <span className="avatar avatar-dark">T</span>
+          <span className="sidebar-user"><b>Admin</b><button type="button" onClick={signOut}>Abmelden</button></span>
         </div>
-      </header>
-      <main className="content"><tab.View days={days} /></main>
+      </aside>
+
+      <div className="main">
+        <div className="topbar">
+          <Brand />
+          <div className="menu-wrap">
+            <button type="button" className="avatar avatar-btn" aria-label="Konto" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>T</button>
+            {menu && <div className="menu"><button type="button" onClick={signOut}>Abmelden</button></div>}
+          </div>
+        </div>
+
+        <header className="page-head">
+          <div>
+            <h1>{tab.label}</h1>
+            <div className="page-sub">{tab.sub === 'stand' ? standText() : tab.sub}</div>
+          </div>
+          {tab.ranged && <RangeControl days={days} onChange={setDays} />}
+        </header>
+
+        <main className="content"><tab.View days={days} param={param} /></main>
+      </div>
+
+      <nav className="tabbar" aria-label="Bereiche">
+        {TABS.map((t) => (
+          <a key={t.id} href={`#/${t.id}`} className={t.id === tab.id ? 'active' : ''} aria-current={t.id === tab.id ? 'page' : undefined}>
+            <Icon name={t.icon} size={22} />{t.short}
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }
