@@ -48,11 +48,16 @@ function Detail({ userId }) {
         const acc = u.account;
         const maxMin = Math.max(1, ...u.areas.map((a) => a.minutes));
         const first = u.events[0], last = u.events[u.events.length - 1];
-        const usage = s.uses_app && s.uses_browser ? 'App und Browser' : s.uses_app ? 'App (installiert)' : 'Browser';
+        // Ältere Datenbankfunktion (vor Migration 103): Feld "account" fehlt ganz.
+        const accountMissing = !('account' in u);
+        const usage = 'uses_app' in s
+          ? (s.uses_app && s.uses_browser ? 'App und Browser' : s.uses_app ? 'App (installiert)' : 'Browser')
+          : (s.standalone ? 'App (installiert)' : 'Browser');
+        const NA = 'nicht verfügbar';
         const stats = [
-          ['Registriert am', acc ? dateOf(acc.created_at) : '–'],
-          ['Letzter Login', acc?.last_sign_in_at ? dateTimeOf(acc.last_sign_in_at) : '–'],
-          ['E-Mail bestätigt', acc ? (acc.email_confirmed ? 'Ja' : 'Nein') : '–'],
+          ['Registriert am', accountMissing ? NA : acc ? dateOf(acc.created_at) : '–'],
+          ['Letzter Login', accountMissing ? NA : acc?.last_sign_in_at ? dateTimeOf(acc.last_sign_in_at) : '–'],
+          ['E-Mail bestätigt', accountMissing ? NA : acc ? (acc.email_confirmed ? 'Ja' : 'Nein') : '–'],
           ['Nutzung', usage],
           ['App-Version', s.app_version || '–'],
           ['Sitzungen', nf.format(s.sessions)],
@@ -78,9 +83,15 @@ function Detail({ userId }) {
               </div>
             </section>
 
+            {accountMissing && (
+              <div className="note error" role="alert">
+                Konto-Daten und App-/Browser-Nutzung fehlen: In der Datenbank läuft noch die alte Funktion analytics_user().
+                Migration 103 (supabase/migrations/103_analytics_user_profile.sql) im Staging-Backend ausführen.
+              </div>
+            )}
             <div className="stat-grid">
               {stats.map(([label, value]) => (
-                <div key={label} className="stat"><span>{label}</span><b>{value}</b></div>
+                <div key={label} className={`stat${value === NA ? ' stat-na' : ''}`}><span>{label}</span><b>{value}</b></div>
               ))}
             </div>
 
