@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { configured, getSession, subscribe, signIn, signOut, rpc } from './api';
+import { configured, configInfo, getSession, subscribe, signIn, signOut, rpc } from './api';
 import Overview from './views/Overview';
 import Funnels from './views/Funnels';
 import Users from './views/Users';
@@ -42,7 +42,12 @@ function Login() {
       <form className="card login-card" onSubmit={submit}>
         <div className="brand">NESTUA <span>Analytics</span></div>
         <p className="muted">Interner Zugang. Anmeldung mit deinem Nestua-Konto, das als Admin freigeschaltet ist.</p>
-        {!configured && <div className="note error">VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY fehlen im Build.</div>}
+        {!configured && (
+          <div className="note error">
+            Supabase-Einstellungen im Build fehlen oder sind ungültig. Adresse: {configInfo.url} · Key: {configInfo.hasKey ? 'vorhanden' : 'fehlt'}.
+            Erwartet: https://xxxxx.supabase.co
+          </div>
+        )}
         <label className="label" htmlFor="email">E-Mail</label>
         <input id="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
         <label className="label" htmlFor="password">Passwort</label>

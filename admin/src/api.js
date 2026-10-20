@@ -7,9 +7,25 @@
 // in der Datenbank entschieden (analytics_admins + prüfende Funktionen),
 // nicht hier im Browser.
 
-const BASE = (import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '');
-const KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
-export const configured = Boolean(BASE && KEY);
+// Tolerant gegenüber typischen Eingabefehlern in den Build-Variablen:
+// Anführungszeichen, Leerzeichen, angehängtes /rest/v1 oder /auth/v1, "/" am Ende.
+function clean(v) { return String(v || '').trim().replace(/^["']|["']$/g, '').trim(); }
+const BASE = clean(import.meta.env.VITE_SUPABASE_URL).replace(/\/(rest|auth)\/v1.*$/, '').replace(/\/+$/, '');
+const KEY = clean(import.meta.env.VITE_SUPABASE_ANON_KEY);
+export const urlValid = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(BASE);
+export const configured = Boolean(urlValid && KEY);
+// Nur zur Anzeige im Login (die Adresse ist öffentlich, der Key wird nie angezeigt).
+export const configInfo = { url: BASE || '(leer)', hasKey: Boolean(KEY) };
+
+// Netzwerkfehler (falsche Adresse, offline, Blocker) verständlich machen —
+// der Browser meldet sonst nur "Failed to fetch".
+async function request(url, init) {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new Error(`Keine Verbindung zu ${new URL(url).host}. Adresse in VITE_SUPABASE_URL, Internet oder Browser-Blocker prüfen.`);
+  }
+}
 
 const STORE = 'nestua_admin_session';
 const REFRESH_MARGIN_MS = 60_000;
@@ -36,7 +52,7 @@ export function subscribe(fn) { listeners.add(fn); return () => listeners.delete
 export function signOut() { save(null); }
 
 async function authRequest(path, body) {
-  const res = await fetch(`${BASE}/auth/v1/${path}`, {
+  const res = await request(`${BASE}/auth/v1/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: KEY },
     body: JSON.stringify(body),
@@ -63,7 +79,7 @@ async function validToken() {
 
 export async function rpc(fn, args = {}) {
   const token = await validToken();
-  const res = await fetch(`${BASE}/rest/v1/rpc/${fn}`, {
+  const res = await request(`${BASE}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: `Bearer ${token}` },
     body: JSON.stringify(args),
