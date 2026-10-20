@@ -45,7 +45,7 @@ function Login() {
         {!configured && (
           <div className="note error">
             Supabase-Einstellungen im Build fehlen oder sind ungültig. Adresse: {configInfo.url} · Key: {configInfo.hasKey ? 'vorhanden' : 'fehlt'}.
-            Erwartet: https://xxxxx.supabase.co
+            Erwartet: https://dein-projekt.supabase.co oder deine eigene Domain, ohne Pfad.
           </div>
         )}
         <label className="label" htmlFor="email">E-Mail</label>

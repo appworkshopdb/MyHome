@@ -12,7 +12,8 @@
 function clean(v) { return String(v || '').trim().replace(/^["']|["']$/g, '').trim(); }
 const BASE = clean(import.meta.env.VITE_SUPABASE_URL).replace(/\/(rest|auth)\/v1.*$/, '').replace(/\/+$/, '');
 const KEY = clean(import.meta.env.VITE_SUPABASE_ANON_KEY);
-export const urlValid = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(BASE);
+// Eigene Domains (z.B. https://api.nestua.de) sind erlaubt, nur https mit Hostname.
+export const urlValid = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(BASE);
 export const configured = Boolean(urlValid && KEY);
 // Nur zur Anzeige im Login (die Adresse ist öffentlich, der Key wird nie angezeigt).
 export const configInfo = { url: BASE || '(leer)', hasKey: Boolean(KEY) };

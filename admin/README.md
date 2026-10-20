@@ -68,6 +68,7 @@ Preise und Free-Limits bitte bei Cloudflare prüfen.
 |---|---|
 | `Failed: root directory not found` | Der gebaute Branch enthält `admin/` nicht. Unter **Settings → Build → Production branch** den Branch einstellen, in dem der Ordner liegt (solange nicht in `main`: `claude/stoic-dijkstra-ri8fz7`). **Retry build** wiederholt den alten Build desselben Branches, ein neuer Branch-Stand braucht einen neuen Push. |
 | Login-Seite meldet fehlende `VITE_SUPABASE_…` | Build variables fehlen. Nach dem Eintragen neu bauen, die Werte werden beim Build eingebaut. |
+| Login meldet "Verbindung" oder wird geblockt, obwohl die URL stimmt | Bei einer eigenen Supabase-Domain (nicht `*.supabase.co`, nicht `*.nestua.de`) deren Host in `public/_headers` bei `connect-src` ergänzen. |
 | Name-Konflikt mit `wrangler.jsonc` | Projektname muss `nestua-admin` sein (oder `name` in `admin/wrangler.jsonc` anpassen). |
 
 ### Lokal ausprobieren
