@@ -22,6 +22,14 @@ function describe(e) {
 
 function Detail({ userId }) {
   const state = useRpc('analytics_user', { p_user: userId });
+  const [copied, setCopied] = useState(false);
+
+  function copyId() {
+    navigator.clipboard?.writeText(userId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {});
+  }
   return (
     <State state={state}>
       {(u) => {
@@ -39,6 +47,11 @@ function Detail({ userId }) {
         return (
           <>
             <Card title={shortId(u.user_id)} aside={`erste Daten ${dateTimeOf(s.first_seen)}${s.consent_at ? ` · Einwilligung ${dateTimeOf(s.consent_at)}` : ''}`}>
+              <div className="uuid-row">
+                <span className="muted">UUID (Supabase → Authentication → Users)</span>
+                <code>{u.user_id}</code>
+                <button className="btn small" onClick={copyId}>{copied ? 'Kopiert' : 'Kopieren'}</button>
+              </div>
               <div className="stat-grid">
                 {stats.map(([label, value]) => (
                   <div key={label} className="stat"><span>{label}</span><b>{value}</b></div>
@@ -87,9 +100,9 @@ export default function Users() {
     <div className="row top">
       <Card className="grow1 users-list">
         <label htmlFor="usersearch" className="label">Nutzer suchen</label>
-        <input id="usersearch" type="text" value={search} placeholder="Kennung, z. B. u_7c2e"
+        <input id="usersearch" type="text" value={search} placeholder="Kennung oder UUID, z. B. u_7c2e"
                onChange={(e) => setSearch(e.target.value)} />
-        <div className="hint">Nutzer erscheinen nur mit pseudonymer Kennung, nicht mit E-Mail.</div>
+        <div className="hint">Gesucht wird nach dem Anfang der UUID. E-Mail-Adressen zeigt das Dashboard nicht, über die UUID findest du das Konto in Supabase.</div>
         <State state={list}>
           {(users) => (
             <>
@@ -97,6 +110,7 @@ export default function Users() {
                 <button key={u.user_id} className={`user-item${selected === u.user_id ? ' active' : ''}`} onClick={() => setSelected(u.user_id)}>
                   <span>
                     <b>{shortId(u.user_id)}</b>
+                    <span className="uuid-small">{u.user_id}</span>
                     <span className="muted small">zuletzt {dateTimeOf(u.last_seen)} · {u.standalone ? 'App' : 'Browser'}</span>
                   </span>
                   <span className="muted small nowrap">{u.sessions} Sitzungen</span>
