@@ -1,4 +1,5 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
+import { track } from '../../../core/lib/analytics';
 
 function ownerId(session) {
   return session.user.id;
@@ -29,6 +30,7 @@ export async function saveWorkout(session, workout) {
   };
   const { data, error } = await getSupabase().from('spo_workouts').upsert(payload).select().single();
   if (error) throw error;
+  track('workout_saved', { status: payload.status });
   return data;
 }
 

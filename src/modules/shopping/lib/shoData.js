@@ -5,6 +5,7 @@
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
+import { track } from '../../../core/lib/analytics.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID).
 // Analog zu rawAuth.js: kein supabase.auth.getUser(),
@@ -174,6 +175,7 @@ export async function saveItem(item) {
       .select()
       .single();
     if (error) throw error;
+    track('shopping_item_added');
     return data;
   }
 }

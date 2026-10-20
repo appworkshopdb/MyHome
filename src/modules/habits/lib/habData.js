@@ -3,6 +3,7 @@
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
+import { track } from '../../../core/lib/analytics.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID)
 // Analog zum rawAuth-Workaround: kein supabase.auth.getUser(),
@@ -82,6 +83,7 @@ export async function saveHabit(habit) {
       .select()
       .single();
     if (error) throw error;
+    track('habit_created', { frequency: habit.frequency ?? 'daily' });
     return data;
   }
 }
@@ -174,6 +176,7 @@ export async function toggleEntry(habitId, date, countValue = 1) {
       .select()
       .single();
     if (error) throw error;
+    track('habit_checkin');
     return data;
   } else {
     const owner_id = getOwnerIdFromToken();
@@ -188,6 +191,7 @@ export async function toggleEntry(habitId, date, countValue = 1) {
       .select()
       .single();
     if (error) throw error;
+    track('habit_checkin');
     return data;
   }
 }

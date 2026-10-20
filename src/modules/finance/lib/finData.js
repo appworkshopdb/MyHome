@@ -1,4 +1,5 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
+import { track } from '../../../core/lib/analytics';
 import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
 
 function ownerId(session) {
@@ -151,6 +152,7 @@ export async function saveEntry(session, entry) {
   };
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
   if (error) throw error;
+  track('finance_entry_saved', { category: String(entry.category ?? '') });
   return data;
 }
 

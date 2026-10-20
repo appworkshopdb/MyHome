@@ -53,24 +53,32 @@ from (
 group by tag
 order by tag;
 
--- Funnel (Vorlage): Nutzer, die Ereignis A und danach B ausgelöst haben.
--- Namen anpassen, sobald die Ereignisse per data-track / track() gesetzt sind.
-with a as (
-  select user_id, min(ts) as t from analytics_events
-  where name = 'onboarding_start' group by 1
-), b as (
-  select user_id, min(ts) as t from analytics_events
-  where name = 'habit_created' group by 1
-)
-select count(*)                                   as schritt_1,
-       count(*) filter (where b.t > a.t)          as schritt_2,
-       round(100.0 * count(*) filter (where b.t > a.t) / nullif(count(*), 0), 1) as quote_prozent
-from a left join b using (user_id);
-
--- Abbruch bei Formularen (Vorlage): geöffnet vs. gespeichert
+-- Funnel Gewohnheiten-Onboarding: wie viele Nutzer erreichen welchen Schritt?
 select
-  count(*) filter (where name = 'sheet_open_entry')  as geoeffnet,
-  count(*) filter (where name = 'entry_saved')       as gespeichert
+  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '1') as schritt_1,
+  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '2') as schritt_2,
+  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '3') as schritt_3,
+  count(distinct user_id) filter (where name = 'onboarding_done')                          as angelegt,
+  count(distinct user_id) filter (where name = 'onboarding_skip')                          as uebersprungen,
+  count(distinct user_id) filter (where name = 'habit_checkin')                            as erster_checkin
+from analytics_events
+where ts > now() - interval '30 days';
+
+-- Abbruch beim Erfassen: Sheet geöffnet (pro Modul) vs. gespeichert.
+-- Hinweis: sheet_open zählt jedes Öffnen über den "+"-Button; Speicher-Ereignisse
+-- gibt es für Finanzen, Sport (workout_saved) und Einkauf (shopping_item_added).
+select
+  count(*) filter (where name = 'sheet_open' and props->>'target' = 'finance') as finanzen_geoeffnet,
+  count(*) filter (where name = 'finance_entry_saved')                         as finanzen_gespeichert,
+  count(*) filter (where name = 'sheet_open' and props->>'target' = 'sport')   as sport_geoeffnet,
+  count(*) filter (where name = 'workout_saved')                               as sport_gespeichert
+from analytics_events
+where ts > now() - interval '30 days';
+
+-- Wer füllt Pflichtangaben aus? (Hinweis angetippt vs. Körperprofil gespeichert)
+select
+  count(distinct user_id) filter (where name = 'required_data_fix')  as hinweis_angetippt,
+  count(distinct user_id) filter (where name = 'body_profile_saved') as profil_gespeichert
 from analytics_events
 where ts > now() - interval '30 days';
 

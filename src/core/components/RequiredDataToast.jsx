@@ -12,7 +12,7 @@ export default function RequiredDataToast({ warnings, onFix }) {
         const mod = getModule(w.moduleId);
         const label = w.moduleId === 'profile' ? 'Profil' : (mod?.name || w.moduleId);
         return (
-          <button key={w.moduleId} className="required-toast" onClick={() => onFix(w.moduleId)}>
+          <button key={w.moduleId} className="required-toast" data-track="required_data_fix" onClick={() => onFix(w.moduleId)}>
             <span className="required-toast-dot" />
             <span className="required-toast-text">
               <span className="required-toast-title">{label}</span>
