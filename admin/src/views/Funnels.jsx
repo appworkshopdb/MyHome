@@ -1,4 +1,4 @@
-import { Card, State, useRpc, nf } from '../ui';
+import { Card, State, useRpc, areaName, nf } from '../ui';
 
 function cohortStyle(v) {
   if (v === null || v === undefined) return { background: '#F4F6FA', color: '#5B6577' };
@@ -17,7 +17,7 @@ export default function Funnels({ days }) {
         return (
           <>
             <div className="row">
-              <Card title="Funnel: Gewohnheiten-Onboarding" aside={`letzte ${f.days} Tage · Nutzer je Schritt`} className="grow3">
+              <Card title="Funnel: Tutorials beim ersten Besuch" aside={`letzte ${f.days} Tage · Nutzer je Schritt`} className="grow3">
                 {f.onboarding.map((s, i) => {
                   const prev = i === 0 ? s.count : f.onboarding[i - 1].count;
                   const lost = Math.max(prev - s.count, 0);
@@ -34,8 +34,25 @@ export default function Funnels({ days }) {
                     </div>
                   );
                 })}
+                {f.tutorials?.length > 0 && (
+                  <div className="table-scroll">
+                    <table>
+                      <thead><tr><th>Bereich</th><th>Gezeigt</th><th>Beendet</th><th>Aktion ausgeführt</th></tr></thead>
+                      <tbody>
+                        {f.tutorials.map((t) => (
+                          <tr key={t.tutorial}>
+                            <td><b>{areaName(t.tutorial)}</b></td>
+                            <td>{nf.format(t.shown)}</td>
+                            <td>{nf.format(t.done)}</td>
+                            <td>{nf.format(t.acted)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
                 <div className="hint">
-                  {nf.format(f.skipped)} Nutzer haben das Onboarding übersprungen. Ein Nutzer zählt je Schritt höchstens einmal.
+                  {nf.format(f.skipped)} Nutzer haben mindestens ein Tutorial übersprungen. Ein Nutzer zählt je Schritt höchstens einmal.
                 </div>
               </Card>
 

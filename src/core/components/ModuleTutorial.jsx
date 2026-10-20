@@ -19,6 +19,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useEntrySheet } from '../lib/EntrySheetContext';
 import { useGamificationStore } from '../lib/gamificationStore';
 import { useTutorialsDone, markTutorialDone } from '../lib/onboardingData';
+import { track } from '../lib/analytics';
 import { TUTORIALS, tutorialIdFor } from '../lib/tutorials';
 import Bird from './birds/Bird';
 import TodoSheet from './TodoSheet';
@@ -77,9 +78,14 @@ export default function ModuleTutorial({ activeModule }) {
     session && tutorial && done && (!done.includes(id) || success) && !dismissed.has(id)
     && gami.loaded && gami.bird_species, // nie über dem Vogel-Willkommens-Assistenten
   );
+
+  // Funnel-Messung: Tutorial gezeigt → abgeschlossen/übersprungen → Aktion ausgeführt.
+  useEffect(() => { if (visible && !success) track('tutorial_shown', { tutorial: id }); }, [visible, id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!visible) return null;
 
   function finish(didAct) {
+    track('tutorial_done', { tutorial: id, acted: Boolean(didAct), slide });
     markTutorialDone(session, id);
     setActing(false);
     if (didAct && tutorial.celebrate !== false && tutorial.success) {

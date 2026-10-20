@@ -53,16 +53,15 @@ from (
 group by tag
 order by tag;
 
--- Funnel Gewohnheiten-Onboarding: wie viele Nutzer erreichen welchen Schritt?
-select
-  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '1') as schritt_1,
-  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '2') as schritt_2,
-  count(distinct user_id) filter (where name = 'onboarding_step' and props->>'step' = '3') as schritt_3,
-  count(distinct user_id) filter (where name = 'onboarding_done')                          as angelegt,
-  count(distinct user_id) filter (where name = 'onboarding_skip')                          as uebersprungen,
-  count(distinct user_id) filter (where name = 'habit_checkin')                            as erster_checkin
+-- Tutorials beim ersten Besuch eines Bereichs: gezeigt → beendet → Aktion ausgeführt
+select props ->> 'tutorial' as bereich,
+  count(distinct user_id) filter (where name = 'tutorial_shown')                                as gezeigt,
+  count(distinct user_id) filter (where name = 'tutorial_done')                                 as beendet,
+  count(distinct user_id) filter (where name = 'tutorial_done' and props ->> 'acted' = 'true')  as aktion_ausgefuehrt
 from analytics_events
-where ts > now() - interval '30 days';
+where ts > now() - interval '30 days' and name in ('tutorial_shown', 'tutorial_done')
+group by 1
+order by gezeigt desc;
 
 -- Abbruch beim Erfassen: Sheet geöffnet (pro Modul) vs. gespeichert.
 -- Hinweis: sheet_open zählt jedes Öffnen über den "+"-Button; Speicher-Ereignisse
