@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Bar, State, useRpc, areaName, screenLabel, shortId, timeOf, dateTimeOf, nf } from '../ui';
+import { Card, Bar, State, useRpc, areaName, screenLabel, shortId, timeOf, dateTimeOf, dateOf, nf } from '../ui';
 
 function kindOf(name) {
   if (name === 'screen_view') return 'screen';
@@ -36,13 +36,18 @@ function Detail({ userId }) {
         const s = u.stats;
         const maxMin = Math.max(1, ...u.areas.map((a) => a.minutes));
         const first = u.events[0], last = u.events[u.events.length - 1];
+        const acc = u.account;
+        const usage = s.uses_app && s.uses_browser ? 'App und Browser' : s.uses_app ? 'App (installiert)' : 'Browser';
         const stats = [
+          ['Registriert am', acc ? dateOf(acc.created_at) : '–'],
+          ['Letzter Login', acc?.last_sign_in_at ? dateTimeOf(acc.last_sign_in_at) : '–'],
+          ['E-Mail bestätigt', acc ? (acc.email_confirmed ? 'Ja' : 'Nein') : '–'],
+          ['Nutzung', usage],
+          ['App-Version', s.app_version || '–'],
           ['Sitzungen', nf.format(s.sessions)],
           ['Aktive Minuten', nf.format(s.minutes)],
           ['Klicks gesamt', nf.format(s.clicks)],
           ['Letzter Besuch', dateTimeOf(s.last_seen)],
-          ['Gerät', s.standalone ? 'App (installiert)' : 'Browser'],
-          ['App-Version', s.app_version || '–'],
         ];
         return (
           <>
