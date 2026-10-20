@@ -120,6 +120,10 @@ input[type='text'], input[type='email'], input[type='password'] {
   padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line-soft); background: #fff;
 }
 .user-item.active { background: #E8EDF8; border-color: var(--accent); }
+.uuid-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; font-size: 12px; }
+.uuid-row code, .uuid-small { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+.uuid-row code { background: #F4F6FA; padding: 6px 8px; border-radius: 8px; }
+.uuid-small { display: block; font-size: 11px; color: var(--text-3); }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .stat { background: #F4F6FA; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
 .stat span { font-size: 12px; font-weight: 600; color: var(--text-2); }
