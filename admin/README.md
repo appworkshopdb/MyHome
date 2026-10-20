@@ -35,23 +35,28 @@ select id from auth.users where email = 'DEINE@MAIL.DE';
 Weitere Admins: dieselbe Abfrage mit anderer E-Mail. Entfernen:
 `delete from analytics_admins where user_id = '…';`
 
-### 2. Cloudflare Pages
+### 2. Cloudflare (Workers & Pages)
 
-1. Cloudflare → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**,
-   Repository `appworkshopdb/MyHome`.
-2. Einstellungen:
-   - **Production branch:** `main`. Solange der Code noch nicht in `main` ist,
-     kann der Branch `claude/stoic-dijkstra-ri8fz7` für einen ersten Test
-     dienen (Cloudflare baut Branches als Preview mit eigener Adresse).
-   - **Root directory:** `admin`
+Cloudflare führt neue Projekte als "Workers Builds" an (Build command +
+Deploy command). Die Datei `wrangler.jsonc` in diesem Ordner sagt dem
+Deploy, dass `dist/` als statische Seite ausgeliefert wird.
+
+1. **Am besten ein eigenes neues Projekt anlegen** (nicht das der Nutzer-App
+   mitbenutzen): **Workers & Pages** → **Create** → mit Git verbinden,
+   Repository `appworkshopdb/MyHome`, **Projektname `nestua-admin`**
+   (muss zu `name` in `wrangler.jsonc` passen).
+2. Build-Einstellungen:
+   - **Root directory:** `admin`  ← wichtig, nicht `/`
    - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-3. **Environment variables** (Production und Preview):
+   - **Deploy command:** `npx wrangler deploy`
+   - **Production branch:** `main`. Solange `admin/` noch nicht in `main`
+     liegt, vorübergehend den Branch `claude/stoic-dijkstra-ri8fz7` eintragen.
+3. **Build variables** (Settings → Build → Variables), sonst bleibt der Login leer:
    - `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` — dieselben Werte wie bei
      der Nutzer-App
    - `NODE_VERSION` = `22`
-4. Speichern und deployen. Du bekommst eine Adresse wie
-   `nestua-admin.pages.dev` (anpassbar unter **Custom domains**).
+4. Deployen. Du bekommst eine Adresse wie `nestua-admin.<dein-name>.workers.dev`
+   (eigene Domain optional unter **Domains & Routes**).
 
 Optional als zweite Schranke: **Cloudflare Zero Trust → Access**, Anwendung für
 diese Adresse anlegen und nur deine E-Mail zulassen (Einmal-Code per Mail).
