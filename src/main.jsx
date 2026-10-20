@@ -4,6 +4,7 @@ import App from './App';
 import { AuthProvider } from './core/lib/AuthContext';
 import { UiProvider } from './core/lib/UiContext';
 import { registerServiceWorker } from './core/lib/pushNotifications';
+import { initAnalytics } from './core/lib/analytics';
 
 import './styles/base.css';
 import './styles/themes.css';
@@ -18,6 +19,9 @@ import './modules/finance/finance.css';
 // — der Worker muss laufen, bevor überhaupt ein Push-Abo möglich ist.
 // Fragt noch KEINE Berechtigung an, das passiert erst explizit im Profil.
 registerServiceWorker().catch(() => { /* Browser ohne Service-Worker-Unterstützung */ });
+
+// Installiert nur die Listener; erfasst wird erst nach Einwilligung + Login.
+initAnalytics();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

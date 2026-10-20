@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 // Reload auf einer Unterseite ohne Server-Konfiguration einen echten
 // 404 zurück (kein SPA-Rewrite). Der Teil nach "#" verlässt den Browser
 // nie — ein Reload fragt immer nur "/MyHome/" an, das existiert immer.
-function parseHash() {
+export function parseHash() {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const [moduleId, ...rest] = raw.split('/').filter(Boolean);
   return { module: moduleId || null, view: rest.join('/') || null };

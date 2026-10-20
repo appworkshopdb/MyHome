@@ -18,8 +18,10 @@
 // Modulwechsel läuft ausschließlich über die Bottom-Nav — bitte nicht
 // wieder einbauen.
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from './core/lib/AuthContext';
+import { syncAnalyticsSession } from './core/lib/analytics';
+import AnalyticsConsent from './core/components/AnalyticsConsent';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
 import { useOnboardingStatus } from './core/lib/onboardingData';
@@ -78,6 +80,10 @@ export default function App() {
   const { warnings } = useRequiredDataStatus(session);
   const hasWarnings = warnings.length > 0;
   const onboarding = useOnboardingStatus(session);
+
+  // Tracking nur für eingeloggte Nutzer und nur mit Einwilligung — die
+  // Prüfung steckt in analytics.js, hier wird nur die Anmeldung gemeldet.
+  useEffect(() => { syncAnalyticsSession(session); }, [session]);
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
@@ -138,6 +144,7 @@ export default function App() {
 
         <RequiredDataToast warnings={warnings} onFix={navigate} />
         <EntrySheet />
+        <AnalyticsConsent />
         <GlobalFab activeModule={activeModule} />
         <ModuleBottomNav
           active={activeModule === null || activeModule === 'statistiken' ? '' : activeModule}
