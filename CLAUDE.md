@@ -249,7 +249,7 @@ Styles `.lg-*` in `onboarding.css`); Recovery-Link → `rawAuth.consumeAuthRedir
 `AuthContext.recovery` → `App.jsx` zeigt `ResetPassword.jsx`. Datenschutz-Link auf `public/datenschutz.html`;
 Nutzungsbedingungen gibt es noch nicht. Deutsche Mail-Vorlagen: `public/mail/*.html`, Server-Setup
 (GoTrue-Env, `sudo`) in `supabase/mail_templates.md` — von Hand auf dem Server einzutragen.
-Adressen `support@`/`technik@`/`noreply@nestua.de`: DNS liegt bei INWX; Empfang per ImprovMX (kostenlose
+Adressen `support@`/`technik@`/`no-reply@nestua.de` (App-Absender `no-reply@`, Name „Nestua“, siehe `SMTP_ADMIN_EMAIL`/`SMTP_SENDER_NAME` in der Server-`.env`; alle drei als ImprovMX-Alias): DNS liegt bei INWX; Empfang per ImprovMX (kostenlose
 Weiterleitung an das Projekt-Gmail, MX `mx1/mx2.improvmx.com`, SPF `include:spf.improvmx.com include:spf.resend.com`),
 Antworten aus Gmail per „Senden als“ über `smtp.resend.com:465` (Benutzer `resend`, eigener API-Schlüssel). Kein
 Mailbox.org nötig; Absender-Logo (Google-Konto/Gravatar/BIMI) erst nach fertigem App-Logo.
