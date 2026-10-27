@@ -101,7 +101,10 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
   // Erstes noch offenes Training: eigener "Als Nächstes"-Block mit Erledigt-Knopf,
   // gleiche Aktion wie das Häkchen in der Liste (onToggleWorkout).
   const next = plan.workouts.find((w) => !w.done) ?? null;
-  const workouts = plan.workouts.filter((w) => w !== next);
+  // Erledigte Einheiten bleiben als Training erkennbar (eigene Karte in der Sportfarbe mit
+  // "Rückgängig"), statt wie eine abgehakte Gewohnheit in der Liste zu landen.
+  const doneWorkouts = plan.workouts.filter((w) => w.done);
+  const workouts = plan.workouts.filter((w) => w !== next && !w.done);
 
   return (
     <div className="dayplan-card">
@@ -124,6 +127,18 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
           <button className="dayplan-next-btn" onClick={() => onToggleWorkout(next.workout)}>Erledigt</button>
         </div>
       )}
+
+      {doneWorkouts.map((w) => (
+        <div key={w.id} className="dayplan-next dayplan-next--done tone-sport">
+          <span className="dayplan-done-check" aria-hidden="true">✓</span>
+          <div className="dayplan-next-body">
+            <span className="dayplan-next-kicker">Erledigt</span>
+            <span className="dayplan-next-title">{w.title}</span>
+            <span className="dayplan-next-meta">{w.minutes ? `Training · ${w.minutes} Min` : 'Training'}</span>
+          </div>
+          <button className="dayplan-next-btn" onClick={() => onToggleWorkout(w.workout)}>Rückgängig</button>
+        </div>
+      ))}
 
       {plan.isEmpty && <div className="dayplan-empty">Heute steht nichts an — freier Tag.</div>}
 
