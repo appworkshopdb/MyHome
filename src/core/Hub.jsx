@@ -6,7 +6,8 @@ import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
-import { openAmount } from './lib/paymentParts';
+import { openAmount, isOpenExpense } from './lib/paymentParts';
+import { HUB_CACHE_KEY } from './lib/hubCache';
 import { DayPlanSection } from './components/DayPlan';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
@@ -56,7 +57,7 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 // v5: openPosten enthält zusätzlich due_date (Tagesplan zeigt nur Posten
 // mit Fälligkeit heute/überfällig) — v4-Einträge hätten kein Datum.
 // v6: openPosten-amount ist jetzt der noch offene Teil (nicht der Gesamtbetrag).
-const CACHE_KEY = 'hub-cache-v6';
+const CACHE_KEY = HUB_CACHE_KEY; // Schlüssel/Version: core/lib/hubCache.js
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
@@ -142,8 +143,8 @@ async function loadOpenPosten() {
   // Offen ist nur der noch nicht bezahlte Teil: bei geteilter Zahlung zählen
   // Bar-/Gutschein-/Sparschwein-Anteile nicht mit (core/lib/paymentParts.js).
   return (data ?? [])
+    .filter(isOpenExpense)
     .map((e) => ({ id: e.id, name: e.name, amount: openAmount(e), category: e.category, paid: e.paid, due_date: e.due_date }))
-    .filter((e) => e.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 }
 

@@ -5,7 +5,7 @@ import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
   MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, isInstantMethod, entryParts, openAmount, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
@@ -96,12 +96,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
 function OffenList({ entries, onOpenModal, onTogglePaid }) {
   // Offen ist nur, was noch nicht bezahlt ist: bei geteilter Zahlung der Rest
   // ohne die Bar-/Gutschein-/Sparschwein-Anteile.
-  const offene = entries.filter(
-    (e) => openAmount(e) > 0
-      && e.category !== 'fixeinnahmen'
-      && e.category !== 'sonstige_einnahmen'
-      && !isSparschweinDeposit(e)   // Sparschwein-Einlagen nicht als "offene Posten" zeigen
-  );
+  const offene = entries.filter(isOpenExpense);
   const gesamtOffen = offene.reduce((s, e) => s + openAmount(e), 0);
   const sorted = sortByCreated(offene, 'asc');
 
@@ -329,7 +324,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
   // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
   // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
-  const offene      = entries.filter((e) => openAmount(e) > 0 && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e));
+  const offene      = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
   const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
   const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;

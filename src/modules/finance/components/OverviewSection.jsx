@@ -16,6 +16,7 @@ import {
   isSparschweinDeposit,
   isSparschweinDirectWithdrawal,
   openAmount,
+  isOpenExpense,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -95,9 +96,7 @@ export default function OverviewSection({ onNavigate }) {
   // offene Posten auf (Übersicht + "Offene Posten"-Bereich).
   // Offen ist nur der noch nicht bezahlte Teil (Bar/Gutschein/Sparschwein gelten
   // sofort als bezahlt, auch bei geteilter Zahlung).
-  const offene = entries.filter(
-    (e) => openAmount(e) > 0 && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen' && !isSparschweinDeposit(e)
-  );
+  const offene = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
 
   const expiring =

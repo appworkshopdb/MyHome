@@ -43,6 +43,17 @@ export function openAmount(entry) {
 
 export const isFullyPaid = (entry) => openAmount(entry) === 0;
 
+// Ein "offener Posten" im Sinn der App: Ausgabe (keine Einnahme), keine
+// Sparschwein-Einzahlung ("Ersparnisse" ist ein Transfer, nie zu bezahlen) und
+// noch ein Betrag offen. Hub, Tagesplan, Finanzen-Listen/-Zähler und die Push-
+// Function (dupliziert) nutzen alle genau diese Regel — nur so stimmen Anzahl
+// und Summe überall überein.
+const EXPENSE_CATEGORIES = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
+const SAVINGS_DEPOSIT_NAME = 'ersparnisse';
+export const isOpenExpense = (e) => EXPENSE_CATEGORIES.has(e.category)
+  && String(e.name || '').trim().toLowerCase() !== SAVINGS_DEPOSIT_NAME
+  && openAmount(e) > 0;
+
 // Schon bezahlter Betrag
 export function paidAmount(entry) {
   return entryParts(entry).filter((p) => p.paid).reduce((s, p) => s + p.amount, 0);

@@ -1,5 +1,6 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { track } from '../../../core/lib/analytics';
+import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
 
 function ownerId(session) {
@@ -153,6 +154,7 @@ export async function saveEntry(session, entry) {
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
   if (error) throw error;
   track('finance_entry_saved', { category: String(entry.category ?? '') });
+  invalidateHubCache();
   return data;
 }
 
@@ -162,6 +164,7 @@ export async function deleteEntry(id) {
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw error;
+  invalidateHubCache();
 }
 
 // Ganzen Posten auf bezahlt/offen setzen. `payments` (optional) sind die dazu
@@ -171,6 +174,7 @@ export async function togglePaid(id, paid, payments) {
   const patch = Array.isArray(payments) ? { paid, payments } : { paid };
   const { error } = await getSupabase().from('fin_entries').update(patch).eq('id', id);
   if (error) throw error;
+  invalidateHubCache();
 }
 
 // ---------------------------------------------------------------------

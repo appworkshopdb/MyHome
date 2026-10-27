@@ -185,6 +185,10 @@ function openAmount(e: { amount?: unknown; paid?: boolean | null; payment?: stri
   return open < 0.005 ? 0 : open;
 }
 
+// Wie isOpenExpense in src/core/lib/paymentParts.js: Sparschwein-Einzahlungen
+// ("Ersparnisse") sind nie offen.
+const isSavingsDeposit = (e: { name?: string | null }) => String(e.name ?? '').trim().toLowerCase() === 'ersparnisse';
+
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -328,16 +332,17 @@ async function checkCategory(category, ownerId, berlin) {
     // Jahr/Monat aus Berlin-Sicht (wichtig an Monatsgrenzen).
     const { data: openEntries } = await supabase
       .from('fin_entries')
-      .select('id, amount, paid, payment, payments')
+      .select('id, name, amount, paid, payment, payments')
       .eq('owner_id', ownerId)
       .eq('year', berlin.year)
       .eq('month', berlin.month)
       .eq('paid', false)
+      .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
       .not('from_template', 'is', null)
       .is('deleted_at', null);
 
     // Nur Posten, bei denen wirklich noch etwas offen ist (Bar-Anteile zählen nicht)
-    const reallyOpen = (openEntries ?? []).filter((e) => openAmount(e) > 0);
+    const reallyOpen = (openEntries ?? []).filter((e) => openAmount(e) > 0 && !isSavingsDeposit(e));
     if (reallyOpen.length === 0) return null;
     return {
       ...pickRandom([
@@ -545,6 +550,7 @@ async function checkCategory(category, ownerId, berlin) {
 
     // Fällig ist nur der noch offene Teil eines Postens
     const posten = (postenRes.data ?? [])
+      .filter((p) => !isSavingsDeposit(p))
       .map((p) => ({ ...p, amount: openAmount(p) }))
       .filter((p) => p.amount > 0);
     if (posten.length > 0) {
