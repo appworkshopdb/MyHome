@@ -33,8 +33,11 @@ jobs:
       - name: Build erstellen
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Staging und Produktion nutzen DASSELBE Backend (Hetzner), damit beide
+          # Apps immer denselben Datenstand sehen — deshalb die gleichen Secrets
+          # wie in deploy-staging.yml.
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
           VITE_APP_VERSION: ${{ github.sha }}
 
