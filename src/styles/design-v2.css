@@ -1,0 +1,426 @@
+/* ============================================================
+   design-v2.css — warme Optik mit Modulfarben (Front-End only)
+   Baut auf den Tokens aus base.css/themes.css auf: surface-*, text-*,
+   --mod-* (Familien) und --m-* (Familie des offenen Moduls) bzw.
+   --t-* (Familie einer einzelnen Kachel, Klasse .tone-*).
+   Wird als letzte eager geladene Datei importiert (main.jsx), damit die
+   Regeln die älteren Definitionen in app-extra.css übersteuern.
+   Modul-CSS, das später per Lazy-Load kommt, wird dort direkt angepasst.
+   ============================================================ */
+
+/* ── Seitentitel, Sektionen ─────────────────────────────────── */
+.overview-page-title {
+  font-size:      30px;
+  font-weight:    900;
+  letter-spacing: -0.025em;
+  line-height:    1.12;
+}
+.page-section,
+.page-section + .page-section { margin-top: 16px; }
+.section-head-title { font-size: 18px; font-weight: 900; }
+
+/* ── FocusCard: Verlauf in der Familienfarbe ─────────────────
+   Familie: .tone-* an der Karte (family-Prop) → sonst das offene
+   Modul (--m-*) → sonst Navy wie bisher (Hub).                    */
+.focus-card {
+  --hero-bg:   var(--t-hero, var(--m-hero, var(--surface-inverse)));
+  --hero-fg:   var(--t-hero-ink, var(--m-hero-ink, var(--raw-paper-000)));
+  --hero-pill: var(--t-pill, var(--m-pill, var(--surface-inverse)));
+  background:    var(--hero-bg);
+  color:         var(--hero-fg);
+  border-radius: var(--r-hero);
+  padding:       20px;
+  box-shadow:    var(--shadow-float);
+}
+.focus-card-eyebrow,
+.focus-card-eyebrow-right,
+.focus-card-meta {
+  color: color-mix(in srgb, var(--hero-fg) 80%, transparent);
+}
+.focus-card-meta b { color: var(--hero-fg); }
+.focus-card-progress { background: color-mix(in srgb, var(--hero-fg) 24%, transparent); }
+.focus-card-progress-fill { background: var(--hero-fg); }
+.focus-card-footer--divider { border-top-color: color-mix(in srgb, var(--hero-fg) 25%, transparent); }
+.focus-card-pill { background: var(--hero-fg); color: var(--hero-pill); }
+.focus-card-action--primary { background: var(--hero-fg); color: var(--hero-pill); }
+.focus-card-action--secondary {
+  color:        var(--hero-fg);
+  border-color: color-mix(in srgb, var(--hero-fg) 35%, transparent);
+}
+
+/* ── AreaList als Kacheln ────────────────────────────────────── */
+.area-list { border-radius: var(--r-tile); }
+
+.area-row-badge { display: none; }
+
+.area-list--tiles {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:                   12px;
+  background:            none;
+  border:                none;
+  box-shadow:            none;
+  border-radius:         0;
+  overflow:              visible;
+}
+.area-list--tiles .area-row {
+  position:              relative;
+  display:               grid;
+  grid-template-columns: auto 1fr;
+  align-items:           center;
+  align-content:         start;
+  column-gap:            8px;
+  row-gap:               8px;
+  min-height:            92px;
+  padding:               14px;
+  border:                none;
+  border-radius:         var(--r-tile);
+  background:            var(--surface-raised);
+  box-shadow:            var(--shadow-card);
+  transition:            transform var(--motion-fast);
+}
+.area-list--tiles .area-row:active { transform: scale(0.985); }
+
+.area-list--tiles .area-row-badge {
+  display:       grid;
+  place-items:   center;
+  grid-column:   1;
+  grid-row:      1;
+  width:         28px;
+  height:        28px;
+  border-radius: 50%;
+  background:    var(--t-ac, var(--m-ac, var(--action-primary)));
+  color:         var(--t-on, var(--m-on, var(--text-on-accent)));
+}
+.area-list--tiles .area-row-label {
+  grid-column:    2;
+  grid-row:       1;
+  min-width:      0;
+  padding-right:  16px;
+  font-size:      11px;
+  font-weight:    800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--text-muted);
+  overflow-wrap:  anywhere;
+}
+/* Kachel ohne Symbol: Label belegt die ganze erste Zeile */
+.area-list--tiles .area-row > .area-row-label:first-child { grid-column: 1 / -1; }
+.area-list--tiles .area-row-value {
+  grid-column:  1 / -1;
+  grid-row:     2;
+  margin:       0;
+  font-size:    16px;
+  font-weight:  900;
+  line-height:  1.25;
+  white-space:  normal;
+}
+.area-list--tiles .area-row-value--neutral { color: var(--text-primary); }
+.area-list--tiles .area-row-chevron {
+  position: absolute;
+  top:      13px;
+  right:    14px;
+  opacity:  0.5;
+}
+/* Letzte einzelne Kachel: flache Zeile über beide Spalten */
+.area-list--tiles .area-row:last-child:nth-child(odd) {
+  grid-column:           1 / -1;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height:            0;
+  padding:               12px 14px;
+}
+.area-list--tiles .area-row:last-child:nth-child(odd) .area-row-label { padding-right: 0; }
+.area-list--tiles .area-row:last-child:nth-child(odd) .area-row-value {
+  grid-column: 3;
+  grid-row:    1;
+  font-size:   13px;
+  font-weight: 800;
+}
+.area-list--tiles .area-row:last-child:nth-child(odd) .area-row-chevron {
+  position: static;
+  grid-column: 4;
+  grid-row: 1;
+}
+
+/* Hervorgehobene Kachel in der Tönung der Familie */
+.area-list--tiles .area-row--featured {
+  background: var(--t-tint, var(--m-tint, var(--surface-raised)));
+}
+.area-list--tiles .area-row--featured .area-row-label {
+  color: color-mix(in srgb, var(--t-ink, var(--m-ink, var(--text-primary))) 72%, transparent);
+}
+.area-list--tiles .area-row--featured .area-row-value--neutral {
+  color: var(--t-ink, var(--m-ink, var(--text-primary)));
+}
+
+/* ── Plus-Knopf: im Modul gefüllt in der Familienfarbe ───────── */
+:root[data-module] .global-fab {
+  background:    var(--m-ac);
+  color:         var(--m-on);
+  border-color:  var(--m-ac);
+  border-radius: 20px;
+  width:         54px;
+  height:        54px;
+  box-shadow:    var(--shadow-fab);
+}
+
+/* ── Ring (core/components/Ring.jsx) ─────────────────────────── */
+.ring {
+  --ring-ac: var(--t-ac, var(--m-ac, var(--action-primary)));
+  position:    relative;
+  display:     inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.ring svg { display: block; transform: rotate(-90deg); }
+.ring-track { stroke: color-mix(in srgb, currentColor 14%, transparent); }
+.ring-arc   { stroke: var(--ring-ac); transition: stroke-dashoffset var(--motion-calm); }
+.ring-label {
+  position:    absolute;
+  inset:       0;
+  display:     grid;
+  place-items: center;
+  text-align:  center;
+  line-height: 1.1;
+}
+.ring-label b { font-weight: 900; font-size: 13px; }
+
+/* ── Hub: Datum, Raster aus Saldo + Kacheln ──────────────────── */
+.hub-date { margin: 4px 0 16px; }
+.hub-grid {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows:    auto auto;
+  gap:                   12px;
+  margin-top:            16px;
+}
+.hub-saldo {
+  grid-row:       span 2;
+  display:        flex;
+  flex-direction: column;
+  padding:        16px;
+  border-radius:  var(--r-tile);
+  min-width:      0;
+}
+.hub-saldo .focus-card-value { font-size: 28px; }
+.hub-saldo .focus-card-meta  { flex-direction: column; gap: 2px; font-size: 12px; }
+.hub-saldo .focus-card-footer {
+  margin-top:     auto;
+  padding-top:    12px;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            10px;
+  font-size:      12px;
+}
+
+.hubt {
+  position:       relative;
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  min-width:      0;
+  padding:        14px;
+  border:         none;
+  border-radius:  var(--r-tile);
+  background:     var(--t-tint);
+  color:          var(--t-ink);
+  box-shadow:     var(--shadow-card);
+  text-align:     left;
+  cursor:         pointer;
+  transition:     transform var(--motion-fast);
+}
+.hubt:active { transform: scale(0.985); }
+.hubt-chev   { position: absolute; top: 12px; right: 14px; font-size: 18px; font-weight: 800; line-height: 1; opacity: 0.5; }
+.hubt-eyebrow {
+  display:        flex;
+  align-items:    center;
+  gap:            8px;
+  font-size:      11px;
+  font-weight:    800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          color-mix(in srgb, var(--t-ink) 72%, transparent);
+}
+.hubt-badge {
+  display:       grid;
+  place-items:   center;
+  width:         28px;
+  height:        28px;
+  border-radius: 50%;
+  background:    var(--t-ac);
+  color:         var(--t-on);
+  flex-shrink:   0;
+}
+.hubt-row  { display: flex; align-items: center; gap: 10px; }
+.hubt-text { display: flex; flex-direction: column; min-width: 0; }
+.hubt-text b    { font-size: 15px; font-weight: 900; line-height: 1.2; }
+.hubt-text span { font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
+.hubt .ring { --ring-ac: var(--t-ac); color: var(--t-ink); }
+.hubt-pill {
+  align-self:    flex-start;
+  font-size:     11px;
+  font-weight:   900;
+  padding:       3px 10px;
+  border-radius: var(--r-pill);
+  background:    var(--t-ac);
+  color:         var(--t-on);
+}
+
+/* ── Tagesplan ───────────────────────────────────────────────── */
+.dayplan-card {
+  background:    var(--surface-raised);
+  border:        none;
+  border-radius: var(--r-hero);
+  padding:       16px 12px 12px;
+  box-shadow:    var(--shadow-float);
+}
+.dayplan-head      { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; }
+.dayplan-head-text { display: flex; flex-direction: column; min-width: 0; }
+.dayplan-title     { font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
+.dayplan-count     { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.dayplan-ring      { --ring-ac: var(--action-primary); color: var(--text-primary); }
+
+.dayplan-next {
+  display:       flex;
+  align-items:   center;
+  gap:           12px;
+  margin-top:    12px;
+  padding:       12px 14px;
+  border-radius: 20px;
+  background:    var(--t-hero);
+  color:         var(--t-hero-ink);
+}
+.dayplan-next-body   { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.dayplan-next-kicker { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.dayplan-next-title  { font-size: 17px; font-weight: 900; line-height: 1.2; }
+.dayplan-next-meta   { font-size: 12px; font-weight: 700; opacity: 0.85; }
+.dayplan-next-btn {
+  flex-shrink:   0;
+  border:        none;
+  border-radius: var(--r-pill);
+  padding:       8px 14px;
+  min-height:    36px;
+  background:    var(--t-hero-ink);
+  color:         var(--t-pill);
+  font-size:     12px;
+  font-weight:   900;
+  cursor:        pointer;
+}
+
+.dayplan-empty { background: var(--surface-sunken); }
+.dayplan-list {
+  margin-top:    12px;
+  padding:       2px 14px;
+  background:    var(--surface-sunken);
+  border-radius: 20px;
+}
+.dayplan-list .dayplan-row { min-height: 48px; border-top: 1px solid var(--border-hairline); }
+.dayplan-list .dayplan-row:first-child { border-top: none; }
+.dayplan-check { border-radius: 8px; border-width: 2px; }
+.dayplan-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dayplan-row-body .dayplan-row-title { flex: none; font-weight: 800; }
+.dayplan-sub { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.dayplan-sub.critical { color: var(--status-critical); }
+.dayplan-chip {
+  flex-shrink:   0;
+  padding:       3px 10px;
+  border-radius: var(--r-pill);
+  background:    var(--t-tint);
+  color:         var(--t-ink);
+  font-size:     11px;
+  font-weight:   800;
+  white-space:   nowrap;
+}
+
+/* ── Ernährung: Kachel (Hub) und Fokuskarte (Modul) ──────────── */
+.dp-nut {
+  position:      relative;
+  padding:       14px;
+  border-radius: var(--r-tile);
+  background:    var(--t-tint);
+  color:         var(--t-ink);
+  box-shadow:    var(--shadow-card);
+}
+.dp-nut-head  { display: flex; align-items: center; justify-content: space-between; }
+.dp-nut-label {
+  font-size:      11px;
+  font-weight:    800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          color-mix(in srgb, var(--t-ink) 72%, transparent);
+}
+.dp-nut-open  { color: var(--t-ink); font-weight: 800; opacity: 0.8; }
+.dp-nut-top   { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+.dp-nut-text  { min-width: 0; }
+.dp-nut-main  { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; color: var(--t-ink); }
+.dp-nut-main small { color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
+.dp-nut-side  { font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--t-ink) 72%, transparent); margin-top: 2px; }
+.dp-nut-ring  { --ring-ac: var(--t-ac); color: var(--t-ink); }
+.dp-nut-ring b { font-size: 15px; }
+.dp-nut.over .dp-nut-main { color: var(--status-caution); }
+.dp-nut.over .dp-nut-ring { --ring-ac: var(--status-caution); }
+.dp-macros { margin-top: 12px; }
+.dp-macro  { background: color-mix(in srgb, var(--surface-raised) 72%, transparent); border-radius: 14px; padding: 8px 10px; }
+.dp-macro b { color: var(--t-ink); }
+.dp-macro span { color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
+.dp-macro i  { background: color-mix(in srgb, var(--t-ink) 14%, transparent); }
+.dp-macro i em { background: var(--t-ac); }
+.dp-meal { background: color-mix(in srgb, var(--surface-raised) 72%, transparent); color: var(--t-ink); }
+.dp-meal.on { background: var(--t-ac); color: var(--t-on); }
+.dp-meal.next { outline: 1.5px solid var(--t-ac); }
+.dp-cta  { color: var(--t-ink); font-weight: 800; }
+.dp-hint { color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
+
+.dp-nut--hero {
+  padding:       18px;
+  border-radius: var(--r-hero);
+  background:    var(--t-hero);
+  color:         var(--t-hero-ink);
+  box-shadow:    var(--shadow-float);
+}
+.dp-nut--hero .dp-nut-label,
+.dp-nut--hero .dp-nut-side,
+.dp-nut--hero .dp-nut-main small,
+.dp-nut--hero .dp-macro span,
+.dp-nut--hero .dp-hint { color: color-mix(in srgb, var(--t-hero-ink) 80%, transparent); }
+.dp-nut--hero .dp-nut-main,
+.dp-nut--hero .dp-nut-open,
+.dp-nut--hero .dp-macro b,
+.dp-nut--hero .dp-cta { color: var(--t-hero-ink); }
+.dp-nut--hero .dp-nut-ring { --ring-ac: var(--t-hero-ink); color: var(--t-hero-ink); }
+.dp-nut--hero .dp-macro { background: color-mix(in srgb, var(--t-hero-ink) 16%, transparent); }
+.dp-nut--hero .dp-macro i { background: color-mix(in srgb, var(--t-hero-ink) 25%, transparent); }
+.dp-nut--hero .dp-macro i em { background: var(--t-hero-ink); }
+.dp-nut--hero .dp-meal { background: color-mix(in srgb, var(--t-hero-ink) 16%, transparent); color: var(--t-hero-ink); }
+.dp-nut--hero .dp-meal.on { background: var(--t-hero-ink); color: var(--t-pill); }
+.dp-nut--hero .dp-meal.next { outline-color: var(--t-hero-ink); }
+.dp-nut--hero.over .dp-nut-main { color: var(--t-hero-ink); }
+
+/* ── Aufgaben-Karte im Hub ───────────────────────────────────── */
+.hub-task-card { border: none; border-radius: var(--r-tile); }
+.hub-task-row  { border-top-color: var(--border-hairline); }
+
+/* ── Schmale Geräte (≤ 380 px): Kachel stapelt Symbol/Pfeil, Label, Wert ── */
+@media (max-width: 380px) {
+  .area-list--tiles .area-row:not(:last-child:nth-child(odd)) { grid-template-columns: minmax(0, 1fr) auto; }
+  .area-list--tiles .area-row:not(:last-child:nth-child(odd)) .area-row-label {
+    grid-column:    1 / -1;
+    grid-row:       2;
+    padding-right:  0;
+    overflow-wrap:  normal;
+  }
+  .area-list--tiles .area-row:not(:last-child:nth-child(odd)) .area-row-value { grid-row: 3; }
+  .area-list--tiles .area-row:not(:last-child:nth-child(odd)) .area-row-chevron {
+    position:   static;
+    grid-column: 2;
+    grid-row:   1;
+    justify-self: end;
+  }
+}
+
+/* ── Schmale Geräte (≤ 359 px): Kacheln einspaltig, Hub-Raster bleibt zweispaltig ── */
+@media (max-width: 359px) {
+  .area-list--tiles { grid-template-columns: minmax(0, 1fr); }
+  .area-list--tiles .area-row:last-child:nth-child(odd) { grid-column: auto; }
+  .hubt-text b { font-size: 14px; }
+}

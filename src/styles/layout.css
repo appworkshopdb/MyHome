@@ -190,7 +190,7 @@
 /* Aktiver Punkt: Pille mit Wort */
 .nav-item.active {
   background: var(--nav-item-active-bg);
-  color: var(--text-on-accent);
+  color: var(--nav-item-active-fg);
   flex: none;              /* nur so breit wie der Inhalt */
   padding: 0 14px;
 }

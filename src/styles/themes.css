@@ -13,12 +13,13 @@
   --raw-green-300: #4FC79B;
   --raw-red-300:   #F0837C;
   --raw-ochre-300: #D9A94F;
-  --raw-night-950: #0E121A;
-  --raw-night-900: #151B26;
-  --raw-night-800: #1E2634;
-  --raw-night-700: #2A3345;
-  --raw-mist-100:  #E7EBF2;
-  --raw-mist-300:  #A9B3C4;
+  /* Warme Nacht-Töne (vorher kühles Blaugrau) */
+  --raw-night-950: #1A1714;
+  --raw-night-900: #26221E;
+  --raw-night-800: #2C2823;
+  --raw-night-700: #3A332D;
+  --raw-mist-100:  #F3ECE4;
+  --raw-mist-300:  #B3A9A0;
 }
 
 /* ── Ebene 2: Bedeutung (Dunkel) ─────────────────────────────*/
@@ -33,7 +34,7 @@
 
   --text-primary:    var(--raw-mist-100);
   --text-secondary:  var(--raw-mist-300);
-  --text-muted:      #A9B3C4;   /* 4,5:1 auf night-900 — WCAG AA */
+  --text-muted:      #B3A9A0;   /* 6,4:1 auf night-900 — WCAG AA */
   --text-on-accent:  var(--raw-night-950);
 
   --action-primary:  var(--raw-navy-300);
@@ -49,15 +50,35 @@
   --status-critical-bg: #2C1614;
 
   --border-hairline: var(--raw-night-700);
-  --border-strong:   #3A4658;
+  --border-strong:   #4A4139;
 
   --data-1:     var(--raw-navy-300);
   --data-2:     #5D77AE;
-  --data-3:     #3E4C68;
+  --data-3:     #4B5670;
   --data-track: var(--raw-night-800);
 
+  /* ── Modulfamilien (Dunkel) — gleiche Rollen wie in base.css ── */
+  --mod-fin-tint:   #1E2C45; --mod-fin-ink:   #D5E3F8; --mod-fin-ac:   #8FA6D6; --mod-fin-on:   #10203A; --mod-fin-deep:   #8FA6D6;
+  --mod-fin-hero:   linear-gradient(150deg, #1F3A63 0%, #14233F 100%); --mod-fin-hero-ink: #FFFFFF; --mod-fin-pill: #14233F;
+
+  --mod-food-tint:  #17301F; --mod-food-ink:  #CFEBD8; --mod-food-ac:  #6FCB8E; --mod-food-on:  #0A2314; --mod-food-deep:  #6FCB8E;
+  --mod-food-hero:  linear-gradient(150deg, #245C3B 0%, #173D27 100%); --mod-food-hero-ink: #E3F5E9; --mod-food-pill: #173D27;
+
+  --mod-sport-tint: #3F2420; --mod-sport-ink: #FADDD4; --mod-sport-ac: #F0837C; --mod-sport-on: #3B1510; --mod-sport-deep: #F0837C;
+  --mod-sport-hero: linear-gradient(150deg, #9A4237 0%, #6B2A24 100%); --mod-sport-hero-ink: #FFE9E4; --mod-sport-pill: #6B2A24;
+
+  --mod-hab-tint:   #3A3118; --mod-hab-ink:   #F8E7B2; --mod-hab-ac:   #F2B94B; --mod-hab-on:   #3B2A00; --mod-hab-deep:   #F2B94B;
+  --mod-hab-hero:   linear-gradient(150deg, #7D5F10 0%, #6B510C 100%); --mod-hab-hero-ink: #FFF1C8; --mod-hab-pill: #6B510C;
+
+  --mod-shop-tint:  #2B2545; --mod-shop-ink:  #E4DDF7; --mod-shop-ac:  #A898F0; --mod-shop-on:  #1C1636; --mod-shop-deep:  #A898F0;
+  --mod-shop-hero:  linear-gradient(150deg, #4F4296 0%, #382C6E 100%); --mod-shop-hero-ink: #EEE9FF; --mod-shop-pill: #382C6E;
+
+  --mod-n-tint:     #2C2823; --mod-n-ink:     #E9E1D6; --mod-n-ac:     #B9AB9A; --mod-n-on:     #1A1714; --mod-n-deep:     #B9AB9A;
+
+  --nav-item-active-fg:  var(--text-on-accent);
+
   /* Schatten im Dunkelmodus bleiben, aber subtiler */
-  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-card:  0 2px 8px rgba(0, 0, 0, 0.28);
   --shadow-float: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-nav:   0 6px 20px rgba(0, 0, 0, 0.45);
   --shadow-fab:   0 6px 18px rgba(0, 0, 0, 0.55);

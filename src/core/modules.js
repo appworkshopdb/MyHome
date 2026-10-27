@@ -1,7 +1,9 @@
 // src/core/modules.js
-// Schritt 3: Modulfarben entfernt (UMBAU.md).
-// Module unterscheiden sich künftig über Symbol und Name, nicht über Farbe.
-// Die alten color-Felder (Salbei, Violett, Ziegelrot, Petrol) sind weg.
+// Die Module unterscheiden sich über Symbol, Name UND eine Farbfamilie.
+// Die Farben stehen nicht hier, sondern als Tokens in base.css/themes.css
+// (--mod-<familie>-*, Kontext über data-module auf <html>, siehe CLAUDE.md
+// "Farbsystem"). Zuordnung: finance=Blau, nutrition=Grün, sport=Koralle,
+// habits=Gold, shopping=Violett; Hub-Funktionen bleiben neutral.
 
 export const MODULES = [
   { id: 'shopping',  name: 'Einkauf',       tier: 'frei', built: true },
