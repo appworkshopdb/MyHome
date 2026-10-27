@@ -4,11 +4,20 @@ import { getMonthSum } from './lib/measurementsData';
 import { formatEur } from './lib/format';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
+import { getCalendarEvents } from './lib/calendarData';
+import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
+import { openAmount, isOpenExpense } from './lib/paymentParts';
+import { HUB_CACHE_KEY } from './lib/hubCache';
+import { DayPlanSection } from './components/DayPlan';
+import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import PageSection from './components/PageSection';
+import AreaList from './components/AreaList';
+import AreaRow from './components/AreaRow';
 import TodoSheet from './components/TodoSheet';
-import HubCalendar from './components/HubCalendar';
+import HubCalendar from './components/HubCalendar'; // ⚠️ von bereich 'kalender' abgelöst durch CalendarView (Tag/Woche/Monat) — Datei bewusst nicht gelöscht, falls die Wochenstreifen-Optik nochmal gebraucht wird (analog ModuleTabs.jsx)
+import CalendarView from './components/CalendarView';
 import { fb } from './lib/feedback';
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 import { awardPoints } from './lib/gamificationData.js';
@@ -45,7 +54,10 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 // offener Ausgaben statt der auf drei begrenzten Fixkosten, damit die
 // Zahl in der Fokuskarte zu der in Finanzen passt. Ein alter v3-Eintrag
 // würde dort eine zu kleine Zahl zeigen, deshalb neuer Schlüssel.
-const CACHE_KEY = 'hub-cache-v4';
+// v5: openPosten enthält zusätzlich due_date (Tagesplan zeigt nur Posten
+// mit Fälligkeit heute/überfällig) — v4-Einträge hätten kein Datum.
+// v6: openPosten-amount ist jetzt der noch offene Teil (nicht der Gesamtbetrag).
+const CACHE_KEY = HUB_CACHE_KEY; // Schlüssel/Version: core/lib/hubCache.js
 
 // Älteres verwerfen: sonst zeigt der Hub am Monatsersten kurz den Saldo
 // des Vormonats, und das fällt niemandem auf.
@@ -99,7 +111,8 @@ function writeCache(data) {
 
 async function loadTodaySport() {
   const sb = getSupabase();
-  const todayStr = new Date().toISOString().split('T')[0];
+  // kein toISOString() für lokale Kalendertage — s. habitsStore.js localDateStr()
+  const todayStr = habTodayStr();
   const { data, error } = await sb
     .from('spo_workouts')
     .select('id, type_key, title, duration_min, status, is_rest')
@@ -120,24 +133,19 @@ async function loadOpenPosten() {
   const now = new Date();
   const { data, error } = await sb
     .from('fin_entries')
-    .select('id, name, amount, category, paid')
+    .select('id, name, amount, category, paid, due_date, payment, payments')
     .eq('year', now.getFullYear())
     .eq('month', now.getMonth() + 1)
     .eq('paid', false)
     .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
-    .is('deleted_at', null)
-    .order('amount', { ascending: false });
+    .is('deleted_at', null);
   if (error) throw error;
-  return data ?? [];
-}
-
-function sportLabel(w) {
-  if (w.is_rest) return 'Restday';
-  if (w.title) return w.title;
-  if (!w.type_key || w.type_key === 'sonstiges') return 'Training';
-  const parts = w.type_key.split('.');
-  const last = parts[parts.length - 1];
-  return last.charAt(0).toUpperCase() + last.slice(1);
+  // Offen ist nur der noch nicht bezahlte Teil: bei geteilter Zahlung zählen
+  // Bar-/Gutschein-/Sparschwein-Anteile nicht mit (core/lib/paymentParts.js).
+  return (data ?? [])
+    .filter(isOpenExpense)
+    .map((e) => ({ id: e.id, name: e.name, amount: openAmount(e), category: e.category, paid: e.paid, due_date: e.due_date }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
 export default function Hub({ onOpenModule, hasWarnings }) {
@@ -171,6 +179,32 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   const [todoSheet, setTodoSheet]   = useState(false);
   const [editTodo, setEditTodo]     = useState(null);
   const [todoView, setTodoView]     = useState('alle');
+  const [events, setEvents]         = useState([]);
+
+  // Heutige Termine separat und fehlertolerant: ein Kalenderfehler darf
+  // den Hub nicht in den Fehlerzustand schicken.
+  useEffect(() => {
+    const t = habTodayStr();
+    getCalendarEvents(t, t).then((m) => setEvents(m[t] ?? [])).catch(() => {});
+  }, []);
+
+  // Ernährungsstand von heute (Tagesplan). Fehlertolerant wie die Termine: bei
+  // einem Fehler (z. B. Tabelle noch nicht migriert) fehlt nur der Block.
+  // Neu laden, wenn die App wieder in den Vordergrund kommt — gegessen wird
+  // zwischendurch, der Hub bleibt oft lange offen.
+  const [nutrition, setNutrition] = useState(null);
+  useEffect(() => {
+    let aktiv = true;
+    const lade = () => {
+      loadNutritionDay(session)
+        .then((d) => { if (aktiv) setNutrition(d); })
+        .catch(() => { if (aktiv) setNutrition(null); });
+    };
+    lade();
+    const onVisible = () => { if (document.visibilityState === 'visible') lade(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [session]);
 
   const load = useCallback(async (opts = {}) => {
     // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
@@ -296,6 +330,37 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     catch { setTodos((prev) => prev.map((t) => t.id === id ? { ...t, done: currentDone } : t)); }
   }
 
+  // Training abhaken — gleiche Zeile wie im Sport-Modul (spo_workouts.status)
+  async function handleToggleWorkout(workout) {
+    const wirdErledigt = workout.status !== 'done';
+    const setStatus_ = (st) => setTodaySport((prev) => prev.map((w) => w.id === workout.id ? { ...w, status: st } : w));
+    setStatus_(wirdErledigt ? 'done' : 'planned');
+    try {
+      await setWorkoutDone(workout.id, wirdErledigt);
+      if (wirdErledigt) fb.workoutDone();
+    } catch (e) {
+      console.error('[Hub] Training-Toggle fehlgeschlagen:', e);
+      setStatus_(workout.status);
+    }
+  }
+
+  // Posten im Tagesplan als bezahlt abhaken — verschwindet damit auch aus
+  // Fokuskarte (offene Posten) und Finanzen-Liste "offen".
+  async function handlePayPosten(id) {
+    const vorher = openPosten;
+    const neu = openPosten.filter((p) => p.id !== id);
+    setOpenPosten(neu);
+    fb.todoCheck();
+    try {
+      await setEntryPaid(id, true);
+      writeCache({ income, expense, todaySport, openPosten: neu, todos });
+    } catch (e) {
+      console.error('[Hub] Posten als bezahlt markieren fehlgeschlagen:', e);
+      setOpenPosten(vorher);
+    }
+  }
+
+
   async function handleDeleteTodo(id) {
     setTodos((prev) => prev.filter((t) => t.id !== id));
     try { await deleteTodo(id); }
@@ -320,7 +385,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     });
   }
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // kein toISOString() für lokale Kalendertage — s. habitsStore.js localDateStr()
+  const todayStr = habTodayStr();
   const todosHeute = todos.filter((t) => !t.done && (
     (t.due_date && t.due_date <= todayStr) ||
     (!t.due_date && t.priority)
@@ -343,16 +409,11 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
   }).slice(0, 3);
 
-  const restToday    = todaySport.some((w) => w.is_rest);
-  const doneToday    = todaySport.filter((w) => !w.is_rest && w.status === 'done');
-  const plannedToday = todaySport.filter((w) => !w.is_rest && w.status === 'planned');
-  const sportKachel =
-    restToday               ? { icon: '–', text: 'Restday' } :
-    doneToday.length > 0    ? { icon: '✓', text: sportLabel(doneToday[0]) } :
-    plannedToday.length > 0 ? { icon: '·', text: sportLabel(plannedToday[0]) } :
-                              { icon: '·', text: 'Nichts geplant' };
-
   const offeneSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+  const dayPlan = buildDayPlan({
+    todos, habits: habHabits, habEntries, workouts: todaySport, events, openPosten, today: todayStr,
+  });
 
   // ---- Ladestate ----
   if (status === 'laedt') {
@@ -445,14 +506,22 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     );
   }
 
-  // ── Bereich: Kalender ───────────────────────────────────────────
+  // ── Bereich: Kalender (Tag/Woche/Monat, inkl. Google-Kalender-Termine) ──
   if (bereich === 'kalender') {
     return (
       <>
         <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.kalender} hasWarnings={hasWarnings} />
         <div className="hub with-topbar-space">
-          <HubCalendar />
+          <CalendarView session={session} todos={todos} onToggleTodo={handleToggleTodo} onEditTodo={openEditTodo} />
         </div>
+
+        {todoSheet && (
+          <TodoSheet
+            onClose={() => setTodoSheet(false)}
+            onSaved={handleTodoSaved}
+            editTodo={editTodo}
+          />
+        )}
       </>
     );
   }
@@ -582,40 +651,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
           </div>
         )}
 
-        {status === 'leer' && (
-          <>
-            <div className="hub-empty-headline">{monatsname} ist noch leer.</div>
-            <p className="hub-empty-sub">Trag eine Ausgabe ein — den Rest baut die App daraus. Zwei Sekunden, kein Formular.</p>
-            <div className="hub-empty-steps">
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance')}>
-                <div>
-                  <div className="hub-empty-step-title">Erste Ausgabe eintragen</div>
-                  <div className="hub-empty-step-sub">Betrag, Name, fertig</div>
-                </div>
-                <span className="hub-empty-step-arrow">›</span>
-              </button>
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance/vertraege')}>
-                <div>
-                  <div className="hub-empty-step-title">Fixkosten anlegen</div>
-                  <div className="hub-empty-step-sub">Miete, Handy, Abos — einmal, dann jeden Monat automatisch</div>
-                </div>
-                <span className="hub-empty-step-arrow">›</span>
-              </button>
-              <button className="hub-empty-step" onClick={() => onOpenModule('finance/einstellungen')}>
-                <div>
-                  <div className="hub-empty-step-title">Alte Daten importieren</div>
-                  <div className="hub-empty-step-sub">JSON oder XLSX</div>
-                </div>
-                <span className="hub-empty-step-arrow" style={{ color: 'var(--text-muted)' }}>›</span>
-              </button>
-            </div>
-            <div className="hub-empty-note">
-              <b>Warum leer und nicht Beispieldaten:</b> geschönte Zahlen fühlen sich beim ersten Löschen wie Arbeit an. Drei Wege raus sind ehrlicher.
-            </div>
-          </>
-        )}
-
-        {(status === 'daten' || status === 'veraltet') && (
+        {/* 'leer' (noch keine Daten) zeigt bewusst dieselbe Übersicht: der Einstieg läuft über die Modul-Tutorials (ModuleTutorial.jsx), nicht über einen Leerzustand. */}
+        {(status === 'daten' || status === 'veraltet' || status === 'leer') && (
           <>
             <h1 className="overview-page-title">{greeting()}</h1>
             <div className="hub-date">{datumLang}</div>
@@ -636,34 +673,19 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               )}
             </FocusCard>
 
-            {/* Heute — zwei Kacheln */}
-            <PageSection
-              title="Heute"
-              action={{ label: 'Kalender ›', onPress: () => setBereich('kalender') }}
-            >
-              <div className="hub-tiles">
-                <button className="hub-tile" onClick={() => setBereich('gewohnheiten')}>
-                  <span className="hub-tile-value">
-                    {habTotal > 0 ? `${habDone}/${habTotal}` : '–'}
-                  </span>
-                  <span className="hub-tile-label">Gewohnheiten</span>
-                  <span className="hub-tile-bar">
-                    <span
-                      className="hub-tile-bar-fill"
-                      style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
-                    />
-                  </span>
-                </button>
-
-                <button className="hub-tile" onClick={() => onOpenModule('sport')}>
-                  <span className={`hub-tile-value ${sportKachel.icon === '✓' ? 'hub-tile-value--done' : ''}`}>
-                    {sportKachel.icon}
-                  </span>
-                  <span className="hub-tile-label">Training</span>
-                  <span className="hub-tile-sub">{sportKachel.text}</span>
-                </button>
-              </div>
-            </PageSection>
+            {/* Tagesplan — immer sichtbar, direkt unter der Fokuskarte */}
+            <section className="page-section">
+              <DayPlanSection
+                plan={dayPlan}
+                nutrition={nutrition}
+                onToggleTodo={handleToggleTodo}
+                onToggleWorkout={handleToggleWorkout}
+                onToggleHabit={handleToggleHabit}
+                onPayPosten={handlePayPosten}
+                onOpenFinance={() => onOpenModule('finance/offen')}
+                onOpenNutrition={onOpenModule}
+              />
+            </section>
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
             <PageSection
@@ -703,6 +725,22 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 </button>
               </div>
             </PageSection>
+
+            {/* Kalender — Tag/Woche/Monat, inkl. Google-Kalender falls verbunden */}
+            <PageSection title="Kalender">
+              <AreaList>
+                <AreaRow label="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
+              </AreaList>
+            </PageSection>
+
+            {/* Statistiken — ein einzelner Bereich unter dem Kalender; dort die
+                Auswahl Wochen-/Monatsüberblick (eigene Route #/statistiken, damit
+                die Rückblick-Pushes direkt verlinken können). */}
+            <section className="page-section">
+              <AreaList>
+                <AreaRow label="Statistiken" onPress={() => onOpenModule('statistiken')} />
+              </AreaList>
+            </section>
           </>
         )}
       </div>

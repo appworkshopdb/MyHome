@@ -235,6 +235,168 @@
   margin-bottom: 8px;
 }
 
+/* ─── Zahlungen ───────────────────────────────────────────── */
+
+.sho-payments-section {
+  margin-bottom: 12px;
+}
+
+.sho-payments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.sho-payments-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sho-payments-total {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sho-payments-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.sho-payment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sho-payment-row:last-child {
+  border-bottom: none;
+}
+
+.sho-payment-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.sho-payment-amount {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.sho-payment-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.sho-payment-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.sho-payment-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.sho-payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-card);
+  margin-top: 4px;
+}
+
+.sho-payment-form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sho-payment-form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Einkauf abschließen ─────────────────────────────────── */
+
+.sho-complete-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 16px;
+}
+
+.sho-complete-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 24px;
+}
+
+.sho-complete-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sho-complete-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -6px 0 4px;
+}
+
+.sho-complete-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.sho-complete-split {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sho-complete-split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.sho-complete-split-paid {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.sho-complete-split-open {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.sho-complete-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 1rem;
+}
+
 /* ─── Items-Wrapper ───────────────────────────────────────── */
 
 .sho-items-wrap {
@@ -698,11 +860,12 @@
 }
 
 .sho-freq-pill {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 4px 12px;
-  border: 1.5px solid var(--border);
-  background: none;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-sunken);
   color: var(--text-secondary);
   cursor: pointer;
   font-family: var(--font);
@@ -711,9 +874,8 @@
 }
 
 .sho-freq-pill.active {
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  border-color: var(--text-primary);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
 }
 
 .sho-freq-total {

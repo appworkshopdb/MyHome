@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
-import { MONTHS_DE, formatEur, sumCat } from '../lib/finance';
+import { useFinanceMonth } from '../lib/FinanceMonthContext';
+import {
+  MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
+  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+} from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
-import EntryModal from './EntryModal';
+import EntryDetailSheet from './EntryDetailSheet';
 import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
 
 // 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
@@ -30,11 +34,19 @@ function sortByCreated(arr, dir = 'asc') {
 
 // ── Aufklappbare Kategorie-Sektion ───────────────────────────────────────────
 // Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
-function EntryRow({ e, onOpenModal, onTogglePaid }) {
+function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
   const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
   // Lokaler Animations-State: kurz "flash" nach Abhaken, unabhängig vom
   // globalen Reload. Verhindert Flackern/Kollabieren der Dropdowns.
   const [flashing, setFlashing] = useState(false);
+
+  // Teilzahlungen: Bar/Gutschein/Sparschwein gelten sofort als bezahlt, offen
+  // ist nur der Rest (core/lib/paymentParts.js).
+  const fully = isFullyPaid(e);
+  // Durchgestrichen/gedämpft wird nur bei Ausgaben — Einnahmen immer normal.
+  const partly = !isIncome && isPartlyPaid(e);
+  const shownAmount = showOpen ? openAmount(e) : e.amount;
+  const paidMethods = entryParts(e).filter((p) => p.paid).map((p) => p.method).join(' · ');
 
   function handleCheck(ev) {
     ev.stopPropagation();
@@ -50,23 +62,30 @@ function EntryRow({ e, onOpenModal, onTogglePaid }) {
     >
       {!isIncome && (
         <div
-          className={`fin-row-check ${e.paid ? 'checked' : ''} ${flashing ? 'flash' : ''}`}
+          className={`fin-row-check ${fully ? 'checked' : ''} ${partly ? 'partial' : ''} ${flashing ? 'flash' : ''}`}
           onClick={handleCheck}
           role="checkbox"
-          aria-checked={e.paid}
+          aria-checked={partly ? 'mixed' : fully}
         >
-          {e.paid && '✓'}
+          {fully ? '✓' : partly ? '–' : ''}
         </div>
       )}
       <div className="fin-row-info">
-        <div className={`fin-row-name ${e.paid ? 'paid' : ''}`}>{e.name}</div>
+        <div className={`fin-row-name ${fully && !isIncome ? 'paid' : ''}`}>{e.name}</div>
         <div className="fin-row-meta">
-          {e.payment}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          {formatPayments(e)}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          {partly && !showOpen ? ' · teilweise bezahlt' : ''}
         </div>
+        {showOpen && partly && (
+          <div className="fin-row-meta fin-row-meta--part">
+            {formatEur(paidAmount(e))} bezahlt ({paidMethods})
+          </div>
+        )}
         {e.note && <div className="fin-row-note">{e.note}</div>}
       </div>
-      <div className={`fin-row-amount ${e.paid ? 'paid' : ''}`}>
-        {formatEur(e.amount).replace('€', '').trim()}
+      <div className={`fin-row-amount ${fully && !isIncome ? 'paid' : ''}`}>
+        {formatEur(shownAmount).replace('€', '').trim()}
+        {showOpen && partly && <span className="fin-row-of">von {formatEur(e.amount)}</span>}
       </div>
     </div>
   );
@@ -75,10 +94,10 @@ function EntryRow({ e, onOpenModal, onTogglePaid }) {
 // Flache Offen-Liste — keine Dropdowns, direkte Auflistung aller offenen
 // Ausgaben-Einträge mit Gesamtbetrag oben und Abhak-Funktion.
 function OffenList({ entries, onOpenModal, onTogglePaid }) {
-  const offene = entries.filter(
-    (e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen'
-  );
-  const gesamtOffen = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  // Offen ist nur, was noch nicht bezahlt ist: bei geteilter Zahlung der Rest
+  // ohne die Bar-/Gutschein-/Sparschwein-Anteile.
+  const offene = entries.filter(isOpenExpense);
+  const gesamtOffen = offene.reduce((s, e) => s + openAmount(e), 0);
   const sorted = sortByCreated(offene, 'asc');
 
   if (offene.length === 0) {
@@ -107,6 +126,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
           e={e}
           onOpenModal={onOpenModal}
           onTogglePaid={onTogglePaid}
+          showOpen
         />
       ))}
     </div>
@@ -117,7 +137,13 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
 function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
   const [open, setOpen] = useState(false);
 
-  const visible = entries.filter((e) => col.cats.includes(e.category));
+  // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
+  // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
+  const visible = entries.filter(
+    (e) => col.cats.includes(e.category)
+      && !isSparschweinDeposit(e)          // Einzahlung raus (Ausgaben-Spalten)
+      && !isSparschweinDirectWithdrawal(e) // Entnahme raus (Einnahmen-Spalte)
+  );
   if (visible.length === 0) return null;
 
   const total  = visible.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -161,26 +187,35 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const { session }  = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved } = useEntrySheet();
+  const { setActiveMonth: setGlobalActiveMonth } = useFinanceMonth();
 
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal,   setModal]   = useState(null);
+  // Tipp auf einen Posten öffnet die Ansicht (EntryDetailSheet); "Bearbeiten"
+  // schaltet darin auf die Bearbeiten-Ansicht um.
+  const [detailId, setDetailId] = useState(null);
   const [filter,  setFilter]  = useState(initialFilter);
+
+  // useRef-Muster: session-Objekt stabilisieren, damit load() sich nicht
+  // bei jedem Render neu erstellt (session-Ref ändert sich nicht pro Tick)
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      await db.applyMissingFixTemplates(session, year, month);
-      setEntries(await db.getEntriesByMonth(session, year, month));
+      const s = sessionRef.current;
+      await db.applyMissingFixTemplates(s, year, month);
+      setEntries(await db.getEntriesByMonth(s, year, month));
     } catch (e) {
       showToast('Laden fehlgeschlagen');
       console.error(e);
     }
     setLoading(false);
-  }, [session, year, month, showToast]);
+  }, [year, month, showToast]);
 
   useEffect(() => { load(); }, [load, version]);
 
@@ -188,12 +223,25 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     let m = month + delta, y = year;
     if (m < 1) { m = 12; y--; } else if (m > 12) { m = 1; y++; }
     setMonth(m); setYear(y);
+    setGlobalActiveMonth(y, m); // EntrySheet weiß, in welchem Monat wir sind
   }
 
+  // Beim ersten Mount den initialen Monat in den Context schreiben
+  useEffect(() => {
+    setGlobalActiveMonth(year, month);
+    // Reset beim Verlassen: zurück auf aktuellen Kalendermonat
+    return () => {
+      const n = new Date();
+      setGlobalActiveMonth(n.getFullYear(), n.getMonth() + 1);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSave(entry) {
-    await db.saveEntry(session, { ...entry, year, month });
-    setModal(null);
-    showToast(entry.id ? 'Eintrag aktualisiert' : 'Eintrag hinzugefügt');
+    const saved = await db.saveEntry(session, { ...entry, year, month });
+    // Sofort sichtbar machen (Ansicht bleibt offen); der Reload holt den Rest nach
+    setEntries((prev) => prev.map((e) => (e.id === saved.id ? saved : e)));
+    showToast('Eintrag aktualisiert');
     load();
     notifySaved();
   }
@@ -201,38 +249,83 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   async function handleDelete(id) {
     if (!confirm('Eintrag löschen?')) return;
     await db.deleteEntry(id);
-    setModal(null);
+    setDetailId(null);
     showToast('Eintrag gelöscht');
     load();
     notifySaved();
   }
+
+  function openEntry({ entry }) { setDetailId(entry.id); }
 
   function handleTogglePaid(entry) {
     // Optimistischer Update: entries sofort lokal umschalten.
     // KEIN notifySaved() — das würde version erhöhen → useEffect →
     // load() → kompletter State-Reset → Dropdowns klappen zu.
     // paid/unpaid ist eine rein lokale Änderung, andere Views
-    // (OverviewSection, SparschweinFab) müssen das nicht wissen.
-    const newPaid = !entry.paid;
-    setEntries((prev) =>
-      prev.map((e) => e.id === entry.id ? { ...e, paid: newPaid } : e)
-    );
-    showToast(newPaid ? '✓ Als bezahlt markiert' : 'Als offen markiert');
+    // (OverviewSection, SparschweinSection) müssen das nicht wissen.
+    //
+    // Ist noch etwas offen (auch nur ein Teil), markiert der Tipp ALLES als
+    // bezahlt; ist schon alles bezahlt, setzt er die nicht-sofort-bezahlten
+    // Teilzahlungen wieder auf offen. Bar/Gutschein/Sparschwein bleiben bezahlt.
+    const target = !isFullyPaid(entry);
+    const next = setPartsPaid(entry, target);
+    const updated = { ...entry, paid: next.paid, ...(next.payments ? { payments: next.payments } : {}) };
+    if (!target && isFullyPaid(updated)) {
+      showToast('Bar-, Gutschein- und Sparschwein-Zahlungen gelten sofort als bezahlt');
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? updated : e)));
+    showToast(target ? '✓ Als bezahlt markiert' : 'Als offen markiert');
     // DB-Schreiben im Hintergrund — bei Fehler State zurückrollen
-    db.togglePaid(entry.id, newPaid).catch(() => {
-      setEntries((prev) =>
-        prev.map((e) => e.id === entry.id ? { ...e, paid: entry.paid } : e)
-      );
+    db.togglePaid(entry.id, next.paid, next.payments).catch(() => {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
       showToast('Fehler beim Speichern');
     });
   }
 
+  // Eine einzelne Teilzahlung abhaken / wieder öffnen (Ansicht des Postens).
+  // Sofort bezahlte Arten (Bar, Gutschein, Sparschwein) lassen sich nicht öffnen.
+  function handleTogglePart(entry, idx) {
+    const parts = entryParts(entry);
+    if (!parts[idx] || isInstantMethod(parts[idx].method)) return;
+    const payments = parts.map((p, i) => ({ method: p.method, amount: p.amount, paid: i === idx ? !p.paid : p.paid }));
+    const paid = payments.every((p) => p.paid);
+    const updated = { ...entry, paid, payments };
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? updated : e)));
+    db.togglePaid(entry.id, paid, payments).catch(() => {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
+      showToast('Fehler beim Speichern');
+    });
+  }
+
+  const detailEntry = detailId ? entries.find((e) => e.id === detailId) : null;
+
+  // Dynamisches Saldo-Label: "diesen Monat" nur wenn wir im aktuellen Monat sind
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
+  const saldoLabel = isCurrentMonth ? 'Saldo diesen Monat' : `Saldo ${MONTHS_DE[month - 1]}`;
+
   // Kennzahlen für die Saldo-Karte
-  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen');
-  const totalAus    = sumCat(entries, 'fixkosten') + sumCat(entries, 'variable_kosten') + sumCat(entries, 'sonstige_ausgaben');
-  const verfuegbar  = totalEin - totalAus;
-  const offene      = entries.filter((e) => !e.paid && e.category !== 'fixeinnahmen' && e.category !== 'sonstige_einnahmen');
-  const offeneSumme = offene.reduce((s, e) => s + Number(e.amount || 0), 0);
+  // Sparschwein-Einlagen nicht als normale Ausgabe mitzählen —
+  // sie sind Transfers zum Sparschwein, keine Ausgaben.
+  // Sparschwein-Entnahmen ("Sparschwein"-Einnahme) sind KEINE echte
+  // Einnahme — sie werden aus totalEin herausgerechnet und stattdessen
+  // mit dem Gespart-Betrag verrechnet: Gespart = Einzahlungen − Entnahmen.
+  const totalEntnommen = entries
+    .filter((e) => isSparschweinDirectWithdrawal(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
+  const totalAus    = entries
+    .filter((e) => ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'].includes(e.category) && !isSparschweinDeposit(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalGespart = entries
+    .filter((e) => isSparschweinDeposit(e))
+    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
+  const verfuegbar  = totalEin - totalAus - totalGespart;
+  // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
+  // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
+  // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
+  const offene      = entries.filter(isOpenExpense);
+  const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
   const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
   const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 
@@ -258,7 +351,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
       {/* Saldo-Karte mit allen Infos in einer Zeile */}
       <div className="fin-summary-card">
-        <div className="fin-summary-eyebrow t-chip">Saldo diesen Monat</div>
+        <div className="fin-summary-eyebrow t-chip">{saldoLabel}</div>
         <div className="fin-summary-value t-display">
           {loading ? '—' : formatEur(verfuegbar)}
         </div>
@@ -297,7 +390,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       ) : filter === 'offen' ? (
         <OffenList
           entries={entries}
-          onOpenModal={setModal}
+          onOpenModal={openEntry}
           onTogglePaid={handleTogglePaid}
         />
       ) : (
@@ -307,21 +400,22 @@ export default function MonthsView({ initialFilter = 'alle' }) {
               key={col.key}
               col={col}
               entries={entries}
-              onOpenModal={setModal}
+              onOpenModal={openEntry}
               onTogglePaid={handleTogglePaid}
             />
           ))}
         </div>
       )}
 
-      {modal && (
-        <EntryModal
-          entry={modal.entry}
-          defaultCategory={modal.defaultCategory}
+      {detailEntry && (
+        <EntryDetailSheet
+          entry={detailEntry}
+          onClose={() => setDetailId(null)}
           onSave={handleSave}
-          onDelete={handleDelete}
-          onClose={() => setModal(null)}
           showToast={showToast}
+          onDelete={handleDelete}
+          onTogglePaid={handleTogglePaid}
+          onTogglePart={handleTogglePart}
         />
       )}
     </>

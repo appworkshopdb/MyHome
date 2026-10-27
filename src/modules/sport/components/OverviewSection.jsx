@@ -63,7 +63,7 @@ export default function OverviewSection({
     d.setDate(d.getDate() + i);
     const key = iso(d);
     const dayWorkouts = workouts.filter((w) => w.occurred_on === key);
-    return { key, label: WEEKDAYS_DE[i], state: dayState(dayWorkouts, key === todayIso) };
+    return { key, label: WEEKDAYS_DE[i], dateNum: d.getDate(), state: dayState(dayWorkouts, key === todayIso) };
   });
 
   // ── Bereichs-Kennzahlen ────────────────────────────────────────
@@ -134,6 +134,7 @@ export default function OverviewSection({
               <span className={`spo-week-cell spo-week-cell--${d.state}`}>
                 {d.state === 'done' && '✓'}
                 {d.state === 'rest' && 'Rest'}
+                {d.state === 'planned' && d.dateNum}
               </span>
             </div>
           ))}
@@ -142,7 +143,7 @@ export default function OverviewSection({
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Einheiten"
             value={`${units.length}`}

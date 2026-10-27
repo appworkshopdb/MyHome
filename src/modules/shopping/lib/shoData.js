@@ -5,6 +5,7 @@
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
+import { track } from '../../../core/lib/analytics.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID).
 // Analog zu rawAuth.js: kein supabase.auth.getUser(),
@@ -93,6 +94,24 @@ export async function saveList(list) {
   }
 }
 
+// Verknüpft eine Liste mit der/den beim Abschließen erzeugten Buchung(en)
+// im Finanzmodul. Normalerweise nur fin_entry_id (eine Sammelbuchung);
+// bei gemischten Zahlungsarten (teils sofort bezahlt, teils offen) kommt
+// zusätzlich fin_entry_id_open dazu (siehe ItemsView.jsx). Wird für ein
+// künftiges Stornieren gebraucht, falls eine "erledigt"-Liste wieder
+// geöffnet wird (Deploy 3).
+export async function linkListFinEntry(listId, finEntryId, finEntryIdOpen) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_lists')
+    .update({
+      fin_entry_id:      finEntryId ?? null,
+      fin_entry_id_open: finEntryIdOpen ?? null,
+    })
+    .eq('id', listId);
+  if (error) throw error;
+}
+
 export async function deleteList(listId) {
   const sb = getSupabase();
   const { error } = await sb
@@ -156,6 +175,7 @@ export async function saveItem(item) {
       .select()
       .single();
     if (error) throw error;
+    track('shopping_item_added');
     return data;
   }
 }
@@ -384,5 +404,66 @@ export async function assignItemToStore(itemId, listStoreId) {
     .from('sho_items')
     .update({ list_store_id: listStoreId })
     .eq('id', itemId);
+  if (error) throw error;
+}
+
+// ─── Zahlungen pro Liste ──────────────────────────────────────
+// Eine Liste kann mehrere Zahlungen enthalten (mehrere Läden oder
+// spontane Zukäufe). store_name ist optional. Beim Abschließen wird
+// daraus EINE Sammelbuchung im Finanzmodul erzeugt (siehe Deploy 2).
+
+export async function loadPayments(listId) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('sho_payments')
+    .select('*')
+    .eq('list_id', listId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function savePayment(payment) {
+  const sb = getSupabase();
+  if (payment.id) {
+    const { data, error } = await sb
+      .from('sho_payments')
+      .update({
+        store_name: payment.store_name ?? null,
+        amount:     payment.amount,
+        payment:    payment.payment ?? 'Bar',
+        note:       payment.note ?? null,
+      })
+      .eq('id', payment.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } else {
+    const owner_id = getOwnerIdFromToken();
+    const { data, error } = await sb
+      .from('sho_payments')
+      .insert({
+        owner_id,
+        list_id:    payment.list_id,
+        store_name: payment.store_name ?? null,
+        amount:     payment.amount,
+        payment:    payment.payment ?? 'Bar',
+        note:       payment.note ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+export async function deletePayment(id) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_payments')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
   if (error) throw error;
 }

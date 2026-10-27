@@ -19,7 +19,11 @@ import { createPortal } from 'react-dom';
 
 const CLOSE_DISTANCE = 110; // px, ab hier schließt das Sheet beim Loslassen
 
-export default function SheetShell({ onClose, children, labelledBy }) {
+// wizard: höheres Sheet für Eingabe-Wizards (core/components/wizard/WizardKit.jsx).
+// Der Wizard bringt seinen eigenen Kopf, Scrollbereich und die Fußleiste mit,
+// deshalb legt SheetShell hier nur eine nicht scrollende Hülle (sheet-flush)
+// statt des scrollenden Bereichs (sheet-scroll) um die Kinder.
+export default function SheetShell({ onClose, children, labelledBy, wizard = false }) {
   const [dragY, setDragY]     = useState(0);
   const [closing, setClosing] = useState(false);
   const startY  = useRef(null);
@@ -87,7 +91,7 @@ export default function SheetShell({ onClose, children, labelledBy }) {
       onClick={(e) => e.target === e.currentTarget && schliessen()}
     >
       <div
-        className={`sheet ${closing ? 'is-closing' : ''}`}
+        className={`sheet ${wizard ? 'sheet--wiz' : ''} ${closing ? 'is-closing' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
@@ -104,7 +108,7 @@ export default function SheetShell({ onClose, children, labelledBy }) {
         </div>
 
         <div
-          className="sheet-scroll"
+          className={wizard ? 'sheet-flush' : 'sheet-scroll'}
           ref={bodyRef}
           // Touch-Events NUR auf dem Griff — nicht auf dem Scroll-Bereich.
           // iOS: body-lock via position:fixed (im useEffect oben).

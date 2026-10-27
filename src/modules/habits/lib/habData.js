@@ -3,6 +3,7 @@
 
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
+import { track } from '../../../core/lib/analytics.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID)
 // Analog zum rawAuth-Workaround: kein supabase.auth.getUser(),
@@ -43,12 +44,14 @@ export async function saveHabit(habit) {
         name:           habit.name,
         description:    habit.description ?? null,
         category:       habit.category,
+        categories:     habit.categories ?? [],
         icon:           habit.icon,
         frequency:      habit.frequency,
         frequency_days: habit.frequency_days ?? null,
         target_count:   habit.target_count ?? 1,
         unit:           habit.unit ?? null,
         reminder_time:  habit.reminder_time ?? null,
+        time_slot:      habit.time_slot ?? 'anytime',
         active:         habit.active ?? true,
         sort_order:     habit.sort_order ?? 0,
       })
@@ -66,27 +69,49 @@ export async function saveHabit(habit) {
         name:           habit.name,
         description:    habit.description ?? null,
         category:       habit.category,
+        categories:     habit.categories ?? [],
         icon:           habit.icon,
         frequency:      habit.frequency ?? 'daily',
         frequency_days: habit.frequency_days ?? null,
         target_count:   habit.target_count ?? 1,
         unit:           habit.unit ?? null,
         reminder_time:  habit.reminder_time ?? null,
+        time_slot:      habit.time_slot ?? 'anytime',
         active:         true,
         sort_order:     habit.sort_order ?? 0,
       })
       .select()
       .single();
     if (error) throw error;
+    track('habit_created', { frequency: habit.frequency ?? 'daily' });
     return data;
   }
 }
 
-export async function deleteHabit(habitId) {
+/**
+ * Gewohnheit löschen (soft). Mit hideFromStats zählt sie auch in keiner
+ * Statistik mehr (Spalte stats_hidden, siehe hab_stats_hidden_migration.sql);
+ * ohne bleiben ihre Werte für die Tage, an denen sie aktiv war, erhalten.
+ */
+export async function deleteHabit(habitId, { hideFromStats = false } = {}) {
+  const sb = getSupabase();
+  const patch = { deleted_at: new Date().toISOString() };
+  // stats_hidden nur mitschicken, wenn gewünscht — so geht normales Löschen
+  // auch, solange die Migration noch nicht eingespielt ist.
+  if (hideFromStats) patch.stats_hidden = true;
+  const { error } = await sb
+    .from('hab_habits')
+    .update(patch)
+    .eq('id', habitId);
+  if (error) throw error;
+}
+
+/** Gelöschte Gewohnheit in der Statistik aus- oder wieder einblenden. */
+export async function setStatsHidden(habitId, hidden) {
   const sb = getSupabase();
   const { error } = await sb
     .from('hab_habits')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ stats_hidden: hidden })
     .eq('id', habitId);
   if (error) throw error;
 }
@@ -151,6 +176,7 @@ export async function toggleEntry(habitId, date, countValue = 1) {
       .select()
       .single();
     if (error) throw error;
+    track('habit_checkin');
     return data;
   } else {
     const owner_id = getOwnerIdFromToken();
@@ -165,6 +191,7 @@ export async function toggleEntry(habitId, date, countValue = 1) {
       .select()
       .single();
     if (error) throw error;
+    track('habit_checkin');
     return data;
   }
 }
@@ -215,11 +242,13 @@ export async function setEntryCount(habitId, date, count) {
 /**
  * Gelöschten Habit wiederherstellen (deleted_at auf null setzen).
  */
-export async function restoreHabit(habitId) {
+export async function restoreHabit(habitId, { wasHidden = false } = {}) {
   const sb = getSupabase();
+  const patch = { deleted_at: null, active: true };
+  if (wasHidden) patch.stats_hidden = false;
   const { error } = await sb
     .from('hab_habits')
-    .update({ deleted_at: null, active: true })
+    .update(patch)
     .eq('id', habitId);
   if (error) throw error;
 }

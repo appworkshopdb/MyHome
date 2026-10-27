@@ -1,235 +1,503 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
+import { useEntrySheet } from '../lib/EntrySheetContext';
 import * as db from '../../modules/sport/lib/spoData';
 import { TRAINING_TYPES } from '../../modules/sport/lib/data/trainingTypes';
 import { PREDEFINED_UNITS } from '../../modules/sport/lib/data/predefinedUnits';
+import PlanDaysEditor from '../../modules/sport/components/PlanDaysEditor';
+import { fmtDate, todayIso } from '../lib/wizardDates';
 import SheetShell from './SheetShell';
+import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
+// Auswahl zuerst: Neue Einheit · Trainingsplan · Ruhetag.
+//   Neue Einheit  (e1 Eingeben, e2 Prüfen) → spo_workouts (Training mit Datum)
+//   Trainingsplan (p1 Name, p2 Trainingstage, p3 Prüfen) → spo_plans
+//   Ruhetag       (r1) → spo_workouts mit is_rest
+// "Eigene Einheiten verwalten" (Vorlagen anlegen, bearbeiten, löschen) bleibt wie bisher.
+// Was bei Einheiten gewählt werden kann und was wo angelegt wird, wird separat geklärt.
 
-const MODES = [
-  { key: 'training', label: '💪 Training' },
-  { key: 'einheit',  label: '📋 Neue Einheit' },
-  { key: 'plan',     label: '🗓 Trainingsplan' },
-  { key: 'rest',     label: '😴 Restday' },
-];
+const GROUP_ICON = { Kraft: '💪', Ausdauer: '🏃', Beweglichkeit: '🧘' };
+const GROUPS = [...new Set(TRAINING_TYPES.map((t) => t.group))];
+const DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180];
+const DURATION_ITEMS = DURATIONS.map((d) => ({ value: String(d), label: `${d} Min` }));
+const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
 
-// Vereinfachte Typ-Gruppen für schnelle Auswahl
-const TYPE_GROUPS = [
-  { group: 'Kraft',    types: TRAINING_TYPES.filter((t) => t.group === 'Kraft').slice(0, 8) },
-  { group: 'Ausdauer', types: TRAINING_TYPES.filter((t) => t.group === 'Ausdauer').slice(0, 6) },
-  { group: 'Sonstige', types: TRAINING_TYPES.filter((t) => t.group === 'Sonstige' || !['Kraft','Ausdauer'].includes(t.group)).slice(0, 4) },
-];
+// "Push (Brust, Schultern, Trizeps)" → Titel "Push", Zusatz "Brust, Schultern, Trizeps"
+function splitLabel(t) {
+  const m = /^(.*?)\s*\((.*)\)\s*$/.exec(t.label);
+  if (m) return { title: m[1], sub: m[2] };
+  return { title: t.label, sub: t.typical_duration_min ? `≈ ${t.typical_duration_min} Min` : t.group };
+}
+const shortTitle = (t) => splitLabel(t).title;
+const nearestDuration = (min) => String(DURATIONS.reduce((a, b) => (Math.abs(b - min) < Math.abs(a - min) ? b : a), 60));
 
-// Signalisiert SportModule.jsx, dass sich Einheiten/Workouts geändert
-// haben. Der FAB sitzt in App.jsx, außerhalb des Moduls (siehe
-// GlobalFab.jsx) — ohne dieses Ereignis würde eine hier neu angelegte
-// oder bearbeitete Einheit erst nach manuellem Reload in der
-// Einheiten-Liste auftauchen. Bewusst ein einfaches window-Event statt
-// GlobalFab/App.jsx anzufassen (gemeinsam genutzte Dateien, höheres
-// Kollisionsrisiko mit Änderungen aus einem anderen Chat).
-function notifySportDataChanged() {
-  window.dispatchEvent(new Event('sport:data-changed'));
+// Trainingstyp: erst die Gruppe als große Karte, darunter die Typen als Kacheln
+function TypePicker({ typeKey, onSelect }) {
+  const selected = TRAINING_TYPES.find((t) => t.key === typeKey);
+  const [group, setGroup] = useState(selected?.group ?? GROUPS[0]);
+  const types = TRAINING_TYPES.filter((t) => t.group === group);
+  return (
+    <>
+      <div className="wz-tgroups" role="group" aria-label="Typ-Gruppe">
+        {GROUPS.map((g) => (
+          <button key={g} type="button" className={`wz-tg${g === group ? ' on' : ''}`} aria-pressed={g === group} onClick={() => setGroup(g)}>
+            <span>{GROUP_ICON[g] || '🎯'}</span>{g}
+            <small>{TRAINING_TYPES.filter((t) => t.group === g).length} Typen</small>
+          </button>
+        ))}
+      </div>
+      <div className="wz-types" role="group" aria-label={group}>
+        {types.map((t) => {
+          const { title, sub } = splitLabel(t);
+          return (
+            <button key={t.key} type="button" className={`wz-ty${t.key === typeKey ? ' on' : ''}`} aria-pressed={t.key === typeKey} onClick={() => onSelect(t)}>
+              {title}<small>{sub}</small>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
 }
 
-export default function SportQuickSheet({ onClose, onSaved }) {
+export default function SportQuickSheet({ onClose }) {
   const { session } = useAuth();
-  const [mode,    setMode]    = useState('training');
-  const [title,   setTitle]   = useState('');
+  const { notifySaved } = useEntrySheet();
+
+  const [screen, setScreen] = useState('choose');
+  const historyRef = useRef([]);
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
+
+  function go(next) { historyRef.current.push(screen); setError(''); setScreen(next); }
+  function back() { const prev = historyRef.current.pop(); setError(''); setScreen(prev || 'choose'); }
+
+  // ── Neue Einheit (Training) ──
   const [typeKey, setTypeKey] = useState('');
-  const [date,    setDate]    = useState(TODAY());
-  const [duration, setDuration] = useState('');
-  const [status,  setStatus]  = useState('done');  // done | planned
-  const [planTitle, setPlanTitle] = useState('');
-  const [muscleGroups, setMuscleGroups] = useState([]); // wird beim Vorlage-Übernehmen mitgegeben
-  const [showPresets, setShowPresets] = useState(false);
-  const [saving,  setSaving]  = useState(false);
-  const [error,   setError]   = useState('');
+  const [title,   setTitle]   = useState('');
+  const titleAuto = useRef(true);
+  const [date,    setDate]    = useState(todayIso());
+  const [dur,     setDur]     = useState('60');
+  const [statusPick, setStatusPick] = useState(null); // null = folgt dem Datum
+  const [showMore, setShowMore] = useState(false);
 
-  function selectType(key, label) {
-    setTypeKey(key);
-    if (!title) setTitle(label);
+  const type = TRAINING_TYPES.find((t) => t.key === typeKey);
+  const status = statusPick ?? (date > todayIso() ? 'planned' : 'done');
+
+  function selectType(t) {
+    setTypeKey(t.key);
+    if (titleAuto.current || !title) { setTitle(shortTitle(t)); titleAuto.current = true; }
+    if (t.typical_duration_min) setDur(nearestDuration(t.typical_duration_min));
   }
 
-  // Übernimmt Titel/Typ/Muskeln einer vordefinierten Einheit als
-  // Ausgangspunkt — Dauer bleibt frei, da Vorlagen keine feste Dauer
-  // vorgeben.
-  function adoptPreset(preset) {
-    setTypeKey(preset.type_key ?? '');
-    setTitle(preset.title);
-    setMuscleGroups(preset.muscle_groups ?? []);
-    setShowPresets(false);
-  }
-
-  async function submit() {
+  async function saveWorkout() {
     setSaving(true); setError('');
     try {
-      if (mode === 'training') {
-        if (!title.trim()) { setError('Bitte Bezeichnung eingeben'); setSaving(false); return; }
-        await db.saveWorkout(session, {
-          occurred_on: date,
-          type_key: typeKey || 'sonstiges',
-          title: title.trim(),
-          duration_min: duration ? parseInt(duration, 10) : null,
-          status,
-          is_rest: false,
-        });
-      } else if (mode === 'einheit') {
-        if (!title.trim()) { setError('Bitte Bezeichnung eingeben'); setSaving(false); return; }
-        await db.saveUnit(session, {
-          title: title.trim(),
-          type_key: typeKey || null,
-          duration_min: duration ? parseInt(duration, 10) : null,
-          muscle_groups: muscleGroups,
-        });
-      } else if (mode === 'plan') {
-        if (!planTitle.trim()) { setError('Bitte Plan-Name eingeben'); setSaving(false); return; }
-        await db.savePlan(session, { title: planTitle.trim(), notes: null }, []);
-      } else if (mode === 'rest') {
-        await db.saveWorkout(session, {
-          occurred_on: date,
-          type_key: null,
-          title: 'Restday',
-          duration_min: null,
-          status: 'done',
-          is_rest: true,
-        });
-      }
-      notifySportDataChanged();
-      onSaved?.();
+      await db.saveWorkout(session, {
+        occurred_on: date,
+        type_key: typeKey,
+        title: title.trim(),
+        duration_min: dur ? parseInt(dur, 10) : null,
+        status,
+        is_rest: false,
+      });
+      notifySaved();
       onClose();
-    } catch (e) { setError('Speichern fehlgeschlagen'); }
+    } catch { setError('Speichern fehlgeschlagen'); }
     finally { setSaving(false); }
   }
 
-  return (
-    <SheetShell onClose={onClose}>
-        <div className="sheet-header">
-          <span className="sheet-title">Sport eintragen</span>
-          <button className="sheet-cancel" onClick={onClose}>Abbrechen</button>
-        </div>
+  // ── Trainingsplan ──
+  const [planTitle, setPlanTitle] = useState('');
+  const [planNotes, setPlanNotes] = useState('');
+  const [planMore,  setPlanMore]  = useState(false);
+  const [planDays,  setPlanDays]  = useState([{ unit_id: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]);
+  const [myUnits,   setMyUnits]   = useState([]);
 
-        <div className="qsheet-body">
-          {/* Modus-Auswahl */}
-          <div className="qsheet-mode-grid">
-            {MODES.map((m) => (
-              <button key={m.key} className={`qsheet-mode-btn ${mode === m.key ? 'active' : ''}`}
-                onClick={() => setMode(m.key)}>{m.label}</button>
+  useEffect(() => {
+    if (screen !== 'p2') return;
+    db.getUnits(session).then(setMyUnits).catch(() => {});
+  }, [screen, session]);
+
+  const planDaysOk = planDays.length > 0 && !planDays.some((d) => !d.is_rest && !d.unit_id && !d._selectedUnitKey);
+  const planHint = planDays.length === 0
+    ? 'Der Plan braucht mindestens einen Tag'
+    : (planDaysOk ? '' : 'Bitte jedem Trainingstag eine Einheit zuweisen');
+
+  async function savePlan() {
+    setSaving(true); setError('');
+    try {
+      await db.savePlan(
+        session,
+        { title: planTitle.trim(), notes: planNotes.trim() || null },
+        planDays.map((d) => ({
+          unit_id: d.is_rest ? null : (d.unit_id || null),
+          title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title,
+          type_key: d.is_rest ? null : (d.type_key || null),
+          duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
+          muscle_groups: d.is_rest ? [] : (d.muscle_groups ?? []),
+          is_rest: d.is_rest,
+        })),
+      );
+      notifySaved();
+      onClose();
+    } catch { setError('Speichern fehlgeschlagen'); }
+    finally { setSaving(false); }
+  }
+
+  // ── Ruhetag ──
+  const [restDate, setRestDate] = useState(todayIso());
+  async function saveRest() {
+    setSaving(true); setError('');
+    try {
+      await db.saveWorkout(session, {
+        occurred_on: restDate,
+        type_key: null,
+        title: 'Ruhetag',
+        duration_min: null,
+        status: 'done',
+        is_rest: true,
+      });
+      notifySaved();
+      onClose();
+    } catch { setError('Speichern fehlgeschlagen'); }
+    finally { setSaving(false); }
+  }
+
+  // ── Eigene Einheiten verwalten (Vorlagen) ──
+  const [manageUnits,   setManageUnits]   = useState([]);
+  const [manageLoading, setManageLoading] = useState(false);
+  const [selectedId,    setSelectedId]    = useState(null);
+  const [unitTitle,     setUnitTitle]     = useState('');
+  const [unitTypeKey,   setUnitTypeKey]   = useState('');
+  const [unitDuration,  setUnitDuration]  = useState('');
+  const [showPresets,   setShowPresets]   = useState(false);
+
+  useEffect(() => {
+    if (screen !== 'manage') return;
+    setManageLoading(true);
+    db.getUnits(session).then(setManageUnits).catch(() => setError('Einheiten konnten nicht geladen werden')).finally(() => setManageLoading(false));
+  }, [screen, session]);
+
+  function openTemplate(u) {
+    setSelectedId(u?.id ?? null);
+    setUnitTitle(u?.title ?? '');
+    setUnitTypeKey(u?.type_key ?? '');
+    setUnitDuration(u?.duration_min != null ? String(u.duration_min) : '');
+    setShowPresets(false);
+    go('tpl');
+  }
+  function adoptPreset(preset) {
+    setUnitTypeKey(preset.type_key ?? '');
+    setUnitTitle(preset.title);
+    setShowPresets(false);
+  }
+  async function saveTemplate() {
+    if (!unitTitle.trim()) return setError('Bitte Bezeichnung eingeben');
+    setSaving(true); setError('');
+    try {
+      await db.saveUnit(session, {
+        ...(selectedId ? { id: selectedId } : {}),
+        title: unitTitle.trim(),
+        type_key: unitTypeKey || null,
+        duration_min: unitDuration ? parseInt(unitDuration, 10) : null,
+      });
+      notifySaved();
+      onClose();
+    } catch { setError('Speichern fehlgeschlagen'); }
+    finally { setSaving(false); }
+  }
+  async function deleteTemplate() {
+    setSaving(true);
+    try {
+      await db.deleteUnit(selectedId);
+      notifySaved();
+      onClose();
+    } catch { setError('Löschen fehlgeschlagen'); }
+    finally { setSaving(false); }
+  }
+
+  const planReview = useMemo(() => planDays.map((d, i) => ({ n: i + 1, text: d.is_rest ? 'Ruhetag' : (d.title || '—') })), [planDays]);
+  const errorEl = error ? <p className="wz-hint err" role="alert">{error}</p> : null;
+  const wrap = (props, children) => (
+    <SheetShell onClose={onClose} wizard labelledBy="sport-sheet-title">
+      <WizardFrame stepKey={screen} onClose={onClose} {...props}>{children}</WizardFrame>
+    </SheetShell>
+  );
+
+  // ── Auswahl ──
+  if (screen === 'choose') {
+    return wrap({ title: 'Sport', sub: 'Was möchtest du anlegen?' }, (
+      <>
+        <button type="button" className="wz-row-btn" onClick={() => go('e1')}>
+          <span className="wz-row-ico">⚡</span>
+          <span>Neue Einheit<small>Training mit Typ, Datum und Dauer</small></span>
+          <span className="chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
+          <span className="wz-row-ico">🗓</span>
+          <span>Trainingsplan<small>Mehrere Trainingstage zu einem Plan bündeln</small></span>
+          <span className="chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" className="wz-row-btn" onClick={() => go('r1')}>
+          <span className="wz-row-ico soft">🌙</span>
+          <span>Ruhetag<small>Erholung im Kalender festhalten</small></span>
+          <span className="chev" aria-hidden="true">›</span>
+        </button>
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14 }} onClick={() => go('manage')}>
+          Eigene Einheiten verwalten
+        </button>
+      </>
+    ));
+  }
+
+  // ── Neue Einheit: Eingeben ──
+  if (screen === 'e1') {
+    const nameOk = Boolean(title.trim());
+    const ready = Boolean(typeKey) && nameOk && Boolean(date);
+    return wrap({
+      title: 'Neue Einheit',
+      sub: 'Schritt 1 von 2 · Eingeben',
+      step: 1, total: 2, onBack: back,
+      footer: (
+        <WizardFoot hint={ready ? '' : missingHint([['Trainingstyp', !typeKey], ['Name', !nameOk], ['Datum', !date]])}>
+          <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
+          <button type="button" className="btn btn-primary" disabled={!ready} onClick={() => go('e2')}>Weiter</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <div className="wz-lbl">Trainingstyp</div>
+        <TypePicker typeKey={typeKey} onSelect={selectType} />
+
+        <label className="wz-lbl" htmlFor="wz-sport-name" style={{ marginTop: 18 }}>Name</label>
+        <input
+          id="wz-sport-name"
+          className="wz-input hero"
+          type="text"
+          value={title}
+          onChange={(e) => { titleAuto.current = false; setTitle(e.target.value); }}
+          placeholder="z. B. Legday, Arme"
+          autoComplete="off"
+        />
+
+        <div className="wz-lbl">Datum</div>
+        <DateButton value={date} onChange={setDate} placeholder="Datum wählen" label="Datum" />
+        {date > todayIso() && statusPick === null && <p className="wz-hint">Liegt in der Zukunft, wird als „Geplant" gespeichert.</p>}
+
+        {showMore && (
+          <div className="wz-two" style={{ marginTop: 16 }}>
+            <div>
+              <div className="wz-col-lbl">Dauer</div>
+              <WheelPicker items={DURATION_ITEMS} value={dur} onChange={setDur} label="Dauer" />
+            </div>
+            <div>
+              <div className="wz-col-lbl">Status</div>
+              <div style={{ display: 'grid', gap: 8 }} role="group" aria-label="Status">
+                {STATUS_OPTIONS.map((o) => (
+                  <button key={o.value} type="button" className={`wz-gbtn${status === o.value ? ' on' : ''}`} style={{ minHeight: 58 }} aria-pressed={status === o.value} onClick={() => setStatusPick(o.value)}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {errorEl}
+      </>
+    ));
+  }
+
+  // ── Neue Einheit: Prüfen ──
+  if (screen === 'e2') {
+    return wrap({
+      title: 'Einheit prüfen',
+      sub: 'Schritt 2 von 2 · Bitte alles kontrollieren',
+      step: 2, total: 2, onBack: back,
+      footer: (
+        <WizardFoot>
+          <button type="button" className="btn btn-secondary" onClick={back} disabled={saving}>Ändern</button>
+          <button type="button" className="btn btn-primary" onClick={saveWorkout} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <div className="wz-review">
+          <div className="wz-rv-top"><small>Einheit</small><b style={{ fontSize: 24 }}>{title.trim()}</b></div>
+          <div className="wz-rv-row"><span>Trainingstyp</span><span>{type ? `${shortTitle(type)} · ${type.group}` : '—'}</span></div>
+          <div className="wz-rv-row"><span>Datum</span><span>{fmtDate(date)}</span></div>
+          <div className="wz-rv-row"><span>Dauer</span><span>{dur ? `${dur} Min` : '—'}</span></div>
+          <div className="wz-rv-row"><span>Status</span><span>{status === 'planned' ? 'Geplant' : 'Erledigt'}</span></div>
+        </div>
+        {errorEl}
+      </>
+    ));
+  }
+
+  // ── Trainingsplan ──
+  if (screen === 'p1') {
+    const ok = Boolean(planTitle.trim());
+    return wrap({
+      title: 'Trainingsplan',
+      sub: 'Schritt 1 von 3 · Name',
+      step: 1, total: 3, onBack: back,
+      footer: (
+        <WizardFoot one hint={ok ? '' : missingHint([['Name', true]])}>
+          <button type="button" className="btn btn-primary" disabled={!ok} onClick={() => go('p2')}>Weiter</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <label className="wz-lbl" htmlFor="wz-plan-name">Plan-Name</label>
+        <input
+          id="wz-plan-name"
+          className="wz-input hero"
+          type="text"
+          value={planTitle}
+          onChange={(e) => setPlanTitle(e.target.value)}
+          placeholder="z. B. 4-Tage-Split, Push/Pull/Legs"
+          autoFocus
+          autoComplete="off"
+          onKeyDown={(e) => e.key === 'Enter' && ok && go('p2')}
+        />
+        <p className="wz-hint">Das Startdatum legst du später beim Eintragen im Kalender fest. Hier geht es nur um den Aufbau des Plans.</p>
+      </>
+    ));
+  }
+  if (screen === 'p2') {
+    return wrap({
+      title: 'Trainingsplan',
+      sub: 'Schritt 2 von 3 · Trainingstage',
+      step: 2, total: 3, onBack: back,
+      footer: (
+        <WizardFoot hint={planHint}>
+          <MoreButton open={planMore} onClick={() => setPlanMore((o) => !o)} />
+          <button type="button" className="btn btn-primary" disabled={!planDaysOk} onClick={() => go('p3')}>Weiter</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <PlanDaysEditor days={planDays} onChange={setPlanDays} units={myUnits} />
+        {planMore && (
+          <>
+            <label className="wz-lbl" htmlFor="wz-plan-note" style={{ marginTop: 16 }}>Notiz <span className="opt">optional</span></label>
+            <textarea id="wz-plan-note" className="wz-input" value={planNotes} onChange={(e) => setPlanNotes(e.target.value)} placeholder="z. B. für Einsteiger, 3× pro Woche" />
+          </>
+        )}
+      </>
+    ));
+  }
+  if (screen === 'p3') {
+    return wrap({
+      title: 'Plan prüfen',
+      sub: 'Schritt 3 von 3 · Bitte alles kontrollieren',
+      step: 3, total: 3, onBack: back,
+      footer: (
+        <WizardFoot>
+          <button type="button" className="btn btn-secondary" onClick={back} disabled={saving}>Ändern</button>
+          <button type="button" className="btn btn-primary" onClick={savePlan} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <div className="wz-review">
+          <div className="wz-rv-top"><small>Trainingsplan</small><b style={{ fontSize: 24 }}>{planTitle.trim()}</b></div>
+          {planReview.map((d) => <div className="wz-rv-row" key={d.n}><span>Tag {d.n}</span><span>{d.text}</span></div>)}
+          <div className="wz-rv-row"><span>Notiz</span><span>{planNotes.trim() || '—'}</span></div>
+        </div>
+        {errorEl}
+      </>
+    ));
+  }
+
+  // ── Ruhetag ──
+  if (screen === 'r1') {
+    return wrap({
+      title: 'Ruhetag',
+      sub: 'Erholung festhalten',
+      onBack: back,
+      footer: (
+        <WizardFoot one hint={restDate ? '' : missingHint([['Datum', true]])}>
+          <button type="button" className="btn btn-primary" disabled={!restDate || saving} onClick={saveRest}>{saving ? 'Speichert…' : 'Speichern'}</button>
+        </WizardFoot>
+      ),
+    }, (
+      <>
+        <div className="wz-lbl">Datum</div>
+        <DateButton value={restDate} onChange={setRestDate} placeholder="Datum wählen" label="Datum" />
+        <p className="wz-hint">Der Ruhetag steht danach im Kalender und wird im Hub als „Ruhetag" angezeigt.</p>
+        {errorEl}
+      </>
+    ));
+  }
+
+  // ── Eigene Einheiten verwalten: Liste ──
+  if (screen === 'manage') {
+    return wrap({ title: 'Eigene Einheiten', sub: 'Vorlagen verwalten', onBack: back }, (
+      <>
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginBottom: 12 }} onClick={() => openTemplate(null)}>
+          ＋ Neue Einheiten-Vorlage
+        </button>
+        {manageLoading ? (
+          <p className="wz-hint">Lädt…</p>
+        ) : manageUnits.length === 0 ? (
+          <p className="wz-hint">Noch keine eigene Einheit angelegt.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {manageUnits.map((u) => (
+              <button key={u.id} type="button" className="wz-gbtn" style={{ textAlign: 'left', padding: '12px 14px' }} onClick={() => openTemplate(u)}>
+                {u.title}{u.duration_min ? ` · ${u.duration_min} Min.` : ''}
+              </button>
             ))}
           </div>
+        )}
+        {errorEl}
+      </>
+    ));
+  }
 
-          {/* TRAINING */}
-          {mode === 'training' && (
-            <>
-              <div className="qsheet-label">Status</div>
-              <div className="qsheet-seg">
-                <button className={status === 'done'    ? 'active' : ''} onClick={() => setStatus('done')}>Erledigt</button>
-                <button className={status === 'planned' ? 'active' : ''} onClick={() => setStatus('planned')}>Geplant</button>
-              </div>
-
-              <div className="qsheet-label" style={{ marginTop: 14 }}>Datum</div>
-              <input className="qsheet-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-
-              <div className="qsheet-label" style={{ marginTop: 14 }}>Trainingstyp</div>
-              {TYPE_GROUPS.map(({ group, types }) => (
-                <div key={group} className="qsheet-type-group">
-                  <div className="qsheet-type-group-label">{group}</div>
-                  <div className="qsheet-chip-row">
-                    {types.map((t) => (
-                      <button key={t.key} className={`qsheet-chip ${typeKey === t.key ? 'active' : ''}`}
-                        onClick={() => selectType(t.key, t.label)}>{t.label}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              <input className="qsheet-input" style={{ marginTop: 14 }} type="text"
-                placeholder="Bezeichnung (z.B. Push, Brust/Bizeps)"
-                value={title} onChange={(e) => setTitle(e.target.value)} />
-
-              <input className="qsheet-input" type="number" placeholder="Dauer in Minuten (optional)"
-                value={duration} onChange={(e) => setDuration(e.target.value)} min="0" max="1440" />
-            </>
-          )}
-
-          {/* EINHEIT — neu anlegen, optional aus Vorlage */}
-          {mode === 'einheit' && (
-            <>
-              <button
-                className="qsheet-chip"
-                style={{ marginBottom: 10 }}
-                onClick={() => setShowPresets(!showPresets)}
-              >
-                {showPresets ? 'Vorlagen ausblenden' : 'Aus Vorlage übernehmen'}
-              </button>
-
-              {showPresets && (
-                <div className="qsheet-chip-row" style={{ marginBottom: 14, maxHeight: 160, overflowY: 'auto' }}>
-                  {PREDEFINED_UNITS.map((preset) => (
-                    <button key={preset.key} className="qsheet-chip" onClick={() => adoptPreset(preset)}>
-                      {preset.title}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className="qsheet-label">Trainingstyp</div>
-              {TYPE_GROUPS.map(({ group, types }) => (
-                <div key={group} className="qsheet-type-group">
-                  <div className="qsheet-type-group-label">{group}</div>
-                  <div className="qsheet-chip-row">
-                    {types.map((t) => (
-                      <button key={t.key} className={`qsheet-chip ${typeKey === t.key ? 'active' : ''}`}
-                        onClick={() => selectType(t.key, t.label)}>{t.label}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <input className="qsheet-input" style={{ marginTop: 14 }} type="text"
-                placeholder="Name der Einheit (z.B. Legday, Arme)"
-                value={title} onChange={(e) => setTitle(e.target.value)} />
-              <input className="qsheet-input" type="number" placeholder="Richtwert Dauer in Minuten (optional)"
-                value={duration} onChange={(e) => setDuration(e.target.value)} min="0" max="1440" />
-            </>
-          )}
-
-          {/* PLAN */}
-          {mode === 'plan' && (
-            <>
-              <div className="qsheet-label">Plan-Name</div>
-              <input className="qsheet-input" type="text"
-                placeholder="z.B. 4-Tage-Split, Push/Pull/Legs"
-                value={planTitle} onChange={(e) => setPlanTitle(e.target.value)} autoFocus />
-
-              <div className="qsheet-label" style={{ marginTop: 14 }}>Startdatum</div>
-              <input className="qsheet-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-
-              <div className="qsheet-hint">
-                Nach dem Anlegen kannst du im Sport-Modul → Pläne die einzelnen Trainingstage hinzufügen.
-              </div>
-            </>
-          )}
-
-          {/* RESTDAY */}
-          {mode === 'rest' && (
-            <>
-              <div className="qsheet-label">Datum</div>
-              <input className="qsheet-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              <div className="qsheet-hint">Der Restday wird im Kalender eingetragen und im Hub als "Restday" angezeigt.</div>
-            </>
-          )}
-
-          {error && <div className="qsheet-error">{error}</div>}
-
-          <button className="sheet-save" disabled={saving} onClick={submit} style={{ marginTop: 20 }}>
-            {saving ? 'Wird gespeichert…' :
-             mode === 'training' ? 'Training eintragen' :
-             mode === 'einheit'  ? 'Einheit speichern' :
-             mode === 'plan'     ? 'Plan anlegen' :
-             'Restday eintragen'}
+  // ── Einheiten-Vorlage anlegen / bearbeiten ──
+  return wrap({
+    title: selectedId ? 'Vorlage bearbeiten' : 'Neue Vorlage',
+    sub: 'Eigene Einheit',
+    onBack: back,
+    footer: (
+      <WizardFoot one hint={unitTitle.trim() ? '' : missingHint([['Name', true]])}>
+        <button type="button" className="btn btn-primary" disabled={saving || !unitTitle.trim()} onClick={saveTemplate}>{saving ? 'Speichert…' : 'Speichern'}</button>
+      </WizardFoot>
+    ),
+  }, (
+    <>
+      {!selectedId && (
+        <>
+          <button type="button" className="btn btn-secondary btn-block" onClick={() => setShowPresets((o) => !o)}>
+            {showPresets ? 'Vorlagen ausblenden' : 'Aus Vorlage übernehmen'}
           </button>
-        </div>
-      </SheetShell>
-    
-  );
+          {showPresets && (
+            <div className="wz-chips" style={{ margin: '10px 0', maxHeight: 160, overflowY: 'auto' }}>
+              {PREDEFINED_UNITS.map((preset) => (
+                <button key={preset.key} type="button" className="wz-chip" onClick={() => adoptPreset(preset)}>{preset.title}</button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <div className="wz-lbl">Trainingstyp</div>
+      <TypePicker
+        typeKey={unitTypeKey}
+        onSelect={(t) => { setUnitTypeKey(t.key); if (!unitTitle) setUnitTitle(shortTitle(t)); }}
+      />
+      <label className="wz-lbl" htmlFor="wz-tpl-name" style={{ marginTop: 18 }}>Name</label>
+      <input id="wz-tpl-name" className="wz-input hero" type="text" value={unitTitle} onChange={(e) => setUnitTitle(e.target.value)} placeholder="z. B. Legday, Arme" autoComplete="off" />
+      <label className="wz-lbl" htmlFor="wz-tpl-dur">Richtwert Dauer <span className="opt">optional</span></label>
+      <input id="wz-tpl-dur" className="wz-input" type="number" inputMode="numeric" value={unitDuration} onChange={(e) => setUnitDuration(e.target.value)} placeholder="Minuten" min="0" max="1440" />
+      {selectedId && (
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14, color: 'var(--danger)', borderColor: 'var(--danger)' }} disabled={saving} onClick={deleteTemplate}>
+          Diese Einheit löschen
+        </button>
+      )}
+      {errorEl}
+    </>
+  ));
 }

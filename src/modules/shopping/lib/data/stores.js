@@ -48,3 +48,15 @@ export const DAY_PARTS = [
   { value: 'nachmittags',  icon: '🌤️', label: 'Nachmittags' },
   { value: 'abends',       icon: '🌙', label: 'Abends' },
 ];
+
+// Zahlungsarten für Einkaufs-Zahlungen. Bewusst identisch zu den
+// fin_payment-Werten des Finanzmoduls (PAYMENTS in finance.js), damit
+// die Sammelbuchung beim Abschließen einen gültigen Wert übergibt —
+// aber hier lokal gehalten, weil Module nicht voneinander importieren.
+export const PAYMENT_METHODS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
+
+// Zahlungsarten, die beim Abschließen als SOFORT beglichen gelten (Nutzer-
+// Entscheidung: nur Bar und Gutschein). Alle anderen (Bank, Paypal, SEPA,
+// Klarna) gelten als "noch offen" — die zugehörige Buchung im Finanzmodul
+// wird dann NICHT als bezahlt markiert, siehe ItemsView.jsx Abschluss-Wizard.
+export const INSTANT_PAYMENT_METHODS = ['Bar', 'Gutschein'];

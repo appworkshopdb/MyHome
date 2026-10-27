@@ -19,7 +19,7 @@
 // Rechts: EINE Pille (`.chrome-top-right`), zwei Tippflächen getrennt durch
 //         eine Haarlinie: GamificationBadges (Vogel+Level, Nest+Streak,
 //         öffnet GamificationSheet) und Profil-Avatar (Initiale auf
-//         --action-primary) → #/profile, Warnpunkt bei fehlenden
+//         --action-primary) → #/profile (eine Seite mit aufklappbaren Bereichen), Warnpunkt bei fehlenden
 //         Pflichtdaten. Bleibt auf JEDER Modul-Hauptansicht UND jedem
 //         Detail-Screen sichtbar — verschwindet nur hinter dem Backdrop
 //         eines offenen FAB-Sheets (SheetShell deckt den ganzen Screen ab),
@@ -35,6 +35,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useRoute } from '../lib/useRoute';
 import AppMenu from '../AppMenu';
 import GamificationBadges from './GamificationBadges.jsx';
+import { useAvatar } from '../lib/avatarData';
 
 // Zahnrad-Icon — 20px, 1.8px Stroke, stroke-linecap: round
 function IconGear() {
@@ -59,8 +60,9 @@ function IconArrowLeft() {
 
 export default function ModuleTopBar({ onBack, title, hasWarnings }) {
   const { session } = useAuth();
-  const { navigate } = useRoute();
+  const { module: routeModule, navigate } = useRoute();
   const [menuOpen, setMenuOpen] = useState(false);
+  const avatar = useAvatar(session);
   const initial = session?.user?.email?.[0]?.toUpperCase() || '?';
 
   return (
@@ -105,6 +107,7 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
           <button
             className="chrome-top-profile-zone"
             onClick={() => navigate('profile')}
+            aria-current={routeModule === 'profile' ? 'page' : undefined}
             aria-label={
               hasWarnings
                 ? 'Zum Profil — Pflichtdaten unvollständig'
@@ -112,7 +115,7 @@ export default function ModuleTopBar({ onBack, title, hasWarnings }) {
             }
           >
             <span className="chrome-top-avatar">
-              {initial}
+              {avatar ? <img className="chrome-top-avatar-img" src={avatar} alt="" /> : initial}
               {hasWarnings && (
                 <span className="warn-dot" aria-hidden="true" />
               )}

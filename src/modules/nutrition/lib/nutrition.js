@@ -17,21 +17,38 @@ export const DEFAULT_PROFILE = {
   allergies: [],
 };
 
+// Schlüssel = food_group in nut_foods (exakt, sonst fällt die Ampel auf Grau).
 export const GROUP_COLORS = {
   'Fleisch & Geflügel': '#ef4444',
   'Fisch & Meeresfrüchte': '#3b82f6',
-  'Milchprodukte & Eier': '#f59e0b',
-  'Getreide & Brot': '#a78bfa',
-  Hülsenfrüchte: '#10b981',
+  'Eier & Milchprodukte': '#f59e0b',
+  'Getreide, Brot & Beilagen': '#a78bfa',
+  'Pflanzliche Alternativen': '#14b8a6',
   Gemüse: '#22c55e',
   Obst: '#f97316',
-  'Nüsse & Samen': '#84cc16',
-  'Öle & Fette': '#fbbf24',
+  'Nüsse, Samen & Kerne': '#84cc16',
+  'Fette & Öle': '#fbbf24',
   'Snacks & Süßes': '#ec4899',
+  Süßungsmittel: '#e879f9',
+  'Fertig- & Verarbeitetes': '#64748b',
   Getränke: '#06b6d4',
   Gewürze: '#8b5cf6',
   Sonstiges: '#6b7280',
 };
+
+// Ernährungsform eines Lebensmittels (nut_foods.diet).
+export const FOOD_DIETS = [
+  { key: 'vegan', label: 'Vegan' },
+  { key: 'veg', label: 'Vegetarisch' },
+  { key: 'animal', label: 'Tierisch' },
+];
+
+// Allergene, die bei einem Lebensmittel markiert werden können. 'Gluten' und
+// 'Milch' bestimmen zugleich die Flags glutenfrei/laktosefrei (siehe nutData.js).
+export const FOOD_ALLERGENS = [
+  'Gluten', 'Milch', 'Ei', 'Fisch', 'Krebstiere', 'Weichtiere', 'Soja', 'Erdnüsse',
+  'Schalenfrüchte', 'Sellerie', 'Senf', 'Sesam', 'Lupinen', 'Schwefeldioxid',
+];
 
 export const AMPEL_CATS = [
   { key: 'erlaubt', label: 'Erlaubt', color: '#16a34a', bg: '#dcfce7' },
@@ -39,16 +56,38 @@ export const AMPEL_CATS = [
   { key: 'tabu', label: 'Tabu', color: '#dc2626', bg: '#fee2e2' },
 ];
 
+// Vier Mahlzeit-Typen — gelten für Rezepte UND für den Bereich "Mahlzeiten".
+// (Früher sieben Rezept-Kategorien: Frühstück, Suppen, Hauptgerichte,
+// Desserts, Snacks, Backen, Getränke.)
+export const MEAL_TYPES = [
+  { key: 'fruehstueck', label: 'Frühstück', emoji: '☀️' },
+  { key: 'mittag',      label: 'Mittag',    emoji: '🍽️' },
+  { key: 'abend',       label: 'Abend',     emoji: '🌙' },
+  { key: 'snack',       label: 'Snack',     emoji: '🥨' },
+];
+
 export const RECIPE_CATS = [
   { key: 'all', label: 'Alle', emoji: '🍽️' },
-  { key: 'frueh', label: 'Frühstück', emoji: '☀️' },
-  { key: 'suppen', label: 'Suppen', emoji: '🥣' },
-  { key: 'haupt', label: 'Hauptgerichte', emoji: '🍽️' },
-  { key: 'desserts', label: 'Desserts', emoji: '🍮' },
-  { key: 'snacks', label: 'Snacks', emoji: '🥨' },
-  { key: 'backen', label: 'Backen', emoji: '🧁' },
-  { key: 'getraenke', label: 'Getränke', emoji: '🥤' },
+  ...MEAL_TYPES,
 ];
+
+// Alte Rezept-Kategorien → neue Mahlzeit-Typen. Greift beim Lesen aus der
+// Datenbank (nut_recipes.category kann noch alte Werte enthalten) und macht die
+// Anzeige unabhängig davon, ob die Daten-Migration schon gelaufen ist.
+const LEGACY_RECIPE_CATEGORY = {
+  frueh: 'fruehstueck',
+  haupt: 'mittag',
+  suppen: 'abend',
+  desserts: 'snack',
+  snacks: 'snack',
+  backen: 'snack',
+  getraenke: 'snack',
+};
+
+export function normalizeRecipeCategory(key) {
+  if (MEAL_TYPES.some((t) => t.key === key)) return key;
+  return LEGACY_RECIPE_CATEGORY[key] || 'mittag';
+}
 
 export const LEX_CATS = [
   { key: 'makro', label: 'Makronährstoffe', color: '#3b82f6' },
@@ -61,7 +100,10 @@ export const CUSTOM_TAGS = [
   'Proteinreich', 'Fettarm', 'Low Carb', 'Ballaststoffreich',
   'Zuckerarm', 'Kalorienarm', 'Vegan', 'Vegetarisch', 'Omega-3 reich',
 ];
-export const GOAL_TAGS = ['Abnehmen', 'Gewicht halten', 'Zunehmen', 'Muskelaufbau'];
+// Tags für Lebensmittel (Filter + Formular). CUSTOM_TAGS bleibt die Auswahl
+// für Rezepte; Lebensmittel haben zusätzlich Vitamin-/Mineralstoff-Tags.
+export const FOOD_TAGS = [...CUSTOM_TAGS, 'Vitaminreich', 'Mineralstoffreich'];
+export const GOAL_TAGS =['Abnehmen', 'Gewicht halten', 'Zunehmen', 'Muskelaufbau'];
 
 export const TAG_COLORS = {
   Proteinreich: '#2563eb',
@@ -73,12 +115,25 @@ export const TAG_COLORS = {
   Vegan: '#059669',
   Vegetarisch: '#0d9488',
   'Omega-3 reich': '#4f46e5',
+  Vitaminreich: '#ea580c',
+  Mineralstoffreich: '#0891b2',
 };
 
 export const TIPP_ICONS = {
   fette: '🥂', zucker: '🍬', darm: '🦠', kombi: '⚗️',
   satt: '🥗', reduzieren: '📉', praxis: '📋',
 };
+
+// Zutatenmenge für die Anzeige (z. B. beim Umrechnen der Portionen):
+// g/ml auf ganze Zahlen (unter 10 mit einer Nachkommastelle), Stück/Scheibe/
+// Zehe/EL in Vierteln ("1,5", "0,25"), deutsches Zahlenformat.
+export function fmtAmount(amount, unit) {
+  const piece = ['Scheibe', 'Stück', 'Zehe', 'EL'].includes(unit);
+  let v = Number(amount) || 0;
+  if (piece) v = Math.max(Math.round(v * 4) / 4, v > 0 ? 0.25 : 0);
+  else v = v >= 10 ? Math.round(v) : Math.round(v * 10) / 10;
+  return v.toLocaleString('de-DE', { maximumFractionDigits: 2 });
+}
 
 export const fmt = (v, digits = 1) => (v == null || isNaN(v) ? '–' : (+v).toFixed(digits));
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));

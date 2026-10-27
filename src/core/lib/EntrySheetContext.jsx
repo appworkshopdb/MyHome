@@ -1,23 +1,56 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { track } from './analytics';
 
 // Steuert das globale Erfassen-Sheet (siehe core/components/EntrySheet.jsx).
-// Der FAB in der Bottom-Nav jedes Moduls (core/components/ModuleBottomNav.jsx)
-// ruft open(moduleId) auf — das Sheet entscheidet selbst, welchen Inhalt es
-// für dieses Modul zeigt. "version" wird nach jedem erfolgreichen Speichern
-// hochgezählt, damit offene Views (z.B. MonthsView) bei Bedarf neu laden
-// können, ohne dass das Sheet die Views direkt kennen muss.
+// Finance-Views können den aktuell angezeigten Buchungsmonat hinterlegen.
 const EntrySheetContext = createContext(null);
 
 export function EntrySheetProvider({ children }) {
   const [openFor, setOpenFor] = useState(null);
   const [version, setVersion] = useState(0);
+  const [financePeriod, setFinancePeriodState] = useState(null);
+  const financePeriodRef = useRef(null);
+  // Version zusätzlich als Ref: Sheets rufen notifySaved() und gleich danach
+  // onClose(). Wer beim Schließen wissen will, ob gespeichert wurde
+  // (ModuleTutorial), liest über getVersion() synchron den aktuellen Wert statt
+  // des noch nicht neu gerenderten State.
+  const versionRef = useRef(0);
 
-  const open = useCallback((moduleId) => setOpenFor(moduleId), []);
+  const open = useCallback((moduleId) => {
+    track('sheet_open', { target: String(moduleId) });
+    setOpenFor(moduleId);
+  }, []);
   const close = useCallback(() => setOpenFor(null), []);
-  const notifySaved = useCallback(() => setVersion((v) => v + 1), []);
+  const notifySaved = useCallback(() => {
+    versionRef.current += 1;
+    setVersion(versionRef.current);
+  }, []);
+  const getVersion = useCallback(() => versionRef.current, []);
+
+  // State + Ref gemeinsam pflegen. Die Ref hält den zuletzt ausgewählten
+  // Buchungsmonat synchron für das globale Erfassen-Sheet vor.
+  const setFinancePeriod = useCallback((year, month) => {
+    const period = { year, month };
+    financePeriodRef.current = period;
+    setFinancePeriodState(period);
+  }, []);
+
+  const getFinancePeriod = useCallback(() => financePeriodRef.current, []);
 
   return (
-    <EntrySheetContext.Provider value={{ openFor, open, close, version, notifySaved }}>
+    <EntrySheetContext.Provider
+      value={{
+        openFor,
+        open,
+        close,
+        version,
+        notifySaved,
+        getVersion,
+        financePeriod,
+        setFinancePeriod,
+        getFinancePeriod,
+      }}
+    >
       {children}
     </EntrySheetContext.Provider>
   );

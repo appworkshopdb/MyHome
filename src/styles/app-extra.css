@@ -262,8 +262,7 @@
 .hub-lead-substats b { color: var(--text-primary); font-weight: 700; }
 
 /* ===== ProgressStat (core/components/ProgressStat.jsx) ===== */
-/* Wiederverwendbarer Fortschrittsbalken — Hub-Habits-Kachel und */
-/* GoalsSection nutzen dieselben Klassen, kein Doppel-Styling mehr. */
+/* Wiederverwendbarer Fortschrittsbalken (z. B. Hub-Habits-Kachel). */
 
 .progress-stat-bar {
   height: 8px;
@@ -741,43 +740,6 @@
 }
 .hub-empty-note b { color: var(--text-primary); }
 
-/* ===== Ziele & Meilensteine (core/components/GoalsSection.jsx) ===== */
-
-.goal-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.goal-row:last-of-type { border-bottom: none; }
-
-.goal-row-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.goal-title { font-size: 0.92rem; color: var(--text-primary); font-weight: 500; }
-
-.goal-delete {
-  color: var(--text-muted);
-  width: var(--touch-target);
-  height: var(--touch-target);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.goal-delete svg { width: 14px; height: 14px; }
-
-.goal-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
-
-.goal-milestones { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
-
-.goal-milestone { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; min-height: var(--touch-target); }
-.goal-milestone input[type='checkbox'] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
-
-.goal-form-milestone-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-.goal-form-milestone-row input { flex: 1; }
-.goal-form-milestone-remove { color: var(--text-muted); flex-shrink: 0; width: var(--touch-target); height: var(--touch-target); display: flex; align-items: center; justify-content: center; }
-.goal-form-milestone-remove svg { width: 14px; height: 14px; }
-
 /* ===== Pflichtdaten-Warnhinweis (core/components/RequiredDataBanner.jsx) ===== */
 /* Nutzt --warning statt --danger — es ist ein Hinweis, keine Fehlermeldung; */
 /* der Button bleibt bewusst immer aktiv, nichts wird blockiert. */
@@ -1144,6 +1106,63 @@
   color: var(--text-muted);
   margin-bottom: var(--space-4);
 }
+
+/* Einstieg des Finanz-Wizards (ReceiptScanChoice): Beleg scannen / manuell */
+.wiz-mode-wrap {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+.wiz-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.wiz-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 150px;
+  padding: var(--space-4);
+  text-align: center;
+  background: var(--surface-sunken);
+  border: 1.5px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+.wiz-mode:hover:not(:disabled),
+.wiz-mode:active:not(:disabled) {
+  background: var(--action-quiet-bg);
+  border-color: var(--action-primary);
+}
+.wiz-mode:disabled { opacity: 0.6; }
+.wiz-mode-icon { width: 32px; height: 32px; color: var(--action-primary); }
+.wiz-mode-icon svg { width: 100%; height: 100%; display: block; }
+.wiz-mode-title { font-size: 15px; font-weight: 700; }
+.wiz-mode-sub { font-size: 12px; color: var(--text-muted); }
+.wiz-scan-quota {
+  text-align: center;
+  color: var(--text-muted);
+}
+.wiz-scan-error {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere; /* lange Fehlerdetails dürfen umbrechen */
+}
+.wiz-scan-alt {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--action-primary);
+  background: none;
+  border: 0;
+}
+.wiz-scan-alt:disabled { color: var(--text-muted); }
 
 .wiz-cat-grid {
   display: grid;
@@ -2022,43 +2041,6 @@
   font-size: 0.78rem;
 }
 
-/* ===== Ziele & Meilensteine (core/components/GoalsSection.jsx) ===== */
-
-.goal-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.goal-row:last-of-type { border-bottom: none; }
-
-.goal-row-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.goal-title { font-size: 0.92rem; color: var(--text-primary); font-weight: 500; }
-
-.goal-delete {
-  color: var(--text-muted);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.goal-delete svg { width: 14px; height: 14px; }
-
-.goal-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
-
-.goal-milestones { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
-
-.goal-milestone { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; }
-.goal-milestone input[type='checkbox'] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
-
-.goal-form-milestone-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-.goal-form-milestone-row input { flex: 1; }
-.goal-form-milestone-remove { color: var(--text-muted); flex-shrink: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
-.goal-form-milestone-remove svg { width: 14px; height: 14px; }
-
 /* ===== Pflichtdaten-Warnhinweis (core/components/RequiredDataBanner.jsx) ===== */
 /* Nutzt --warning statt --danger — es ist ein Hinweis, keine Fehlermeldung; */
 /* der Button bleibt bewusst immer aktiv, nichts wird blockiert. */
@@ -2386,7 +2368,6 @@
   transition:
     background var(--motion-fast),
     color      var(--motion-fast);
-  min-height: var(--touch-target);
 }
 
 .hub-todo-chip.active {
@@ -2433,18 +2414,19 @@
   bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px);
   width: 52px;
   height: 52px;
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-  border: none;
+  /* Nur Umrandung + Plus, keine Füllung und kein Schatten — der Inhalt
+     dahinter bleibt sichtbar, auch wenn der Knopf darüber schwebt. */
+  background: transparent;
+  color: var(--action-primary);
+  border: 2px solid var(--action-primary);
   border-radius: var(--r-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 190;
   cursor: pointer;
-  box-shadow: var(--shadow-fab);
 }
-.global-fab:active { opacity: 0.75; }
+.global-fab:active { opacity: 0.6; }
 .global-fab--disabled {
   background: var(--bg-card);
   color: var(--text-muted);
@@ -2452,47 +2434,17 @@
 }
 .global-fab-plus {
   font-size: 28px;
-  font-weight: 300;
+  font-weight: 400;
   line-height: 1;
 }
 
-/* ── Sparschwein — schwebender Button über dem globalen FAB ──────────── */
-.sparschwein-fab {
-  position: fixed;
-  right: 20px;
-  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px + 52px + 12px);
-  width: 44px;
-  height: 44px;
-  background: var(--surface-raised);
-  border: 1.5px solid var(--border-hairline);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 190;
-  cursor: pointer;
-  box-shadow: var(--shadow-float);
-  padding: 0;
-}
-.sparschwein-fab:active { transform: scale(0.93); }
-.sparschwein-fab-icon {
+/* ── Sparschwein — Zeile in der Finanzen-Übersicht ────────────────────── */
+.area-row-icon {
   width: 22px;
   height: 22px;
   object-fit: contain;
-}
-.sparschwein-fab-badge {
-  position: absolute;
-  bottom: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--action-primary);
-  color: var(--text-on-accent);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: var(--r-pill);
-  white-space: nowrap;
-  line-height: 1.4;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
 /* ── Sparschwein — Sheet-Inhalt ───────────────────────────────────────── */
@@ -2710,6 +2662,7 @@
   cursor: pointer;
   text-align: center;
 }
+.qsheet-mode-btn:disabled { opacity: 0.6; cursor: default; }
 .qsheet-mode-btn.active {
   background: var(--text-primary);
   color: var(--bg-primary);
@@ -2961,12 +2914,6 @@
   font-weight: 700;
   color:       var(--raw-ink-400);
   flex-shrink: 0;
-}
-
-/* FAB-Freiraum: nur die letzte Zeile bekommt zusätzlichen Platz rechts,
-   damit der schwebende FAB (56px, right:18px) nichts verdeckt. */
-.area-list--fab-clearance .area-row:last-child {
-  padding-right: 76px;
 }
 
 /* ── TopBar rechts: EINE Pille mit zwei Tippflächen ──────────────
@@ -3312,8 +3259,9 @@
   border:     2px solid var(--action-primary);
 }
 .spo-week-cell--planned {
-  background: var(--surface-sunken);
-  border:     1px dashed var(--raw-navy-400);
+  background: transparent;
+  border:     2px solid var(--action-primary);
+  color:      var(--text-primary);
 }
 .spo-week-cell--rest {
   background: var(--surface-sunken);
@@ -3336,7 +3284,7 @@
    .hub { padding-top: 6px } weiter oben in dieser Datei schlägt —
    .with-topbar-space aus layout.css allein würde verlieren, weil
    app-extra.css später geladen wird. 66px TopBar + 6px Luft. */
-.hub.with-topbar-space { padding-top: 72px; }
+.hub.with-topbar-space { padding-top: 66px; }
 
 .hub-date {
   font-size:     13px;
@@ -3804,3 +3752,1093 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
   border-top: 1px solid var(--border-hairline);
 }
+
+/* ── Kalender: Tag/Woche/Monat-Ansicht (CalendarView.jsx) ─────────
+   Fehlte bisher komplett in dieser Datei — Ursache für "CSS greift
+   nicht" auf der Kalenderseite. Nutzt dieselben semantischen Tokens
+   wie der Rest der App. ────────────────────────────────────────── */
+.calview {
+  padding: var(--space-4) var(--space-5) var(--space-8);
+}
+
+.calview-mode-toggle {
+  display:      flex;
+  gap:          4px;
+  background:   var(--surface-sunken);
+  border-radius: var(--r-lg);
+  padding:      4px;
+  margin-bottom: var(--space-4);
+}
+.calview-mode-toggle button {
+  flex:          1;
+  border:        none;
+  background:    transparent;
+  padding:       8px 0;
+  font-size:     0.85rem;
+  font-weight:   600;
+  color:         var(--text-secondary);
+  border-radius: var(--r-md);
+  cursor:        pointer;
+  transition:    background 0.15s ease, color 0.15s ease;
+}
+.calview-mode-toggle button.active {
+  background: var(--surface-raised);
+  color:      var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.calview-nav {
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  margin-bottom:  var(--space-4);
+}
+.calview-nav-arrow {
+  width:         36px;
+  height:        36px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-pill);
+  font-size:     1.1rem;
+  color:         var(--text-primary);
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.calview-nav-label {
+  border:      none;
+  background:  transparent;
+  font-size:   1rem;
+  font-weight: 700;
+  color:       var(--text-primary);
+  cursor:      pointer;
+  text-align:  center;
+  flex:        1;
+}
+
+.calview-day-list {
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-2);
+}
+.calview-loading,
+.calview-empty {
+  text-align:  center;
+  font-size:   0.85rem;
+  font-weight: 500;
+  color:       var(--text-muted);
+  padding:     var(--space-6) 0;
+}
+
+.calview-event-row {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           var(--space-3);
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-3) var(--space-4);
+  box-shadow:    var(--shadow-card);
+}
+.calview-event-row.done {
+  opacity: 0.55;
+}
+.calview-event-icon {
+  font-size:  1rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.calview-event-content {
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+  min-width:     0;
+}
+.calview-event-title {
+  display:      flex;
+  align-items:  center;
+  gap:          6px;
+  font-size:    0.92rem;
+  font-weight:  600;
+  color:        var(--text-primary);
+}
+.calview-event-row.done .calview-event-title {
+  text-decoration: line-through;
+}
+.calview-event-tentative {
+  font-size:     0.68rem;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color:         var(--status-caution);
+  background:    var(--status-caution-bg);
+  border-radius: var(--r-sm);
+  padding:       2px 6px;
+}
+.calview-event-time {
+  font-size:   0.78rem;
+  font-weight: 500;
+  color:       var(--text-secondary);
+}
+.calview-event-meta {
+  font-size: 0.78rem;
+  color:     var(--text-muted);
+}
+.calview-event-desc {
+  font-size: 0.8rem;
+  color:     var(--text-secondary);
+}
+.calview-event-done {
+  font-size:  0.95rem;
+  color:      var(--status-positive);
+  flex-shrink: 0;
+}
+
+.calview-week-strip {
+  display:              grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                  4px;
+  margin-bottom:        var(--space-5);
+}
+.calview-week-day {
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  gap:           4px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-2) 2px;
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.calview-week-day.today {
+  background: var(--action-primary);
+}
+.calview-week-day.today .calview-week-wd,
+.calview-week-day.today .calview-week-dd {
+  color: var(--text-on-accent);
+}
+.calview-week-wd {
+  font-size:   0.68rem;
+  font-weight: 600;
+  color:       var(--text-muted);
+}
+.calview-week-dd {
+  font-size:   0.95rem;
+  font-weight: 700;
+  color:       var(--text-primary);
+}
+.calview-week-dots {
+  display: flex;
+  gap:     2px;
+  height:  5px;
+}
+
+.calview-week-group {
+  margin-bottom: var(--space-4);
+}
+.calview-week-group-label {
+  font-size:     0.75rem;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color:         var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+.calview-week-group .calview-event-row + .calview-event-row {
+  margin-top: var(--space-2);
+}
+
+.calview-month-grid {
+  display:              grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                  4px;
+}
+.calview-month-wd {
+  text-align:  center;
+  font-size:   0.68rem;
+  font-weight: 600;
+  color:       var(--text-muted);
+  padding-bottom: 4px;
+}
+.calview-month-cell {
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  gap:           3px;
+  border:        none;
+  background:    var(--surface-raised);
+  border-radius: var(--r-md);
+  aspect-ratio:  1;
+  cursor:        pointer;
+}
+.calview-month-cell.outside {
+  background: var(--surface-sunken);
+  opacity:    0.5;
+}
+.calview-month-cell.today {
+  background: var(--action-primary);
+}
+.calview-month-cell.today .calview-month-dd {
+  color: var(--text-on-accent);
+}
+.calview-month-dd {
+  font-size:   0.82rem;
+  font-weight: 600;
+  color:       var(--text-primary);
+}
+.calview-month-dots {
+  display: flex;
+  gap:     2px;
+  height:  5px;
+}
+
+/* ── Benachrichtigungen: Toggle-Switches (AppMenu.jsx NotifToggle) ─
+   Fehlte ebenfalls komplett — Toggles wurden ohne eigenes CSS
+   ausgeliefert und fielen auf unstyled Divs zurück. ─────────────── */
+.notif-toggle-list {
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-2);
+}
+.notif-toggle-row {
+  display:       flex;
+  align-items:   center;
+  justify-content: space-between;
+  gap:           var(--space-3);
+  background:    var(--surface-raised);
+  border-radius: var(--r-lg);
+  padding:       var(--space-3) var(--space-4);
+  cursor:        pointer;
+  box-shadow:    var(--shadow-card);
+}
+.notif-toggle-text {
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+  min-width:     0;
+}
+.notif-toggle-label {
+  font-size:   0.9rem;
+  font-weight: 600;
+  color:       var(--text-primary);
+}
+.notif-toggle-hint {
+  font-size: 0.76rem;
+  color:     var(--text-muted);
+}
+.notif-toggle-track {
+  flex-shrink:   0;
+  width:         44px;
+  height:        26px;
+  border-radius: var(--r-pill);
+  background:    var(--border-hairline);
+  padding:       3px;
+  transition:    background 0.15s ease;
+}
+.notif-toggle-track.on {
+  background: var(--action-primary);
+}
+.notif-toggle-thumb {
+  width:         20px;
+  height:        20px;
+  border-radius: 50%;
+  background:    var(--surface-raised);
+  box-shadow:    var(--shadow-card);
+  transition:    transform 0.15s ease;
+}
+.notif-toggle-track.on .notif-toggle-thumb {
+  transform: translateX(18px);
+}
+
+/* ── Tagesplan (Hub) ─────────────────────────────────────────── */
+.dayplan-card {
+  /* getönte Fläche: hebt den Tagesplan von den weißen Hub-Karten ab,
+     funktioniert in Hell und Dunkel (Mischung aus Aktionsfarbe + Seitenfläche) */
+  background:    color-mix(in srgb, var(--action-primary) 12%, var(--surface-page));
+  border:        1.5px solid color-mix(in srgb, var(--action-primary) 28%, var(--surface-page));
+  border-radius: 22px;
+  padding:       14px 10px 10px;
+}
+.dayplan-head  { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; }
+.dayplan-title { margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); }
+.dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
+.dayplan-bar {
+  height: 5px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--action-primary) 22%, var(--surface-page));
+  margin: 8px 8px 4px; overflow: hidden;
+}
+.dayplan-bar-fill { height: 100%; background: var(--action-primary); transition: width var(--motion-calm); }
+.dayplan-empty {
+  margin-top: 8px; padding: 14px; font-size: 14px; color: var(--text-muted);
+  background: var(--surface-raised); border-radius: 14px;
+}
+/* Jede Gruppe ist eine weiße Karte auf der getönten Fläche */
+.dayplan-group {
+  background: var(--surface-raised); border-radius: 14px;
+  padding: 10px 14px 4px; margin-top: 8px;
+}
+.dayplan-group-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;
+}
+.dayplan-row {
+  display: flex; align-items: center; gap: 12px;
+  min-height: var(--touch-target); border-top: 1px solid var(--surface-page);
+}
+.dayplan-group .dayplan-row:first-of-type { border-top: none; }
+.dayplan-check {
+  width: 21px; height: 21px; border-radius: 7px; flex-shrink: 0; padding: 0;
+  border: 1.8px solid var(--border-strong); background: none; cursor: pointer;
+  color: var(--text-on-accent); font-size: 13px; line-height: 1;
+}
+.dayplan-check.checked { background: var(--action-primary); border-color: var(--action-primary); }
+.dayplan-icon { flex-shrink: 0; }
+.dayplan-time { font-size: 12px; font-weight: 800; color: var(--text-muted); min-width: 48px; flex-shrink: 0; }
+.dayplan-row-title {
+  flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dayplan-row.done .dayplan-row-title { text-decoration: line-through; color: var(--text-muted); }
+.dayplan-meta { font-size: 11px; font-weight: 800; color: var(--text-muted); flex-shrink: 0; }
+.dayplan-meta.critical { color: var(--status-critical); }
+
+/* Ernährung im Tagesplan — kein Haken, Block ist eine Schaltfläche */
+.dp-nut-head { display: flex; align-items: baseline; justify-content: space-between; }
+.dp-nut-open {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--action-primary);
+}
+.dp-nut-btn { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.dp-nut-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.dp-nut-main { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
+.dp-nut-main small { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0; margin-left: 4px; }
+.dp-nut-side { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.dp-nut-bar { height: 6px; border-radius: var(--r-pill); background: var(--data-track); overflow: hidden; margin-top: 8px; }
+.dp-nut-fill { height: 100%; border-radius: var(--r-pill); background: var(--action-primary); transition: width var(--motion-calm); }
+.dp-nut.over .dp-nut-fill { background: var(--status-caution); }
+.dp-nut.over .dp-nut-main { color: var(--status-caution); }
+.dp-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.dp-macro { background: var(--surface-sunken); border-radius: 12px; padding: 7px 10px; }
+.dp-macro b { display: block; font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.dp-macro span { white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.dp-macro i { display: block; height: 3px; border-radius: var(--r-pill); background: var(--data-track); margin-top: 5px; overflow: hidden; }
+.dp-macro i em { display: block; height: 100%; background: var(--action-primary); border-radius: var(--r-pill); }
+.dp-meals { display: flex; gap: 6px; margin-top: 10px; }
+.dp-meal {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  border-radius: var(--r-pill); padding: 5px 0; font-size: 12px; font-weight: 800;
+  background: var(--surface-sunken); color: var(--text-muted);
+}
+.dp-meal.on { background: var(--status-positive-bg); color: var(--status-positive); }
+.dp-meal.next { outline: 1.5px dashed var(--border-strong); outline-offset: -1.5px; }
+.dp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dp-cta { margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--action-primary); }
+.dp-hint { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--text-muted); }
+
+/* ── Kalender: Quelle erkennbar (App vs. Google) + Filter ─────────── */
+.calview-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--dot-color, var(--text-muted));
+  display: inline-block;
+}
+.calview-dot--google {            /* Ring = Google, gefüllt = App */
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--dot-color);
+}
+
+.calview-event-row { border-left: 4px solid var(--ev-color, var(--border-hairline)); }
+.calview-event-row.is-google { background: color-mix(in srgb, var(--ev-color) 7%, var(--surface-raised)); }
+
+.calview-source-badge {
+  align-self: flex-start;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: var(--r-pill);
+  margin-bottom: 2px;
+}
+.calview-source-badge.app {
+  background: var(--surface-sunken); color: var(--text-secondary);
+}
+.calview-source-badge.google {
+  background: color-mix(in srgb, var(--ev-color) 18%, transparent);
+  color: var(--text-primary);
+}
+
+.calview-filter { margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.calview-source-toggle {
+  display: flex; gap: 4px; background: var(--surface-sunken);
+  border-radius: var(--r-lg); padding: 4px;
+}
+.calview-source-toggle button {
+  flex: 1; border: none; background: transparent; padding: 6px 0;
+  font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+  border-radius: var(--r-md); cursor: pointer;
+}
+.calview-source-toggle button.active {
+  background: var(--surface-raised); color: var(--text-primary); box-shadow: var(--shadow-card);
+}
+.calview-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.calview-chips::-webkit-scrollbar { display: none; }
+.calview-chip, .calview-chip-reset {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  border: 1px solid var(--border-hairline); background: var(--surface-raised);
+  color: var(--text-primary); font-size: 0.78rem; font-weight: 600;
+  padding: 5px 10px; border-radius: var(--r-pill); cursor: pointer;
+}
+.calview-chip.off { opacity: 0.45; text-decoration: line-through; background: transparent; }
+.calview-chip-reset { border-style: dashed; color: var(--text-secondary); }
+
+/* ── Kalender v2: Agenda, Check, Monats-Chips, Detail-Sheet ──────── */
+.calview-nav-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.calview-nav-center .calview-nav-label { flex: 0 1 auto; }
+.calview-today-btn {
+  border: none; background: var(--action-primary); color: var(--text-on-accent);
+  font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: var(--r-pill); cursor: pointer;
+}
+
+.calview-event-row { cursor: pointer; align-items: center; }
+.calview-event-row:focus-visible { outline: 2px solid var(--action-primary); outline-offset: 2px; }
+.calview-event-chevron { color: var(--text-muted); font-size: 1.2rem; flex-shrink: 0; }
+.calview-check {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid var(--text-muted); background: transparent;
+  color: var(--text-on-accent); font-size: 0.8rem; font-weight: 800; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.calview-check.checked { background: var(--status-positive); border-color: var(--status-positive); }
+.calview-event-row.done .calview-event-title { text-decoration: line-through; }
+
+.calview-week-group { scroll-margin-top: 84px; }
+.calview-week-group-label.today { color: var(--action-primary); }
+.calview-group-empty { font-size: 0.8rem; color: var(--text-muted); padding: 2px 0 4px; }
+.calview-week-day.selected:not(.today) { box-shadow: inset 0 0 0 2px var(--action-primary); }
+.calview-more-btn {
+  border: 1px dashed var(--border-hairline); background: transparent; color: var(--text-secondary);
+  font-size: 0.82rem; font-weight: 600; padding: 10px; border-radius: var(--r-lg); cursor: pointer;
+  margin-top: var(--space-2);
+}
+
+/* Monatsraster mit Titel-Chips (Google-Stil) */
+.calview-month-cell {
+  aspect-ratio: auto; min-height: 84px; align-items: stretch;
+  padding: 4px 3px; overflow: hidden; gap: 2px;
+}
+.calview-month-cell .calview-month-dd { align-self: center; }
+.calview-month-chips { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.calview-mchip {
+  display: block; font-size: 0.6rem; font-weight: 600; line-height: 1.25;
+  padding: 1px 3px; border-radius: 3px; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.calview-mchip.app { background: var(--ev-color); color: var(--text-on-accent); }
+.calview-mchip.google {
+  background: color-mix(in srgb, var(--ev-color) 20%, var(--surface-raised));
+  color: var(--text-primary); box-shadow: inset 2px 0 0 var(--ev-color);
+}
+.calview-mchip.done { opacity: 0.5; text-decoration: line-through; }
+.calview-mchip-more { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-align: left; padding-left: 3px; }
+.calview-month-cell.today .calview-mchip-more { color: var(--text-on-accent); }
+
+/* Detail-Sheet */
+.calview-detail { padding: 0 20px 24px; display: flex; flex-direction: column; gap: var(--space-2); }
+.calview-detail-title { margin: 4px 0 var(--space-2); font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.calview-detail-title.done { text-decoration: line-through; opacity: 0.6; }
+.calview-detail-list { display: grid; grid-template-columns: 90px 1fr; gap: 8px var(--space-3); margin: 0; font-size: 0.88rem; }
+.calview-detail-list dt { color: var(--text-muted); font-weight: 600; }
+.calview-detail-list dd { margin: 0; color: var(--text-primary); }
+.calview-detail-desc { white-space: pre-wrap; }
+.calview-detail-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.calview-btn {
+  flex: 1; border: 1px solid var(--border-hairline); background: var(--surface-raised); color: var(--text-primary);
+  font-size: 0.88rem; font-weight: 700; padding: 11px; border-radius: var(--r-lg); cursor: pointer;
+}
+.calview-btn.primary { background: var(--action-primary); border-color: var(--action-primary); color: var(--text-on-accent); }
+
+/* „zu heute“-Button: links vom Datum bei Zukunft, rechts bei Vergangenheit */
+.calview-nav-center { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--space-2); }
+.calview-nav-slot { display: flex; min-width: 0; }
+.calview-nav-slot.left { justify-content: flex-end; }
+.calview-nav-slot.right { justify-content: flex-start; }
+.calview-nav-center .calview-nav-label { white-space: nowrap; }
+.calview-today-btn {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  background: var(--surface-raised); color: var(--action-primary);
+  border: 1px solid var(--action-primary); font-size: 0.72rem; padding: 3px 8px;
+}
+.calview-nav-arrow { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+/* Korrektur: „zu heute“ in eigener Zeile unter der Navigation (kein Überlappen) */
+.calview-nav-center { display: flex; justify-content: center; min-width: 0; }
+.calview-nav-arrow { flex-shrink: 0; }
+.calview-today-row { display: flex; margin: calc(var(--space-2) * -1) 0 var(--space-3); }
+.calview-today-row.left { justify-content: flex-start; }
+.calview-today-row.right { justify-content: flex-end; }
+.calview-today-btn { padding: 5px 12px; font-size: 0.78rem; font-weight: 700; border-radius: var(--r-pill); cursor: pointer; }
+
+/* ── Kalender: Tage klar trennen (Agenda + Woche) ───────────────── */
+.calview-day-list:has(.calview-day-group) { gap: 0; }
+.calview-day-group {
+  display: grid; grid-template-columns: 52px 1fr; gap: var(--space-3);
+  padding: var(--space-4) 0; scroll-margin-top: 84px;
+  border-top: 1px solid var(--border-hairline);
+}
+.calview-day-group:first-child { border-top: none; }
+.calview-day-date {
+  display: flex; flex-direction: column; align-items: center; align-self: start;
+  padding: 6px 0; border-radius: var(--r-md);
+  color: var(--text-secondary); line-height: 1.15;
+}
+.calview-day-wd { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.calview-day-num { font-size: 1.45rem; font-weight: 800; color: var(--text-primary); }
+.calview-day-mon { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); }
+.calview-day-group.weekend .calview-day-wd { color: var(--action-primary); }
+.calview-day-group.today .calview-day-date { background: var(--action-primary); }
+.calview-day-group.today .calview-day-wd,
+.calview-day-group.today .calview-day-num,
+.calview-day-group.today .calview-day-mon { color: var(--text-on-accent); }
+.calview-day-events { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.calview-day-events .calview-event-row { margin: 0; }
+.calview-group-empty { font-size: 0.82rem; color: var(--text-muted); padding: 10px 0; }
+
+/* Monat: Zellen mit feiner Kontur, Wochenende leicht abgesetzt */
+.calview-month-cell { box-shadow: inset 0 0 0 1px var(--border-hairline); }
+.calview-month-cell:nth-child(7n+6), .calview-month-cell:nth-child(7n) { background: var(--surface-sunken); }
+.calview-month-cell.today, .calview-month-cell.today:nth-child(n) { box-shadow: none; background: var(--action-primary); }
+/* ===== Segmented-Buttons (core — von Profil, Sport, Ernährung genutzt;
+   früher nur in nutrition.css und daher außerhalb von Ernährung ungestylt) ===== */
+.segmented {
+  display: grid;
+  gap: 8px;
+}
+.segmented.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.segmented.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.segmented.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.segmented button {
+  padding: 10px 6px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-raised);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.segmented button.active {
+  border-color: var(--action-primary);
+  background: var(--action-primary);
+  color: var(--text-on-accent);
+}
+
+.profile-section-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+/* ===== Profilbild ===== */
+.chrome-top-avatar { overflow: hidden; }
+.chrome-top-avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.chrome-top-avatar .warn-dot { /* bleibt sichtbar trotz overflow */ top: 0; right: 0; }
+.profile-avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.profile-avatar-pick { cursor: pointer; position: relative; display: inline-block; padding: 0; background: none; border: none; }
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: var(--r-pill);
+  background: var(--action-primary); color: var(--text-on-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 800; overflow: hidden;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile-avatar-edit {
+  position: absolute; right: -2px; bottom: -2px;
+  width: 26px; height: 26px; border-radius: var(--r-pill);
+  background: var(--surface-raised); color: var(--action-primary);
+  border: 1px solid var(--border-hairline); box-shadow: var(--shadow-card);
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-avatar-edit svg { width: 14px; height: 14px; }
+.avatar-editor { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.avatar-editor-big {
+  width: 240px; height: 240px; border-radius: var(--r-pill); overflow: hidden;
+  background: var(--action-primary); color: var(--text-on-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 5rem; font-weight: 800;
+}
+.avatar-editor-big img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-crop { width: 240px; height: 240px; border-radius: var(--r-pill); touch-action: none; cursor: grab; background: var(--surface-sunken); }
+
+/* ── Scan-Animation (ScanPreview): Foto mit fahrender Scanleiste ──────────
+   Läuft, während die Edge Function das Foto liest (Beleg und Mahlzeit).
+   Die Animation steckt in einem Sheet/Dialog und ist kein Vorfahre von
+   .chrome-top/.bottom-nav — die Fixed-Nav-Regel bleibt unberührt. Die Farbe
+   ist bewusst ein festes, knalliges Grün und folgt nicht dem Theme: Sie muss
+   auf hellem Bon-Papier wie auf dunklen Tellerfotos leuchten. Keine Schatten (Design-System): Leuchten läuft über Verlauf. */
+.scan-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+.scan-frame {
+  --scan-color: #1fff8e;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+}
+.scan-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(52vh, 460px);
+}
+.scan-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 16, 11, 0.4); /* dunkelt das Foto ab, damit die Leiste knallt */
+  animation: scan-tint-pulse 1.8s ease-in-out infinite alternate;
+}
+.scan-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -100px;
+  height: 100px;
+  animation: scan-sweep 1.9s ease-in-out infinite alternate;
+}
+.scan-bar::before { /* Leuchtband */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--scan-color) 50%, transparent);
+  opacity: 0.6;
+}
+.scan-bar::after { /* die Leiste selbst */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  background: var(--scan-color);
+}
+.scan-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid rgba(255, 255, 255, 0.92);
+}
+.scan-corner-tl { top: 10px;    left: 10px;  border-top-width: 3px;    border-left-width: 3px;  border-top-left-radius: 6px; }
+.scan-corner-tr { top: 10px;    right: 10px; border-top-width: 3px;    border-right-width: 3px; border-top-right-radius: 6px; }
+.scan-corner-bl { bottom: 10px; left: 10px;  border-bottom-width: 3px; border-left-width: 3px;  border-bottom-left-radius: 6px; }
+.scan-corner-br { bottom: 10px; right: 10px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 6px; }
+.scan-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  min-height: 1.4em;
+}
+@keyframes scan-sweep {
+  from { top: -50px; }
+  to   { top: calc(100% - 50px); }
+}
+@keyframes scan-tint-pulse {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+/* Wer in den Systemeinstellungen "Bewegung reduzieren" aktiviert hat (iOS:
+   Bedienungshilfen → Bewegung): keine Wischbewegung, stattdessen blendet die
+   Leiste nacheinander an drei Stellen des Fotos ein und aus. So bleibt der
+   Scan als "läuft gerade" erkennbar. Der !important-Block schlägt die globale
+   Regel in base.css (animation-duration: 0ms !important), weil er spezifischer ist. */
+@keyframes scan-fade-steps {
+  0%        { top: calc(18% - 50px); opacity: 0; }
+  4%, 27%   { top: calc(18% - 50px); opacity: 1; }
+  33%       { top: calc(18% - 50px); opacity: 0; }
+  34%       { top: calc(50% - 50px); opacity: 0; }
+  38%, 60%  { top: calc(50% - 50px); opacity: 1; }
+  66%       { top: calc(50% - 50px); opacity: 0; }
+  67%       { top: calc(82% - 50px); opacity: 0; }
+  71%, 94%  { top: calc(82% - 50px); opacity: 1; }
+  100%      { top: calc(82% - 50px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-bar  { animation: scan-fade-steps 3.9s linear infinite !important; }
+  .scan-tint { animation: none !important; opacity: 0.8; }
+}
+.dayplan-row-title--link { background: none; border: 0; padding: 0; text-align: left; font: inherit; cursor: pointer; }
+.dayplan-amount { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; line-height: 1.15; }
+.dayplan-amount b { font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.dayplan-amount span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+.dayplan-amount span.critical { color: var(--status-critical); }
+
+/* Sync-Leiste im Kalender */
+.calview-sync {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  background: var(--surface-sunken); border-radius: var(--r-lg);
+  padding: 8px 12px; margin-bottom: var(--space-3);
+  font-size: 0.78rem; color: var(--text-secondary);
+}
+.calview-sync.error { background: color-mix(in srgb, var(--status-critical) 14%, var(--surface-raised)); color: var(--text-primary); }
+.calview-sync-text { min-width: 0; }
+.calview-sync-btn {
+  flex-shrink: 0; border: 1px solid var(--border-hairline); background: var(--surface-raised);
+  color: var(--text-primary); font-size: 0.75rem; font-weight: 700; padding: 5px 10px;
+  border-radius: var(--r-pill); cursor: pointer;
+}
+.calview-sync-btn.primary { background: var(--action-primary); border-color: var(--action-primary); color: var(--text-on-accent); }
+.calview-sync-btn:disabled { opacity: 0.6; cursor: default; }
+.calview-spin { display: inline-block; animation: calview-spin 0.9s linear infinite; }
+@keyframes calview-spin { to { transform: rotate(360deg); } }
+
+/* Sync-Button im Kalender: schwebt über dem globalen + (wie Sparschwein) */
+.calview-sync-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--nav-height, 68px) + env(safe-area-inset-bottom) + 16px + 52px + 12px);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface-raised); color: var(--text-primary);
+  border: 1.5px solid var(--border-hairline); box-shadow: var(--shadow-float);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 190; cursor: pointer; padding: 0;
+}
+.calview-sync-fab:active { transform: scale(0.93); }
+.calview-sync-fab:disabled { cursor: default; }
+.calview-sync-fab.busy svg { animation: calview-spin 0.9s linear infinite; }
+.calview-sync-fab.error { border-color: var(--status-critical); color: var(--status-critical); }
+
+/* ── Kalender: Suche + Filter-Sheet ──────────────────────────────── */
+/* Suchzeile — Maße und Optik identisch zur Rezeptliste (nutrition.css:
+   .nut-searchbar / .nut-search / .nut-filter-btn). core/ darf nicht aus
+   modules/ importieren, deshalb eigene Klassen mit denselben Werten. */
+.calview-searchbar { display: flex; align-items: stretch; gap: 8px; margin-bottom: 10px; }
+.calview-search { position: relative; flex: 1; min-width: 0; }
+.calview-search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--text-muted); pointer-events: none;
+}
+.calview-search input { padding-left: 36px; }
+.calview-search-x {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%;
+  background: none; border: 0; color: var(--text-muted);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.calview-filter-btn {
+  position: relative; flex: none; width: 46px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-sunken); color: var(--text-primary);
+  border: 1.5px solid var(--border-hairline); border-radius: var(--r-md);
+  cursor: pointer; padding: 0;
+}
+.calview-filter-btn.active { background: var(--action-primary); border-color: var(--action-primary); color: var(--text-on-accent); }
+.calview-filter-btn svg { display: block; width: 20px; height: 20px; flex: none; }
+.calview-filter-btn b {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 9px; background: var(--raw-ochre-300, #D9A94F); color: #1B2A4A;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+.calview-active-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: var(--space-2); }
+.calview-active-chips::-webkit-scrollbar { display: none; }
+.calview-chip.removable { background: var(--surface-sunken); border-color: transparent; }
+.calview-chip.removable i { font-style: normal; font-weight: 800; opacity: 0.6; }
+.calview-chip.selected { background: var(--surface-sunken); border-color: var(--action-primary); box-shadow: inset 0 0 0 1px var(--action-primary); font-weight: 800; }
+.calview-chip.dim { opacity: 0.5; }
+.calview-fsheet-hint { margin: 0; font-size: 0.78rem; color: var(--text-muted); }
+.calview-chip.disabled { opacity: 0.35; pointer-events: none; }
+.calview-chip-count { font-weight: 600; color: var(--text-muted); }
+.calview-count-line {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.74rem; font-weight: 600; color: var(--text-muted); margin-bottom: var(--space-3);
+}
+.calview-count-line button { border: 0; background: none; color: var(--action-primary); font: inherit; font-weight: 800; cursor: pointer; padding: 0; }
+.calview-empty strong { display: block; color: var(--text-primary); font-size: 0.95rem; margin-bottom: 4px; }
+.calview-empty-btn {
+  margin-top: 10px; border: 1px solid var(--border-hairline); background: var(--surface-raised);
+  color: var(--text-primary); border-radius: 99px; padding: 6px 14px; font-weight: 700; font-size: 0.78rem; cursor: pointer;
+}
+
+/* Filter-Sheet */
+.calview-fsheet { padding: 0 20px 24px; display: flex; flex-direction: column; gap: var(--space-4); }
+.calview-fsheet-label {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.calview-fsheet-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.calview-fsheet-switch { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 700; }
+.calview-switch {
+  width: 42px; height: 26px; border-radius: 99px; border: 0; cursor: pointer; position: relative;
+  background: var(--border-hairline); flex-shrink: 0;
+}
+.calview-switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; transition: transform 0.15s;
+}
+.calview-switch.on { background: var(--action-primary); }
+.calview-switch.on::after { transform: translateX(16px); }
+.calview-apply {
+  border: 0; background: var(--action-primary); color: var(--text-on-accent);
+  border-radius: var(--r-lg); padding: 13px; font-weight: 800; font-size: 0.9rem; cursor: pointer;
+}
+
+/* ── Kalender: Größen an die Rezeptliste angleichen ──────────────────
+   .main-content bringt bereits 16px Seitenabstand mit; .calview hatte
+   zusätzlich 18px (= 34px, Rezepte: 16px). Umschalter wie die Tab-Chips
+   der Rezepte (nutrition.css .chip: 6px 12px, 0.75rem, 600). */
+.calview { padding: 0 0 var(--space-8); }
+.calview-mode-toggle {
+  background: transparent; padding: 0; gap: 6px; border-radius: 0; margin-bottom: 12px;
+}
+.calview-mode-toggle button {
+  padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  background: var(--surface-sunken); color: var(--text-secondary); box-shadow: none;
+}
+.calview-mode-toggle button.active { background: var(--action-primary); color: var(--text-on-accent); box-shadow: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Wochen-/Monatsüberblick (Hub → Statistiken, core/PeriodReview.jsx)
+   Präfix wk-. Keine transform/filter auf Vorfahren der fixed Chrome.
+   ═══════════════════════════════════════════════════════════════ */
+.wk-page { padding-bottom: calc(var(--nav-height) + 30px + env(safe-area-inset-bottom)); }
+
+.wk-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 14px; }
+.wk-nav-btn {
+  width: 40px; height: 40px; border-radius: var(--r-pill); border: 1px solid var(--border-hairline);
+  background: var(--surface-raised); color: var(--text-primary); box-shadow: var(--shadow-card);
+  font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer;
+}
+.wk-nav-btn:disabled { opacity: 0.35; cursor: default; }
+.wk-nav-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.wk-nav-label { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.wk-nav-label b { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+.wk-nav-label span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+.wk-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px 16px;
+  margin-top: 12px;
+}
+
+/* Hero */
+.wk-hero { display: flex; align-items: center; gap: 16px; }
+.wk-hero-num { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wk-hero-title { font-size: 15px; font-weight: 800; color: var(--text-primary); margin-top: 4px; }
+.wk-hero-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
+
+/* Kartenkopf */
+.wk-card-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 0; margin-bottom: 10px;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.wk-card-head:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: var(--r-md); }
+.wk-card-icon { font-size: 17px; }
+.wk-card-title { flex: 1; font-size: 15px; font-weight: 800; color: var(--text-primary); }
+.wk-card-chev { font-size: 20px; color: var(--text-muted); }
+
+.wk-delta {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.wk-delta.up   { background: var(--status-positive-bg); color: var(--status-positive); }
+.wk-delta.down { background: var(--status-critical-bg); color: var(--status-critical); }
+.wk-delta.flat { background: var(--surface-sunken);     color: var(--text-muted); }
+
+.wk-big { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.wk-big b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wk-big span { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+
+.wk-bar { height: 8px; border-radius: var(--r-pill); background: var(--data-track); overflow: hidden; }
+.wk-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--data-1); transition: width var(--motion-calm); }
+.wk-bar i.is-over { background: var(--status-caution); }
+
+.wk-empty { font-size: 13.5px; color: var(--text-muted); padding: 2px 0 4px; }
+.wk-more { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+
+/* Tagesstreifen Mo–So */
+.wk-strip { position: relative; display: flex; gap: 6px; margin-top: 16px; }
+.wk-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+.wk-col {
+  width: 100%; height: 46px; display: flex; align-items: flex-end; justify-content: center;
+  background: var(--surface-sunken); border-radius: var(--r-md); overflow: hidden;
+}
+.wk-col i { display: block; width: 100%; background: var(--data-1); border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.wk-col i.is-none { background: var(--border-strong); }
+.wk-col i.is-over { background: var(--status-caution); }
+.wk-col--dot { align-items: center; }
+.wk-day-label { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.wk-day-label.today { color: var(--text-primary); font-weight: 800; }
+/* Tagesziel-Linie über den Kalorien-Balken (Balken 100 % = 120 % vom Ziel) */
+.wk-goal-line {
+  position: absolute; left: 0; right: 0; top: calc(46px * (1 - 1 / 1.2));
+  border-top: 1.5px dashed var(--border-strong); pointer-events: none;
+}
+
+/* Trainingspunkte */
+.wk-dot {
+  width: 24px; height: 24px; border-radius: var(--r-pill); box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; border: 2px solid var(--border-strong); color: var(--text-muted);
+}
+.wk-dot.is-none { border-color: transparent; }
+.wk-dot.is-done { background: var(--status-positive); border-color: var(--status-positive); color: var(--text-on-accent); }
+.wk-dot.is-part { border-color: var(--status-positive); background: linear-gradient(90deg, var(--status-positive) 50%, transparent 50%); }
+.wk-dot.is-rest { border-color: transparent; background: var(--surface-sunken); }
+
+/* Listen in den Karten */
+.wk-list { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+.wk-row { display: grid; grid-template-columns: 22px 1fr auto; column-gap: 8px; row-gap: 5px; align-items: center; }
+.wk-row .wk-bar { grid-column: 1 / -1; height: 6px; }
+.wk-row-icon { font-size: 16px; text-align: center; }
+.wk-row-name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-row-pct { font-size: 13px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wk-meter-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 5px; font-size: 12.5px; color: var(--text-muted); }
+.wk-meter-top b { font-size: 12.5px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wk-meter .wk-bar { height: 6px; }
+/* ===== Vögel (core/components/birds) ===== */
+.nbird { display: inline-block; line-height: 0; flex: none; }
+.nbird-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.nbird .eye { transform-box: fill-box; transform-origin: center; animation: nb-blink 5.5s infinite; }
+@keyframes nb-blink { 0%, 91%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.08); } }
+.nbird .tilt { transform-origin: 120px 236px; animation: nb-breathe 4s ease-in-out infinite; }
+@keyframes nb-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.018); } }
+.nbird .aura { animation: nb-pulse 3.6s ease-in-out infinite; transform-origin: 120px 150px; }
+@keyframes nb-pulse { 0%, 100% { opacity: .85; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
+.nbird .spark { transform-box: fill-box; transform-origin: center; animation: nb-twinkle 2.2s ease-in-out infinite; }
+@keyframes nb-twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.nbird--still .eye, .nbird--still .tilt, .nbird--still .aura, .nbird--still .spark { animation: none; }
+@media (prefers-reduced-motion: reduce) { .nbird .eye, .nbird .tilt, .nbird .aura, .nbird .spark { animation: none; } }
+
+/* ===== Fortschritts-Sheet (Entwurf B) ===== */
+.gs-rail { position: relative; height: 6px; border-radius: 6px; background: var(--surface-sunken); }
+.gs-rail i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, #E2823A, #F2B05E); transition: width .8s; }
+.gs-rail-meta, .gs-xp-meta { display: flex; justify-content: space-between; font-size: .72rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.gs-path { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 12px; margin-inline: -4px; padding-inline: 4px; }
+.gs-stage { flex: none; width: 104px; scroll-snap-align: center; border-radius: 18px; padding: 10px 6px 12px; background: var(--surface-sunken); text-align: center; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; }
+.gs-stage-art { display: block; width: 74px; height: 74px; margin-bottom: 4px; }
+.gs-stage-n { font-size: .64rem; font-weight: 800; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; }
+.gs-stage-t { font-size: .82rem; font-weight: 800; color: var(--text-primary); }
+.gs-stage.done { background: var(--surface-raised); border-color: var(--border-hairline); }
+.gs-stage.now { background: var(--surface-raised); border-color: #E2823A; box-shadow: 0 6px 18px rgba(226, 130, 58, .22); }
+.gs-stage.locked .gs-stage-art { filter: brightness(0) opacity(.2); }
+:root[data-theme="dark"] .gs-stage.locked .gs-stage-art { filter: brightness(0) invert(1) opacity(.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gs-stage.locked .gs-stage-art { filter: brightness(0) invert(1) opacity(.18); } }
+.gs-stage.locked .gs-stage-t { color: var(--text-muted); }
+.gs-stage.sel { outline: 2px solid var(--action-primary); outline-offset: 2px; }
+.gs-detail { background: var(--surface-sunken); border-radius: 18px; padding: 14px; display: grid; grid-template-columns: 104px 1fr; gap: 14px; align-items: center; }
+.gs-detail-art { width: 104px; height: 104px; border-radius: 16px; background: var(--surface-raised); overflow: hidden; }
+.gs-detail-title { margin: 0; font-size: 1.1rem; font-weight: 900; color: var(--text-primary); }
+.gs-detail-text { margin: 4px 0 0; font-size: .8rem; color: var(--text-muted); line-height: 1.45; }
+.gs-state { display: inline-block; margin-top: 8px; font-size: .7rem; font-weight: 800; padding: 3px 9px; border-radius: 99px; }
+.gs-state.done { background: rgba(46, 139, 103, .15); color: var(--status-positive); }
+.gs-state.now { background: rgba(226, 130, 58, .16); color: #E2823A; }
+.gs-state.locked { background: var(--surface-raised); color: var(--text-muted); }
+.gs-xp-track { height: 14px; border-radius: 99px; background: var(--surface-sunken); overflow: hidden; }
+.gs-xp-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #E2823A, #F2B05E); transition: width .8s cubic-bezier(.2, .8, .2, 1); }
+.gs-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gs-tile { background: var(--surface-sunken); border-radius: 16px; padding: 12px 14px; min-width: 0; }
+.gs-tile-k { font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+.gs-tile-v { font-size: 1.5rem; font-weight: 900; margin-top: 2px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.gs-tile-v small { font-size: .72rem; font-weight: 700; color: var(--text-muted); }
+.gs-species { display: flex; align-items: center; gap: 12px; }
+.gs-species-label { font-size: .78rem; font-weight: 800; color: var(--text-muted); white-space: nowrap; }
+.gs-species .segmented { flex: 1; }
+
+/* ===== Willkommens-Assistent ===== */
+.wiz-overlay { position: fixed; inset: 0; z-index: 400; background: var(--surface-page); display: flex; align-items: center; justify-content: center; padding: 20px 16px; overflow-y: auto; }
+.wiz-card { width: 100%; max-width: 420px; }
+.wiz-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+.wiz-dots span { width: 8px; height: 8px; border-radius: 99px; background: var(--border-strong); }
+.wiz-dots span.on { width: 22px; background: var(--action-primary); }
+.wiz-body { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.wiz-title { margin: 6px 0 0; font-size: 1.5rem; font-weight: 900; color: var(--text-primary); letter-spacing: -.01em; }
+.wiz-text { margin: 0; font-size: .92rem; color: var(--text-secondary); line-height: 1.5; max-width: 34ch; }
+.wiz-btn { width: 100%; margin-top: 8px; }
+.wiz-actions { display: flex; gap: 10px; width: 100%; margin-top: 8px; }
+.wiz-actions .btn { flex: 1; }
+.wiz-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.wiz-species { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px 14px; border-radius: 20px; background: var(--surface-sunken); border: 2px solid transparent; }
+.wiz-species.on { border-color: var(--action-primary); background: var(--surface-raised); box-shadow: var(--shadow-card); }
+.wiz-species-name { font-weight: 900; font-size: .95rem; color: var(--text-primary); }
+.wiz-species-blurb { font-size: .72rem; color: var(--text-muted); line-height: 1.35; }
+/* Kopf-Ausschnitte: Nest/Aura nicht über den Rand hinaus zeichnen */
+.nbird--head .nbird-svg { overflow: hidden; }
+.wiz-info { margin: 0; padding: 10px 14px; border-radius: 14px; background: rgba(226, 130, 58, .14); color: var(--text-primary); font-size: .8rem; line-height: 1.45; width: 100%; }
+
+/* ===== Profilseite: Konto, Kalorienziel, aufklappbare Bereiche ===== */
+.prof-ident { display: flex; gap: 14px; align-items: center; }
+.prof-avatar-pick { position: relative; display: inline-block; flex: none; padding: 0; background: none; border: none; cursor: pointer; }
+.prof-avatar-pick .profile-avatar { width: 78px; height: 78px; font-size: 1.9rem; }
+.prof-who { min-width: 0; }
+.prof-mail { font-size: 0.82rem; font-weight: 700; overflow-wrap: anywhere; color: var(--text-primary); }
+.prof-since { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+.prof-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.prof-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 800; padding: 4px 9px; border-radius: 99px; background: var(--surface-sunken); color: var(--text-primary); }
+.prof-chip.warm { background: rgba(226, 130, 58, .16); color: #E2823A; }
+.prof-chip .nbird { width: 18px; height: 18px; }
+.prof-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+.prof-hero { background: var(--action-primary); color: var(--text-on-accent); border-radius: 22px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: end; margin-top: 12px; }
+.prof-hero-k { font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; opacity: .75; }
+.prof-hero-v { font-size: 2.1rem; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.prof-hero-v small { font-size: .85rem; font-weight: 700; opacity: .75; }
+.prof-hero-mini { display: flex; gap: 14px; text-align: right; }
+.prof-hero-mini div { font-size: .68rem; opacity: .85; font-weight: 700; }
+.prof-hero-mini b { display: block; font-size: 1.05rem; font-weight: 900; opacity: 1; }
+
+.prof-acc { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.prof-row { background: var(--bg-secondary); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden; }
+.prof-row-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; text-align: left; color: var(--text-primary); }
+.prof-ico { width: 38px; height: 38px; border-radius: 13px; background: var(--surface-sunken); color: var(--action-primary); display: grid; place-items: center; flex: none; }
+.prof-row-text { min-width: 0; flex: 1; }
+.prof-row-text b { display: block; font-size: .95rem; }
+.prof-row-text span { display: block; font-size: .78rem; color: var(--text-muted); margin-top: 1px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-row-text span.bad { color: var(--status-critical); font-weight: 700; }
+.prof-chev { color: var(--text-muted); transition: transform .25s; flex: none; }
+.prof-row.open .prof-chev { transform: rotate(90deg); }
+.prof-row-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.prof-row.open .prof-row-body { grid-template-rows: 1fr; }
+.prof-row-body > div { overflow: hidden; min-height: 0; }
+.prof-row-inner { padding: 2px 14px 16px; }
+@media (prefers-reduced-motion: reduce) { .prof-row-body, .prof-chev { transition: none; } }
+
+/* ===== Wählregler (core/components/WheelPicker.jsx) ===== */
+.wheel { --wheel-item: 38px; position: relative; height: calc(var(--wheel-item) * 5); }
+.wheel::before { content: ''; position: absolute; left: 0; right: 0; top: calc(var(--wheel-item) * 2); height: var(--wheel-item); border-radius: 12px; background: var(--surface-sunken); border: 1.5px solid transparent; pointer-events: none; }
+.wheel-scroll { position: relative; height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding-block: calc(var(--wheel-item) * 2); overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; outline: none; mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); }
+.wheel-scroll::-webkit-scrollbar { display: none; }
+.wheel-scroll:focus-visible { box-shadow: 0 0 0 2px var(--action-primary); border-radius: 12px; }
+.wheel-item { height: var(--wheel-item); display: flex; align-items: center; justify-content: center; scroll-snap-align: center; scroll-snap-stop: always; font-size: 1.02rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; cursor: pointer; user-select: none; -webkit-user-select: none; transition: color .15s, font-size .15s; }
+.wheel-item.sel { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); }
+.wheel.is-empty .wheel-item.sel { color: var(--text-muted); font-weight: 600; font-size: 1.02rem; }
+.form-group.required-empty .wheel::before { border-color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .wheel-item { transition: none; } }
+
+
+/* ===== Einwilligung Nutzungsdaten ===== */
+
+.consent-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(var(--nav-height) + 16px + env(safe-area-inset-bottom));
+  z-index: 300;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.consent-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.consent-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); margin: 0 0 12px; }
+.consent-actions { display: flex; gap: 8px; justify-content: flex-end; }

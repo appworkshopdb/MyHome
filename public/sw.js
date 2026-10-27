@@ -100,6 +100,10 @@ self.addEventListener('fetch', (event) => {
   // Fremde Hosts (Supabase, Google Fonts) unangetastet lassen
   if (url.origin !== self.location.origin) return;
 
+  // Statische Rechtstexte (Datenschutz) nicht abfangen — sonst würde die
+  // Navigationsantwort unten als App-Shell (index.html) gecacht.
+  if (url.pathname.endsWith('/datenschutz.html')) return;
+
   // 1. Seitenaufruf/Reload
   if (request.mode === 'navigate') {
     event.respondWith(

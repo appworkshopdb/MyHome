@@ -1,0 +1,606 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { getCalendarEvents } from '../lib/calendarData';
+import {
+  getGoogleCalendars, getGoogleCalendarStatus, syncGoogleCalendar,
+  connectGoogleCalendar, disconnectGoogleCalendar,
+} from '../lib/googleCalendar';
+import {
+  toDateStr, parseDateStr, addDays, startOfWeek, monthGridDays,
+  WEEKDAYS_SHORT, MONTH_NAMES, APP_CATEGORIES, GOOGLE_FALLBACK_COLOR,
+  filterKey, describeEvent, todoToEvent, sortDay, ago,
+} from '../lib/calendarUtils';
+import SheetShell from './SheetShell';
+import { useUi } from '../lib/UiContext';
+import CalendarEventRow from './CalendarEventRow';
+import CalendarEventSheet from './CalendarEventSheet';
+import CalendarFilterSheet from './CalendarFilterSheet';
+
+const FILTER_STORAGE_KEY = 'nestua.calendarFilter.v1';
+const AGENDA_STEP_DAYS = 30;
+const AUTO_SYNC_AFTER_MIN = 10; // Auto-Sync beim Öffnen, wenn der letzte Sync älter ist
+
+const MONTH_CHIPS_PER_CELL = 2;
+
+function loadFilter() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY));
+    return {
+      source: ['alle', 'app', 'google'].includes(raw?.source) ? raw.source : 'alle',
+      only: Array.isArray(raw?.only) ? raw.only : [],
+      hideDone: raw?.hideDone === true,
+    };
+  } catch {
+    return { source: 'alle', only: [], hideDone: false };
+  }
+}
+
+// Pfeil-Icons (SVG, erben die Textfarbe) statt Textzeichen wie ‹ › oder ->.
+function Arrow({ dir, size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === 'left' ? <path d="M19 12H5M11 6l-6 6 6 6" /> : <path d="M5 12h14M13 6l6 6-6 6" />}
+    </svg>
+  );
+}
+function Chevron({ dir }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={dir === 'left' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'} />
+    </svg>
+  );
+}
+
+// Punkte pro Tag (Wochenstreifen): gefüllt = App, Ring = Google.
+function EventDots({ events, calMap }) {
+  const seen = new Map();
+  for (const ev of events) {
+    const k = filterKey(ev);
+    if (!seen.has(k)) seen.set(k, describeEvent(ev, calMap));
+  }
+  return [...seen.entries()].slice(0, 3).map(([k, d]) => (
+    <span
+      key={k}
+      className={`calview-dot ${d.isGoogle ? 'calview-dot--google' : ''}`}
+      style={{ '--dot-color': d.color }}
+    />
+  ));
+}
+
+// Tagesgruppe (Agenda + Woche): links ein Datums-Block (Wochentag, Tageszahl,
+// Monat), rechts die Termine. Zwischen den Tagen trennt eine Linie, der
+// heutige Tag ist farbig hervorgehoben.
+function DayGroup({ str, today, events, calMap, onOpen, onToggleTodo, showEmpty, groupRef }) {
+  const d = parseDateStr(str);
+  if (events.length === 0 && !showEmpty) return null;
+  const isToday = str === today;
+  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+  return (
+    <section
+      className={`calview-day-group ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}`}
+      id={`cal-day-${str}`}
+      ref={groupRef}
+    >
+      <div className="calview-day-date">
+        <span className="calview-day-wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
+        <span className="calview-day-num">{d.getDate()}</span>
+        <span className="calview-day-mon">{MONTH_NAMES[d.getMonth()].slice(0, 3)}</span>
+      </div>
+      <div className="calview-day-events">
+        {events.length === 0 && <div className="calview-group-empty">Nichts geplant</div>}
+        {events.map((ev) => (
+          <CalendarEventRow key={`${ev.id}:${str}`} ev={ev} calMap={calMap} onOpen={onOpen} onToggleTodo={onToggleTodo} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function CalendarView({ session, todos = [], onToggleTodo, onEditTodo }) {
+  const [mode, setMode] = useState('agenda'); // 'agenda' | 'woche' | 'monat'
+  const [refDate, setRefDate] = useState(new Date());
+  const [selDay, setSelDay] = useState(toDateStr(new Date())); // Woche: markierter Tag
+  const [agendaDays, setAgendaDays] = useState(AGENDA_STEP_DAYS);
+  const [dbEvents, setDbEvents] = useState({}); // Map<dateStr, event[]> — nur calendar_events, ungefiltert
+  const [loading, setLoading] = useState(true);
+  const [monthDaySheet, setMonthDaySheet] = useState(null); // Datumsstring
+  const [detail, setDetail] = useState(null); // Termin (Detail-Sheet)
+  const [googleCals, setGoogleCals] = useState([]);
+  const [filter, setFilter] = useState(loadFilter);
+  const [query, setQuery] = useState(''); // Suche, nicht gespeichert
+  const [filterOpen, setFilterOpen] = useState(false);
+  const { showToast } = useUi();
+  const groupRefs = useRef({});
+  const [conn, setConn] = useState(null);       // google_calendar_connections-Zeile | null
+  const [syncing, setSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(null); // Fehlertext des letzten manuellen/auto Syncs
+  const [reloadKey, setReloadKey] = useState(0);
+  const autoSyncDone = useRef(false);
+
+  const todayStr = toDateStr(new Date());
+
+  const calMap = useMemo(
+    () => Object.fromEntries(googleCals.map((c) => [c.google_calendar_id, c])),
+    [googleCals],
+  );
+
+  useEffect(() => {
+    getGoogleCalendars().then(setGoogleCals).catch((e) => console.warn('[CalendarView] google_calendars', e));
+  }, [reloadKey]);
+
+  // Sync-Status laden; beim ersten Öffnen automatisch syncen, wenn der
+  // letzte Sync länger als AUTO_SYNC_AFTER_MIN her ist (nicht bei bekanntem
+  // Verbindungsfehler — der braucht erst ein Neu-Verbinden).
+  async function runSync({ manual = false } = {}) {
+    if (!session || syncing) return;
+    setSyncing(true);
+    setSyncFailed(null);
+    try {
+      const res = await syncGoogleCalendar(session);
+      if (manual) {
+        const r = res?.results?.[0];
+        if (r?.status === 'revoked') {
+          // Statusabfrage unten zeigt dann das Neu-Verbinden-Banner
+        } else if (r && r.added != null) {
+          const n = r.added + r.changed + r.deleted;
+          showToast(n === 0 ? 'Alles aktuell' : n === 1 ? '1 Eintrag aktualisiert' : `${n} Einträge aktualisiert`);
+        } else {
+          showToast('Synchronisiert'); // ältere Edge-Function ohne Zähler
+        }
+      }
+    } catch (e) {
+      setSyncFailed(e.message || 'Synchronisierung fehlgeschlagen');
+    }
+    try { setConn(await getGoogleCalendarStatus(session)); } catch { /* Status bleibt */ }
+    setReloadKey((k) => k + 1);
+    setSyncing(false);
+  }
+  useEffect(() => {
+    if (!session) return;
+    getGoogleCalendarStatus(session)
+      .then((c) => {
+        setConn(c);
+        const stale = !c?.last_synced_at || Date.now() - new Date(c.last_synced_at).getTime() > AUTO_SYNC_AFTER_MIN * 60000;
+        if (c && !c.sync_error && stale && !autoSyncDone.current) {
+          autoSyncDone.current = true;
+          runSync();
+        }
+      })
+      .catch((e) => console.warn('[CalendarView] sync status', e));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
+  async function reconnect() {
+    setSyncing(true);
+    try {
+      await disconnectGoogleCalendar(session);
+      await connectGoogleCalendar(session); // leitet zu Google weiter
+    } catch (e) {
+      setSyncFailed(e.message || 'Verbindung konnte nicht gestartet werden');
+      setSyncing(false);
+    }
+  }
+
+  useEffect(() => {
+    try { localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filter)); } catch { /* privater Modus */ }
+  }, [filter]);
+
+  const { from, to } = useMemo(() => {
+    if (mode === 'agenda') return { from: todayStr, to: toDateStr(addDays(new Date(), agendaDays - 1)) };
+    if (mode === 'woche') {
+      const start = startOfWeek(refDate);
+      return { from: toDateStr(start), to: toDateStr(addDays(start, 6)) };
+    }
+    const grid = monthGridDays(refDate);
+    return { from: toDateStr(grid[0]), to: toDateStr(grid[grid.length - 1]) };
+  }, [mode, refDate, agendaDays, todayStr]);
+
+  useEffect(() => {
+    let aktiv = true;
+    getCalendarEvents(from, to)
+      .then((map) => { if (aktiv) { setDbEvents(map); setLoading(false); } })
+      .catch((e) => { console.error('[CalendarView]', e); if (aktiv) setLoading(false); });
+    return () => { aktiv = false; };
+  }, [from, to, reloadKey]);
+
+  // calendar_events + live Aufgaben (todos mit Fälligkeitsdatum) → ein Map.
+  const allEvents = useMemo(() => {
+    const map = {};
+    for (const [day, list] of Object.entries(dbEvents)) map[day] = list.slice();
+    for (const t of todos) {
+      if (t.deleted_at || !t.due_date || t.due_date < from || t.due_date > to) continue;
+      (map[t.due_date] ??= []).push(todoToEvent(t));
+    }
+    for (const day of Object.keys(map)) map[day] = sortDay(map[day]);
+    return map;
+  }, [dbEvents, todos, from, to]);
+
+  // Suchtext: Titel, Notiz, Ort und Kategorie-/Kalendername.
+  function matchesQuery(ev, q) {
+    if (!q) return true;
+    const d = describeEvent(ev, calMap);
+    const hay = [ev.title, ev.description, ev.location, d.detail].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  }
+
+  // Gefilterte Sicht — Filter und Suche wirken nur auf die Anzeige.
+  const q = query.trim().toLowerCase();
+  const events = useMemo(() => {
+    const only = new Set(filter.only); // leer = alle Kategorien sichtbar
+    const out = {};
+    for (const [date, list] of Object.entries(allEvents)) {
+      const kept = list.filter((ev) => {
+        const isGoogle = ev.source_module === 'google';
+        if (filter.source === 'app' && isGoogle) return false;
+        if (filter.source === 'google' && !isGoogle) return false;
+        if (filter.hideDone && ev.done) return false;
+        if (only.size > 0 && !only.has(filterKey(ev))) return false;
+        return matchesQuery(ev, q);
+      });
+      if (kept.length) out[date] = kept;
+    }
+    return out;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allEvents, filter, q, calMap]);
+
+  // Alle wählbaren Kategorien (Nestua + Google-Kalender) und Terminzahlen im
+  // geladenen Zeitraum — Grundlage fürs Filter-Sheet und die aktiven Chips.
+  const categories = useMemo(() => {
+    const list = Object.entries(APP_CATEGORIES).map(([m, c]) => ({
+      key: `app:${m}`, label: c.label, color: c.color, isGoogle: false,
+    }));
+    const known = new Set(googleCals.map((c) => c.google_calendar_id));
+    for (const c of googleCals) {
+      list.push({ key: `google:${c.google_calendar_id}`, label: c.summary || 'Google', color: c.color || GOOGLE_FALLBACK_COLOR, isGoogle: true });
+    }
+    for (const evs of Object.values(allEvents)) {
+      for (const ev of evs) {
+        if (ev.source_module === 'google' && !known.has(ev.google_calendar_id)) {
+          known.add(ev.google_calendar_id);
+          list.push({ key: filterKey(ev), label: 'Google', color: GOOGLE_FALLBACK_COLOR, isGoogle: true });
+        }
+      }
+    }
+    return list;
+  }, [googleCals, allEvents]);
+
+  const counts = useMemo(() => {
+    const c = {};
+    for (const evs of Object.values(allEvents)) for (const ev of evs) c[filterKey(ev)] = (c[filterKey(ev)] ?? 0) + 1;
+    return c;
+  }, [allEvents]);
+
+  const totalCount = useMemo(() => Object.values(allEvents).reduce((n, l) => n + l.length, 0), [allEvents]);
+  const shownCount = useMemo(() => Object.values(events).reduce((n, l) => n + l.length, 0), [events]);
+
+  // Umgekehrte Logik: Standard = alles sichtbar. Ein Tipp wählt NUR diese
+  // Kategorie, weitere Tipps fügen hinzu, erneutes Tippen entfernt sie wieder
+  // (ist nichts mehr gewählt, ist wieder alles sichtbar).
+  function toggleOnly(key) {
+    setFilter((f) => ({
+      ...f,
+      only: f.only.includes(key) ? f.only.filter((k) => k !== key) : [...f.only, key],
+    }));
+  }
+  const filterCount = (filter.source !== 'alle' ? 1 : 0) + filter.only.length + (filter.hideDone ? 1 : 0);
+  const filterActive = filterCount > 0 || q !== '';
+  function resetAll() { setFilter({ source: 'alle', only: [], hideDone: false }); setQuery(''); }
+
+  // Aktive Filter als entfernbare Chips unter der Suche.
+  const activeChips = [
+    ...(filter.source !== 'alle' ? [{ id: 'source', label: filter.source === 'app' ? 'Nur Nestua' : 'Nur Google', remove: () => setFilter((f) => ({ ...f, source: 'alle' })) }] : []),
+    ...filter.only.map((k) => ({ id: k, label: categories.find((c) => c.key === k)?.label ?? 'Google', remove: () => toggleOnly(k) })),
+    ...(filter.hideDone ? [{ id: 'done', label: 'ohne Erledigte', remove: () => setFilter((f) => ({ ...f, hideDone: false })) }] : []),
+  ];
+
+  // Detail-Sheet: Aufgaben immer live aus dem Hub-State, damit Abhaken im
+  // Sheet / in der Liste sofort sichtbar ist.
+  const detailEv = useMemo(() => {
+    if (!detail) return null;
+    if (detail.source_module !== 'todo') return detail;
+    const t = todos.find((x) => x.id === detail.todoId && !x.deleted_at);
+    return t ? todoToEvent(t) : null;
+  }, [detail, todos]);
+
+  // Navigation (Woche/Monat). „Heute“ erscheint nur, wenn man weg von heute ist.
+  function navigate(dir) {
+    if (mode === 'woche') setRefDate((d) => addDays(d, dir * 7));
+    else setRefDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
+  }
+  function goToday() { setRefDate(new Date()); setSelDay(todayStr); }
+  // Richtung zu „heute“: Liegt der Zeitraum in der Zukunft, steht der Button
+  // links vom Datum (Pfeil nach links), in der Vergangenheit rechts.
+  const now = new Date();
+  let todayDir = null; // 'left' | 'right' | null
+  if (mode === 'woche') {
+    const cur = toDateStr(startOfWeek(refDate)), nowWeek = toDateStr(startOfWeek(now));
+    todayDir = cur > nowWeek ? 'left' : cur < nowWeek ? 'right' : null;
+  } else if (mode === 'monat') {
+    const cur = refDate.getFullYear() * 12 + refDate.getMonth();
+    const nowM = now.getFullYear() * 12 + now.getMonth();
+    todayDir = cur > nowM ? 'left' : cur < nowM ? 'right' : null;
+  }
+
+  function switchMode(key) {
+    setMode(key);
+    if (key !== 'agenda') setRefDate(new Date());
+    setSelDay(todayStr);
+  }
+
+  // Woche: Tag im Streifen antippen → zur Tagesgruppe darunter scrollen.
+  function jumpToDay(str) {
+    setSelDay(str);
+    groupRefs.current[str]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i));
+  const rowProps = { calMap, onOpen: setDetail, onToggleTodo };
+  const agendaKeys = Object.keys(events).sort();
+  const agendaHasToday = agendaKeys.includes(todayStr);
+
+  return (
+    <div className="calview">
+      <div className="calview-mode-toggle">
+        {[['agenda', 'Agenda'], ['woche', 'Woche'], ['monat', 'Monat']].map(([key, label]) => (
+          <button key={key} className={mode === key ? 'active' : ''} onClick={() => switchMode(key)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode !== 'agenda' && (
+        <div className="calview-nav">
+          <button className="calview-nav-arrow" onClick={() => navigate(-1)} aria-label="Zurück"><Chevron dir="left" /></button>
+          <div className="calview-nav-center">
+            <span className="calview-nav-label">
+              {mode === 'woche' && (() => {
+                const s = weekDays[0], e = weekDays[6];
+                return `${s.getDate()}.–${e.getDate()}. ${MONTH_NAMES[e.getMonth()]}`;
+              })()}
+              {mode === 'monat' && `${MONTH_NAMES[refDate.getMonth()]} ${refDate.getFullYear()}`}
+            </span>
+          </div>
+          <button className="calview-nav-arrow" onClick={() => navigate(1)} aria-label="Weiter"><Chevron dir="right" /></button>
+        </div>
+      )}
+
+      {todayDir && (
+        <div className={`calview-today-row ${todayDir}`}>
+          <button className="calview-today-btn" onClick={goToday}>
+            {todayDir === 'left' ? <><Arrow dir="left" />zu heute</> : <>zu heute<Arrow dir="right" /></>}
+          </button>
+        </div>
+      )}
+
+      {/* Nur bei Problemen eine Leiste; normaler Sync-Status steckt im Button. */}
+      {conn && (conn.sync_error || syncFailed) && (
+        <div className="calview-sync error">
+          {conn.sync_error ? (
+            <>
+              <span className="calview-sync-text">
+                <strong>Google-Verbindung abgelaufen.</strong> Bitte neu verbinden, sonst bleiben die Google-Termine veraltet.
+              </span>
+              <button className="calview-sync-btn primary" disabled={syncing} onClick={reconnect}>Neu verbinden</button>
+            </>
+          ) : (
+            <span className="calview-sync-text">Sync fehlgeschlagen: {syncFailed}</span>
+          )}
+        </div>
+      )}
+
+      {/* Sync-Button über dem globalen + (Portal an <body>, damit position:fixed
+          nie von einem Vorfahren mit transform o. ä. gebrochen wird). Existiert
+          nur, solange der Kalender offen ist. */}
+      {conn && createPortal(
+        <button
+          className={`calview-sync-fab ${syncing ? 'busy' : ''} ${conn.sync_error || syncFailed ? 'error' : ''}`}
+          onClick={conn.sync_error ? reconnect : () => runSync({ manual: true })}
+          disabled={syncing}
+          aria-label={conn.sync_error ? 'Google neu verbinden' : 'Google-Kalender jetzt synchronisieren'}
+          title={conn.sync_error ? 'Verbindung abgelaufen' : `Zuletzt synchronisiert ${ago(conn.last_synced_at)}`}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 11a8 8 0 0 0-14.9-3M4 5v3.5h3.5" />
+            <path d="M4 13a8 8 0 0 0 14.9 3M20 19v-3.5h-3.5" />
+          </svg>
+        </button>,
+        document.body,
+      )}
+
+      <div className="calview-searchbar">
+        <div className="calview-search">
+          <svg className="calview-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Termine suchen …"
+            aria-label="Termine durchsuchen"
+          />
+          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
+        </div>
+        <button
+          type="button"
+          className={`calview-filter-btn ${filterCount > 0 ? 'active' : ''}`}
+          aria-label={filterCount > 0 ? `Filter, ${filterCount} aktiv` : 'Filter'}
+          onClick={() => setFilterOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" />
+          </svg>
+          {filterCount > 0 && <b>{filterCount}</b>}
+        </button>
+      </div>
+
+      {activeChips.length > 0 && (
+        <div className="calview-active-chips">
+          {activeChips.map((c) => (
+            <button key={c.id} type="button" className="calview-chip removable" onClick={c.remove} aria-label={`${c.label} entfernen`}>
+              {c.label} <i aria-hidden="true">×</i>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filterActive && !loading && (
+        <div className="calview-count-line">
+          <span>{shownCount} von {totalCount} Terminen</span>
+          <button type="button" onClick={resetAll}>Zurücksetzen</button>
+        </div>
+      )}
+
+      {filterOpen && (
+        <CalendarFilterSheet
+          filter={filter}
+          categories={categories}
+          counts={counts}
+          shownCount={shownCount}
+          onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
+          onToggleKey={toggleOnly}
+          onReset={() => setFilter({ source: 'alle', only: [], hideDone: false })}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
+
+      {mode === 'agenda' && (
+        <div className="calview-day-list">
+          {loading && <div className="calview-loading">Lädt…</div>}
+          {!loading && !agendaHasToday && !filterActive && (
+            <DayGroup str={todayStr} today={todayStr} events={[]} showEmpty {...rowProps} />
+          )}
+          {!loading && agendaKeys.length === 0 && (
+            filterActive ? (
+              <div className="calview-empty">
+                <strong>Keine Treffer</strong>
+                {q ? <>Für „{query.trim()}“ gibt es in den nächsten {agendaDays} Tagen nichts.</> : 'Mit den aktuellen Filtern ist nichts zu sehen.'}
+                <button type="button" className="calview-empty-btn" onClick={resetAll}>Filter zurücksetzen</button>
+              </div>
+            ) : (
+              <div className="calview-empty">In den nächsten {agendaDays} Tagen steht nichts an.</div>
+            )
+          )}
+          {!loading && agendaKeys.map((str) => (
+            <DayGroup key={str} str={str} today={todayStr} events={events[str]} {...rowProps} />
+          ))}
+          <button className="calview-more-btn" onClick={() => setAgendaDays((n) => n + AGENDA_STEP_DAYS)}>
+            Weitere {AGENDA_STEP_DAYS} Tage laden
+          </button>
+        </div>
+      )}
+
+      {mode === 'woche' && (
+        <>
+          <div className="calview-week-strip">
+            {weekDays.map((d, i) => {
+              const str = toDateStr(d);
+              return (
+                <button
+                  key={str}
+                  className={`calview-week-day ${str === todayStr ? 'today' : ''} ${str === selDay ? 'selected' : ''}`}
+                  onClick={() => jumpToDay(str)}
+                >
+                  <span className="calview-week-wd">{WEEKDAYS_SHORT[i]}</span>
+                  <span className="calview-week-dd">{d.getDate()}</span>
+                  <div className="calview-week-dots">
+                    <EventDots events={events[str] ?? []} calMap={calMap} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="calview-day-list">
+            {weekDays.map((d) => {
+              const str = toDateStr(d);
+              return (
+                <DayGroup
+                  key={str}
+                  str={str}
+                  today={todayStr}
+                  events={events[str] ?? []}
+                  showEmpty
+                  groupRef={(el) => { groupRefs.current[str] = el; }}
+                  {...rowProps}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {mode === 'monat' && (
+        <div className="calview-month-grid">
+          {WEEKDAYS_SHORT.map((wd) => (
+            <div key={wd} className="calview-month-wd">{wd}</div>
+          ))}
+          {monthGridDays(refDate).map((d) => {
+            const str = toDateStr(d);
+            const dayEvs = events[str] ?? [];
+            const inMonth = d.getMonth() === refDate.getMonth();
+            const more = dayEvs.length - MONTH_CHIPS_PER_CELL;
+            return (
+              <button
+                key={str}
+                className={`calview-month-cell ${str === todayStr ? 'today' : ''} ${!inMonth ? 'outside' : ''}`}
+                onClick={() => setMonthDaySheet(str)}
+              >
+                <span className="calview-month-dd">{d.getDate()}</span>
+                <div className="calview-month-chips">
+                  {dayEvs.slice(0, MONTH_CHIPS_PER_CELL).map((ev) => {
+                    const dsc = describeEvent(ev, calMap);
+                    return (
+                      <span
+                        key={`${ev.id}:${str}`}
+                        className={`calview-mchip ${dsc.isGoogle ? 'google' : 'app'} ${ev.done ? 'done' : ''}`}
+                        style={{ '--ev-color': dsc.color }}
+                      >
+                        {ev.title}
+                      </span>
+                    );
+                  })}
+                  {more > 0 && <span className="calview-mchip-more">+{more}</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {monthDaySheet && (
+        <SheetShell onClose={() => setMonthDaySheet(null)}>
+          <div className="sheet-header">
+            <span className="sheet-title">
+              {parseDateStr(monthDaySheet).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </span>
+            <button className="sheet-cancel" onClick={() => setMonthDaySheet(null)}>Schließen</button>
+          </div>
+          <div className="calview-day-list" style={{ padding: '0 20px 20px' }}>
+            {(events[monthDaySheet] ?? []).length === 0 && <div className="calview-empty">Nichts geplant.</div>}
+            {(events[monthDaySheet] ?? []).map((ev) => (
+              <CalendarEventRow
+                key={`${ev.id}:${monthDaySheet}`}
+                ev={ev}
+                calMap={calMap}
+                onToggleTodo={onToggleTodo}
+                onOpen={(e) => { setMonthDaySheet(null); setDetail(e); }}
+              />
+            ))}
+          </div>
+        </SheetShell>
+      )}
+
+      {detailEv && (
+        <CalendarEventSheet
+          ev={detailEv}
+          calMap={calMap}
+          onClose={() => setDetail(null)}
+          onToggleTodo={onToggleTodo}
+          onEditTodo={(id) => { setDetail(null); onEditTodo?.(todos.find((t) => t.id === id)); }}
+        />
+      )}
+    </div>
+  );
+}

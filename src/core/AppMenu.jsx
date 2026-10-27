@@ -2,29 +2,49 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { useUi } from './lib/UiContext';
 import { MODES } from './lib/theme';
+import { isSoundEnabled, isHapticEnabled, setSoundEnabled, setHapticEnabled, fb } from './lib/feedback';
 import {
   isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush,
   getNotificationPrefs, saveNotificationPrefs,
 } from './lib/pushNotifications';
+import {
+  getGoogleCalendarStatus, connectGoogleCalendar, syncGoogleCalendar, disconnectGoogleCalendar,
+} from './lib/googleCalendar';
+import { ago } from './lib/calendarUtils';
+import { setConsent, track } from './lib/analytics';
+import { useAnalyticsConsent } from './lib/useAnalyticsConsent';
 
 const NOTIFICATION_CATEGORIES = [
-  { key: 'habits', label: 'Gewohnheiten-Erinnerung', hint: 'Abends, falls noch offen' },
-  { key: 'required_data', label: 'Pflichtdaten unvollständig', hint: 'Gelegentlich, falls Angaben fehlen' },
-  { key: 'fin_due', label: 'Fixkosten fällig', hint: 'Wenn unbezahlte Fixkosten offen sind' },
-  { key: 'weekly_recap', label: 'Wochenrückblick', hint: 'Sonntagabend' },
+  { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
+  { key: 'tasks_habits', label: 'Aufgaben & Gewohnheiten', hint: 'Abends, wenn noch etwas offen ist' },
+  { key: 'finance', label: 'Finanzen', hint: 'Hinweise auf fällige und offene Zahlungen' },
+  { key: 'profile', label: 'Profil & Fortschritt', hint: 'Wenn wichtige Angaben fehlen' },
+  { key: 'weekly_recap', label: 'Wochenüberblick', hint: 'Montagmorgens: dein Rückblick auf die Vorwoche' },
+  { key: 'monthly_recap', label: 'Monatsüberblick', hint: 'Am 1. des Monats: dein Rückblick auf den Vormonat' },
 ];
 
-// Konto/Profil (Avatar-Button rechts) und Module (Bottom-Nav) sind hier
-// bewusst raus — dieses Dropdown ist für app-weite Einstellungen da:
-// Design und Benachrichtigungen. Der rechte Avatar-Bereich (Profile.jsx)
-// bleibt dagegen auf Konto/Körperdaten/Ziele beschränkt.
+function NotifToggle({ checked, onChange, label, hint }) {
+  return (
+    <div className="notif-toggle-row" onClick={onChange} role="switch" aria-checked={checked} tabIndex={0}
+      onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && onChange()}>
+      <div className="notif-toggle-text"><span className="notif-toggle-label">{label}</span><span className="notif-toggle-hint">{hint}</span></div>
+      <div className={`notif-toggle-track ${checked ? 'on' : ''}`}><div className="notif-toggle-thumb" /></div>
+    </div>
+  );
+}
+
 export default function AppMenu() {
   const { session } = useAuth();
   const { mode, setMode, showToast } = useUi();
-
-  const [pushStatus, setPushStatus] = useState('laedt'); // laedt|unsupported|denied|unsubscribed|subscribed
+  const [sound, setSound] = useState(isSoundEnabled());
+  const [haptik, setHaptik] = useState(isHapticEnabled());
+  const [pushStatus, setPushStatus] = useState('laedt');
   const [pushBusy, setPushBusy] = useState(false);
   const [prefs, setPrefs] = useState(null);
+  const [gcalStatus, setGcalStatus] = useState('laedt');
+  const [gcalConnection, setGcalConnection] = useState(null);
+  const [gcalBusy, setGcalBusy] = useState(false);
+  const analyticsConsent = useAnalyticsConsent();
 
   useEffect(() => {
     let aktiv = true;
@@ -33,148 +53,112 @@ export default function AppMenu() {
       const status = await getPushSubscriptionStatus();
       if (!aktiv) return;
       setPushStatus(status);
-      if (status === 'subscribed') {
-        const p = await getNotificationPrefs(session);
-        if (aktiv) setPrefs(p);
-      }
+      if (status === 'subscribed') { const p = await getNotificationPrefs(session); if (aktiv) setPrefs(p); }
     }
-    loadPush();
+    async function loadGcal() {
+      try {
+        const conn = await getGoogleCalendarStatus(session);
+        if (!aktiv) return;
+        setGcalConnection(conn);
+        setGcalStatus(conn ? 'verbunden' : 'nicht-verbunden');
+      } catch (e) { console.error(e); if (aktiv) setGcalStatus('nicht-verbunden'); }
+    }
+    loadPush(); loadGcal();
     return () => { aktiv = false; };
   }, [session]);
 
   async function handleEnablePush() {
     setPushBusy(true);
-    try {
-      await subscribeToPush(session);
-      setPushStatus('subscribed');
-      setPrefs(await getNotificationPrefs(session));
-      showToast('Benachrichtigungen aktiviert');
-    } catch (e) {
-      showToast(e.message || 'Konnte nicht aktiviert werden');
-      setPushStatus(await getPushSubscriptionStatus());
-    } finally {
-      setPushBusy(false);
-    }
+    try { await subscribeToPush(session); setPushStatus('subscribed'); setPrefs(await getNotificationPrefs(session)); track('push_enabled'); showToast('Benachrichtigungen aktiviert'); }
+    catch (e) { showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus()); }
+    finally { setPushBusy(false); }
   }
-
   async function handleDisablePush() {
     setPushBusy(true);
-    try {
-      await unsubscribeFromPush(session);
-      setPushStatus('unsubscribed');
-      showToast('Benachrichtigungen deaktiviert');
-    } catch (e) {
-      showToast('Konnte nicht deaktiviert werden');
-      console.error(e);
-    } finally {
-      setPushBusy(false);
-    }
+    try { await unsubscribeFromPush(session); setPushStatus('unsubscribed'); showToast('Benachrichtigungen deaktiviert'); }
+    catch (e) { showToast('Konnte nicht deaktiviert werden'); console.error(e); }
+    finally { setPushBusy(false); }
   }
-
   async function toggleCategory(key) {
-    const next = { ...prefs, [key]: !prefs[key] };
-    setPrefs(next);
-    try {
-      await saveNotificationPrefs(session, next);
-    } catch (e) {
-      showToast('Konnte nicht gespeichert werden');
-      console.error(e);
-    }
+    const next = { ...prefs, [key]: !prefs[key] }; setPrefs(next);
+    try { await saveNotificationPrefs(session, next); } catch (e) { setPrefs(prefs); showToast('Konnte nicht gespeichert werden'); console.error(e); }
   }
-
-  async function updateTiming(field, value) {
-    const next = { ...prefs, [field]: value };
-    setPrefs(next);
+  async function handleConnectGoogle() {
+    setGcalBusy(true);
+    try { await connectGoogleCalendar(session); }
+    catch (e) { showToast(e.message || 'Verbindung konnte nicht gestartet werden'); setGcalBusy(false); }
+  }
+  async function handleSyncGoogle() {
+    setGcalBusy(true);
     try {
-      await saveNotificationPrefs(session, next);
-    } catch (e) {
-      showToast('Konnte nicht gespeichert werden');
-      console.error(e);
-    }
+      const result = await syncGoogleCalendar(session);
+      const count = result?.results?.[0]?.count ?? 0;
+      const revoked = result?.results?.[0]?.status === 'revoked';
+      if (revoked) {
+        const conn = await getGoogleCalendarStatus(session);
+        setGcalConnection(conn);
+        showToast('Google-Zugriff wurde widerrufen');
+      } else {
+        const conn = await getGoogleCalendarStatus(session);
+        setGcalConnection(conn);
+        showToast(`${count} Google-Termine synchronisiert`);
+      }
+    } catch (e) { showToast(e.message || 'Synchronisierung fehlgeschlagen'); }
+    finally { setGcalBusy(false); }
+  }
+  async function handleDisconnectGoogle() {
+    setGcalBusy(true);
+    try { await disconnectGoogleCalendar(session); setGcalConnection(null); setGcalStatus('nicht-verbunden'); showToast('Google Kalender getrennt'); }
+    catch (e) { showToast('Trennen fehlgeschlagen'); console.error(e); }
+    finally { setGcalBusy(false); }
   }
 
   return (
     <div className="app-menu">
       <div className="app-menu-heading">Einstellungen</div>
-
       <div className="app-menu-section-label">Design</div>
-      <div className="mode-toggle">
-        {MODES.map((m) => (
-          <button key={m.key} className={m.key === mode ? 'active' : ''} onClick={() => setMode(m.key)}>
-            {m.label}
-          </button>
-        ))}
+      <div className="mode-toggle">{MODES.map((m) => <button key={m.key} className={m.key === mode ? 'active' : ''} onClick={() => setMode(m.key)}>{m.label}</button>)}</div>
+
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Rückmeldung</div>
+      <div className="notif-toggle-list">
+        <NotifToggle checked={sound} label="Töne" hint="Kurze Klänge beim Abhaken und beim Drehen der Wählregler"
+          onChange={() => { const v = !sound; setSound(v); setSoundEnabled(v); if (v) fb.todoCheck(); }} />
+        <NotifToggle checked={haptik} label="Haptik" hint="Spürbares Feedback, z. B. beim Drehen der Wählregler"
+          onChange={() => { const v = !haptik; setHaptik(v); setHapticEnabled(v); if (v) fb.tick(); }} />
       </div>
+
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Kalender</div>
+      {gcalStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
+      {gcalStatus === 'nicht-verbunden' && <>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Zeige deine Google-Kalender-Termine zusätzlich im Nestua-Kalender an.</p>
+        <button className="btn btn-secondary" style={{ width: '100%' }} disabled={gcalBusy} onClick={handleConnectGoogle}>{gcalBusy ? 'Einen Moment…' : 'Google Kalender verbinden'}</button>
+      </>}
+      {gcalStatus === 'verbunden' && gcalConnection && <>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Verbunden mit <strong style={{ color: 'var(--text-primary)' }}>{gcalConnection.google_email}</strong></p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          {gcalConnection.last_synced_at
+            ? `Zuletzt synchronisiert: ${ago(gcalConnection.last_synced_at)} (${new Date(gcalConnection.last_synced_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} Uhr)`
+            : 'Noch nicht synchronisiert'}
+        </p>
+        {gcalConnection.sync_error && <p style={{ fontSize: '0.78rem', color: 'var(--status-critical)', marginBottom: 10 }}>{gcalConnection.sync_error}</p>}
+        <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleSyncGoogle}>{gcalBusy ? 'Synchronisiere…' : 'Jetzt synchronisieren'}</button>
+        <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleDisconnectGoogle}>{gcalBusy ? 'Einen Moment…' : gcalConnection.sync_error ? 'Erneut verbinden' : 'Trennen'}</button>
+      </>}
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
       {pushStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
-      {pushStatus === 'unsupported' && (
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone:
-          erst über "Zum Home-Bildschirm" installieren, dann von dort aus öffnen.
-        </p>
-      )}
-      {pushStatus === 'denied' && (
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.
-        </p>
-      )}
-      {pushStatus === 'unsubscribed' && (
-        <>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
-            Erhalte Erinnerungen auch außerhalb der App.
-          </p>
-          <button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>
-            {pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}
-          </button>
-        </>
-      )}
-      {pushStatus === 'subscribed' && prefs && (
-        <>
-          {NOTIFICATION_CATEGORIES.map((c) => (
-            <label key={c.key} className="goal-milestone" style={{ marginBottom: 10, alignItems: 'flex-start' }}>
-              <input type="checkbox" checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} style={{ marginTop: 2 }} />
-              <span>
-                {c.label}
-                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{c.hint}</span>
-              </span>
-            </label>
-          ))}
+      {pushStatus === 'unsupported' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone: erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.</p>}
+      {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.</p>}
+      {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button></>}
+      {pushStatus === 'subscribed' && prefs && <><div className="notif-toggle-list">{NOTIFICATION_CATEGORIES.map((c) => <NotifToggle key={c.key} checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} label={c.label} hint={c.hint} />)}</div><button className="btn btn-secondary" style={{ marginTop: 14, width: '100%' }} disabled={pushBusy} onClick={handleDisablePush}>Deaktivieren</button></>}
 
-          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-            <div className="form-group" style={{ marginBottom: 10 }}>
-              <label>Wunschstunde</label>
-              <select value={prefs.preferred_hour} onChange={(e) => updateTiming('preferred_hour', Number(e.target.value))}>
-                {Array.from({ length: 24 }, (_, h) => (
-                  <option key={h} value={h}>{String(h).padStart(2, '0')}:00 Uhr</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div className="form-group">
-                <label>Ruhezeit von</label>
-                <select value={prefs.quiet_start} onChange={(e) => updateTiming('quiet_start', Number(e.target.value))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Ruhezeit bis</label>
-                <select value={prefs.quiet_end} onChange={(e) => updateTiming('quiet_end', Number(e.target.value))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <button className="btn btn-secondary" style={{ marginTop: 12 }} disabled={pushBusy} onClick={handleDisablePush}>
-            Deaktivieren
-          </button>
-        </>
-      )}
+      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Nutzungsdaten</div>
+      <NotifToggle
+        checked={analyticsConsent === 'granted'}
+        onChange={() => setConsent(analyticsConsent !== 'granted')}
+        label="Nutzungsstatistik teilen"
+        hint="Welche Bereiche du öffnest, Klicks, Fehler — nie Inhalte wie Beträge oder Einträge."
+      />
     </div>
   );
 }

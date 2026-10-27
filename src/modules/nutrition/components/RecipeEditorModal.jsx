@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { IconSearch, IconPlus, IconClose } from '../../../core/components/Icons';
 import { RECIPE_CATS, GOAL_TAGS, CUSTOM_TAGS, computeNutrition, fmt, basis } from '../lib/nutrition';
+import { COVER_MOTIFS, COVER_TONES, CoverArt, parseCover, resolveCover, formatCover } from '../lib/recipeCovers';
 
 const UNIT_SHORT = { ml: 'ml', Scheibe: 'Sch', Stück: 'Stk', Zehe: 'Zehe', EL: 'EL' };
 const DEFAULT_AMOUNT = { ml: 200, Stück: 1, Scheibe: 1, Zehe: 1, EL: 1 };
@@ -12,8 +13,9 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
     ingredients: recipe.ingredients.map((i) => ({ ...i })),
     customTags: recipe.customTags || [],
     goalTags: recipe.goalTags || [],
+    cover: recipe.cover ?? null,
   } : {
-    name: '', servings: 1, category: 'haupt', ingredients: [], note: '', customTags: [], goalTags: [],
+    name: '', servings: 1, category: 'mittag', ingredients: [], note: '', customTags: [], goalTags: [], cover: null,
   });
   const [query, setQuery] = useState('');
 
@@ -54,6 +56,10 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
     });
   }
 
+  // Bild: gespeicherte Wahl (chosen) oder automatisch aus Name/Mahlzeit-Typ (resolved)
+  const chosen = parseCover(draft.cover);
+  const resolved = resolveCover(draft);
+
   const extraCustomTags = (draft.customTags || []).filter((t) => !CUSTOM_TAGS.includes(t));
 
   return (
@@ -64,8 +70,9 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
       </div>
 
       <div className="form-group">
-        <label>Portionen</label>
+        <label>Für wie viele Portionen ist das Rezept?</label>
         <input type="number" min="1" value={draft.servings} onChange={(e) => set('servings', e.target.value)} />
+        <div className="nut-hint">Die Zutatenmengen unten gelten für diese Anzahl Portionen. Im Rezept kannst du sie später umrechnen.</div>
       </div>
 
       <div className="form-group">
@@ -81,6 +88,40 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
       </div>
 
       <div className="form-group">
+        <label>Bild</label>
+        <CoverArt motif={resolved.motif} tone={resolved.tone} className="cover-picker-preview" fit="meet" />
+        <div className="cover-grid">
+          <button type="button" className={`cover-option${!chosen ? ' active' : ''}`} onClick={() => set('cover', null)}>
+            <span className="recipe-cover rc-tone-grau" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>Auto</span>
+            <span className="name">Automatisch</span>
+          </button>
+          {COVER_MOTIFS.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              className={`cover-option${chosen?.motif.key === m.key ? ' active' : ''}`}
+              onClick={() => set('cover', formatCover(m.key, chosen ? chosen.tone : m.tone))}
+              aria-label={m.label}
+            >
+              <CoverArt motif={m} tone={chosen ? chosen.tone : m.tone} />
+              <span className="name">{m.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="cover-tones" role="group" aria-label="Hintergrundfarbe">
+          {COVER_TONES.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              className={`cover-tone recipe-cover rc-tone-${t.key}${resolved.tone === t.key ? ' active' : ''}`}
+              aria-label={t.label}
+              onClick={() => set('cover', formatCover(resolved.motif.key, t.key))}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
         <label>Zutaten ({draft.ingredients.length})</label>
         <div className="nut-search" style={{ marginBottom: 6 }}>
           <IconSearch />
@@ -89,15 +130,15 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
         {results.length > 0 && (
           <div className="card" style={{ margin: '0 0 10px', padding: 0 }}>
             {results.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => addIngredient(f)}
-                style={{ display: 'flex', width: '100%', alignItems: 'center', gap: 8, padding: '9px 12px', borderBottom: '1px solid var(--border)', textAlign: 'left' }}
-              >
-                <IconPlus />
-                <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{f.name}</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{f.kcal}kcal/{basis(f.unit)}</span>
-              </button>
+              <div key={f.id} className="ing-pick-row">
+                <div className="ing-pick-info">
+                  <span className="ing-pick-name">{f.name}</span>
+                  <span className="ing-pick-kcal">{f.kcal} kcal/{basis(f.unit)}</span>
+                </div>
+                <button type="button" className="ing-add" aria-label={`${f.name} hinzufügen`} onClick={() => addIngredient(f)}>
+                  <IconPlus />
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -128,12 +169,15 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
 
       {draft.ingredients.length > 0 && (
         <div className="card" style={{ margin: 0 }}>
-          <div className="card-title">Nährwerte gesamt ({draft.servings || 1} Port.)</div>
+          <div className="card-title">Nährwerte gesamt ({Math.max(1, +draft.servings || 1)} Port.)</div>
           <div className="result-grid">
             <div className="result-tile"><div className="label">kcal</div><div className="value">{Math.round(calc.kcal)}</div></div>
             <div className="result-tile"><div className="label">Protein</div><div className="value">{fmt(calc.protein)}<span>g</span></div></div>
             <div className="result-tile"><div className="label">KH</div><div className="value">{fmt(calc.carbs)}<span>g</span></div></div>
             <div className="result-tile"><div className="label">Fett</div><div className="value">{fmt(calc.fat)}<span>g</span></div></div>
+          </div>
+          <div className="nut-hint">
+            Pro Portion: {Math.round(calc.kcal / Math.max(1, +draft.servings || 1))} kcal · {fmt(calc.protein / Math.max(1, +draft.servings || 1))} g Eiweiß
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
+import { useEntrySheet } from '../../core/lib/EntrySheetContext';
 import { getBodyProfile } from '../../core/lib/bodyProfileData';
 import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
@@ -47,6 +48,10 @@ const DETAIL_TITLES = {
 export default function SportModule({ view, onNavigateView, hasWarnings }) {
   const { session } = useAuth();
   const { showToast } = useUi();
+  // version zählt hoch, sobald der FAB (SportQuickSheet) erfolgreich
+  // gespeichert hat — ersetzt das frühere eigene window-Event, jetzt
+  // dasselbe etablierte Muster wie bei Finanzen (EntrySheetContext).
+  const { version } = useEntrySheet();
 
   const [workouts, setWorkouts] = useState([]);
   const [units, setUnits] = useState([]);
@@ -87,18 +92,35 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }, [session, showToast]);
 
-  useEffect(() => { load(); }, [load]);
+  // Lädt initial UND jedes Mal, wenn der FAB (SportQuickSheet) über
+  // den EntrySheetContext erfolgreich gespeichert hat (version-Änderung).
+  useEffect(() => { load(); }, [load, version]);
 
-  // Der FAB (GlobalFab → SportQuickSheet) sitzt außerhalb dieses Moduls
-  // in App.jsx und legt/ändert Einheiten/Workouts/Pläne direkt in der DB
-  // an — ohne dieses Event würde SportModule davon nichts mitbekommen.
-  useEffect(() => {
-    window.addEventListener('sport:data-changed', load);
-    return () => window.removeEventListener('sport:data-changed', load);
-  }, [load]);
-
-  function backToOverview() {
+  // Der Zurück-Pfeil (ModuleTopBar onBack) galt bisher IMMER als "verlasse
+  // den Bereich", unabhängig davon, ob gerade ein Unter-Zustand offen war
+  // (Plan-Editor, Anwenden-Dialog, Kalender-Formular) — dadurch sprang er
+  // z.B. beim Bearbeiten eines Plans direkt zur Modul-Übersicht statt nur
+  // zur Pläne-Liste zurück (zwei Schritte statt einem). Außerdem wurde
+  // editingPlan/applyingPlan beim Verlassen nie zurückgesetzt, wodurch ein
+  // späteres erneutes Aufrufen von "Pläne" wieder denselben Editor zeigte
+  // statt der Liste. handleBack behebt beide Fälle: schließt zuerst den
+  // offenen Unter-Zustand (bleibt auf demselben Bereich), erst wenn nichts
+  // mehr offen ist, verlässt er wirklich zur Übersicht — und räumt dabei
+  // konsequent alle Unter-Zustände auf, damit ein späteres Zurückkehren
+  // immer bei der Liste startet.
+  function handleBack() {
+    if (view === 'plaene' && (editingPlan || applyingPlan)) {
+      setEditingPlan(null);
+      setApplyingPlan(null);
+      return;
+    }
+    if (view === 'kalender' && formInitial !== false) {
+      setFormInitial(false);
+      return;
+    }
     setFormInitial(false);
+    setEditingPlan(null);
+    setApplyingPlan(null);
     onNavigateView(null);
   }
 
@@ -195,7 +217,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   if (view && DETAIL_TITLES[view]) {
     return (
       <>
-        <ModuleTopBar onBack={backToOverview} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={handleBack} title={DETAIL_TITLES[view]} hasWarnings={hasWarnings} />
         <div className="sport-module-content with-topbar-space">
           {view === 'kalender' && (
             <VerlaufView

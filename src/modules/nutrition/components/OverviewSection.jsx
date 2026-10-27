@@ -1,33 +1,35 @@
 // modules/nutrition/components/OverviewSection.jsx
-// Modul-Übersicht für Ernährung — passt ohne Scrollen auf einen Screen
-// (siehe UMBAU-PLAN.md Schritt 9): Ampel-Fokuskarte mit Suchfeld,
-// zwei Rezeptkarten, darunter die Bereiche.
+// Modul-Übersicht für Ernährung: oben der Tagesstand (derselbe Block wie im
+// Tagesplan des Hubs: offene kcal/Makros, Mahlzeit-Marker), darunter zwei
+// Rezeptkarten und die Bereiche. Die Ampel (Lebensmittel-Liste mit Suche)
+// ist ein eigener Bereich in der Liste unten.
 //
-// Alle Zahlen kommen aus dem bereits in NutritionModule geladenen State
-// (foods/recipes) — kein zusätzlicher Netzwerk-Zugriff.
-//
-// Die Suche in der Fokuskarte führt auf den Bereich "Lebensmittel"
-// (AmpelView) und reicht den eingetippten Text dorthin durch, statt ihn
-// beim Wechsel zu verlieren.
-//
-// Ohne Bereich "Mein Profil": Körperdaten, Trainingsfokus, Sportarten und
-// Ernährungsform liegen ausschließlich auf der Profilseite oben rechts.
-//
-// Rezeptkarten zeigen eine Platzhalterfläche statt eines Fotos: nut_recipes
-// hat kein Bildfeld (siehe fromRecipeRow in lib/nutData.js). Das Mockup
-// zeigt dort ein Bild — das wäre ein neues Feature, kein Umbau.
+// Der Tagesstand wird bei jedem Öffnen der Übersicht neu geladen
+// (core/lib/nutritionDay.js); schlägt das fehl, fehlt nur der Block.
+// Rezeptbilder: siehe lib/recipeCovers.jsx.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AMPEL_CATS, RECIPE_CATS } from '../lib/nutrition';
+import { RecipeCover } from '../lib/recipeCovers';
 import { LEXIKON } from '../lib/data/lexikon';
-import { IconSearch } from '../../../core/components/Icons';
-import FocusCard from '../../../core/components/FocusCard.jsx';
+import { useAuth } from '../../../core/lib/AuthContext';
+import { loadNutritionDay } from '../../../core/lib/nutritionDay';
+import { NutritionBlock } from '../../../core/components/DayPlan.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
-export default function OverviewSection({ foods, recipes, onSearch, onNavigate }) {
-  const [query, setQuery] = useState('');
+export default function OverviewSection({ foods, recipes, onNavigate }) {
+  const { session } = useAuth();
+  const [day, setDay] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadNutritionDay(session)
+      .then((d) => { if (alive) setDay(d); })
+      .catch((e) => console.error('Tagesstand nicht geladen', e));
+    return () => { alive = false; };
+  }, [session]);
 
   const counts = AMPEL_CATS.map((c) => ({
     key:   c.key,
@@ -39,39 +41,19 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
   // nach created_at, die beiden neuesten stehen also am Ende.
   const latest = recipes.slice(-2).reverse();
 
-  function submitSearch(e) {
-    e.preventDefault();
-    onSearch(query.trim());
-  }
-
   return (
     <>
       <h1 className="overview-page-title">Ernährung</h1>
 
-      {/* Fokuskarte: Ampel-Frage mit Suchfeld */}
-      <FocusCard>
-        <FocusCard.Eyebrow>Ampel</FocusCard.Eyebrow>
-        <div className="nut-focus-question">Ist das drin?</div>
-
-        <form className="nut-focus-search" onSubmit={submitSearch}>
-          <span className="nut-focus-search-icon" aria-hidden="true"><IconSearch /></span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Lebensmittel suchen …"
-            aria-label="Lebensmittel suchen"
-          />
-        </form>
-
-        <div className="nut-ampel-legend">
-          {counts.map((c) => (
-            <span key={c.key} className="nut-ampel-legend-item">
-              <i className={`nut-ampel-dot nut-ampel-dot--${c.key}`} />
-              {c.count}
-            </span>
-          ))}
-        </div>
-      </FocusCard>
+      {/* Tagesstand wie im Tagesplan; Antippen → Mahlzeiten */}
+      {day && (
+        <NutritionBlock
+          data={day}
+          label="Heute"
+          hideOpen
+          onOpen={(target) => { if (target.endsWith('mahlzeiten')) onNavigate('mahlzeiten'); }}
+        />
+      )}
 
       {/* Rezepte */}
       <PageSection
@@ -86,7 +68,7 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
           <div className="nut-recipe-grid">
             {latest.map((r) => (
               <button key={r.id} className="nut-recipe-card" onClick={() => onNavigate('rezepte')}>
-                <span className="nut-recipe-image" aria-hidden="true" />
+                <RecipeCover recipe={r} className="nut-recipe-image" />
                 <span className="nut-recipe-title">{r.name}</span>
                 <span className="nut-recipe-meta">
                   {[RECIPE_CATS.find((c) => c.key === r.category)?.label,
@@ -101,10 +83,19 @@ export default function OverviewSection({ foods, recipes, onSearch, onNavigate }
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
-            label="Lebensmittel"
-            value={`${foods.length}`}
+            label="Ampel"
+            value={(
+              <span className="nut-area-ampel">
+                {counts.map((c) => (
+                  <span key={c.key} className="nut-area-ampel-item">
+                    <i className={`nut-ampel-dot nut-ampel-dot--${c.key}`} />
+                    {c.count}
+                  </span>
+                ))}
+              </span>
+            )}
             onPress={() => onNavigate('lebensmittel')}
           />
           <AreaRow

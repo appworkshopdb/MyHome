@@ -2,7 +2,7 @@
 // Label. Rein präsentational, holt sich keine Daten selbst — jedes
 // Modul (oder core selbst, siehe Hub.jsx) berechnet value/target auf
 // seine eigene Art und übergibt nur Zahlen. Zwei Varianten:
-//   'bar'  — kompakt, für Listen/Zeilen (z.B. in GoalsSection)
+//   'bar'  — kompakt, für Listen/Zeilen
 //   'card' — größere Kachel mit eigenem Rahmen, antippbar (z.B. Hub)
 export default function ProgressStat({
   value,

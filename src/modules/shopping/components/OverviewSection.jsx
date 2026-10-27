@@ -142,7 +142,7 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList fabClearance>
+        <AreaList>
           <AreaRow
             label="Alle Listen"
             value={`${lists.length} · ${offeneListen.length} offen`}

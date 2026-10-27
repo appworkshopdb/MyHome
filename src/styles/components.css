@@ -276,10 +276,11 @@
 }
 
 .month-nav-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-lg);       /* war: 50% hart codiert */
-  background: var(--surface-sunken);
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
   color: var(--text-secondary);
   display: flex;
   align-items: center;

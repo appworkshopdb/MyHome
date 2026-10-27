@@ -5,7 +5,6 @@ import SportQuickSheet    from './SportQuickSheet';
 import ShoppingQuickSheet from './ShoppingQuickSheet';
 import NutritionFabMenu   from './NutritionFabMenu';
 import TodoSheet          from './TodoSheet';
-import SparschweinFab     from './SparschweinFab';
 
 // Globaler FAB — rendert sich je nach aktivem Modul anders.
 // Erscheint auf allen Screens außer Profil.
@@ -21,8 +20,8 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
   const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
   const [open, setOpen] = useState(null); // null | 'todo' | 'habit' | 'sport' | 'shopping' | 'nutrition'
 
-  // Kein FAB auf Profil
-  if (activeModule === 'profile') return null;
+  // Kein FAB auf Profil und Statistiken (reine Anzeigeseiten)
+  if (activeModule === 'profile' || activeModule === 'statistiken') return null;
 
   function handlePress() {
     if (activeModule === null)       return setOpen('todo');
@@ -35,8 +34,6 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
 
   return (
     <>
-      {activeModule === 'finance' && <SparschweinFab />}
-
       <button
         className="global-fab"
         onClick={handlePress}
@@ -48,7 +45,7 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
       {open === 'todo' && (
         <TodoSheet
           onClose={() => setOpen(null)}
-          onSaved={(t) => { onTodoSaved?.(t); setOpen(null); }}
+          onSaved={(t) => { onTodoSaved?.(t); }} /* TodoSheet schließt selbst; bei "Speichern & neu" bleibt es offen */
         />
       )}
       {open === 'habit' && (

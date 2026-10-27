@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import * as db from '../lib/finData';
-import GoalsSection from '../../../core/components/GoalsSection';
 import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
 
 // SheetJS erst bei Bedarf nachladen — spart Ladezeit solange niemand
@@ -106,8 +105,6 @@ export default function SettingsView() {
 
   return (
     <>
-      <GoalsSection sourceModule="finance" />
-
       {/* Darstellung */}
       <div className="card">
         <div className="card-title">Darstellung</div>

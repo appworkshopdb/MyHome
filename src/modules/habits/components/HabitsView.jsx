@@ -4,6 +4,7 @@
 // + Erinnerungs-UI
 
 import { useState } from 'react';
+import SheetShell from '../../../core/components/SheetShell.jsx';
 import {
   DndContext,
   closestCenter,
@@ -22,10 +23,10 @@ import { CSS } from '@dnd-kit/utilities';
 
 import {
   saveHabit, deleteHabit, toggleHabitActive, updateSortOrder,
-  restoreHabit, loadDeletedHabits,
+  restoreHabit, loadDeletedHabits, setStatsHidden,
 } from '../lib/habData.js';
 import {
-  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY,
+  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY, TIME_SLOTS,
 } from '../lib/habUtils.js';
 
 const FREQ_LABELS = {
@@ -58,12 +59,14 @@ const EMPTY_HABIT = {
   name:           '',
   description:    '',
   category:       'Gesundheit',
+  categories:     [],
   icon:           '⭐',
   frequency:      'daily',
   frequency_days: [0, 1, 2, 3, 4],
   target_count:   1,
   unit:           '',
   reminder_time:  '',
+  time_slot:      'anytime',
   active:         true,
 };
 
@@ -74,6 +77,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
+  const [deleteHideStats, setDeleteHideStats] = useState(false);
   const [error, setError]             = useState(null);
   const [showArchive, setShowArchive] = useState(false);
   const [archivedHabits, setArchived] = useState([]);
@@ -128,12 +133,14 @@ export default function HabitsView({ habits, onHabitsChange }) {
       name:           habit.name,
       description:    habit.description ?? '',
       category:       habit.category,
+      categories:     habit.categories ?? (habit.category ? [habit.category] : []),
       icon:           habit.icon,
       frequency:      habit.frequency,
       frequency_days: habit.frequency_days ?? [0,1,2,3,4],
       target_count:   habit.target_count ?? 1,
       unit:           habit.unit ?? '',
       reminder_time:  habit.reminder_time ?? '',
+      time_slot:      habit.time_slot ?? 'anytime',
       active:         habit.active,
     });
     setShowForm(true);
@@ -153,6 +160,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       ...template,
       unit:          template.unit ?? '',
       reminder_time: '',
+      time_slot:     template.time_slot ?? 'anytime',
     });
     setShowLibrary(false);
     setShowForm(true);
@@ -183,6 +191,15 @@ export default function HabitsView({ habits, onHabitsChange }) {
     });
   }
 
+
+  function toggleCategory(cat) {
+    setForm((f) => ({
+      ...f,
+      categories: (f.categories ?? []).includes(cat)
+        ? (f.categories ?? []).filter((c) => c !== cat)
+        : [...(f.categories ?? []), cat],
+    }));
+  }
   async function handleSave() {
     if (!form.name.trim()) { setError('Name ist erforderlich.'); return; }
     setSaving(true);
@@ -194,6 +211,9 @@ export default function HabitsView({ habits, onHabitsChange }) {
         unit:           form.unit.trim() || null,
         description:    form.description.trim() || null,
         reminder_time:  form.reminder_time || null,
+        time_slot:      form.time_slot || 'anytime',
+        categories:     form.categories ?? [],
+        category:       form.categories?.[0] ?? form.category ?? 'Sonstiges',
         target_count:   Math.max(1, Number(form.target_count)),
         frequency_days: form.frequency === 'custom' ? form.frequency_days : null,
         sort_order:     editHabit ? editHabit.sort_order : activeHabits.length,
@@ -208,11 +228,16 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  async function handleDelete(habitId) {
-    if (!window.confirm('Gewohnheit und alle Einträge löschen?')) return;
+  function openDelete(habit) {
+    setDeleteHideStats(false); // harmlosere Option vorauswählen
+    setDeleteTarget(habit);
+  }
+
+  async function handleDelete(habitId, hideFromStats) {
+    setDeleteTarget(null);
     setDeletingId(habitId);
     try {
-      await deleteHabit(habitId);
+      await deleteHabit(habitId, { hideFromStats });
       await onHabitsChange();
       setLocalOrder(null);
     } catch (e) {
@@ -247,10 +272,22 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
+  async function handleToggleStatsHidden(habit) {
+    setRestoringId(habit.id);
+    try {
+      await setStatsHidden(habit.id, !habit.stats_hidden);
+      setArchived(await loadDeletedHabits());
+    } catch (e) {
+      setError('Konnte nicht geändert werden. Ist die Migration hab_stats_hidden eingespielt?');
+    } finally {
+      setRestoringId(null);
+    }
+  }
+
   async function handleRestore(habitId) {
     setRestoringId(habitId);
     try {
-      await restoreHabit(habitId);
+      await restoreHabit(habitId, { wasHidden: archivedHabits.find((h) => h.id === habitId)?.stats_hidden });
       await onHabitsChange();
       setLocalOrder(null);
       const data = await loadDeletedHabits();
@@ -289,10 +326,18 @@ export default function HabitsView({ habits, onHabitsChange }) {
                     <div className="hab-manage-name">{habit.name}</div>
                     <div className="hab-manage-meta">
                       {habit.category} · Gelöscht am {new Date(habit.deleted_at).toLocaleDateString('de-DE')}
+                      {habit.stats_hidden ? ' · nicht in Statistik' : ' · in Statistik'}
                     </div>
                   </div>
                 </div>
                 <div className="hab-manage-card-right">
+                  <button
+                    className="hab-manage-btn hab-manage-btn--text"
+                    onClick={() => handleToggleStatsHidden(habit)}
+                    disabled={restoringId === habit.id}
+                  >
+                    {habit.stats_hidden ? 'In Statistik zeigen' : 'Aus Statistik entfernen'}
+                  </button>
                   <button
                     className="hab-manage-btn"
                     onClick={() => handleRestore(habit.id)}
@@ -408,18 +453,21 @@ export default function HabitsView({ habits, onHabitsChange }) {
             />
           </div>
 
-          {/* Kategorie */}
+          {/* Kategorien — Multi-Select Tags */}
           <div className="hab-form-field">
-            <label className="form-label">Kategorie</label>
-            <select
-              className="form-input"
-              value={form.category}
-              onChange={(e) => setField('category', e.target.value)}
-            >
-              {HABIT_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+            <label className="form-label">Kategorien</label>
+            <div className="hwiz-cat-grid">
+              {HABIT_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`hwiz-cat-tag ${(form.categories ?? []).includes(cat) ? 'active' : ''}`}
+                  onClick={() => toggleCategory(cat)}
+                >
+                  {cat}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* Frequenz */}
@@ -519,6 +567,23 @@ export default function HabitsView({ habits, onHabitsChange }) {
             )}
           </div>
 
+          {/* Tageszeit-Slot */}
+          <div className="hab-form-field">
+            <label className="form-label">Wann</label>
+            <div className="hab-slot-tabs">
+              {TIME_SLOTS.map((slot) => (
+                <button
+                  key={slot.value}
+                  type="button"
+                  className={`hab-slot-tab ${form.time_slot === slot.value ? 'active' : ''}`}
+                  onClick={() => setField('time_slot', slot.value)}
+                >
+                  {slot.emoji} {slot.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             className="btn btn-primary"
             style={{ marginTop: 8 }}
@@ -537,13 +602,13 @@ export default function HabitsView({ habits, onHabitsChange }) {
     <div className="hab-habits-view">
 
       <div className="hab-habits-actions">
-        <button className="btn btn-secondary" onClick={openLibrary}>Vorlagen</button>
-        <button className="hab-archive-btn" onClick={openArchive} title="Archiv">📦</button>
+        <button className="hab-pill-btn" onClick={openLibrary}>Vorlagen</button>
+        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv">📦</button>
       </div>
 
       {showOverloadWarning && (
         <div className="hab-overload-warning">
-          <span>💡</span>
+          <span className="hab-overload-icon">💡</span>
           <span>Du hast {activeHabits.length} aktive Gewohnheiten. Für nachhaltigen Erfolg empfehlen Experten max. 3–5.</span>
         </div>
       )}
@@ -584,7 +649,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                     key={habit.id}
                     habit={habit}
                     onEdit={() => openEdit(habit)}
-                    onDelete={() => handleDelete(habit.id)}
+                    onDelete={() => openDelete(habit)}
                     onToggleActive={() => handleToggleActive(habit)}
                     deleting={deletingId === habit.id}
                   />
@@ -593,6 +658,54 @@ export default function HabitsView({ habits, onHabitsChange }) {
             </SortableContext>
           </DndContext>
         </div>
+      )}
+
+      {deleteTarget && (
+        <SheetShell onClose={() => setDeleteTarget(null)} labelledBy="hab-del-title">
+          <div className="hab-cp-sheet">
+            <div className="hab-cp-sheet-head">
+              <h2 id="hab-del-title">„{deleteTarget.name}" löschen?</h2>
+            </div>
+            <div className="hab-cp-note">
+              Soll die Gewohnheit auch aus den Statistiken verschwinden, oder sollen die
+              bisherigen Werte dort erhalten bleiben?
+            </div>
+
+            <div role="radiogroup" aria-label="Löschen" className="hab-del-opts">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!deleteHideStats}
+                className={`hab-del-opt${!deleteHideStats ? ' on' : ''}`}
+                onClick={() => setDeleteHideStats(false)}
+              >
+                <span className="hab-del-radio" />
+                <b>Nur aus der Liste löschen</b>
+                <span className="hab-del-desc">Die Werte bleiben in der Statistik erhalten.</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={deleteHideStats}
+                className={`hab-del-opt danger${deleteHideStats ? ' on' : ''}`}
+                onClick={() => setDeleteHideStats(true)}
+              >
+                <span className="hab-del-radio" />
+                <b>Auch aus der Statistik löschen</b>
+                <span className="hab-del-desc">Die Gewohnheit zählt in keinem Verlauf mehr.</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
+              onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
+            >
+              {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
+            </button>
+            <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+          </div>
+        </SheetShell>
       )}
 
       {/* Pausierte Habits */}
@@ -605,7 +718,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 key={habit.id}
                 habit={habit}
                 onEdit={() => openEdit(habit)}
-                onDelete={() => handleDelete(habit.id)}
+                onDelete={() => openDelete(habit)}
                 onToggleActive={() => handleToggleActive(habit)}
                 deleting={deletingId === habit.id}
                 paused
@@ -647,34 +760,47 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
       {/* Drag-Handle */}
       {!noSort && (
         <div className="hab-drag-handle" {...attributes} {...listeners} title="Ziehen zum Sortieren">
-          ⠿
+          <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true">
+            <circle cx="4" cy="3" r="1.5" /><circle cx="10" cy="3" r="1.5" />
+            <circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" />
+            <circle cx="4" cy="15" r="1.5" /><circle cx="10" cy="15" r="1.5" />
+          </svg>
         </div>
       )}
 
       <div className="hab-manage-card-left">
-        <span className="hab-item-icon">{habit.icon}</span>
-        <div>
+        <span className="hab-item-icon hab-item-icon--tile">{habit.icon}</span>
+        <div className="hab-manage-text">
           <div className="hab-manage-name">{habit.name}</div>
           <div className="hab-manage-meta">
             {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
             {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit ?? ''}`}
-            {habit.reminder_time && ` · ⏰ ${habit.reminder_time}`}
+            {habit.reminder_time && ` · ${habit.reminder_time} Uhr`}
           </div>
         </div>
       </div>
 
       <div className="hab-manage-card-right">
-        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'}>
-          {paused ? '▶' : '⏸'}
+        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'} aria-label={paused ? 'Aktivieren' : 'Pausieren'}>
+          {paused ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+          )}
         </button>
-        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten">✏️</button>
+        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten" aria-label="Bearbeiten">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+        </button>
         <button
           className="hab-manage-btn hab-manage-btn--del"
           onClick={onDelete}
           disabled={deleting}
           title="Löschen"
+          aria-label="Löschen"
         >
-          {deleting ? '…' : '🗑'}
+          {deleting ? '…' : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
+          )}
         </button>
       </div>
     </div>

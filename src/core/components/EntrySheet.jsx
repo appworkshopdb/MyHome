@@ -4,9 +4,13 @@ import { useAuth } from '../lib/AuthContext';
 import { useUi } from '../lib/UiContext';
 import { getModule } from '../modules';
 import * as finData from '../../modules/finance/lib/finData';
-import { SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid } from '../../modules/finance/lib/finance';
-import PaymentsEditor from './PaymentsEditor';
+import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid, isInstantMethod } from '../../modules/finance/lib/finance';
+import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
+import ReceiptScanChoice from './ReceiptScanChoice';
+import { formatReceiptDate } from '../lib/photoScan';
+import { fmtDate, parseNum } from '../lib/wizardDates';
 import SheetShell from './SheetShell';
+import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
@@ -14,23 +18,40 @@ const QUICK_CATEGORIES = [
   { key: 'variable_kosten',    label: 'Variable'  },
   { key: 'sonstige_ausgaben',  label: 'Sonstige'  },
 ];
+const CATEGORY_ITEMS = QUICK_CATEGORIES.map((c) => ({ value: c.key, label: c.label }));
 
-const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
+// Zahlungsart-Werte der Beleg-Erkennung → Zahlungsarten der App.
+// Karten (EC/Girocard/Kredit) buchen vom Konto ab → "Bank".
+const RECEIPT_PAYMENT_MAP = {
+  bar: 'Bar', karte: 'Bank', paypal: 'Paypal', gutschein: 'Gutschein', klarna: 'Klarna',
+};
+
+const eur = (n) => `${n.toFixed(2).replace('.', ',')} €`;
 
 // ── Wizard ───────────────────────────────────────────────────────────────────
+// Ablauf: Auswahl (Beleg scannen / manuell) → Schritt 1 "Eingeben" (alle Pflicht-
+// angaben, "Mehr Details" klappt im Schritt auf) → Schritt 2 "Prüfen" → Speichern.
+// Ein Scan füllt Schritt 1 nur vor, gespeichert wird erst nach dem Prüfen.
 function FinanceWizard({ onClose }) {
   const { session }     = useAuth();
   const { showToast }   = useUi();
   const { notifySaved } = useEntrySheet();
+  // Monat, der gerade in den Buchungen angezeigt wird (sonst aktueller Monat)
+  const { activeYear, activeMonth } = useFinanceMonth();
 
-  const [step, setStep] = useState(1);
+  const [view, setView]       = useState('choose'); // 'choose' | 'enter' | 'review'
+  const [scanned, setScanned] = useState(null);     // letztes Scan-Ergebnis, für den Hinweis
   const [name,     setName]     = useState('');
   const [amount,   setAmount]   = useState('');
   const [category, setCategory] = useState('variable_kosten');
-  // payments-Array statt einzelnem payment-String
-  const [payments, setPayments] = useState([{ method: 'Bank', amount: null }]);
+  const [pay1,     setPay1]     = useState('Bank');
+  const [split,    setSplit]    = useState(false);
+  const [splitAmt, setSplitAmt] = useState('');
+  const [pay2,     setPay2]     = useState('Bar');
+  const [mids,     setMids]     = useState([]); // weitere Teilzahlungen zwischen erster und letzter (Rest)
   const [dueDate,  setDueDate]  = useState('');
   const [note,     setNote]     = useState('');
+  const [showMore, setShowMore] = useState(false);
   const [saving,   setSaving]   = useState(false);
 
   const [showSuggest, setShowSuggest] = useState(false);
@@ -53,60 +74,84 @@ function FinanceWizard({ onClose }) {
   function pickSuggestion(h) {
     setName(h.name);
     if (h.cat) setCategory(h.cat);
-    // Vorherige Zahlungsart(en) aus History wiederherstellen
-    if (h.payments && Array.isArray(h.payments) && h.payments.length > 0) {
-      setPayments(h.payments.map((p) => ({ ...p, amount: null })));
-    } else if (h.payment) {
-      setPayments([{ method: h.payment, amount: null }]);
-    }
+    // Zahlungsart aus dem Verlauf (bei mehreren: die erste)
+    const method = (Array.isArray(h.payments) && h.payments[0]?.method) || h.payment;
+    if (method && PAYMENTS.includes(method)) setPay1(method);
+    setSplit(false);
+    setMids([]);
     setShowSuggest(false);
     setTimeout(() => amountRef.current?.focus(), 0);
   }
 
-  const amountNum = parseFloat(String(amount).replace(',', '.'));
-  const step1Valid = name.trim() && amountNum > 0;
-
-  // Payments für das Speichern aufbereiten:
-  // Bei einer Zahlungsart: kein amount-Feld (ganzer Betrag)
-  // Bei mehreren: amounts ausfüllen, letzter = Rest
-  function resolvePayments() {
-    if (payments.length === 1) {
-      return [{ method: payments[0].method, amount: amountNum }];
-    }
-    const resolved = payments.map((p, idx) => {
-      if (idx === payments.length - 1) {
-        // Rest berechnen
-        const sumOthers = payments
-          .slice(0, -1)
-          .reduce((s, pp) => s + (parseFloat(pp.amount) || 0), 0);
-        return { method: p.method, amount: Math.max(0, amountNum - sumOthers) };
-      }
-      return { method: p.method, amount: parseFloat(p.amount) || 0 };
-    });
-    return resolved;
+  // Ergebnis des Beleg-Scans: nur vorbefüllen, gespeichert wird erst nach
+  // dem Prüfen. Monat/Jahr bleiben bewusst der aktive Monat (wie bei manueller
+  // Eingabe); das Belegdatum landet in der Notiz.
+  function applyReceipt(r) {
+    setShowSuggest(false);
+    // Frischer Scan ersetzt, was vorher im Formular stand (auch bei erneutem Scan)
+    setName(r.merchant || '');
+    setAmount(r.total != null ? String(r.total).replace('.', ',') : '');
+    setPay1(RECEIPT_PAYMENT_MAP[r.payment_method] || 'Bank'); // sonstige/unbekannt: Voreinstellung Bank
+    setSplit(false);
+    setMids([]);
+    const d = formatReceiptDate(r.date);
+    setNote(d ? `Beleg vom ${d}` : '');
+    setScanned(r);
+    setView('enter');
   }
 
+  const amountNum = parseNum(amount);
+  const splitNum  = parseNum(splitAmt);
+  const baseValid = Boolean(name.trim()) && amountNum > 0;
+  // Teilzahlungen: erste (Betrag splitAmt), weitere (mids), letzte = Rest (pay2)
+  const midNums   = mids.map((m) => parseNum(m.amount));
+  const restNum   = amountNum - splitNum - midNums.reduce((a, b) => a + b, 0);
+  const splitMethods = [pay1, ...mids.map((m) => m.method), pay2];
+  const splitValid = !split || (
+    splitNum > 0 && midNums.every((n) => n > 0) && restNum > 0.004
+    && new Set(splitMethods).size === splitMethods.length
+  );
+  const valid = baseValid && splitValid;
+
+  // Zahlungen für das Speichern: eine Zahlungsart = ganzer Betrag; geteilt =
+  // Teilbetrag + Rest (der Rest geht an die zweite Zahlungsart).
+  const payments = split
+    ? [
+      { method: pay1, amount: splitNum },
+      ...mids.map((m, i) => ({ method: m.method, amount: midNums[i] })),
+      { method: pay2, amount: Math.max(0, restNum) },
+    ]
+    : [{ method: pay1, amount: amountNum }];
+
+  function toggleSplit() {
+    if (split) { setSplit(false); setMids([]); return; }
+    setSplit(true);
+    setShowMore(true);
+    if (!splitAmt && amountNum > 0) setSplitAmt(String(Math.round(amountNum / 2 * 100) / 100).replace('.', ','));
+    if (pay2 === pay1) setPay2(PAYMENTS.find((p) => p !== pay1) || 'Bar');
+  }
+
+  function addMid() {
+    const used = new Set(splitMethods);
+    const method = PAYMENTS.find((p) => !used.has(p));
+    if (!method) return;
+    setMids((prev) => [...prev, { method, amount: '' }]);
+  }
+  const setMid = (i, patch) => setMids((prev) => prev.map((m, j) => (j === i ? { ...m, ...patch } : m)));
+  const removeMid = (i) => setMids((prev) => prev.filter((_, j) => j !== i));
+
   async function submit() {
-    const resolvedPayments = resolvePayments();
-    // Validierung: Summe der Teilbeträge darf Gesamtbetrag nicht überschreiten
-    if (payments.length > 1) {
-      const sumPartial = payments.slice(0, -1).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-      if (sumPartial > amountNum) {
-        return showToast('Teilbeträge überschreiten den Gesamtbetrag');
-      }
-    }
     setSaving(true);
     try {
-      const now = new Date();
       await finData.saveEntry(session, {
         category,
         name:     name.trim(),
-        payments: resolvedPayments,
-        payment:  resolvedPayments[0].method, // Abwärtskompatibilität
+        payments: payments.map((p) => ({ ...p, paid: isInstantMethod(p.method) })),
+        payment:  payments[0].method, // Abwärtskompatibilität
         amount:   amountNum,
-        paid:     isInstantPaid(resolvedPayments),
-        year:     now.getFullYear(),
-        month:    now.getMonth() + 1,
+        paid:     isInstantPaid(payments),
+        year:     activeYear,   // Monat aus der Buchungen-Ansicht, nicht "heute"
+        month:    activeMonth,
         due_date: dueDate || null,
         note:     note.trim() || null,
       });
@@ -120,152 +165,210 @@ function FinanceWizard({ onClose }) {
     }
   }
 
-  function next() {
-    if (step === 1 && !step1Valid) {
-      return showToast('Bitte Name und Betrag eingeben');
-    }
-    if (step === 1 && name.trim().toLowerCase() === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase()) {
+  function toReview() {
+    if (!valid) return;
+    if (name.trim().toLowerCase() === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase()) {
       setCategory('variable_kosten');
-      setPayments([{ method: 'Sparschwein', amount: null }]);
+      setPay1('Sparschwein');
+      setSplit(false);
+      setMids([]);
     }
-    if (step < 3) setStep(step + 1);
-    else submit();
+    setView('review');
   }
-  function back() { if (step > 1) setStep(step - 1); }
 
+  const catLabel = QUICK_CATEGORIES.find((c) => c.key === category)?.label;
+
+  // ── Auswahl: Beleg scannen / manuell ──
+  if (view === 'choose') {
+    return (
+      <WizardFrame title="Neuer Eintrag" sub="Wie möchtest du eintragen?" onClose={onClose} stepKey="choose">
+        <ReceiptScanChoice
+          onScanned={applyReceipt}
+          onManual={() => setView('enter')}
+        />
+      </WizardFrame>
+    );
+  }
+
+  // ── Schritt 2: Prüfen ──
+  if (view === 'review') {
+    return (
+      <WizardFrame
+        title="Eintrag prüfen"
+        sub="Schritt 2 von 2 · Bitte alles kontrollieren"
+        step={2}
+        total={2}
+        stepKey="review"
+        onBack={() => setView('enter')}
+        onClose={onClose}
+        footer={(
+          <WizardFoot>
+            <button type="button" className="btn btn-secondary" onClick={() => setView('enter')} disabled={saving}>Ändern</button>
+            <button type="button" className="btn btn-primary" onClick={submit} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+          </WizardFoot>
+        )}
+      >
+        <div className="wz-review">
+          <div className="wz-rv-top"><small>Betrag</small><b>{eur(amountNum)}</b><span>{name.trim()}</span></div>
+          <div className="wz-rv-row"><span>Kategorie</span><span>{catLabel}</span></div>
+          <div className="wz-rv-row">
+            <span>Zahlungsart</span>
+            <span>{split ? payments.map((p) => `${p.method} ${eur(p.amount)}`).join(' + ') : pay1}</span>
+          </div>
+          <div className="wz-rv-row"><span>Gebucht in</span><span>{MONTHS_DE[activeMonth - 1]} {activeYear}</span></div>
+          <div className="wz-rv-row"><span>Fällig am</span><span>{dueDate ? fmtDate(dueDate) : '—'}</span></div>
+          <div className="wz-rv-row"><span>Notiz</span><span>{note.trim() || '—'}</span></div>
+        </div>
+        <p className="wz-rv-note">„Gebucht in" ist der Monat, den du gerade unter Buchungen siehst. Das Fälligkeitsdatum ändert daran nichts.</p>
+      </WizardFrame>
+    );
+  }
+
+  // ── Schritt 1: Eingeben ──
+  const hint = !baseValid
+    ? missingHint([['Name', !name.trim()], ['Betrag', !(amountNum > 0)]])
+    : (!splitValid ? 'Teilbeträge müssen zusammen kleiner als der Betrag sein, die Zahlungsarten verschieden' : '');
   const showSuggestList = showSuggest && suggestions.length > 0;
-  const primaryMethod = payments[0]?.method || '';
 
   return (
-    <>
-      <div className="wiz-progress">
-        {[1, 2, 3].map((n) => (
-          <div key={n} className={`wiz-seg ${n <= step ? 'done' : ''}`} />
-        ))}
+    <WizardFrame
+      title="Neuer Eintrag"
+      sub="Schritt 1 von 2 · Eingeben"
+      step={1}
+      total={2}
+      stepKey="enter"
+      onBack={() => setView('choose')}
+      onClose={onClose}
+      footer={(
+        <WizardFoot hint={hint}>
+          <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
+          <button type="button" className="btn btn-primary" disabled={!valid} onClick={toReview}>Weiter</button>
+        </WizardFoot>
+      )}
+    >
+      {scanned && (
+        <p className="wz-hint ok">
+          {scanned.total != null ? 'Beleg gelesen – bitte prüfen und bei Bedarf ändern.' : 'Betrag nicht erkannt – bitte eingeben.'}
+        </p>
+      )}
+
+      <label className="wz-lbl" htmlFor="wz-fin-name">Name</label>
+      <input
+        id="wz-fin-name"
+        className="wz-input hero"
+        type="text"
+        value={name}
+        onChange={(e) => { setName(e.target.value); setShowSuggest(true); }}
+        onFocus={() => setShowSuggest(true)}
+        placeholder="z.B. Tanken"
+        autoFocus={!scanned}
+        autoComplete="off"
+        enterKeyHint="next"
+      />
+      {showSuggestList && (
+        <div className="wz-suggest">
+          {suggestions.map((h) => (
+            <button key={h.name} type="button" onClick={() => pickSuggestion(h)}>
+              {h.name}
+              <small>{QUICK_CATEGORIES.find((c) => c.key === h.cat)?.label || ''}</small>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <label className="wz-lbl" htmlFor="wz-fin-amount">Betrag</label>
+      <div className="wz-amount">
+        <input
+          id="wz-fin-amount"
+          ref={amountRef}
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))}
+          onFocus={() => setShowSuggest(false)}
+          placeholder="0,00"
+          autoComplete="off"
+          enterKeyHint="done"
+        />
+        <span>€</span>
       </div>
 
-      <div className="wiz-body">
-        {step === 1 && (
-          <>
-            <label className="wiz-label t-meta">Name</label>
-            <div className="wiz-name-block">
-              <input
-                className="wiz-input wiz-input-name"
-                type="text"
-                value={name}
-                onChange={(e) => { setName(e.target.value); setShowSuggest(true); }}
-                onFocus={() => setShowSuggest(true)}
-                placeholder="z.B. Tanken"
-                autoFocus
-                autoComplete="off"
-              />
-              {showSuggestList && (
-                <div className="wiz-suggest">
-                  {suggestions.map((h) => (
-                    <button
-                      key={h.name}
-                      type="button"
-                      className="wiz-suggest-item"
-                      onClick={() => pickSuggestion(h)}
-                    >
-                      {h.name}
-                    </button>
-                  ))}
+      <div className="wz-two" style={{ marginTop: 16 }}>
+        <div>
+          <div className="wz-col-lbl">Kategorie</div>
+          <WheelPicker items={CATEGORY_ITEMS} value={category} onChange={setCategory} label="Kategorie" />
+        </div>
+        <div>
+          <div className="wz-col-lbl">Zahlungsart</div>
+          <WheelPicker items={PAYMENTS} value={pay1} onChange={setPay1} label="Zahlungsart" />
+        </div>
+      </div>
+
+      {showMore && (
+        <>
+          <div className="wz-lbl">Fällig am <span className="opt">optional</span></div>
+          <DateButton value={dueDate} onChange={setDueDate} optional placeholder="Datum wählen" label="Fällig am" />
+
+          <button type="button" className="wz-link" onClick={toggleSplit}>
+            {split ? '⚖ Aufteilung entfernen' : '⚖ Zahlung aufteilen'}
+          </button>
+          {split && (
+            <div className="wz-parts">
+              <div className="wz-two">
+                <div className="wz-input wz-part-method">{pay1}</div>
+                <label className="wz-input wz-part-amt">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    aria-label={`Teilbetrag ${pay1}`}
+                    value={splitAmt}
+                    onChange={(e) => setSplitAmt(e.target.value.replace(/[^\d.,]/g, ''))}
+                  />
+                  <span>€</span>
+                </label>
+              </div>
+              {mids.map((m, i) => (
+                <div className="wz-two" key={i}>
+                  <select
+                    className="wz-input"
+                    value={m.method}
+                    onChange={(e) => setMid(i, { method: e.target.value })}
+                    aria-label={`Zahlungsart ${i + 2}`}
+                  >
+                    {PAYMENTS.filter((p) => p === m.method || !splitMethods.includes(p)).map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <div className="wz-input wz-part-amt">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      aria-label={`Teilbetrag ${m.method}`}
+                      value={m.amount}
+                      onChange={(e) => setMid(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
+                    />
+                    <span>€</span>
+                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}>×</button>
+                  </div>
                 </div>
+              ))}
+              <div className="wz-two">
+                <select className="wz-input" value={pay2} onChange={(e) => setPay2(e.target.value)} aria-label="Letzte Zahlungsart">
+                  {PAYMENTS.filter((p) => p === pay2 || !splitMethods.includes(p)).map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <div className="wz-input wz-part-amt wz-part-rest">
+                  Rest {eur(Math.max(0, restNum))}
+                </div>
+              </div>
+              {splitMethods.length < PAYMENTS.length && (
+                <button type="button" className="wz-link wz-part-add" onClick={addMid}>+ Weitere Teilzahlung</button>
               )}
             </div>
+          )}
 
-            <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Betrag (€)</label>
-            <input
-              ref={amountRef}
-              className="wiz-input"
-              type="number"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onFocus={() => setShowSuggest(false)}
-              placeholder="0,00"
-              min="0"
-              step="0.01"
-            />
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div className="wiz-hint t-meta">
-              Aus „{name || '—'}" erkannt — du kannst es ändern.
-            </div>
-            <label className="wiz-label t-meta">Kategorie</label>
-            <div className="wiz-cat-grid">
-              {QUICK_CATEGORIES.map((c) => (
-                <button
-                  key={c.key}
-                  className={`wiz-cat ${category === c.key ? 'active' : ''}`}
-                  onClick={() => setCategory(c.key)}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Zahlungsart</label>
-            <PaymentsEditor
-              payments={payments}
-              onChange={setPayments}
-              totalAmount={amount}
-            />
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <label className="wiz-label t-meta">Fällig am <span className="wiz-optional">optional</span></label>
-            <input
-              className="wiz-input"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-            <label className="wiz-label t-meta" style={{ marginTop: 'var(--space-5)' }}>Notiz <span className="wiz-optional">optional</span></label>
-            <textarea
-              className="wiz-input wiz-textarea"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Zusatzinfo…"
-            />
-            <div className="wiz-summary">
-              <span className="t-body" style={{ fontWeight: 700 }}>{name || '—'}</span>
-              <span className="t-meta">
-                {amountNum > 0 ? amountNum.toFixed(2).replace('.', ',') : '0'} € ·{' '}
-                {QUICK_CATEGORIES.find((c) => c.key === category)?.label}
-                {payments.length === 1
-                  ? ` · ${primaryMethod}`
-                  : ` · ${payments.map((p) => p.method).join(' + ')}`}
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="wiz-nav">
-        <button
-          className="btn btn-secondary"
-          onClick={back}
-          style={{ flex: 1, visibility: step === 1 ? 'hidden' : 'visible' }}
-        >
-          Zurück
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={next}
-          disabled={saving}
-          style={{ flex: 1 }}
-        >
-          {step === 3 ? (saving ? 'Speichert…' : 'Speichern') : 'Weiter'}
-        </button>
-      </div>
-    </>
+          <label className="wz-lbl" htmlFor="wz-fin-note" style={{ marginTop: 14 }}>Notiz <span className="opt">optional</span></label>
+          <textarea id="wz-fin-note" className="wz-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Zusatzinfo…" />
+        </>
+      )}
+    </WizardFrame>
   );
 }
 
@@ -285,16 +388,21 @@ export default function EntrySheet() {
 
   // SheetShell liefert: createPortal (kein z-index-Konflikt),
   // iOS-sicherer Body-Lock (position:fixed statt overflow:hidden),
-  // Grab-Handle zum Wegwischen, sheet-scroll mit touch-action:pan-y.
+  // Grab-Handle zum Wegwischen. Finanzen bringt seinen Wizard-Rahmen selbst mit.
+  if (openFor === 'finance') {
+    return (
+      <SheetShell onClose={close} wizard>
+        <FinanceWizard onClose={close} />
+      </SheetShell>
+    );
+  }
   return (
     <SheetShell onClose={close}>
       <div className="sheet-header">
         <div className="sheet-title t-title">Neuer Eintrag</div>
         <button className="sheet-cancel" onClick={close}>Abbrechen</button>
       </div>
-      {openFor === 'finance'
-        ? <FinanceWizard onClose={close} />
-        : <PlaceholderSheetBody moduleId={openFor} onClose={close} />}
+      <PlaceholderSheetBody moduleId={openFor} onClose={close} />
     </SheetShell>
   );
 }

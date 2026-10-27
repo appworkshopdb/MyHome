@@ -1,7 +1,7 @@
 // src/App.jsx
 // Schritt 3: Schwebende Chrome.
 //
-// Strategie: App.jsx rendert ModuleTopBar für Hub + Profil global.
+// Strategie: Hub, Profil und Module rendern ihre ModuleTopBar selbst.
 // Module rendern ihre eigene ModuleTopBar-Instanz (für Tab-Titel und
 // onBack) — dabei wird hasWarnings jetzt global aus dem Store geholt
 // und als Prop übergeben, damit der Warnpunkt auf ALLEN Screens erscheint.
@@ -18,19 +18,29 @@
 // Modulwechsel läuft ausschließlich über die Bottom-Nav — bitte nicht
 // wieder einbauen.
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from './core/lib/AuthContext';
+import { syncAnalyticsSession } from './core/lib/analytics';
+import AnalyticsConsent from './core/components/AnalyticsConsent';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
+import { useOnboardingStatus } from './core/lib/onboardingData';
 import { EntrySheetProvider } from './core/lib/EntrySheetContext';
+import { FinanceMonthProvider } from './modules/finance/lib/FinanceMonthContext';
 import Login from './core/components/Login';
-import ModuleTopBar from './core/components/ModuleTopBar';
+import ResetPassword from './core/components/ResetPassword';
+import ProfileWizard from './core/components/ProfileWizard';
+import ModuleTutorial from './core/components/ModuleTutorial';
+import BirdDefs from './core/components/birds/BirdDefs';
+import WelcomeWizard from './core/components/WelcomeWizard';
+import { useGamificationStore } from './core/lib/gamificationStore';
 import RequiredDataToast from './core/components/RequiredDataToast';
 import EntrySheet from './core/components/EntrySheet';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
 import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
+import Statistiken from './core/Statistiken';
 import LockedModule from './core/LockedModule';
 import { getModule } from './core/modules';
 
@@ -56,64 +66,91 @@ const MODULE_COMPONENTS = {
   shopping:  ShoppingModule,
 };
 
+// Eigene Komponente (statt Hook in App): der Store lädt beim ersten Mount und
+// braucht dafür eine Sitzung — App rendert diese Stelle erst nach dem Login.
+function FirstRunWizard() {
+  const gami = useGamificationStore();
+  if (!gami.loaded || gami.bird_species) return null;
+  return <WelcomeWizard level={gami.level} />;
+}
+
 export default function App() {
-  const { session, ladeVorgang } = useAuth();
+  const { session, ladeVorgang, recovery } = useAuth();
   const { module: activeModule, view, navigate } = useRoute();
   const { warnings } = useRequiredDataStatus(session);
   const hasWarnings = warnings.length > 0;
+  const onboarding = useOnboardingStatus(session);
+
+  // Tracking nur für eingeloggte Nutzer und nur mit Einwilligung — die
+  // Prüfung steckt in analytics.js, hier wird nur die Anmeldung gemeldet.
+  useEffect(() => { syncAnalyticsSession(session); }, [session]);
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
+  // „Passwort vergessen“-Link geöffnet: erst neues Passwort festlegen, dann weiter
+  if (recovery) return <ResetPassword />;
+  // Neue Konten (E-Mail bestätigt) richten zuerst ihr Profil ein; erst danach
+  // wird die App gerendert — und mit ihr der WelcomeWizard (Vogelwahl).
+  if (onboarding.loading) return <div className="loading-note">Lädt…</div>;
+  if (onboarding.needed) return <ProfileWizard />;
 
-  const isModule = activeModule && activeModule !== 'profile';
+  // 'profile' und 'statistiken' sind Seiten des Cores, keine Module
+  const isModule = activeModule && activeModule !== 'profile' && activeModule !== 'statistiken';
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
-  // Nur noch die Profilseite bekommt eine global gerenderte ModuleTopBar.
-  // Module UND Hub rendern seit Schritt 10 ihre eigene Instanz, weil sie
+  // Hub, Profil und Module rendern ihre eigene ModuleTopBar-Instanz, weil sie
   // auf Detail-Screens einen Zurück-Pfeil und einen zentrierten Titel
   // brauchen — beides kann App.jsx von außen nicht wissen.
-  const showGlobalTopBar = activeModule === 'profile';
-  const globalTitle = 'Profil';
 
-  // padding-top:0, wo die Seite ihre eigene fixed TopBar mitbringt (Hub
+  // padding-top:0, wo die Seite ihre eigene fixed TopBar mitbringt (Hub, Profil
   // und Module); die Inhalte tragen den Abstand selbst über
-  // .with-topbar-space. Nur die Profilseite behält das Padding.
-  const eigeneTopBar = activeModule !== 'profile';
+  // .with-topbar-space.
+  const eigeneTopBar = true; // alle Seiten tragen ihre TopBar selbst
 
   return (
     <EntrySheetProvider>
-      {showGlobalTopBar && (
-        <ModuleTopBar title={globalTitle} hasWarnings={hasWarnings} />
-      )}
+      <BirdDefs />
+      <FirstRunWizard />
+      <ModuleTutorial activeModule={activeModule} />
+      {/* FinanceMonthProvider umschließt sowohl <main> (MonthsView schreibt
+          den aktiven Monat rein) als auch EntrySheet/GlobalFab (lesen
+          ihn raus). Beide MÜSSEN unter derselben Provider-Instanz hängen,
+          sonst bekommt der FAB nur den Default-Wert (aktueller Kalender-
+          monat) und bucht immer in den heutigen Monat statt in den, der
+          gerade in den Buchungen angezeigt wird. */}
+      <FinanceMonthProvider>
 
-      <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
-        {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
-        {activeModule === 'profile' && <Profile onOpenModule={navigate} />}
-        {mod && (ModuleComponent ? (
-          // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
-          // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
-          // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
-          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
-            <ModuleComponent
-              module={mod}
-              view={view}
-              hasWarnings={hasWarnings}
-              onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
-            />
-          </Suspense>
-        ) : (
-          <LockedModule module={mod} />
-        ))}
-      </main>
+        <main className={`main-content${eigeneTopBar ? ' module-active' : ''}`}>
+          {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'profile' && <Profile hasWarnings={hasWarnings} />}
+          {activeModule === 'statistiken' && <Statistiken view={view} onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {mod && (ModuleComponent ? (
+            // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
+            // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
+            // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
+            <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+              <ModuleComponent
+                module={mod}
+                view={view}
+                hasWarnings={hasWarnings}
+                onNavigateView={(v) => navigate(v ? `${mod.id}/${v}` : mod.id)}
+              />
+            </Suspense>
+          ) : (
+            <LockedModule module={mod} />
+          ))}
+        </main>
 
-      <RequiredDataToast warnings={warnings} onFix={navigate} />
-      <EntrySheet />
-      <GlobalFab activeModule={activeModule} />
-      <ModuleBottomNav
-        active={activeModule === null ? '' : activeModule}
-        onChange={navigate}
-      />
+        <RequiredDataToast warnings={warnings} onFix={navigate} />
+        <EntrySheet />
+        <AnalyticsConsent />
+        <GlobalFab activeModule={activeModule} />
+        <ModuleBottomNav
+          active={activeModule === null || activeModule === 'statistiken' ? '' : activeModule}
+          onChange={navigate}
+        />
+      </FinanceMonthProvider>
     </EntrySheetProvider>
   );
 }

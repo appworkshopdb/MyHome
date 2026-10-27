@@ -2,22 +2,33 @@
 // =====================================================================
 // Läuft NICHT im Browser — Deno-Umgebung bei Supabase. Wird STÜNDLICH
 // per pg_cron aufgerufen (supabase/migrations/007_notification_cron_hourly.sql).
-// Prüft pro Nutzer:in, ob GERADE ihre Wunschstunde ist (deutsche Zeit,
-// preferred_hour), respektiert Quiet Hours und eine gemeinsame
-// Tagesobergrenze über alle 4 Kategorien hinweg — nicht nur die
-// Pro-Kategorie-Drossel von vorher.
 //
-// ZEITZONEN-REGEL: Jede Datums-/Stunden-/Wochentagslogik in dieser
-// Function rechnet in Europe/Berlin — nie mit UTC-Hilfsmitteln wie
-// toISOString().split('T'), getDay(), getMonth() oder setUTCHours().
-// Alles läuft über berlinNow() / toBerlinDateStr() / berlinStartOfDay()
-// unten. Vorher war das Tageslimit-Fenster (sentTodayCount) auf UTC
-// gerechnet und damit 1–2 Stunden gegen den Rest verschoben.
+// V2 — Benachrichtigungen nach NESTUA-BENACHRICHTIGUNGEN-V1.md:
+// - Feste Uhrzeiten pro Kategorie (keine Wunschstunde mehr)
+// - Keine Quiet Hours
+// - Neue Kategorienamen: finance, tasks_habits, profile, weekly_recap, monthly_recap
+// - Neue Prioritätsreihenfolge: finance > tasks_habits > weekly_recap > monthly_recap > profile
+// - Finanzen: Fall A (heute fällig, 08:00) + Fall B (überfällig, alle 3 Tage 08:00)
+// - tasks_habits: offene Habits UND offene Todos heute zusammengefasst
+// - daily_plan: täglich 06:00, Zusammenfassung des Tagesplans (Termine, Training,
+//   Aufgaben, Gewohnheiten, fällige Zahlungen) — spiegelt core/lib/dayPlan.js
+// - profile: nur Samstag 11:00, Throttle 14 Tage
+// - weekly_recap: Montag 07:00, Wochenüberblick der Vorwoche (Link ./#/statistiken/woche)
+// - monthly_recap: am 1. des Monats 09:00, Monatsüberblick des Vormonats
+//   (Link ./#/statistiken/monat). Beide Überblicke nur, wenn im Zeitraum etwas
+//   erfasst wurde (Gewohnheit, Training, Mahlzeit), und OHNE Anrechnung auf das
+//   Tageslimit — sonst würden sie Finanzen (08:00) und Aufgaben/Gewohnheiten
+//   (19:00) an Montagen bzw. Monatsersten verdrängen.
 //
-// WICHTIG: dupliziert bewusst etwas Prüf-Logik aus dem Frontend
-// (core/lib/bodyProfileData.js BODY_REQUIRED_FIELDS, core/Hub.jsx
-// loadTodayHabits) — Edge Functions können kein Frontend-JS importieren.
-// Ändert sich diese Logik im Frontend, hier manuell nachziehen.
+// ZEITZONEN-REGEL: Jede Datums-/Stunden-/Wochentagslogik rechnet in
+// Europe/Berlin — nie mit UTC-Hilfsmitteln wie toISOString().split('T'),
+// getDay() oder setUTCHours(). Alles über berlinNow() / toBerlinDateStr()
+// / berlinStartOfDay() unten.
+//
+// WICHTIG: dupliziert bewusst Prüf-Logik aus dem Frontend
+// (BODY_REQUIRED_FIELDS, Habits-Fälligkeit, Todo-Fälligkeit) —
+// Edge Functions können kein Frontend-JS importieren.
+// Ändert sich die Logik im Frontend, hier manuell nachziehen.
 // =====================================================================
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -32,42 +43,61 @@ const vapidSubject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:kontakt@example.co
 webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-// Throttle je Kategorie in Tagen (zusätzlich zur Tagesobergrenze unten).
-const THROTTLE_DAYS = {
-  habits: 0,
-  required_data: 3,
-  fin_due: 7,
-  weekly_recap: 6,
+// ─── Feste Prüfzeiten (Europe/Berlin, nicht vom Nutzer änderbar) ────
+// Eine Kategorie ist nur dann Kandidat, wenn berlin.hour === ihre Stunde
+// UND (falls angegeben) der Wochentag passt.
+const CATEGORY_SCHEDULE = {
+  daily_plan:   { hour: 6  },               // täglich 06:00 — Tagesplan-Zusammenfassung
+  finance:      { hour: 8  },               // täglich 08:00
+  tasks_habits: { hour: 19 },               // täglich 19:00
+  profile:      { hour: 11, weekday: 5 },   // Samstag 11:00  (Sa = 5, Mo=0…So=6)
+  weekly_recap:  { hour: 7, weekday: 0 },   // Montag   07:00 (Mo = 0) — Überblick der Vorwoche
+  monthly_recap: { hour: 9, day: 1 },       // am 1.    09:00         — Überblick des Vormonats
 };
 
-// Reihenfolge, in der Kategorien die Tagesobergrenze "belegen", falls an
-// einem Lauf mehrere gleichzeitig fällig wären — Wochenrückblick zuerst
-// (kommt nur 1x/Woche, soll nicht wegen was Alltäglichem ausfallen),
-// Pflichtdaten zuletzt (am wenigsten dringend, kann warten).
-const PRIORITY_ORDER = ['weekly_recap', 'habits', 'fin_due', 'required_data'];
+// Throttle je Kategorie in Tagen.
+// finance-Fall-A (heute fällig): kein eigener Throttle — due_day-Treffer
+//   passiert von Natur aus nicht täglich für denselben Posten.
+// finance-Fall-B (überfällig):  3 Tage — verhindert tägliche Wiederholung.
+// tasks_habits: 0 — max. 1x/Tag, aber das regelt schon das Tageslimit.
+// profile: 14 Tage.
+// weekly_recap: 6 Tage (nicht 7: der Cron läuft nicht sekundengenau, ein Versand
+//   um 07:00:05 würde sonst den nächsten um 07:00:02 blockieren) — kommt ohnehin
+//   nur montags durch den Schedule.
+// monthly_recap: 25 Tage — kommt ohnehin nur am 1. durch den Schedule.
+const THROTTLE_DAYS = {
+  daily_plan:   0,   // 1x/Tag ergibt sich aus der festen Stunde
+  finance:      3,   // gilt für Fall B (überfällig); Fall A ignoriert Throttle
+  tasks_habits: 0,
+  profile:      14,
+  weekly_recap: 6,
+  monthly_recap: 25,
+};
 
-// Max. Push-Benachrichtigungen INSGESAMT pro Person und Tag, über alle
-// Kategorien zusammengerechnet — verhindert, dass an einem Abend alle
-// vier gleichzeitig ankommen. Bewusst noch nicht pro Nutzer einstellbar,
-// nur ein fester Sicherheitswert.
+// Prioritätsreihenfolge laut Spec (höchste zuerst).
+// Bei >2 Kandidaten belegen die obersten das Tageslimit.
+const PRIORITY_ORDER = ['daily_plan', 'finance', 'tasks_habits', 'weekly_recap', 'monthly_recap', 'profile'];
+
+// Überblicke zählen nicht aufs Tageslimit und werden von ihm nicht blockiert.
+const RECAP_CATEGORIES = ['weekly_recap', 'monthly_recap'];
+
+// Max. Push-Benachrichtigungen pro Nutzer und Kalendertag (Berlin-Zeit).
 const DAILY_CAP_TOTAL = 2;
 
-const DEFAULT_PREFS = {
-  habits: true,
-  required_data: true,
-  fin_due: true,
+// Standard-Toggles falls kein Eintrag in notification_prefs vorhanden.
+const DEFAULT_CATEGORIES = {
+  daily_plan:   true,
+  finance:      true,
+  tasks_habits: true,
+  profile:      true,
   weekly_recap: true,
-  preferred_hour: 20,
-  quiet_start: 0,
-  quiet_end: 6,
+  monthly_recap: true,
 };
 
 // ─────────────────────────────────────────────────────────────────────
-// Zeit-Helfer — die EINZIGEN Stellen, die Zeitzone kennen.
+// Zeit-Helfer — die EINZIGEN Stellen, die die Zeitzone kennen.
 // ─────────────────────────────────────────────────────────────────────
 
-// Datum eines beliebigen Zeitpunkts als YYYY-MM-DD in Berlin-Zeit.
-// (en-CA formatiert von Haus aus als YYYY-MM-DD.)
 function toBerlinDateStr(date) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',
@@ -77,9 +107,8 @@ function toBerlinDateStr(date) {
   }).format(date);
 }
 
-// Aktueller Berlin-Zustand: Stunde, Wochentag (Mo=0…So=6), Datum,
-// Jahr/Monat — alles aus EINEM Intl-Aufruf, damit es um Mitternacht
-// nicht zwischen zwei Aufrufen "kippen" kann.
+// Liefert alle relevanten Berlin-Zeitwerte aus EINEM Intl-Aufruf,
+// damit um Mitternacht kein Kippen zwischen zwei Aufrufen passiert.
 function berlinNow() {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Berlin',
@@ -95,19 +124,20 @@ function berlinNow() {
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const weekdayIndex = WEEKDAYS.indexOf(get('weekday')); // Mo=0 … So=6
 
+  // Tageszahl (1–31) als Zahl — für Finanzen due_day-Vergleich.
+  const day = Number(get('day'));
+
   return {
     hour: Number(get('hour')),
     weekdayIndex,
-    isSunday: weekdayIndex === 6,
+    day,
     todayStr: `${get('year')}-${get('month')}-${get('day')}`,
-    year: Number(get('year')),
+    year:  Number(get('year')),
     month: Number(get('month')),
   };
 }
 
-// UTC-Zeitpunkt von "heute 00:00 Uhr in Berlin" — für Vergleiche gegen
-// sent_at (timestamptz). Trick: UTC-Mitternacht desselben Datums nehmen
-// und um den Berlin-Offset (1h Winter / 2h Sommer) zurückschieben.
+// UTC-Zeitpunkt von "heute 00:00 Uhr Berlin" für sent_at-Vergleiche.
 function berlinStartOfDay(todayStr) {
   const utcMidnight = new Date(`${todayStr}T00:00:00Z`);
   const offsetHour = Number(
@@ -120,10 +150,47 @@ function berlinStartOfDay(todayStr) {
   return new Date(utcMidnight.getTime() - offsetHour * 3600000);
 }
 
-function inQuietHours(hour, quietStart, quietEnd) {
-  if (quietStart === quietEnd) return false;
-  if (quietStart < quietEnd) return hour >= quietStart && hour < quietEnd;
-  return hour >= quietStart || hour < quietEnd;
+// ─────────────────────────────────────────────────────────────────────
+// Hilfsfunktionen
+// ─────────────────────────────────────────────────────────────────────
+
+// Prüft ob die Kategorie zum aktuellen Berlin-Zeitpunkt überhaupt
+// gesendet werden darf (Stunde + optionaler Wochentag).
+function isScheduledNow(category, berlin) {
+  const s = CATEGORY_SCHEDULE[category];
+  if (!s) return false;
+  if (berlin.hour !== s.hour) return false;
+  if (s.weekday !== undefined && berlin.weekdayIndex !== s.weekday) return false;
+  if (s.day !== undefined && berlin.day !== s.day) return false;
+  return true;
+}
+
+// Wurde diese Kategorie für diesen Nutzer in den letzten `days` Tagen
+// bereits gesendet? days=0 → nie geblockt.
+// Wählt zufällig einen Eintrag aus einem Array — für rotierende Texte.
+// Noch offener Betrag eines Postens (dupliziert aus src/core/lib/paymentParts.js):
+// Bar, Gutschein und Sparschwein gelten sofort als bezahlt, auch bei geteilter
+// Zahlung — offen ist nur der Rest. paid=true an der Zeile = alles bezahlt.
+const INSTANT_METHODS = new Set(['Bar', 'Sparschwein', 'Gutschein']);
+function openAmount(e: { amount?: unknown; paid?: boolean | null; payment?: string | null; payments?: Array<{ method?: string; amount?: unknown; paid?: boolean }> | null }): number {
+  const total = Number(e.amount ?? 0);
+  const list = Array.isArray(e.payments) && e.payments.length > 0
+    ? e.payments
+    : [{ method: e.payment ?? 'Bank', amount: total }];
+  const hasAll = list.every((p) => p.amount !== null && p.amount !== undefined && p.amount !== '' && !Number.isNaN(Number(p.amount)));
+  const open = list.reduce((sum, p) => {
+    const paid = e.paid === true || INSTANT_METHODS.has(String(p.method)) || p.paid === true;
+    return paid ? sum : sum + (hasAll ? Number(p.amount) : total / list.length);
+  }, 0);
+  return open < 0.005 ? 0 : open;
+}
+
+// Wie isOpenExpense in src/core/lib/paymentParts.js: Sparschwein-Einzahlungen
+// ("Ersparnisse") sind nie offen.
+const isSavingsDeposit = (e: { name?: string | null }) => String(e.name ?? '').trim().toLowerCase() === 'ersparnisse';
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 async function alreadySentRecently(ownerId, category, days) {
@@ -139,14 +206,14 @@ async function alreadySentRecently(ownerId, category, days) {
   return (data?.length ?? 0) > 0;
 }
 
-// Zählt Versände seit Berlin-Mitternacht (vorher: UTC-Mitternacht —
-// dadurch war das Tageslimit-Fenster gegen preferred_hour verschoben).
+// Anzahl gesendeter Pushes seit Berlin-Mitternacht (für Tageslimit) — ohne die Überblicke.
 async function sentTodayCount(ownerId, berlin) {
   const startOfDay = berlinStartOfDay(berlin.todayStr);
   const { data } = await supabase
     .from('notification_log')
     .select('id')
     .eq('owner_id', ownerId)
+    .not('category', 'in', `(${RECAP_CATEGORIES.join(',')})`)
     .gte('sent_at', startOfDay.toISOString());
   return data?.length ?? 0;
 }
@@ -167,6 +234,7 @@ async function sendToUser(ownerId, category, title, body, url = './') {
       );
     } catch (err) {
       if (err?.statusCode === 404 || err?.statusCode === 410) {
+        // Totes Abo entfernen
         await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
       } else {
         console.error('Push-Fehler für', ownerId, err);
@@ -177,8 +245,131 @@ async function sendToUser(ownerId, category, title, body, url = './') {
   await supabase.from('notification_log').insert({ owner_id: ownerId, category });
 }
 
+// Reine Kalenderrechnung auf Datumsstrings (YYYY-MM-DD), keine Uhrzeit und
+// keine Zeitzone im Spiel — Date.UTC dient hier nur als Kalender-Rechenhilfe,
+// damit Monats-/Jahresgrenzen stimmen.
+function shiftDateStr(dateStr, days) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
+
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
+// Wurde im Zeitraum (inklusive Grenzen) irgendetwas erfasst? Spiegelt grob,
+// was die Überblicke im Frontend zeigen: Gewohnheits-Check-ins, erledigte
+// Trainingseinheiten (ohne Ruhetage) und Mahlzeiten. Ohne das gäbe es einen
+// Push zu einer leeren Seite.
+async function hasActivityBetween(ownerId, from, to) {
+  const head = { count: 'exact', head: true };
+  const [habs, workouts, meals] = await Promise.all([
+    supabase.from('hab_entries').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .gte('logged_on', from).lte('logged_on', to),
+    supabase.from('spo_workouts').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .eq('status', 'done').eq('is_rest', false)
+      .gte('occurred_on', from).lte('occurred_on', to),
+    supabase.from('nut_meals').select('id', head)
+      .eq('owner_id', ownerId).is('deleted_at', null)
+      .gte('eaten_on', from).lte('eaten_on', to),
+  ]);
+  return (habs.count ?? 0) + (workouts.count ?? 0) + (meals.count ?? 0) > 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Fachliche Bedingungsprüfung je Kategorie
+// Gibt { title, body, url } zurück oder null (kein Kandidat).
+// ─────────────────────────────────────────────────────────────────────
+
 async function checkCategory(category, ownerId, berlin) {
-  if (category === 'habits') {
+
+  // ── finance ────────────────────────────────────────────────────────
+  // Fall A: Heute fällige Zahlung (due_day === heute) → sofort melden,
+  //         ignoriert den 3-Tage-Throttle (wird vom Aufrufer übersprungen).
+  // Fall B: Überfällige offene Buchungen aus Vorlagen → alle 3 Tage.
+  if (category === 'finance') {
+
+    // Fall A: Templates/Contracts mit due_day === heute
+    // Hinweis: Intervall-Logik (quartalsweise, jährlich) ist hier bewusst
+    // vereinfacht — nur der Tagesabgleich, keine start_month-Prüfung.
+    // Präzisierung kann in einem späteren Notifications-Chat erfolgen.
+    const [{ data: dueTemplates }, { data: dueContracts }] = await Promise.all([
+      supabase
+        .from('fin_fixtemplates')
+        .select('id, name')
+        .eq('owner_id', ownerId)
+        .eq('due_day', berlin.day)
+        .is('deleted_at', null),
+      supabase
+        .from('fin_contracts')
+        .select('id, name')
+        .eq('owner_id', ownerId)
+        .eq('due_day', berlin.day)
+        .is('deleted_at', null),
+    ]);
+
+    const dueTodayNames = [
+      ...(dueTemplates ?? []).map((t) => t.name),
+      ...(dueContracts ?? []).map((c) => c.name),
+    ];
+
+    if (dueTodayNames.length > 0) {
+      const shown = dueTodayNames.slice(0, 2).join(', ');
+      const rest  = dueTodayNames.length > 2 ? ` +${dueTodayNames.length - 2} weitere` : '';
+      return {
+        title: dueTodayNames.length === 1 ? 'Zahlung fällig — heute' : 'Zahlungen fällig — heute',
+        body:  `${shown}${rest} ${dueTodayNames.length === 1 ? 'muss' : 'müssen'} heute beglichen werden.`,
+        url:   './#/finance/buchungen',
+        skipThrottle: true, // Fall A überspringt den Kategorie-Throttle
+      };
+    }
+
+    // Fall B: Offene Buchungen aus Vorlagen diesen Monat (überfällig)
+    // Jahr/Monat aus Berlin-Sicht (wichtig an Monatsgrenzen).
+    const { data: openEntries } = await supabase
+      .from('fin_entries')
+      .select('id, name, amount, paid, payment, payments')
+      .eq('owner_id', ownerId)
+      .eq('year', berlin.year)
+      .eq('month', berlin.month)
+      .eq('paid', false)
+      .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
+      .not('from_template', 'is', null)
+      .is('deleted_at', null);
+
+    // Nur Posten, bei denen wirklich noch etwas offen ist (Bar-Anteile zählen nicht)
+    const reallyOpen = (openEntries ?? []).filter((e) => openAmount(e) > 0 && !isSavingsDeposit(e));
+    if (reallyOpen.length === 0) return null;
+    return {
+      ...pickRandom([
+        {
+          title: 'Offene Posten diesen Monat',
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'Zahlung ist' : 'Zahlungen sind'} noch offen. Jetzt einen kurzen Blick werfen.`,
+        },
+        {
+          title: 'Noch nicht beglichen',
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'unbezahlte Buchung' : 'unbezahlte Buchungen'} diesen Monat — bitte prüfen.`,
+        },
+        {
+          title: 'Fixkosten ausstehend',
+          body:  `${reallyOpen.length} ${reallyOpen.length === 1 ? 'Posten steht' : 'Posten stehen'} diesen Monat noch aus.`,
+        },
+      ]),
+      url:   './#/finance/buchungen',
+    };
+  }
+
+  // ── tasks_habits ───────────────────────────────────────────────────
+  // Offene Habits + offene Todos für heute zusammengefasst.
+  // Nur senden wenn tatsächlich etwas offen ist.
+  if (category === 'tasks_habits') {
+    const wd = berlin.weekdayIndex;
+
+    // Habits: welche sind heute fällig?
     const { data: habits } = await supabase
       .from('hab_habits')
       .select('id, target_count, frequency, frequency_days, created_at')
@@ -186,76 +377,318 @@ async function checkCategory(category, ownerId, berlin) {
       .eq('active', true)
       .is('deleted_at', null);
 
-    const wd = berlin.weekdayIndex; // Mo=0 … So=6, Berlin-Wochentag
-    const due = (habits ?? []).filter((h) => {
-      // created_at (timestamptz) als Berlin-Datum vergleichen, nicht UTC
+    const dueHabits = (habits ?? []).filter((h) => {
       if (toBerlinDateStr(new Date(h.created_at)) > berlin.todayStr) return false;
       if (h.frequency === 'daily') return true;
       if (h.frequency === 'weekdays') return wd < 5;
       if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
       return true;
     });
-    if (due.length === 0) return null;
 
-    const { data: entries } = await supabase
-      .from('hab_entries')
-      .select('habit_id, count')
+    // Habits: welche davon sind noch nicht erledigt?
+    let openHabits = 0;
+    if (dueHabits.length > 0) {
+      const { data: entries } = await supabase
+        .from('hab_entries')
+        .select('habit_id, count')
+        .eq('owner_id', ownerId)
+        .eq('logged_on', berlin.todayStr)
+        .is('deleted_at', null);
+
+      const doneIds = new Set(
+        (entries ?? [])
+          .filter((e) => {
+            const h = dueHabits.find((x) => x.id === e.habit_id);
+            return h && e.count >= h.target_count;
+          })
+          .map((e) => e.habit_id)
+      );
+      openHabits = dueHabits.length - doneIds.size;
+    }
+
+    // Todos: heute fällig (due_date <= heute) oder wichtig ohne Datum
+    const { data: todos } = await supabase
+      .from('todos')
+      .select('id, due_date, priority')
       .eq('owner_id', ownerId)
-      .eq('logged_on', berlin.todayStr)
+      .eq('done', false)
       .is('deleted_at', null);
-    const doneIds = new Set(
-      (entries ?? [])
-        .filter((e) => {
-          const h = due.find((x) => x.id === e.habit_id);
-          return h && e.count >= h.target_count;
-        })
-        .map((e) => e.habit_id)
-    );
-    const open = due.length - doneIds.size;
-    if (open <= 0) return null;
-    return { title: 'Gewohnheiten heute', body: `Noch ${open} von ${due.length} offen.`, url: './#/habits' };
+
+    const openTodos = (todos ?? []).filter((t) =>
+      (t.due_date && t.due_date <= berlin.todayStr) ||
+      (!t.due_date && t.priority)
+    ).length;
+
+    const totalOpen = openHabits + openTodos;
+    if (totalOpen === 0) return null;
+
+    // Text: unterscheide ob nur Habits, nur Todos oder beides offen
+    let body;
+    if (openHabits > 0 && openTodos > 0) {
+      body = `${openHabits} Gewohnheit${openHabits !== 1 ? 'en' : ''} und ${openTodos} Aufgabe${openTodos !== 1 ? 'n' : ''} noch offen.`;
+    } else if (openHabits > 0) {
+      body = `Noch ${openHabits} von ${dueHabits.length} Gewohnheit${dueHabits.length !== 1 ? 'en' : ''} offen.`;
+    } else {
+      body = `${openTodos} Aufgabe${openTodos !== 1 ? 'n' : ''} für heute noch offen.`;
+    }
+
+    // Titel + Body per Rotation — je nach dem was offen ist
+    let message: { title: string; body: string };
+    if (openHabits > 0 && openTodos > 0) {
+      message = pickRandom([
+        {
+          title: '🌿 Noch nicht fertig',
+          body:  `${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'} und ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} — der Abend gehört dir.`,
+        },
+        {
+          title: '💪 Letzter Schub',
+          body:  `${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'}, ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} — dann kannst du den Tag abhaken.`,
+        },
+      ]);
+    } else if (openHabits > 0) {
+      message = pickRandom([
+        {
+          title: '🌿 Kurz vor dem Ziel',
+          body:  `Noch ${openHabits} von ${dueHabits.length} ${dueHabits.length === 1 ? 'Gewohnheit' : 'Gewohnheiten'} offen.`,
+        },
+        {
+          title: '💪 Fast geschafft',
+          body:  `Noch ${openHabits} ${openHabits === 1 ? 'Gewohnheit' : 'Gewohnheiten'} — du bist nah dran.`,
+        },
+      ]);
+    } else {
+      message = pickRandom([
+        {
+          title: '✅ Fast durch',
+          body:  `Noch ${openTodos} ${openTodos === 1 ? 'Aufgabe' : 'Aufgaben'} für heute — dann ist der Tag deiner.`,
+        },
+        {
+          title: '🎯 Fokus für heute',
+          body:  `${openTodos} ${openTodos === 1 ? 'Aufgabe wartet' : 'Aufgaben warten'} noch auf dich.`,
+        },
+      ]);
+    }
+
+    return {
+      ...message,
+      url: './#/habits',
+    };
   }
 
-  if (category === 'required_data') {
-    const { data: body } = await supabase
+  // ── daily_plan ─────────────────────────────────────────────────────
+  // Morgendliche Zusammenfassung des Tagesplans. Dieselben Regeln wie
+  // core/lib/dayPlan.js (dort nachziehen, wenn sich etwas ändert):
+  //   Termine = nur Google-Kalender, Training = geplante/erledigte Einheiten
+  //   heute, Aufgaben = fällig/überfällig oder wichtig ohne Datum,
+  //   Gewohnheiten = heute fällige, Zahlungen = unbezahlt MIT Fälligkeits-
+  //   datum <= heute. Nichts davon → keine Nachricht.
+  if (category === 'daily_plan') {
+    const wd = berlin.weekdayIndex;
+    const today = berlin.todayStr;
+
+    const [workoutsRes, eventsRes, todosRes, habitsRes, postenRes] = await Promise.all([
+      supabase.from('spo_workouts')
+        .select('type_key, title, status, is_rest')
+        .eq('owner_id', ownerId).eq('occurred_on', today).is('deleted_at', null),
+      supabase.from('calendar_events')
+        .select('title, event_time')
+        .eq('owner_id', ownerId).eq('event_date', today)
+        .eq('source_module', 'google').is('deleted_at', null)
+        .order('event_time', { ascending: true, nullsFirst: true }),
+      supabase.from('todos')
+        .select('due_date, priority')
+        .eq('owner_id', ownerId).eq('done', false).is('deleted_at', null),
+      supabase.from('hab_habits')
+        .select('id, frequency, frequency_days, created_at')
+        .eq('owner_id', ownerId).eq('active', true).is('deleted_at', null),
+      supabase.from('fin_entries')
+        .select('name, amount, due_date, paid, payment, payments')
+        .eq('owner_id', ownerId).eq('paid', false)
+        .not('due_date', 'is', null).lte('due_date', today)
+        .in('category', ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'])
+        .is('deleted_at', null),
+    ]);
+
+    const lines: string[] = [];
+
+    const events = eventsRes.data ?? [];
+    if (events.length > 0) {
+      const first = events[0];
+      const t = first.event_time ? `${String(first.event_time).slice(0, 5)} ` : '';
+      lines.push(`📅 ${t}${first.title}${events.length > 1 ? ` +${events.length - 1}` : ''}`);
+    }
+
+    const workouts = workoutsRes.data ?? [];
+    const training = workouts.filter((w) => !w.is_rest);
+    if (training.length > 0) {
+      const w = training[0];
+      const label = w.title
+        || (!w.type_key || w.type_key === 'sonstiges' ? 'Training'
+            : (() => { const l = w.type_key.split('.').pop(); return l.charAt(0).toUpperCase() + l.slice(1); })());
+      lines.push(`💪 ${label}${training.length > 1 ? ` +${training.length - 1}` : ''}`);
+    } else if (workouts.some((w) => w.is_rest)) {
+      lines.push('💪 Restday');
+    }
+
+    const todos = (todosRes.data ?? []).filter((t) =>
+      (t.due_date && t.due_date <= today) || (!t.due_date && t.priority));
+    if (todos.length > 0) {
+      const overdue = todos.filter((t) => t.due_date && t.due_date < today).length;
+      lines.push(`✅ ${todos.length} ${todos.length === 1 ? 'Aufgabe' : 'Aufgaben'}${overdue > 0 ? ` (${overdue} überfällig)` : ''}`);
+    }
+
+    const dueHabits = (habitsRes.data ?? []).filter((h) => {
+      if (toBerlinDateStr(new Date(h.created_at)) > today) return false;
+      if (h.frequency === 'daily') return true;
+      if (h.frequency === 'weekdays') return wd < 5;
+      if (h.frequency === 'custom' && Array.isArray(h.frequency_days)) return h.frequency_days.includes(wd);
+      return true;
+    });
+    if (dueHabits.length > 0) {
+      lines.push(`🌿 ${dueHabits.length} ${dueHabits.length === 1 ? 'Gewohnheit' : 'Gewohnheiten'}`);
+    }
+
+    // Fällig ist nur der noch offene Teil eines Postens
+    const posten = (postenRes.data ?? [])
+      .filter((p) => !isSavingsDeposit(p))
+      .map((p) => ({ ...p, amount: openAmount(p) }))
+      .filter((p) => p.amount > 0);
+    if (posten.length > 0) {
+      const eur = (n) => Number(n).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+      const sum = posten.reduce((a, p) => a + Number(p.amount || 0), 0);
+      lines.push(posten.length === 1
+        ? `€ ${posten[0].name} · ${eur(posten[0].amount)}`
+        : `€ ${posten.length} Zahlungen fällig · ${eur(sum)}`);
+    }
+
+    if (lines.length === 0) return null;
+    return {
+      title: '☀️ Dein Tagesplan',
+      body:  lines.join('\n'),
+      url:   './',
+    };
+  }
+
+  // ── profile ────────────────────────────────────────────────────────
+  // Nur wenn tatsächlich relevante Angaben fehlen.
+  // Felder gespiegelt aus core/lib/bodyProfileData.js BODY_REQUIRED_FIELDS.
+  if (category === 'profile') {
+    const { data: bp } = await supabase
       .from('body_profile')
       .select('gender, age, height, weight, activity, goal')
       .eq('owner_id', ownerId)
       .maybeSingle();
+
     const REQUIRED = ['gender', 'age', 'height', 'weight', 'activity', 'goal'];
-    const missing = !body || REQUIRED.some((k) => body[k] === null || body[k] === undefined || body[k] === '');
+    const missing = !bp || REQUIRED.some((k) => bp[k] === null || bp[k] === undefined || bp[k] === '');
     if (!missing) return null;
-    return { title: 'Profil unvollständig', body: 'Ein paar Angaben fehlen noch für genaue Ergebnisse.', url: './#/profile' };
+
+    return {
+      title: 'Dein Profil ist unvollständig',
+      body:  'Einige Angaben fehlen noch — Nestua kann so nicht die besten Ergebnisse liefern.',
+      url:   './#/profile',
+    };
   }
 
-  if (category === 'fin_due') {
-    // Jahr/Monat aus Berlin-Sicht — an Monatsgrenzen (31.12. 23:30 UTC =
-    // 1.1. 00:30 Berlin) sonst der falsche Monat.
-    const { data: openEntries } = await supabase
-      .from('fin_entries')
-      .select('id')
-      .eq('owner_id', ownerId)
-      .eq('year', berlin.year)
-      .eq('month', berlin.month)
-      .eq('paid', false)
-      .not('from_template', 'is', null)
-      .is('deleted_at', null);
-    if ((openEntries?.length ?? 0) === 0) return null;
-    return { title: 'Fixkosten offen', body: `${openEntries.length} unbezahlte Fixkosten diesen Monat.`, url: './#/finance/months' };
-  }
-
+  // ── weekly_recap ───────────────────────────────────────────────────
+  // Montagmorgen: Überblick der Vorwoche (Mo–So). Montag ist bereits durch den
+  // Schedule gefiltert, die Prüfung hier ist das Sicherheitsnetz.
   if (category === 'weekly_recap') {
-    if (!berlin.isSunday) return null;
-    return { title: 'Deine Woche', body: 'Dein Wochenrückblick ist da.', url: './' };
+    if (berlin.weekdayIndex !== 0) return null;
+    const from = shiftDateStr(berlin.todayStr, -7);
+    const to   = shiftDateStr(berlin.todayStr, -1);
+    if (!(await hasActivityBetween(ownerId, from, to))) return null;
+    return {
+      ...pickRandom([
+        {
+          title: '✨ Dein Wochenüberblick',
+          body:  'Sieh dir an, wie deine letzte Woche gelaufen ist.',
+        },
+        {
+          title: '🗓 Neue Woche, neuer Blick zurück',
+          body:  'Dein Fortschritt der letzten Woche ist da.',
+        },
+        {
+          title: '✨ Gut gemacht',
+          body:  'Deine Woche ist ausgewertet. Sieh selbst, was du geleistet hast.',
+        },
+      ]),
+      url: './#/statistiken/woche', // core/PeriodReview.jsx
+    };
+  }
+
+  // ── monthly_recap ──────────────────────────────────────────────────
+  // Am 1. des Monats: Überblick des Vormonats.
+  if (category === 'monthly_recap') {
+    if (berlin.day !== 1) return null;
+    const from = shiftDateStr(berlin.todayStr, -1).slice(0, 8) + '01'; // 1. des Vormonats
+    const to   = shiftDateStr(berlin.todayStr, -1);                    // letzter Tag des Vormonats
+    if (!(await hasActivityBetween(ownerId, from, to))) return null;
+    const monthName = MONTH_NAMES[Number(from.slice(5, 7)) - 1];
+    return {
+      ...pickRandom([
+        {
+          title: `📅 Dein ${monthName} im Überblick`,
+          body:  'Gewohnheiten, Training und Ernährung — so ist dein Monat gelaufen.',
+        },
+        {
+          title: '✨ Dein Monatsüberblick',
+          body:  `Sieh dir an, was du im ${monthName} geschafft hast.`,
+        },
+      ]),
+      url: './#/statistiken/monat', // core/PeriodReview.jsx
+    };
   }
 
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Hauptlogik
+// ─────────────────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const testOwnerId = url.searchParams.get('test_owner');
+  const testCategory = url.searchParams.get('test_category');
   if (testOwnerId) {
+    if (testCategory) {
+      // Echten Kategorietext testen — Wochentag/Datum so setzen, dass die
+      // Tages-Sperren der Kategorien nicht greifen: weekly_recap (Mo) und
+      // monthly_recap (der 1.) rechnen dann mit der letzten vollen Woche bzw.
+      // dem letzten vollen Monat; profile (Sa) nur der Wochentag.
+      const berlinBase = berlinNow();
+      let berlinTest = { ...berlinBase };
+      if (testCategory === 'weekly_recap') {
+        berlinTest = {
+          ...berlinBase,
+          weekdayIndex: 0,
+          todayStr: shiftDateStr(berlinBase.todayStr, -berlinBase.weekdayIndex),
+        };
+      } else if (testCategory === 'monthly_recap') {
+        berlinTest = {
+          ...berlinBase,
+          day: 1,
+          todayStr: `${berlinBase.todayStr.slice(0, 8)}01`,
+        };
+      } else if (testCategory === 'profile') {
+        berlinTest = { ...berlinBase, weekdayIndex: 5 };
+      }
+      const result = await checkCategory(testCategory, testOwnerId, berlinTest);
+      if (result) {
+        await sendToUser(testOwnerId, testCategory, result.title, result.body, result.url);
+        return new Response(JSON.stringify({
+          test: true, category: testCategory, sent: true,
+          title: result.title, body: result.body,
+        }), { headers: { 'Content-Type': 'application/json' } });
+      } else {
+        return new Response(JSON.stringify({
+          test: true, category: testCategory, sent: false,
+          reason: 'Keine Bedingung erfuellt — keine offenen Habits/Todos, Profil vollstaendig, o.ae.',
+        }), { headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+    // Kein test_category → einfacher Verbindungstest
     await sendToUser(testOwnerId, 'test', 'Test-Benachrichtigung', 'Wenn du das siehst, funktioniert die Zustellung.', './');
     return new Response(JSON.stringify({ test: true, ownerId: testOwnerId }), {
       headers: { 'Content-Type': 'application/json' },
@@ -264,44 +697,54 @@ Deno.serve(async (req) => {
 
   const berlin = berlinNow();
 
+  // Alle Nutzer mit aktivem Push-Abo
   const { data: subRows } = await supabase.from('push_subscriptions').select('owner_id');
   const ownerIds = [...new Set((subRows ?? []).map((s) => s.owner_id))];
 
   let sentCount = 0;
 
   for (const ownerId of ownerIds) {
+    // Toggles laden (nur categories-JSONB — preferred_hour/quiet_* nicht mehr relevant)
     const { data: prefRow } = await supabase
       .from('notification_prefs')
-      .select('categories, preferred_hour, quiet_start, quiet_end')
+      .select('categories')
       .eq('owner_id', ownerId)
       .maybeSingle();
 
-    const prefs = { ...DEFAULT_PREFS, ...(prefRow?.categories ?? {}) };
-    const preferredHour = prefRow?.preferred_hour ?? DEFAULT_PREFS.preferred_hour;
-    const quietStart = prefRow?.quiet_start ?? DEFAULT_PREFS.quiet_start;
-    const quietEnd = prefRow?.quiet_end ?? DEFAULT_PREFS.quiet_end;
+    const toggles = { ...DEFAULT_CATEGORIES, ...(prefRow?.categories ?? {}) };
 
-    if (berlin.hour !== preferredHour) continue;
-    if (inQuietHours(berlin.hour, quietStart, quietEnd)) continue;
-
+    // Tageslimit (ohne Überblicke): Ist es erschöpft, kommen nur noch die
+    // Überblicke in Frage.
     let remainingBudget = DAILY_CAP_TOTAL - (await sentTodayCount(ownerId, berlin));
-    if (remainingBudget <= 0) continue;
 
+    // Kaskade: Toggle → Schedule → fachliche Bedingung → Throttle → Kandidat
     for (const category of PRIORITY_ORDER) {
-      if (remainingBudget <= 0) break;
-      if (!prefs[category]) continue;
-      if (await alreadySentRecently(ownerId, category, THROTTLE_DAYS[category])) continue;
+      const isRecap = RECAP_CATEGORIES.includes(category);
+      if (!isRecap && remainingBudget <= 0) continue;
 
+      // 1. Toggle aus (deaktivierte Kategorien sind keine Kandidaten,
+      //    verbrauchen kein Budget, beeinflussen Auswahl nicht)
+      if (!toggles[category]) continue;
+
+      // 2. Prüfzeitpunkt (Stunde + ggf. Wochentag) passt gerade nicht
+      if (!isScheduledNow(category, berlin)) continue;
+
+      // 3. Fachliche Bedingung prüfen
       const result = await checkCategory(category, ownerId, berlin);
       if (!result) continue;
 
+      // 4. Throttle — Fall A (finance, heute fällig) überspringt den Throttle
+      if (!result.skipThrottle && await alreadySentRecently(ownerId, category, THROTTLE_DAYS[category])) continue;
+
+      // → Kandidat: senden
       await sendToUser(ownerId, category, result.title, result.body, result.url);
-      remainingBudget -= 1;
+      if (!isRecap) remainingBudget -= 1;
       sentCount += 1;
     }
   }
 
-  return new Response(JSON.stringify({ checked: ownerIds.length, sent: sentCount, hour: berlin.hour }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return new Response(
+    JSON.stringify({ checked: ownerIds.length, sent: sentCount, hour: berlin.hour, berlin: berlin.todayStr }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
 });

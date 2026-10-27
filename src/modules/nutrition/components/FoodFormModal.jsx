@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Modal from '../../../core/components/Modal';
-import { AMPEL_CATS } from '../lib/nutrition';
+import { AMPEL_CATS, FOOD_DIETS, FOOD_ALLERGENS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
 
 const UNITS = ['g', 'ml', 'Stück', 'Scheibe', 'EL'];
 const UNIT_LABEL = { g: '100 g', ml: '100 ml', Stück: '1 Stück', Scheibe: '1 Scheibe', EL: '1 EL' };
@@ -18,13 +18,16 @@ const MACRO_FIELDS = [
 const EMPTY = {
   name: '', group: '', category: 'erlaubt', unit: 'g',
   kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, satfat: 0, fiber: 0, salt: 0,
-  vitamins: [], minerals: [], micros_other: [], allergens: [], tags: [], diet: 'alles',
-  glutenfrei: false, laktosefrei: false,
+  vitamins: [], minerals: [], micros_other: [], allergens: [], tags: [], diet: null,
 };
 
 export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
   const [form, setForm] = useState(() => (food ? { ...EMPTY, ...food } : { ...EMPTY }));
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+  const toggle = (key, value) => setForm((f) => {
+    const list = f[key] || [];
+    return { ...f, [key]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] };
+  });
   const canSave = form.name.trim() && form.group.trim();
 
   function save() {
@@ -102,15 +105,59 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <input type="checkbox" style={{ width: 'auto' }} checked={form.glutenfrei} onChange={(e) => set('glutenfrei', e.target.checked)} />
-          Glutenfrei
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem' }}>
-          <input type="checkbox" style={{ width: 'auto' }} checked={form.laktosefrei} onChange={(e) => set('laktosefrei', e.target.checked)} />
-          Laktosefrei
-        </label>
+      <div className="form-group">
+        <label>Ernährungsform</label>
+        <div className="segmented cols-3">
+          {FOOD_DIETS.map((d) => (
+            <button
+              key={d.key}
+              type="button"
+              className={form.diet === d.key ? 'active' : ''}
+              onClick={() => set('diet', d.key)}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Allergene</label>
+        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+          {FOOD_ALLERGENS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              className={`chip ${(form.allergens || []).includes(a) ? 'active' : ''}`}
+              onClick={() => toggle('allergens', a)}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+          Glutenfrei und Laktosefrei ergeben sich aus „Gluten“ und „Milch“.
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Tags</label>
+        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+          {FOOD_TAGS.map((t) => {
+            const on = (form.tags || []).includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                className="chip"
+                style={on ? { background: TAG_COLORS[t], color: '#fff' } : {}}
+                onClick={() => toggle('tags', t)}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>

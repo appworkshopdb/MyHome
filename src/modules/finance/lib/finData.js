@@ -1,5 +1,7 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal } from './finance';
+import { track } from '../../../core/lib/analytics';
+import { invalidateHubCache } from '../../../core/lib/hubCache';
+import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
 
 function ownerId(session) {
   return session.user.id;
@@ -30,9 +32,13 @@ export async function getSparschweinLedger(session) {
   let totalOut = 0;
   const ledger = relevant.map((e) => {
     const isDeposit = isSparschweinDeposit(e);
-    const signedAmount = isDeposit ? Number(e.amount) : -Number(e.amount);
+    // Bei Teilzahlung: nur den Sparschwein-Anteil verbuchen, nicht Gesamtbetrag
+    const effectiveAmount = isDeposit
+      ? Number(e.amount)
+      : getSparschweinWithdrawalAmount(e);
+    const signedAmount = isDeposit ? effectiveAmount : -effectiveAmount;
     running += signedAmount;
-    if (isDeposit) totalIn += Number(e.amount); else totalOut += Number(e.amount);
+    if (isDeposit) totalIn += effectiveAmount; else totalOut += effectiveAmount;
     return {
       id: e.id,
       name: e.name,
@@ -40,10 +46,11 @@ export async function getSparschweinLedger(session) {
       direction: isDeposit ? 'in' : 'out',
       signedAmount,
       balanceAfter: running,
-      amount: Number(e.amount),
+      amount: effectiveAmount,
       year: e.year,
       month: e.month,
       payment: e.payment,
+      payments: e.payments,
       created_at: e.created_at,
     };
   });
@@ -97,13 +104,14 @@ export async function getNameSuggestions(session) {
     const prev = map.get(key);
     const created = e.created_at ? new Date(e.created_at).getTime() : 0;
     if (!prev) {
-      map.set(key, { name: raw, count: 1, cat: e.category, payment: e.payment, lastCreated: created });
+      map.set(key, { name: raw, count: 1, cat: e.category, payment: e.payment, payments: e.payments, lastCreated: created });
     } else {
       prev.count += 1;
       // Kategorie/Zahlungsart vom jüngsten Eintrag übernehmen
       if (created >= prev.lastCreated) {
         prev.cat = e.category;
         prev.payment = e.payment;
+        if (e.payments) prev.payments = e.payments;
         prev.name = raw; // jüngste Schreibweise gewinnt
         prev.lastCreated = created;
       }
@@ -113,9 +121,40 @@ export async function getNameSuggestions(session) {
 }
 
 export async function saveEntry(session, entry) {
-  const payload = { ...entry, owner_id: ownerId(session) };
+  // Bezahlt-Status je Teilzahlung (core/lib/paymentParts.js): Bar, Sparschwein
+  // und Gutschein gelten sofort als bezahlt; sonst zählt das paid-Flag der
+  // Teilzahlung, und ein ausdrücklich übergebenes paid:true der Zeile setzt alle
+  // Teilzahlungen auf bezahlt. `paid` an der Zeile ist dann "alles bezahlt".
+  // Ohne payments-Array gilt ein übergebenes paid unverändert.
+  let resolvedPaid = entry.paid;
+  let resolvedPayments = entry.payments;
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    resolvedPayments = entry.payments.map((p) => ({
+      ...p,
+      paid: isInstantMethod(p.method) || entry.paid === true || p.paid === true,
+    }));
+    resolvedPaid = resolvedPayments.every((p) => p.paid);
+  }
+
+  // payment-Feld (alter ENUM) für Abwärtskompatibilität:
+  // Bei payments-Array: erste Zahlungsart eintragen damit alte
+  // Code-Pfade (z.B. PaymentBadge) weiterhin funktionieren.
+  let legacyPayment = entry.payment;
+  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
+    legacyPayment = entry.payments[0].method;
+  }
+
+  const payload = {
+    ...entry,
+    owner_id: ownerId(session),
+    paid: resolvedPaid,
+    payment: legacyPayment,
+    ...(resolvedPayments !== undefined ? { payments: resolvedPayments } : {}),
+  };
   const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
   if (error) throw error;
+  track('finance_entry_saved', { category: String(entry.category ?? '') });
+  invalidateHubCache();
   return data;
 }
 
@@ -125,11 +164,17 @@ export async function deleteEntry(id) {
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw error;
+  invalidateHubCache();
 }
 
-export async function togglePaid(id, paid) {
-  const { error } = await getSupabase().from('fin_entries').update({ paid }).eq('id', id);
+// Ganzen Posten auf bezahlt/offen setzen. `payments` (optional) sind die dazu
+// passend umgesetzten Teilzahlungen (setPartsPaid aus paymentParts.js), damit
+// Zeile und Teilzahlungen nicht auseinanderlaufen.
+export async function togglePaid(id, paid, payments) {
+  const patch = Array.isArray(payments) ? { paid, payments } : { paid };
+  const { error } = await getSupabase().from('fin_entries').update(patch).eq('id', id);
   if (error) throw error;
+  invalidateHubCache();
 }
 
 // ---------------------------------------------------------------------
