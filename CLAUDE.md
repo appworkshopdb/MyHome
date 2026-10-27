@@ -278,6 +278,15 @@ Produktiveinsatz rotiert werden (siehe HOSTING.md).
 Branch-basiert: Arbeit auf `staging`, PR gegen `main`. (Der alte manuelle
 GitHub-Upload-Workflow aus `Projektkontext.md` ist überholt.)
 
+**Staging und Produktion (`main`) teilen EIN Backend** (Hetzner, `api-staging.nestua.de`):
+beide Workflows bauen mit den `STAGING_VITE_SUPABASE_*`-Secrets, damit der Datenstand
+überall gleich ist. Die frühere Supabase-Cloud-Datenbank (`ioznvkxuetrn…supabase.co`) ist
+stillgelegt. Folge: Migrationen wirken sofort auch für die (ältere) `main`-App — nur
+ADDITIV ändern (neue Spalte/Tabelle), nichts umbenennen/löschen, bis `main` nachgezogen hat.
+Zugriffsschlüssel für die App ist der ES256-fähige `ANON_KEY` aus der Server-`.env`, NICHT
+der im Studio unter "Legacy API keys" gezeigte HS256-Schlüssel und nicht `sb_publishable_…`
+(sonst 401 `PGRST301`).
+
 ## Pflege dieser Datei
 
 Kurz halten (Claude Code lädt diese Datei bei JEDER Session vollständig —
