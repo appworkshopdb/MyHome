@@ -14,6 +14,21 @@ const DEFAULT_CATEGORIES = {
   monthly_recap: true,
 };
 
+// Das Push-Abo selbst hängt am Gerät/Browser (nicht am Konto). Damit es sich wie
+// eine Konto-Einstellung anfühlt, merkt sich dieses Gerät, FÜR WELCHEN Nutzer
+// es aktiviert wurde: derselbe Nutzer ist nach Abmelden/Anmelden sofort wieder
+// „aktiv“, ein anderer Nutzer auf demselben Gerät startet ohne Push (eigene
+// Einwilligung nötig). Beim Abmelden wird nur die Zeile in push_subscriptions
+// gelöscht, damit der nächste Nutzer keine fremden Mitteilungen bekommt.
+const PUSH_USER_KEY = 'nestua_push_user';
+
+function deviceUser() {
+  try { return localStorage.getItem(PUSH_USER_KEY); } catch { return null; }
+}
+function setDeviceUser(uid) {
+  try { if (uid) localStorage.setItem(PUSH_USER_KEY, uid); else localStorage.removeItem(PUSH_USER_KEY); } catch { /* egal */ }
+}
+
 function ownerId(session) {
   return session.user.id;
 }
@@ -38,12 +53,84 @@ export async function registerServiceWorker() {
   return navigator.serviceWorker.register('./sw.js');
 }
 
-export async function getPushSubscriptionStatus() {
+export async function getPushSubscriptionStatus(session) {
   if (!isPushSupported()) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
-  return sub ? 'subscribed' : 'unsubscribed';
+  if (!sub) return 'unsubscribed';
+  // Abo gehört einem anderen Nutzer dieses Geräts → für diesen Nutzer aus.
+  const owner = deviceUser();
+  if (session && owner && owner !== ownerId(session)) return 'unsubscribed';
+  return 'subscribed';
+}
+
+function saveSubscription(session, sub) {
+  const json = sub.toJSON();
+  return getSupabase().from('push_subscriptions').upsert(
+    {
+      owner_id: ownerId(session),
+      endpoint: json.endpoint,
+      p256dh:   json.keys.p256dh,
+      auth:     json.keys.auth,
+      user_agent: navigator.userAgent,
+    },
+    { onConflict: 'endpoint' }
+  );
+}
+
+// Beim Anmelden / App-Start: Ist Push auf diesem Gerät für diesen Nutzer schon
+// erlaubt, wird das Abo ohne neue Abfrage wiederhergestellt (Zeile in
+// push_subscriptions, bei verlorenem Browser-Abo auch das Abo selbst — die
+// Berechtigung ist ja schon erteilt). Fragt nie nach, ändert nichts, wenn der
+// Nutzer Push nicht aktiviert hatte.
+export async function restorePushForUser(session) {
+  try {
+    if (!isPushSupported() || Notification.permission !== 'granted') return;
+    const uid = ownerId(session);
+    const owner = deviceUser();
+    const reg = await navigator.serviceWorker.getRegistration();
+    let sub = await reg?.pushManager.getSubscription();
+
+    if (sub) {
+      // Altbestand (vor dieser Änderung aktiviert, Gerätenutzer unbekannt) gilt
+      // für den Nutzer, der sich hier anmeldet; sonst nur für den Besitzer.
+      if (owner && owner !== uid) return;
+    } else {
+      // iOS & Co. verwerfen Abos gelegentlich: nur still erneuern, wenn dieser
+      // Nutzer hier Push aktiviert hatte.
+      if (owner !== uid || !reg) return;
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const { error } = await saveSubscription(session, sub);
+    if (error) throw error;
+    setDeviceUser(uid);
+  } catch (e) {
+    console.warn('[Push] Wiederherstellen fehlgeschlagen:', e?.message || e);
+  }
+}
+
+// Beim Abmelden (solange die Sitzung noch gilt): nur die Zeile dieses Geräts
+// entfernen. Das Browser-Abo und die Gerätezuordnung bleiben, damit derselbe
+// Nutzer beim nächsten Login nichts neu einrichten muss.
+export async function releasePushForLogout(session) {
+  // Höchstens 3 s warten — Abmelden darf nie an einer hängenden Anfrage scheitern.
+  const timeout = new Promise((resolve) => setTimeout(resolve, 3000));
+  const work = (async () => {
+    if (!isPushSupported()) return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await getSupabase()
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', sub.endpoint)
+      .eq('owner_id', ownerId(session));
+  })().catch((e) => console.warn('[Push] Abmelden: Abo-Zeile nicht entfernt:', e?.message || e));
+  await Promise.race([work, timeout]);
 }
 
 // Fragt die Berechtigung an (falls nötig), abonniert Push beim Browser
@@ -60,18 +147,9 @@ export async function subscribeToPush(session) {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  const json = sub.toJSON();
-  const { error } = await getSupabase().from('push_subscriptions').upsert(
-    {
-      owner_id: ownerId(session),
-      endpoint: json.endpoint,
-      p256dh:   json.keys.p256dh,
-      auth:     json.keys.auth,
-      user_agent: navigator.userAgent,
-    },
-    { onConflict: 'endpoint' }
-  );
+  const { error } = await saveSubscription(session, sub);
   if (error) throw error;
+  setDeviceUser(ownerId(session));
   return sub;
 }
 
@@ -86,6 +164,7 @@ export async function unsubscribeFromPush(session) {
       .eq('owner_id', ownerId(session));
     await sub.unsubscribe();
   }
+  setDeviceUser(null);
 }
 
 // Gibt nur noch die vier Kategorie-Toggles zurück.

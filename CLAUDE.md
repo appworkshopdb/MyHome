@@ -266,6 +266,17 @@ Vorschaukarte), `NutritionFabMenu` (gruppiert). Gesehen-Zustand: `body_profile.t
 Neues Modul = Eintrag in `tutorials.js` + Id in der Migration. Bereichs-Symbole zentral in
 `ModuleIcons.jsx` (auch Bottom-Nav). Der Hub zeigt keinen Leerzustand mehr.
 
+## Einstellungen hängen am Nutzer, nicht am Gerät
+
+Tracking-Einwilligung: `body_profile.analytics_consent` (+ `_at`, `_version`, Migration
+`supabase/consent_migration.sql`; ohne Migration läuft die App lokal weiter). `lib/analytics.js` hält je Nutzer einen
+Zwischenspeicher (`nestua_analytics_consent:<userId>`), gleicht beim Login mit dem Server ab (Server gewinnt; ein
+alter gerätebezogener Wert wird einmalig dem ersten Login zugeschrieben). Banner erst nach dem Abgleich (`'pending'`).
+Push: das Abo ist technisch Gerätesache; `lib/pushNotifications.js` merkt sich in `nestua_push_user`, FÜR WEN es hier
+aktiviert wurde. Abmelden löscht nur die Zeile in `push_subscriptions` (`releasePushForLogout`), Login stellt sie für
+denselben Nutzer wieder her (`restorePushForUser`, fragt nie nach); ein anderer Nutzer auf dem Gerät startet ohne Push.
+Kategorie-Schalter liegen schon in `notification_prefs`. Neue Nutzer-Einstellung = Spalte/Tabelle, nie nur localStorage.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
@@ -277,6 +288,15 @@ Produktiveinsatz rotiert werden (siehe HOSTING.md).
 
 Branch-basiert: Arbeit auf `staging`, PR gegen `main`. (Der alte manuelle
 GitHub-Upload-Workflow aus `Projektkontext.md` ist überholt.)
+
+**Staging und Produktion (`main`) teilen EIN Backend** (Hetzner, `api-staging.nestua.de`):
+beide Workflows bauen mit den `STAGING_VITE_SUPABASE_*`-Secrets, damit der Datenstand
+überall gleich ist. Die frühere Supabase-Cloud-Datenbank (`ioznvkxuetrn…supabase.co`) ist
+stillgelegt. Folge: Migrationen wirken sofort auch für die (ältere) `main`-App — nur
+ADDITIV ändern (neue Spalte/Tabelle), nichts umbenennen/löschen, bis `main` nachgezogen hat.
+Zugriffsschlüssel für die App ist der ES256-fähige `ANON_KEY` aus der Server-`.env`, NICHT
+der im Studio unter "Legacy API keys" gezeigte HS256-Schlüssel und nicht `sb_publishable_…`
+(sonst 401 `PGRST301`).
 
 ## Pflege dieser Datei
 

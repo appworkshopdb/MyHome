@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from 'react';
-import { getConsent, subscribeConsent } from './analytics';
+import { getConsentSnapshot, subscribeConsent } from './analytics';
 
-// 'granted' | 'denied' | null (noch nicht gefragt)
+// 'granted' | 'denied' | null (noch nicht gefragt) | 'pending' (Abgleich mit dem
+// Server läuft noch — Banner dann noch nicht zeigen)
 export function useAnalyticsConsent() {
-  return useSyncExternalStore(subscribeConsent, getConsent, () => null);
+  return useSyncExternalStore(subscribeConsent, getConsentSnapshot, () => null);
 }

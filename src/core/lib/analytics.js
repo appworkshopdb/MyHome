@@ -31,7 +31,13 @@ import { supabaseUrl, supabaseAnonKey, supabaseConfigured } from './supabaseClie
 import { SESSION_STORAGE_KEY } from './rawAuth';
 import { parseHash } from './useRoute';
 
+// Alt: eine Entscheidung je Gerät. Wird beim ersten Login einmalig dem Nutzer
+// zugeschrieben und entfernt; seither gilt die Entscheidung je Nutzer (lokaler
+// Zwischenspeicher `nestua_analytics_consent:<userId>`) und liegt zusätzlich in
+// body_profile (supabase/consent_migration.sql), damit sie Gerät, Abmelden und
+// Neuinstallation überdauert.
 const CONSENT_KEY = 'nestua_analytics_consent';
+const consentKeyFor = (uid) => `${CONSENT_KEY}:${uid}`;
 const QUEUE_KEY = 'nestua_analytics_queue';
 const SESSION_KEY = 'nestua_analytics_session'; // sessionStorage
 
@@ -51,6 +57,8 @@ const MAX_ERRORS_PER_SESSION = 5;
 const EVENT_NAME_RE = /^[a-z][a-z0-9_]{1,47}$/;
 
 const ENDPOINT = `${supabaseUrl}/rest/v1/analytics_events`;
+const PROFILE_ENDPOINT = `${supabaseUrl}/rest/v1/body_profile`;
+const CONSENT_SYNC_TIMEOUT_MS = 8_000;
 const APP_VERSION = String(import.meta.env.VITE_APP_VERSION || 'dev').slice(0, 7);
 
 // ── Zustand ───────────────────────────────────────────────────────────────
@@ -66,18 +74,31 @@ let lastInteraction = Date.now();
 let flushTimer = null;
 let flushing = false;
 let initialized = false;
+let consentChecked = false;   // Abgleich der Einwilligung mit dem Server für activeUser abgeschlossen?
 
 const consentListeners = new Set();
 
 // ── Einwilligung ──────────────────────────────────────────────────────────
 
+// Entscheidung des gerade angemeldeten Nutzers: 'granted' | 'denied' | null.
 export function getConsent() {
+  const uid = activeUser || readStoredSession()?.userId;
+  if (!uid) return null;
   try {
-    const v = localStorage.getItem(CONSENT_KEY);
+    const v = localStorage.getItem(consentKeyFor(uid));
     return v === 'granted' || v === 'denied' ? v : null;
   } catch {
     return null;
   }
+}
+
+// Für die Oberfläche: wie getConsent(), aber 'pending' solange der Abgleich mit
+// dem Server noch läuft — sonst würde das Banner kurz aufblitzen, obwohl der
+// Nutzer längst entschieden hat.
+export function getConsentSnapshot() {
+  const v = getConsent();
+  if (v) return v;
+  return consentChecked ? null : 'pending';
 }
 
 export function subscribeConsent(fn) {
@@ -86,7 +107,12 @@ export function subscribeConsent(fn) {
 }
 
 export function setConsent(granted) {
-  try { localStorage.setItem(CONSENT_KEY, granted ? 'granted' : 'denied'); } catch { /* egal */ }
+  const uid = activeUser || readStoredSession()?.userId;
+  const value = granted ? 'granted' : 'denied';
+  if (uid) {
+    try { localStorage.setItem(consentKeyFor(uid), value); } catch { /* egal */ }
+    saveConsentToServer(value);
+  }
 
   if (granted) {
     begin();
@@ -100,6 +126,81 @@ export function setConsent(granted) {
   consentListeners.forEach((fn) => fn());
 }
 
+// Altbestand: die frühere gerätebezogene Entscheidung gehört dem Nutzer, der sie
+// getroffen hat — also dem ersten, der sich danach anmeldet.
+function adoptLegacyConsent(uid) {
+  try {
+    const legacy = localStorage.getItem(CONSENT_KEY);
+    if (legacy === 'granted' || legacy === 'denied') {
+      if (!localStorage.getItem(consentKeyFor(uid))) localStorage.setItem(consentKeyFor(uid), legacy);
+      localStorage.removeItem(CONSENT_KEY);
+    }
+  } catch { /* egal */ }
+}
+
+function consentHeaders(token) {
+  return { 'Content-Type': 'application/json', apikey: supabaseAnonKey, Authorization: `Bearer ${token}` };
+}
+
+// Speichert die Entscheidung in body_profile (Upsert: nur diese Spalten werden
+// überschrieben). Fehlt die Migration oder ist man offline, bleibt die lokale
+// Entscheidung bestehen — beim nächsten Login wird sie nachgereicht.
+async function saveConsentToServer(value, uid, token) {
+  const stored = readStoredSession();
+  const user = uid || stored?.userId;
+  const tok = token || stored?.token;
+  if (!user || !tok || !supabaseConfigured) return;
+  try {
+    const res = await fetch(`${PROFILE_ENDPOINT}?on_conflict=owner_id`, {
+      method: 'POST',
+      headers: { ...consentHeaders(tok), Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        owner_id: user,
+        analytics_consent: value,
+        analytics_consent_at: new Date().toISOString(),
+        analytics_consent_version: CONSENT_TEXT_VERSION,
+      }),
+    });
+    if (!res.ok) console.warn('[Analytics] Einwilligung nicht gespeichert (Migration consent_migration.sql?), HTTP', res.status);
+  } catch { /* offline — nächster Login versucht es erneut */ }
+}
+
+// Beim Anmelden: gespeicherte Entscheidung vom Server holen. Der Server gewinnt
+// (Entscheidung auf einem anderen Gerät); gibt es dort noch keine, wird eine
+// vorhandene lokale hochgeladen.
+async function syncConsentWithServer(session) {
+  const uid = session.user.id;
+  let server; // 'granted' | 'denied' | null (noch keine) | undefined (nicht abrufbar)
+  try {
+    const res = await fetch(`${PROFILE_ENDPOINT}?select=analytics_consent&owner_id=eq.${uid}`, {
+      headers: consentHeaders(session.access_token),
+      signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(CONSENT_SYNC_TIMEOUT_MS) : undefined,
+    });
+    if (res.ok) {
+      const v = (await res.json())?.[0]?.analytics_consent;
+      server = v === 'granted' || v === 'denied' ? v : null;
+    }
+  } catch { /* offline/Zeitüberschreitung: lokale Entscheidung gilt */ }
+
+  if (activeUser !== uid) return; // inzwischen abgemeldet oder Konto gewechselt
+
+  const local = getConsent();
+  if (server && server !== local) {
+    try { localStorage.setItem(consentKeyFor(uid), server); } catch { /* egal */ }
+    if (server === 'denied') {
+      started = false;
+      queue = [];
+      persistQueue();
+    }
+  } else if (server === null && local) {
+    saveConsentToServer(local, uid, session.access_token);
+  }
+
+  consentChecked = true;
+  consentListeners.forEach((fn) => fn());
+  if (isActive()) begin();
+}
+
 // ── Sitzung (App-seitig) ──────────────────────────────────────────────────
 
 // Wird von App.jsx bei jeder Änderung der Anmeldung aufgerufen.
@@ -109,6 +210,12 @@ export function syncAnalyticsSession(session) {
     if (activeUser) flush({ keepalive: true });
     activeUser = uid;
     started = false;
+    consentChecked = false;
+    if (uid) {
+      adoptLegacyConsent(uid);
+      syncConsentWithServer(session);
+    }
+    consentListeners.forEach((fn) => fn());
   }
   if (uid && isActive()) begin();
 }
@@ -125,7 +232,8 @@ export function initAnalytics() {
   if (initialized || typeof window === 'undefined') return;
   initialized = true;
 
-  if (getConsent() !== 'granted') {
+  // Nur mit Anmeldung entscheidbar (die Einwilligung gehört dem Nutzer).
+  if (readStoredSession() && getConsent() !== 'granted') {
     queue = [];
     persistQueue();
   }

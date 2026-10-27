@@ -6,6 +6,7 @@ import { getBodyProfile, saveBodyProfile, BODY_REQUIRED_FIELDS } from './lib/bod
 import { getDietProfile, saveDietProfile, DIET_OPTIONS } from './lib/dietProfileData';
 import { computeBody, GOAL_NOTE, METRIC_INFO } from './lib/bodyCalc';
 import { BodyDataForm, ActivityGoalForm, ACTIVITY, GOAL, TRAINING_FOCUS } from './components/BodyProfileForm';
+import { releasePushForLogout } from './lib/pushNotifications';
 import { useAvatar } from './lib/avatarData';
 import AvatarEditor from './components/AvatarEditor';
 import { useRoute } from './lib/useRoute';
@@ -214,7 +215,7 @@ export default function Profile({ hasWarnings }) {
         {!pwForm ? (
           <div className="prof-acts">
             <button className="btn btn-secondary" onClick={() => setPwForm(true)}>Passwort ändern</button>
-            <button className="btn btn-danger" onClick={() => { rawAuth.signOut(); setSession(null); }}>Abmelden</button>
+            <button className="btn btn-danger" onClick={async () => { await releasePushForLogout(session); rawAuth.signOut(); setSession(null); }}>Abmelden</button>
           </div>
         ) : (
           <div style={{ marginTop: 14 }}>
