@@ -275,10 +275,9 @@
   box-shadow:    var(--shadow-float);
 }
 .dayplan-head      { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; }
-.dayplan-head-text { display: flex; flex-direction: column; min-width: 0; }
 .dayplan-title     { font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
-.dayplan-count     { font-size: 12px; font-weight: 700; color: var(--text-muted); }
 .dayplan-ring      { --ring-ac: var(--action-primary); color: var(--text-primary); }
+.dayplan-ring .ring-label b { font-size: 14px; }
 
 .dayplan-next {
   display:       flex;

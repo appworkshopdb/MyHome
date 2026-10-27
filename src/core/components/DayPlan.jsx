@@ -21,7 +21,7 @@ function Row({ done, onToggle, icon, title, sub, critical, family, tag }) {
         <span className="dayplan-row-title">{title}</span>
         {sub && <span className={`dayplan-sub ${critical ? 'critical' : ''}`}>{sub}</span>}
       </span>
-      <span className={`dayplan-chip tone-${family}`}>{tag}</span>
+      {tag && <span className={`dayplan-chip tone-${family}`}>{tag}</span>}
     </div>
   );
 }
@@ -106,11 +106,11 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
   return (
     <div className="dayplan-card">
       <div className="dayplan-head">
-        <div className="dayplan-head-text">
-          <h2 className="dayplan-title">Dein Tagesplan</h2>
-          <span className="dayplan-count">{plan.done} / {plan.total} erledigt</span>
-        </div>
-        <Ring size={54} stroke={6} value={pct} className="dayplan-ring" />
+        <h2 className="dayplan-title">Dein Tagesplan</h2>
+        <Ring size={58} stroke={6} value={pct} className="dayplan-ring">
+          <b>{plan.done}/{plan.total}</b>
+        </Ring>
+        <span className="dp-sr">{plan.done} / {plan.total} erledigt</span>
       </div>
 
       {next && (
@@ -156,7 +156,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
           ))}
 
           {plan.habits.map((h) => (
-            <Row key={h.id} done={h.done} icon={h.icon} title={h.title} family="hab" tag="Gewohnheit"
+            <Row key={h.id} done={h.done} icon={h.icon} title={h.title}
               onToggle={() => onToggleHabit(h.habit)} />
           ))}
 

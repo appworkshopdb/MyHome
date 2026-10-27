@@ -4013,7 +4013,6 @@
 }
 .dayplan-head  { display: flex; align-items: baseline; justify-content: space-between; padding: 0 8px; }
 .dayplan-title { margin: 0; font-size: 17px; font-weight: 800; color: var(--text-primary); }
-.dayplan-count { font-size: 12px; font-weight: 800; color: var(--text-muted); }
 .dayplan-bar {
   height: 5px; border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--action-primary) 22%, var(--surface-page));
