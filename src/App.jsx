@@ -59,6 +59,9 @@ const SportModule     = lazy(() => import('./modules/sport/SportModule'));
 const HabitsModule    = lazy(() => import('./modules/habits/HabitsModule'));
 const ShoppingModule  = lazy(() => import('./modules/shopping/ShoppingModule'));
 
+// Module mit eigener Farbfamilie (siehe base.css, "Modul-Kontext")
+const MODULE_IDS = ['finance', 'nutrition', 'sport', 'habits', 'shopping'];
+
 const MODULE_COMPONENTS = {
   finance:   FinanceModule,
   nutrition: NutritionModule,
@@ -90,6 +93,15 @@ export default function App() {
   // neue Abfrage, wenn er es hier schon aktiviert hatte) — nur bei Nutzerwechsel.
   const sessionUserId = session?.user?.id;
   useEffect(() => { if (session) restorePushForUser(session); }, [sessionUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Farbfamilie des offenen Moduls: base.css liest data-module auf <html>
+  // (Aktionsfarbe, Nav-Pille, Plus-Knopf). Hub und Core-Seiten: kein Attribut.
+  useEffect(() => {
+    const el = document.documentElement;
+    if (MODULE_IDS.includes(activeModule)) el.dataset.module = activeModule;
+    else delete el.dataset.module;
+    return () => { delete el.dataset.module; };
+  }, [activeModule]);
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;

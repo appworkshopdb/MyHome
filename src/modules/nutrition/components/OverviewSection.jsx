@@ -51,6 +51,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
           data={day}
           label="Heute"
           hideOpen
+          variant="hero"
           onOpen={(target) => { if (target.endsWith('mahlzeiten')) onNavigate('mahlzeiten'); }}
         />
       )}
@@ -83,9 +84,11 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList>
+        <AreaList variant="tiles">
           <AreaRow
             label="Ampel"
+            icon="ampel"
+            featured
             value={(
               <span className="nut-area-ampel">
                 {counts.map((c) => (
@@ -100,6 +103,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
           />
           <AreaRow
             label="Lexikon"
+            icon="book"
             value={`${LEXIKON.length} Begriffe`}
             onPress={() => onNavigate('lexikon')}
           />
@@ -108,6 +112,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
               im Umbau-Chat, lieber keine Zahl als eine erfundene. */}
           <AreaRow
             label="Tipps"
+            icon="bulb"
             onPress={() => onNavigate('tipps')}
           />
         </AreaList>

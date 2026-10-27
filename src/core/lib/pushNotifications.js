@@ -42,6 +42,19 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
+// Anleitung für den Fall „Benachrichtigungen blockiert“ — die App kann die
+// Abfrage dann nicht mehr selbst auslösen, die Person muss sie im Gerät freigeben.
+export function blockedHelp() {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    return 'iPhone/iPad: Öffne Einstellungen → Mitteilungen → „Nestua“ und erlaube Mitteilungen. Steht die App dort nicht, lösche das Symbol vom Home-Bildschirm und füge die Seite in Safari über „Zum Home-Bildschirm“ erneut hinzu.';
+  }
+  if (/Android/.test(ua)) {
+    return 'Android: Tippe in der Adresszeile auf das Symbol links neben der Adresse → Berechtigungen → Benachrichtigungen → Zulassen. Danach die Seite neu laden.';
+  }
+  return 'Klicke in der Adresszeile auf das Schloss-Symbol → Berechtigungen → Benachrichtigungen → Zulassen und lade die Seite neu. Steht sie dort schon auf „Blockieren“, ändere das in den Website-Einstellungen deines Browsers.';
+}
+
 export function isPushSupported() {
   return 'serviceWorker' in navigator && 'PushManager' in window && !!VAPID_PUBLIC_KEY;
 }

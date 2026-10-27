@@ -12,6 +12,10 @@ export function AuthProvider({ children }) {
   // true, solange die Person über den „Passwort vergessen“-Link kommt und noch
   // kein neues Passwort gesetzt hat (App.jsx zeigt dann ResetPassword).
   const [recovery, setRecovery] = useState(false);
+  // true, wenn diese Seite über den Link aus der Bestätigungsmail geöffnet wurde
+  // (z. B. im Browser, obwohl die Registrierung in der installierten App begann);
+  // der Registrierungs-Wizard zeigt dann einen Hinweis zum Zurückwechseln.
+  const [confirmedViaLink, setConfirmedViaLink] = useState(false);
   const timerRef = useRef(null);
 
   // Initiales Laden der gespeicherten Sitzung (einmalig beim App-Start).
@@ -25,6 +29,7 @@ export function AuthProvider({ children }) {
       if (!aktiv) return;
       if (redirect?.error) setAuthNotice(redirect.error);
       if (redirect?.session && redirect.type === 'recovery') setRecovery(true);
+      if (redirect?.session && redirect.type === 'signup') setConfirmedViaLink(true);
       setSession(redirect?.session ?? loadStoredSession());
       setLadeVorgang(false);
     })();
@@ -67,7 +72,7 @@ export function AuthProvider({ children }) {
   }, [session]);
 
   return (
-    <AuthContext.Provider value={{ session, ladeVorgang, setSession, authNotice, clearAuthNotice: () => setAuthNotice(null), recovery, clearRecovery: () => setRecovery(false) }}>
+    <AuthContext.Provider value={{ session, ladeVorgang, setSession, authNotice, clearAuthNotice: () => setAuthNotice(null), recovery, clearRecovery: () => setRecovery(false), confirmedViaLink }}>
       {children}
     </AuthContext.Provider>
   );

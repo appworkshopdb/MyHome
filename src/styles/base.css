@@ -77,6 +77,15 @@
   --raw-ochre-700:#7A5200;
   --raw-ochre-100:#F7EEDC;
 
+  /* Warme Neutrale ("Papier") — Flächen und Text der warmen Optik.
+     Ersetzen die kühlen Grautöne bei surface-*, text-* und border-*. */
+  --raw-sand-050: #FBF8F3;
+  --raw-sand-100: #F6F1EA;
+  --raw-sand-200: #EAE2D6;
+  --raw-sand-300: #D5CABB;
+  --raw-ink-warm: #25304A;   /* warmes Dunkelblau statt Fast-Schwarz */
+  --raw-ink-warm-muted: #6B6A73;
+
   /* Helle Signalfarben — gedacht für farbige Punkte auf DUNKLEM Grund
      (Ampel-Legende in der Ernährungs-Fokuskarte). Die 700er-Varianten
      oben wären dort nicht lesbar. Standen bisher nur in themes.css im
@@ -101,12 +110,14 @@
   --r-md:   8px;
   --r-lg:   12px;
   --r-xl:   14px;
-  --r-2xl:  18px;
+  --r-2xl:  24px;   /* Karten (vorher 18px) */
+  --r-tile: 24px;   /* Kacheln, Karten */
+  --r-hero: 28px;   /* Fokuskarte, Tagesplan */
   --r-pill: 999px;
 
   /* Schatten */
-  --shadow-card:  0 1px 3px rgba(19, 26, 40, 0.07);
-  --shadow-float: 0 2px 8px rgba(19, 26, 40, 0.12);
+  --shadow-card:  0 2px 8px rgba(70, 50, 30, 0.08);
+  --shadow-float: 0 6px 18px rgba(70, 50, 30, 0.12);
   --shadow-nav:   0 6px 20px rgba(19, 26, 40, 0.16);
   --shadow-fab:   0 6px 18px rgba(19, 26, 40, 0.28);
 
@@ -121,14 +132,14 @@
 :root {
   color-scheme: light;
 
-  --surface-page:    var(--raw-grey-100);
+  --surface-page:    var(--raw-sand-100);
   --surface-raised:  var(--raw-paper-000);
-  --surface-sunken:  var(--raw-grey-050);
+  --surface-sunken:  var(--raw-sand-050);
   --surface-inverse: var(--raw-navy-800);
 
-  --text-primary:    var(--raw-ink-900);
+  --text-primary:    var(--raw-ink-warm);
   --text-secondary:  var(--raw-ink-700);
-  --text-muted:      var(--raw-ink-500);   /* 6,73:1 auf surface-raised — WCAG AA */
+  --text-muted:      var(--raw-ink-warm-muted); /* 5,3:1 auf Weiß, 4,6:1 auf surface-page — WCAG AA */
   --text-on-accent:  var(--raw-paper-000);
 
   --action-primary:    var(--raw-navy-800);
@@ -143,18 +154,43 @@
   --status-critical:    var(--raw-red-700);
   --status-critical-bg: var(--raw-red-100);
 
-  --border-hairline: var(--raw-grey-200);
-  --border-strong:   var(--raw-grey-300);
+  --border-hairline: var(--raw-sand-200);
+  --border-strong:   var(--raw-sand-300);
 
   /* Datenreihen — nie Status-Tokens für Kategorien/Heatmap verwenden */
   --data-1:     var(--raw-navy-800);
   --data-2:     var(--raw-navy-600);
   --data-3:     var(--raw-navy-400);
-  --data-track: var(--raw-grey-100);
+  --data-track: var(--raw-sand-100);
 
   /* ── Ebene 3: Komponente ───────────────────────────────────
      Sparsam, jedes Token ist eine begründete Ausnahme.       */
   --nav-item-active-bg:  var(--action-primary);
+
+  /* ── Modulfamilien (Hell) ──────────────────────────────────
+     Jedes Modul hat EINE Farbfamilie: tint (Fläche), ink (Text auf tint),
+     ac (Füllung: Nav-Pille, Plus-Knopf, Symbolkreis), on (Text auf ac),
+     deep (Text/Link auf hellem Grund, AA), hero (Verlauf der Fokuskarte),
+     hero-ink (Text darauf), pill (Knopftext auf hero-ink).
+     Neutral (n) = Hub-Funktionen ohne eigenes Modul. */
+  --mod-fin-tint:   #DCE6F4; --mod-fin-ink:   #1B2A4A; --mod-fin-ac:   #3E5C8F; --mod-fin-on:   #FFFFFF; --mod-fin-deep:   #3E5C8F;
+  --mod-fin-hero:   linear-gradient(150deg, #27456F 0%, #1B2A4A 100%); --mod-fin-hero-ink: #FFFFFF; --mod-fin-pill: #1B2A4A;
+
+  --mod-food-tint:  #DCEFE2; --mod-food-ink:  #14452B; --mod-food-ac:  #35855A; --mod-food-on:  #FFFFFF; --mod-food-deep:  #2B7A4B;
+  --mod-food-hero:  linear-gradient(150deg, #357F54 0%, #1F6B43 100%); --mod-food-hero-ink: #FFFFFF; --mod-food-pill: #1F6B43;
+
+  --mod-sport-tint: #FADBD3; --mod-sport-ink: #5B2B23; --mod-sport-ac: #D2553F; --mod-sport-on: #FFFFFF; --mod-sport-deep: #B8402F;
+  --mod-sport-hero: linear-gradient(150deg, #D0533F 0%, #B33E2E 100%); --mod-sport-hero-ink: #FFFFFF; --mod-sport-pill: #B33E2E;
+
+  --mod-hab-tint:   #FBEBC0; --mod-hab-ink:   #4B3A0C; --mod-hab-ac:   #C99512; --mod-hab-on:   #3B2A00; --mod-hab-deep:   #8A6200;
+  --mod-hab-hero:   linear-gradient(150deg, #F6CE62 0%, #E3A92B 100%); --mod-hab-hero-ink: #3B2A00; --mod-hab-pill: #F6CE62;
+
+  --mod-shop-tint:  #E6DFF5; --mod-shop-ink:  #2E2457; --mod-shop-ac:  #7461C4; --mod-shop-on:  #FFFFFF; --mod-shop-deep:  #5F4DB0;
+  --mod-shop-hero:  linear-gradient(150deg, #7360C8 0%, #5F4DB0 100%); --mod-shop-hero-ink: #FFFFFF; --mod-shop-pill: #5F4DB0;
+
+  --mod-n-tint:     #EADFCF; --mod-n-ink:     #3E3A36; --mod-n-ac:     #6B5F52; --mod-n-on:     #FFFFFF; --mod-n-deep:     #6B5F52;
+
+  --nav-item-active-fg:  var(--text-on-accent);
   --nav-item-idle-fg:    var(--text-muted);
   --chrome-pill-bg:      var(--surface-raised);
   --ampel-erlaubt:       var(--status-positive);
@@ -202,6 +238,37 @@
   --font: 'Nunito', -apple-system,
           BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+/* ── Modul-Kontext ───────────────────────────────────────────
+   App.jsx setzt data-module auf <html>, solange ein Modul offen ist
+   (finance | nutrition | sport | habits | shopping). Der Hub und die
+   Core-Seiten haben das Attribut nicht und bleiben bei Navy.
+   Im Modul wird die Aktionsfarbe zur Familienfarbe (deep = AA auf hellem
+   Grund); Nav-Pille und Plus-Knopf nutzen die kräftigere Akzentfarbe.
+   Kein transform/filter hier: die feste Nav bleibt unangetastet.    */
+:root[data-module="finance"]   { --m-tint: var(--mod-fin-tint);   --m-ink: var(--mod-fin-ink);   --m-ac: var(--mod-fin-ac);   --m-on: var(--mod-fin-on);   --m-deep: var(--mod-fin-deep);   --m-hero: var(--mod-fin-hero);   --m-hero-ink: var(--mod-fin-hero-ink);   --m-pill: var(--mod-fin-pill); }
+:root[data-module="nutrition"] { --m-tint: var(--mod-food-tint);  --m-ink: var(--mod-food-ink);  --m-ac: var(--mod-food-ac);  --m-on: var(--mod-food-on);  --m-deep: var(--mod-food-deep);  --m-hero: var(--mod-food-hero);  --m-hero-ink: var(--mod-food-hero-ink);  --m-pill: var(--mod-food-pill); }
+:root[data-module="sport"]     { --m-tint: var(--mod-sport-tint); --m-ink: var(--mod-sport-ink); --m-ac: var(--mod-sport-ac); --m-on: var(--mod-sport-on); --m-deep: var(--mod-sport-deep); --m-hero: var(--mod-sport-hero); --m-hero-ink: var(--mod-sport-hero-ink); --m-pill: var(--mod-sport-pill); }
+:root[data-module="habits"]    { --m-tint: var(--mod-hab-tint);   --m-ink: var(--mod-hab-ink);   --m-ac: var(--mod-hab-ac);   --m-on: var(--mod-hab-on);   --m-deep: var(--mod-hab-deep);   --m-hero: var(--mod-hab-hero);   --m-hero-ink: var(--mod-hab-hero-ink);   --m-pill: var(--mod-hab-pill); }
+:root[data-module="shopping"]  { --m-tint: var(--mod-shop-tint);  --m-ink: var(--mod-shop-ink);  --m-ac: var(--mod-shop-ac);  --m-on: var(--mod-shop-on);  --m-deep: var(--mod-shop-deep);  --m-hero: var(--mod-shop-hero);  --m-hero-ink: var(--mod-shop-hero-ink);  --m-pill: var(--mod-shop-pill); }
+:root[data-module] {
+  --action-primary:     var(--m-deep);
+  --action-hover:       var(--m-deep);
+  --action-quiet-bg:    var(--m-tint);
+  --focus-ring:         var(--m-deep);
+  --nav-item-active-bg: var(--m-ac);
+  --nav-item-active-fg: var(--m-on);
+}
+
+/* Bereichs-Familien als Klassen: .tone-fin, .tone-food, .tone-sport, .tone-hab,
+   .tone-shop, .tone-n setzen --t-* lokal (Kacheln, Chips, Plan-Zeilen), auch
+   außerhalb des Moduls (Hub). */
+.tone-fin   { --t-tint: var(--mod-fin-tint);   --t-ink: var(--mod-fin-ink);   --t-ac: var(--mod-fin-ac);   --t-on: var(--mod-fin-on);   --t-deep: var(--mod-fin-deep);   --t-hero: var(--mod-fin-hero);   --t-hero-ink: var(--mod-fin-hero-ink);   --t-pill: var(--mod-fin-pill); }
+.tone-food  { --t-tint: var(--mod-food-tint);  --t-ink: var(--mod-food-ink);  --t-ac: var(--mod-food-ac);  --t-on: var(--mod-food-on);  --t-deep: var(--mod-food-deep);  --t-hero: var(--mod-food-hero);  --t-hero-ink: var(--mod-food-hero-ink);  --t-pill: var(--mod-food-pill); }
+.tone-sport { --t-tint: var(--mod-sport-tint); --t-ink: var(--mod-sport-ink); --t-ac: var(--mod-sport-ac); --t-on: var(--mod-sport-on); --t-deep: var(--mod-sport-deep); --t-hero: var(--mod-sport-hero); --t-hero-ink: var(--mod-sport-hero-ink); --t-pill: var(--mod-sport-pill); }
+.tone-hab   { --t-tint: var(--mod-hab-tint);   --t-ink: var(--mod-hab-ink);   --t-ac: var(--mod-hab-ac);   --t-on: var(--mod-hab-on);   --t-deep: var(--mod-hab-deep);   --t-hero: var(--mod-hab-hero);   --t-hero-ink: var(--mod-hab-hero-ink);   --t-pill: var(--mod-hab-pill); }
+.tone-shop  { --t-tint: var(--mod-shop-tint);  --t-ink: var(--mod-shop-ink);  --t-ac: var(--mod-shop-ac);  --t-on: var(--mod-shop-on);  --t-deep: var(--mod-shop-deep);  --t-hero: var(--mod-shop-hero);  --t-hero-ink: var(--mod-shop-hero-ink);  --t-pill: var(--mod-shop-pill); }
+.tone-n     { --t-tint: var(--mod-n-tint);     --t-ink: var(--mod-n-ink);     --t-ac: var(--mod-n-ac);     --t-on: var(--mod-n-on);     --t-deep: var(--mod-n-deep); }
 
 /* ── Reset & Basis ───────────────────────────────────────────*/
 

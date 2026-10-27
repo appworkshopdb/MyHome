@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum } from './lib/measurementsData';
-import { formatEur } from './lib/format';
+import { useHideAmounts } from './lib/privacyStore';
+import EyeToggle from './components/EyeToggle';
+import Money from './components/Money';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
+import { useGamificationStore } from './lib/gamificationStore.js';
 import { openAmount, isOpenExpense } from './lib/paymentParts';
 import { HUB_CACHE_KEY } from './lib/hubCache';
-import { DayPlanSection } from './components/DayPlan';
+import { DayPlanSection, NutritionBlock } from './components/DayPlan';
+import { HabitTile, TrainingTile } from './components/HubTiles';
 import { loadNutritionDay } from './lib/nutritionDay';
+import { loadSavingsBalance } from './lib/savingsBalance';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
-import PageSection from './components/PageSection';
 import AreaList from './components/AreaList';
 import AreaRow from './components/AreaRow';
 import TodoSheet from './components/TodoSheet';
@@ -166,6 +170,8 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
   // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
   // Abhaken hier ist sofort im Modul sichtbar und umgekehrt.
+  const { current_streak: streak } = useGamificationStore();
+  const [hideAmounts, toggleHideAmounts] = useHideAmounts();
   const { habits: allHabits, entries: habEntries } = useHabitsStore();
   const habHabits = getDueToday(allHabits, habEntries);
   const habTotal  = habHabits.length;
@@ -204,6 +210,16 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     const onVisible = () => { if (document.visibilityState === 'visible') lade(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [session]);
+
+  // Sparschwein-Stand ("Spar" in der Saldo-Karte). Fehlertolerant: bei einem Fehler fehlt nur die Zeile.
+  const [spar, setSpar] = useState(null);
+  useEffect(() => {
+    let aktiv = true;
+    loadSavingsBalance(session)
+      .then((v) => { if (aktiv) setSpar(v); })
+      .catch(() => { if (aktiv) setSpar(null); });
+    return () => { aktiv = false; };
   }, [session]);
 
   const load = useCallback(async (opts = {}) => {
@@ -657,44 +673,60 @@ export default function Hub({ onOpenModule, hasWarnings }) {
             <h1 className="overview-page-title">{greeting()}</h1>
             <div className="hub-date">{datumLang}</div>
 
-            {/* Fokuskarte: Saldo des laufenden Monats */}
-            <FocusCard>
-              <FocusCard.Eyebrow>Saldo {monatsname}</FocusCard.Eyebrow>
-              <FocusCard.Value>{formatEur(saldo)}</FocusCard.Value>
-              <FocusCard.Meta>
-                <span>Ein <b>{formatEur(income)}</b></span>
-                <span>Aus <b>{formatEur(expense)}</b></span>
-              </FocusCard.Meta>
-              {openPosten.length > 0 && (
-                <FocusCard.Footer>
-                  <span>{openPosten.length} offene Posten · {formatEur(offeneSumme)}</span>
-                  <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
-                </FocusCard.Footer>
-              )}
-            </FocusCard>
-
-            {/* Tagesplan — immer sichtbar, direkt unter der Fokuskarte */}
+            {/* Tagesplan — ganz oben, immer sichtbar */}
             <section className="page-section">
               <DayPlanSection
                 plan={dayPlan}
-                nutrition={nutrition}
                 onToggleTodo={handleToggleTodo}
                 onToggleWorkout={handleToggleWorkout}
                 onToggleHabit={handleToggleHabit}
                 onPayPosten={handlePayPosten}
                 onOpenFinance={() => onOpenModule('finance/offen')}
-                onOpenNutrition={onOpenModule}
+                hideAmounts={hideAmounts}
               />
             </section>
 
+            {/* Saldo (Kachel, links hoch) + Gewohnheiten + Training */}
+            <div className="hub-grid">
+              <FocusCard family="fin" className="hub-saldo">
+                <FocusCard.Eyebrow right={<EyeToggle hidden={hideAmounts} onToggle={toggleHideAmounts} />}>Saldo {monatsname}</FocusCard.Eyebrow>
+                <FocusCard.Value><Money value={saldo} hide={hideAmounts} /></FocusCard.Value>
+                <FocusCard.Meta>
+                  <span>Ein <b><Money value={income} hide={hideAmounts} /></b></span>
+                  <span>Aus <b><Money value={expense} hide={hideAmounts} /></b></span>
+                  {spar !== null && <span>Spar <b><Money value={spar} hide={hideAmounts} /></b></span>}
+                </FocusCard.Meta>
+                {openPosten.length > 0 && (
+                  <FocusCard.Footer>
+                    <span>{openPosten.length} offene Posten · <Money value={offeneSumme} hide={hideAmounts} /></span>
+                    <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
+                  </FocusCard.Footer>
+                )}
+              </FocusCard>
+              <HabitTile done={habDone} total={habTotal} streak={streak} onPress={() => setBereich('gewohnheiten')} />
+              <TrainingTile
+                workout={dayPlan.workouts[0] ?? null}
+                rest={dayPlan.restDay}
+                onPress={() => onOpenModule('sport')}
+              />
+            </div>
+
+            {/* Ernährung — Tagesstand als eigener Block */}
+            {nutrition && (
+              <section className="page-section">
+                <NutritionBlock data={nutrition} onOpen={onOpenModule} />
+              </section>
+            )}
+
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
-            <PageSection
-              title="Aufgaben"
-              action={todosAlle.length > 0
-                ? { label: `Alle ${todosAlle.length} ›`, onPress: () => setBereich('aufgaben') }
-                : undefined}
-            >
+            <section className="page-section">
               <div className="hub-task-card">
+                <div className="hub-task-head">
+                  <h2 className="hub-task-label">Aufgaben</h2>
+                  {todosAlle.length > 0 && (
+                    <button className="hub-task-all" onClick={() => setBereich('aufgaben')}>Alle {todosAlle.length} ›</button>
+                  )}
+                </div>
                 {naechsteTodos.length === 0 && (
                   <div className="hub-task-empty">Keine offenen Aufgaben.</div>
                 )}
@@ -724,21 +756,15 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   <span className="hub-task-title">Neue Aufgabe</span>
                 </button>
               </div>
-            </PageSection>
+            </section>
 
-            {/* Kalender — Tag/Woche/Monat, inkl. Google-Kalender falls verbunden */}
-            <PageSection title="Kalender">
-              <AreaList>
-                <AreaRow label="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
-              </AreaList>
-            </PageSection>
-
-            {/* Statistiken — ein einzelner Bereich unter dem Kalender; dort die
-                Auswahl Wochen-/Monatsüberblick (eigene Route #/statistiken, damit
-                die Rückblick-Pushes direkt verlinken können). */}
+            {/* Kalender (Tag/Woche/Monat, inkl. Google-Kalender falls verbunden) und
+                Statistiken (Auswahl Wochen-/Monatsüberblick, eigene Route #/statistiken,
+                damit die Rückblick-Pushes direkt verlinken können). */}
             <section className="page-section">
-              <AreaList>
-                <AreaRow label="Statistiken" onPress={() => onOpenModule('statistiken')} />
+              <AreaList variant="tiles">
+                <AreaRow label="Kalender" icon="calendar" value="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
+                <AreaRow label="Statistiken" icon="chart" value="Wochen- und Monatsüberblick" onPress={() => onOpenModule('statistiken')} />
               </AreaList>
             </section>
           </>

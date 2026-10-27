@@ -142,9 +142,11 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList>
+        <AreaList variant="tiles">
           <AreaRow
             label="Alle Listen"
+            icon="shopping"
+            featured
             value={`${lists.length} · ${offeneListen.length} offen`}
             onPress={() => onNavigate('listen')}
           />
@@ -152,6 +154,7 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
             <AreaRow
               key={l.id}
               label={l.name}
+              icon="list"
               value={`${l._done ?? 0} / ${l._total ?? 0}`}
               onPress={() => onOpenList(l)}
             />

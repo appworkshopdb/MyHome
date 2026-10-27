@@ -9,6 +9,7 @@ import { useGamificationStore } from '../../../core/lib/gamificationStore.js';
 import { fb } from '../../../core/lib/feedback.js';
 import { useState } from 'react';
 import FocusCard from '../../../core/components/FocusCard.jsx';
+import Ring from '../../../core/components/Ring.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
@@ -37,7 +38,6 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
   const openToday     = dueToday.filter((h) => !isDone(entries, h.id, todayStr, h.target_count));
   const totalDue  = dueToday.length;
   const totalDone = doneToday.length;
-  const ringDeg   = totalDue > 0 ? Math.round((totalDone / totalDue) * 360) : 0;
 
   const monthFrom = isoDaysAgo(29);
   const monthRate = overallRate(activeHabits, entries, monthFrom, todayStr);
@@ -77,12 +77,9 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
       {/* Fokuskarte */}
       <FocusCard>
         <div className="hab-ring-row">
-          <div
-            className="hab-ring"
-            style={{ background: `conic-gradient(#FFFFFF 0deg ${ringDeg}deg, var(--raw-navy-600) ${ringDeg}deg 360deg)` }}
-          >
-            <div className="hab-ring-inner">{totalDone}/{totalDue}</div>
-          </div>
+          <Ring size={76} stroke={9} value={totalDue > 0 ? totalDone / totalDue : 0} className="hab-ring">
+            <b>{totalDone}/{totalDue}</b>
+          </Ring>
           <div className="hab-ring-text">
             <div className="hab-ring-headline">
               {totalDue === 0 ? 'Nichts fällig heute'
@@ -148,14 +145,17 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList>
+        <AreaList variant="tiles">
           <AreaRow
             label="Meine Gewohnheiten"
+            icon="habits"
+            featured
             value={`${activeHabits.length} aktiv`}
             onPress={() => onNavigate('gewohnheiten')}
           />
           <AreaRow
             label="Statistik"
+            icon="chart"
             value={`${Math.round(monthRate * 100)} % · ${perfectDays}/7 Tage`}
             onPress={() => onNavigate('statistik')}
           />

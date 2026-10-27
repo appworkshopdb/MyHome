@@ -191,31 +191,37 @@ export default function OverviewSection({ onNavigate }) {
 
       {/* ── Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList>
+        <AreaList variant="tiles">
           <AreaRow
             label="Buchungen"
+            icon="list"
+            featured
             value={`${entries.length} im Monat`}
             onPress={() => onNavigate('buchungen')}
           />
           <AreaRow
             label="Offene Posten"
+            icon="clock"
             value={offene.length > 0 ? `${offene.length} · ${formatEur(offeneSumme)}` : 'alles bezahlt'}
             tone={offene.length > 0 ? 'critical' : 'neutral'}
             onPress={() => onNavigate('offen')}
           />
           <AreaRow
             label="Verträge"
+            icon="contract"
             value={expiring > 0 ? `${expiring} läuft aus` : `${laufende}`}
             tone={expiring > 0 ? 'caution' : 'neutral'}
             onPress={() => onNavigate('vertraege')}
           />
           <AreaRow
             label="Auswertung"
+            icon="chart"
             value="Jahr"
             onPress={() => onNavigate('auswertung')}
           />
           <AreaRow
             label="Einstellungen"
+            icon="gear"
             onPress={() => onNavigate('einstellungen')}
           />
         </AreaList>
