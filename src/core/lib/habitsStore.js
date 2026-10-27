@@ -103,36 +103,55 @@ export function getDueToday(habits, entries) {
 
 // ─── Laden ────────────────────────────────────────────────────
 
-export async function loadHabitsData({ force = false } = {}) {
-  if (state.loading) return;
-  if (state.loaded && !force) return;
-  setState({ loading: true });
-  try {
-    const sb = getSupabase();
-    const [habRes, entRes] = await Promise.all([
-      sb.from('hab_habits')
-        .select('*')
-        .is('deleted_at', null)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true }),
-      sb.from('hab_entries')
-        .select('*')
-        .is('deleted_at', null)
-        .order('logged_on', { ascending: false }),
-    ]);
-    if (habRes.error) throw habRes.error;
-    if (entRes.error) throw entRes.error;
-    setState({
-      habits:  habRes.data ?? [],
-      entries: entRes.data ?? [],
-      loaded:  true,
-      loading: false,
-    });
-  } catch (e) {
-    console.error('[habitsStore] Laden fehlgeschlagen:', e);
-    setState({ loading: false });
-    throw e;
+// Läuft schon ein Ladevorgang, wird er NICHT stillschweigend übersprungen:
+//   - ohne force: der Aufrufer bekommt denselben Vorgang (und dessen Fehler),
+//   - mit force: es wird gewartet und danach frisch geladen.
+// Früher kehrte ein force-Aufruf bei state.loading sofort ohne Ergebnis zurück.
+// Beim App-Start mit abgelaufenem Token startet der Hook-Mount das erste Laden
+// (scheitert mit 401), der Hub-Aufruf mit force wurde verworfen, und nach dem
+// Token-Refresh gab es keinen weiteren Versuch — die Gewohnheiten blieben leer,
+// bis das Modul sie erneut erzwang.
+let inflight = null;
+
+export function loadHabitsData({ force = false } = {}) {
+  if (inflight) {
+    if (!force) return inflight;
+    return inflight.catch(() => {}).then(() => loadHabitsData({ force: true }));
   }
+  if (state.loaded && !force) return Promise.resolve();
+
+  setState({ loading: true });
+  inflight = (async () => {
+    try {
+      const sb = getSupabase();
+      const [habRes, entRes] = await Promise.all([
+        sb.from('hab_habits')
+          .select('*')
+          .is('deleted_at', null)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true }),
+        sb.from('hab_entries')
+          .select('*')
+          .is('deleted_at', null)
+          .order('logged_on', { ascending: false }),
+      ]);
+      if (habRes.error) throw habRes.error;
+      if (entRes.error) throw entRes.error;
+      setState({
+        habits:  habRes.data ?? [],
+        entries: entRes.data ?? [],
+        loaded:  true,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('[habitsStore] Laden fehlgeschlagen:', e);
+      setState({ loading: false });
+      throw e;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
 }
 
 // Nur die Einträge neu laden (nach externen Änderungen)
