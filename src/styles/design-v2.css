@@ -14,7 +14,13 @@
   font-weight:    900;
   letter-spacing: -0.025em;
   line-height:    1.12;
+  /* Abstand Titel → erster Inhalt: überall 16px. Im Hub folgt das Datum
+     (trägt die 16px selbst), in Finanzen trägt die Kopfzeile sie. */
+  margin:         0 0 16px;
 }
+.hub .overview-page-title,
+.fin-overview-head .overview-page-title { margin-bottom: 0; }
+.fin-overview-head { margin-bottom: 16px; }
 .page-section,
 .page-section + .page-section { margin-top: 16px; }
 .section-head-title { font-size: 18px; font-weight: 900; }
