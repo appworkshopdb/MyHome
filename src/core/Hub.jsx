@@ -14,6 +14,7 @@ import { HUB_CACHE_KEY } from './lib/hubCache';
 import { DayPlanSection, NutritionBlock } from './components/DayPlan';
 import { HabitTile, TrainingTile } from './components/HubTiles';
 import { loadNutritionDay } from './lib/nutritionDay';
+import { loadSavingsBalance } from './lib/savingsBalance';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
 import AreaList from './components/AreaList';
@@ -209,6 +210,16 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     const onVisible = () => { if (document.visibilityState === 'visible') lade(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
+  }, [session]);
+
+  // Sparschwein-Stand ("Spar" in der Saldo-Karte). Fehlertolerant: bei einem Fehler fehlt nur die Zeile.
+  const [spar, setSpar] = useState(null);
+  useEffect(() => {
+    let aktiv = true;
+    loadSavingsBalance(session)
+      .then((v) => { if (aktiv) setSpar(v); })
+      .catch(() => { if (aktiv) setSpar(null); });
+    return () => { aktiv = false; };
   }, [session]);
 
   const load = useCallback(async (opts = {}) => {
@@ -683,6 +694,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 <FocusCard.Meta>
                   <span>Ein <b><Money value={income} hide={hideAmounts} /></b></span>
                   <span>Aus <b><Money value={expense} hide={hideAmounts} /></b></span>
+                  {spar !== null && <span>Spar <b><Money value={spar} hide={hideAmounts} /></b></span>}
                 </FocusCard.Meta>
                 {openPosten.length > 0 && (
                   <FocusCard.Footer>
