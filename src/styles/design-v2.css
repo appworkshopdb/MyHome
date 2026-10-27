@@ -424,3 +424,26 @@
   .area-list--tiles .area-row:last-child:nth-child(odd) { grid-column: auto; }
   .hubt-text b { font-size: 14px; }
 }
+
+/* ── Hintergrund-Schein oben rechts ──────────────────────────
+   Weicher Farbverlauf hinter Begrüßung/Titel. Hub: Ochre; im Modul die
+   Akzentfarbe der Familie. Fest am Bildschirm (position: fixed) und hinter
+   dem Inhalt (z-index: -1): kein transform/filter, keine neue Stapelebene
+   für die feste Nav oder die TopBar.                                  */
+:root           { --bg-glow: rgba(242, 185, 75, 0.30); }
+:root.dark      { --bg-glow: rgba(242, 185, 75, 0.14); }
+:root[data-module]      { --bg-glow: color-mix(in srgb, var(--m-ac) 26%, transparent); }
+:root.dark[data-module] { --bg-glow: color-mix(in srgb, var(--m-ac) 20%, transparent); }
+
+body::before {
+  content:        "";
+  position:       fixed;
+  top:            -90px;
+  right:          -70px;
+  width:          340px;
+  height:         340px;
+  border-radius:  50%;
+  background:     radial-gradient(circle, var(--bg-glow), transparent 68%);
+  pointer-events: none;
+  z-index:        -1;
+}
