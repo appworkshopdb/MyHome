@@ -626,13 +626,22 @@ body::before {
   display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; border: 0;
   border-radius: var(--r-pill); background: var(--m-ac); color: var(--m-on); font: inherit; font-size: 15px; font-weight: 900; cursor: pointer;
 }
-.sa-wlist { margin-top: 6px; }
-.sa-wr { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-hairline); }
-.sa-wr:first-child { border-top: 0; }
-.sa-wbody { flex: 1; min-width: 0; }
+.sa-wlist { margin-top: 8px; }
+/* Bis zu drei Einträge sichtbar, ab dem vierten scrollt nur dieser Bereich */
+.sa-wlist.scroll { max-height: 228px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.sa-wlist.scroll::-webkit-scrollbar { width: 4px; }
+.sa-wlist.scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+.sa-wr { display: flex; align-items: stretch; gap: 12px; min-height: 76px; }
+.sa-rail { display: flex; flex-direction: column; align-items: center; width: 12px; flex: none; padding-top: 10px; }
+.sa-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--m-ac); flex: none; }
+.sa-line { flex: 1; width: 2px; margin-top: 4px; background: var(--border-hairline); }
+.sa-wbody { flex: 1; min-width: 0; padding: 2px 0 14px; }
+.sa-wr .sa-del { align-self: flex-start; margin-top: 2px; }
 .sa-wv { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .sa-wd { font-size: 12px; font-weight: 700; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.sa-delta { border-radius: var(--r-pill); padding: 1px 8px; background: var(--m-tint); font-size: 11px; font-weight: 800; }
+.sa-delta { border-radius: var(--r-pill); padding: 1px 9px; background: var(--surface-sunken); color: var(--text-primary); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sa-delta--good { background: var(--status-positive-bg); color: var(--status-positive); }
+.sa-delta--bad  { background: var(--status-critical-bg); color: var(--status-critical); }
 .sa-del {
   display: grid; place-items: center; flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%;
   background: var(--surface-sunken); color: var(--text-muted); cursor: pointer;

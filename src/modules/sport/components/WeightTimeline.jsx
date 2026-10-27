@@ -7,18 +7,18 @@ import { IconTrash } from '../../../core/components/Icons';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-// + und - bedeuten je nach Ziel etwas anderes: bei "Abnehmen" ist ein
-// Minus der Erfolg (grün), bei "Zunehmen"/"Muskelaufbau" ein Plus.
-// "Halten" bewertet beide Richtungen neutral. Nutzt die bestehenden
-// Signalfarben (--success/--danger) statt neue Farben zu erfinden —
-// Design-Regel "ein Akzent pro Ansicht, sonst nichts Buntes außer den
-// funktionalen Signalfarben".
-function deltaColor(delta, goal) {
-  if (delta === 0 || !goal || goal === 'halten') return 'var(--text-primary)';
+// + und - bedeuten je nach Ziel etwas anderes:
+//   Abnehmen          → Minus gut (grün), Plus schlecht (rot)
+//   Zunehmen / Muskel → Plus gut (grün), Minus schlecht (rot)
+//   Halten            → jede Veränderung schlecht (rot)
+// Ohne Ziel oder bei ±0 bleibt die Angabe neutral. Nutzt die vorhandenen Signalfarben
+// (--status-positive/--status-critical), Klassen .sa-delta--good|bad in design-v2.css.
+function deltaTone(delta, goal) {
+  if (!delta || !goal) return 'neutral';
+  if (goal === 'halten') return 'bad';
   const gainIsGood = goal === 'zunehmen' || goal === 'muskel';
-  const isGain = delta > 0;
-  const good = gainIsGood ? isGain : !isGain;
-  return good ? 'var(--success)' : 'var(--danger)';
+  if (goal !== 'abnehmen' && !gainIsGood) return 'neutral';
+  return (gainIsGood ? delta > 0 : delta < 0) ? 'good' : 'bad';
 }
 
 function formatDelta(delta) {
@@ -126,16 +126,20 @@ export default function WeightTimeline() {
       {display.length === 0 ? (
         <p style={{ color: 'var(--text-secondary)', margin: '10px 0 0' }}>Noch kein Gewicht eingetragen.</p>
       ) : (
-        <div className="sa-wlist">
-          {display.map((log) => (
+        <div className={`sa-wlist${display.length > 3 ? ' scroll' : ''}`}>
+          {display.map((log, i) => (
             <div key={log.id} className="sa-wr">
+              <div className="sa-rail" aria-hidden="true">
+                <span className="sa-dot" />
+                {i < display.length - 1 && <span className="sa-line" />}
+              </div>
               <div className="sa-wbody">
                 <div className="sa-wv">{Number(log.weight).toFixed(1)} kg</div>
                 <div className="sa-wd">
                   {new Date(`${log.logged_on}T00:00:00`).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   {log.delta !== null && (
-                    <span className="sa-delta" style={{ color: deltaColor(log.delta, goal) }}>
-                      {formatDelta(log.delta)} zum vorherigen Eintrag
+                    <span className={`sa-delta sa-delta--${deltaTone(log.delta, goal)}`}>
+                      {formatDelta(log.delta)}
                     </span>
                   )}
                 </div>
