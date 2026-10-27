@@ -143,24 +143,29 @@ export default function OverviewSection({
 
       {/* Bereiche */}
       <PageSection title="Bereiche">
-        <AreaList>
+        <AreaList variant="tiles">
           <AreaRow
             label="Einheiten"
+            icon="sport"
+            featured
             value={`${units.length}`}
             onPress={() => onNavigate('einheiten')}
           />
           <AreaRow
             label="Pläne"
+            icon="plan"
             value={`${plans.length}`}
             onPress={() => onNavigate('plaene')}
           />
           <AreaRow
             label="Auswertung"
+            icon="chart"
             value={`${doneThisMonth} im Monat`}
             onPress={() => onNavigate('auswertung')}
           />
           <AreaRow
             label="Gewicht"
+            icon="scale"
             value={bodyWeight ? `${String(bodyWeight).replace('.', ',')} kg` : 'kein Wert'}
             onPress={() => onNavigate('gewicht')}
           />

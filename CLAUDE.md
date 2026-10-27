@@ -277,6 +277,26 @@ aktiviert wurde. Abmelden löscht nur die Zeile in `push_subscriptions` (`releas
 denselben Nutzer wieder her (`restorePushForUser`, fragt nie nach); ein anderer Nutzer auf dem Gerät startet ohne Push.
 Kategorie-Schalter liegen schon in `notification_prefs`. Neue Nutzer-Einstellung = Spalte/Tabelle, nie nur localStorage.
 
+## Farbsystem und Hub-Layout (Front-End)
+
+Warme Basis (`--raw-sand-*`, warmes Dunkelblau als Text; Dunkelmodus warm, `themes.css`) plus
+EINE Farbfamilie je Modul: Finanzen Blau, Ernährung Grün, Sport Koralle, Gewohnheiten Gold,
+Einkauf Violett; Hub-Funktionen (Termine, Aufgaben, Kalender) neutral (`--mod-n-*`). Tokens je
+Familie in `base.css`/`themes.css`: `--mod-<fin|food|sport|hab|shop>-` + `tint|ink|ac|on|deep|hero|hero-ink|pill`
+(`deep` = Text auf hellem Grund, AA; `ac`/`on` = Füllung + Schrift darauf). `App.jsx` setzt
+`data-module` auf `<html>`, solange ein Modul offen ist; dann mappt `base.css` `--m-*` und die
+Aktionsfarbe (`--action-primary`) auf die Familie, Nav-Pille/Plus-Knopf nutzen `--m-ac`/`--m-on`.
+Einzelne Kacheln außerhalb eines Moduls (Hub) bekommen die Familie per Klasse `.tone-<familie>` (`--t-*`).
+Neue Familie/Farbe nur als Token ergänzen, nie als Hex in Komponenten; Farbe ist nie das einzige
+Zeichen (Symbol + Name bleiben). Kontraste vor Änderungen nachrechnen (Text ≥ 4,5:1).
+
+Die neue Optik steht in `styles/design-v2.css` (zuletzt geladene Datei; übersteuert `app-extra.css`),
+Bausteine: `FocusCard` (Verlauf der Familie, optional `family`), `AreaList variant="tiles"` +
+`AreaRow icon/featured` (Bereiche als Kacheln, Symbole in `AreaIcons.jsx`), `Ring.jsx`, `HubTiles.jsx`.
+Hub-Reihenfolge: Tagesplan (mit "Als Nächstes" = erstes offenes Training), Saldo + Gewohnheiten +
+Training, Ernährung (`NutritionBlock`, in den Modulen `variant="hero"`), Aufgaben, Kalender/Statistiken.
+Logik, Texte, Links und Daten sind dieselben wie vorher; die Ernährung steht nicht mehr IM Tagesplan.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
