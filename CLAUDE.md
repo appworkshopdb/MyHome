@@ -266,6 +266,17 @@ Vorschaukarte), `NutritionFabMenu` (gruppiert). Gesehen-Zustand: `body_profile.t
 Neues Modul = Eintrag in `tutorials.js` + Id in der Migration. Bereichs-Symbole zentral in
 `ModuleIcons.jsx` (auch Bottom-Nav). Der Hub zeigt keinen Leerzustand mehr.
 
+## Einstellungen hängen am Nutzer, nicht am Gerät
+
+Tracking-Einwilligung: `body_profile.analytics_consent` (+ `_at`, `_version`, Migration
+`supabase/consent_migration.sql`; ohne Migration läuft die App lokal weiter). `lib/analytics.js` hält je Nutzer einen
+Zwischenspeicher (`nestua_analytics_consent:<userId>`), gleicht beim Login mit dem Server ab (Server gewinnt; ein
+alter gerätebezogener Wert wird einmalig dem ersten Login zugeschrieben). Banner erst nach dem Abgleich (`'pending'`).
+Push: das Abo ist technisch Gerätesache; `lib/pushNotifications.js` merkt sich in `nestua_push_user`, FÜR WEN es hier
+aktiviert wurde. Abmelden löscht nur die Zeile in `push_subscriptions` (`releasePushForLogout`), Login stellt sie für
+denselben Nutzer wieder her (`restorePushForUser`, fragt nie nach); ein anderer Nutzer auf dem Gerät startet ohne Push.
+Kategorie-Schalter liegen schon in `notification_prefs`. Neue Nutzer-Einstellung = Spalte/Tabelle, nie nur localStorage.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo

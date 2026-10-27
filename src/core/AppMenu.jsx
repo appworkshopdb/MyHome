@@ -50,7 +50,7 @@ export default function AppMenu() {
     let aktiv = true;
     async function loadPush() {
       if (!isPushSupported()) { setPushStatus('unsupported'); return; }
-      const status = await getPushSubscriptionStatus();
+      const status = await getPushSubscriptionStatus(session);
       if (!aktiv) return;
       setPushStatus(status);
       if (status === 'subscribed') { const p = await getNotificationPrefs(session); if (aktiv) setPrefs(p); }
@@ -70,7 +70,7 @@ export default function AppMenu() {
   async function handleEnablePush() {
     setPushBusy(true);
     try { await subscribeToPush(session); setPushStatus('subscribed'); setPrefs(await getNotificationPrefs(session)); track('push_enabled'); showToast('Benachrichtigungen aktiviert'); }
-    catch (e) { showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus()); }
+    catch (e) { showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus(session)); }
     finally { setPushBusy(false); }
   }
   async function handleDisablePush() {

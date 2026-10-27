@@ -21,6 +21,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { useAuth } from './core/lib/AuthContext';
 import { syncAnalyticsSession } from './core/lib/analytics';
+import { restorePushForUser } from './core/lib/pushNotifications';
 import AnalyticsConsent from './core/components/AnalyticsConsent';
 import { useRoute } from './core/lib/useRoute';
 import { useRequiredDataStatus } from './core/lib/useRequiredDataStatus';
@@ -84,6 +85,11 @@ export default function App() {
   // Tracking nur für eingeloggte Nutzer und nur mit Einwilligung — die
   // Prüfung steckt in analytics.js, hier wird nur die Anmeldung gemeldet.
   useEffect(() => { syncAnalyticsSession(session); }, [session]);
+
+  // Push-Abo dieses Geräts für den angemeldeten Nutzer wiederherstellen (ohne
+  // neue Abfrage, wenn er es hier schon aktiviert hatte) — nur bei Nutzerwechsel.
+  const sessionUserId = session?.user?.id;
+  useEffect(() => { if (session) restorePushForUser(session); }, [sessionUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
   if (!session) return <Login />;
