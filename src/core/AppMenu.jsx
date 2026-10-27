@@ -4,7 +4,7 @@ import { useUi } from './lib/UiContext';
 import { MODES } from './lib/theme';
 import { isSoundEnabled, isHapticEnabled, setSoundEnabled, setHapticEnabled, fb } from './lib/feedback';
 import {
-  isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush,
+  isPushSupported, getPushSubscriptionStatus, subscribeToPush, unsubscribeFromPush, blockedHelp,
   getNotificationPrefs, saveNotificationPrefs,
 } from './lib/pushNotifications';
 import {
@@ -40,6 +40,7 @@ export default function AppMenu() {
   const [haptik, setHaptik] = useState(isHapticEnabled());
   const [pushStatus, setPushStatus] = useState('laedt');
   const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState(null); // bleibt unter dem Knopf stehen (ein Hinweis-Toast ist zu flüchtig)
   const [prefs, setPrefs] = useState(null);
   const [gcalStatus, setGcalStatus] = useState('laedt');
   const [gcalConnection, setGcalConnection] = useState(null);
@@ -69,8 +70,9 @@ export default function AppMenu() {
 
   async function handleEnablePush() {
     setPushBusy(true);
+    setPushError(null);
     try { await subscribeToPush(session); setPushStatus('subscribed'); setPrefs(await getNotificationPrefs(session)); track('push_enabled'); showToast('Benachrichtigungen aktiviert'); }
-    catch (e) { showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus(session)); }
+    catch (e) { setPushError(e.message || 'Konnte nicht aktiviert werden'); showToast(e.message || 'Konnte nicht aktiviert werden'); setPushStatus(await getPushSubscriptionStatus(session)); }
     finally { setPushBusy(false); }
   }
   async function handleDisablePush() {
@@ -148,8 +150,8 @@ export default function AppMenu() {
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
       {pushStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
       {pushStatus === 'unsupported' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone: erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.</p>}
-      {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/System-Einstellungen für diese Seite.</p>}
-      {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button></>}
+      {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/Geräte-Einstellungen für diese Seite. {blockedHelp()}</p>}
+      {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button>{pushError && <p role="alert" style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 10 }}>{pushError}</p>}</>}
       {pushStatus === 'subscribed' && prefs && <><div className="notif-toggle-list">{NOTIFICATION_CATEGORIES.map((c) => <NotifToggle key={c.key} checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} label={c.label} hint={c.hint} />)}</div><button className="btn btn-secondary" style={{ marginTop: 14, width: '100%' }} disabled={pushBusy} onClick={handleDisablePush}>Deaktivieren</button></>}
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Nutzungsdaten</div>
