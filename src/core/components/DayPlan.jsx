@@ -1,26 +1,27 @@
 import { formatEur } from '../lib/format';
+import Ring from './Ring';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
 // Handler aus dem Hub — hier wird nur dargestellt.
+//
+// Aufbau: Kopf mit Ring, optional "Als Nächstes" (erstes offenes Training, mit
+// "Erledigt"), darunter EINE Liste. Jede Zeile trägt einen Chip in der Farbfamilie
+// ihres Bereichs (Training = Sport, Gewohnheit = Gewohnheiten, Zahlung = Finanzen,
+// Termin/Aufgabe = neutral). Die Ernährung steht NICHT mehr in dieser Liste, sondern
+// als eigener Block (NutritionBlock) darunter im Hub.
 
-function Row({ done, onToggle, icon, title, meta, critical }) {
+function Row({ done, onToggle, icon, title, sub, critical, family, tag }) {
   return (
     <div className={`dayplan-row ${done ? 'done' : ''}`}>
       <button className={`dayplan-check ${done ? 'checked' : ''}`} onClick={onToggle} aria-label={done ? 'Rückgängig' : 'Erledigt'}>
         {done && '✓'}
       </button>
       {icon && <span className="dayplan-icon">{icon}</span>}
-      <span className="dayplan-row-title">{title}</span>
-      {meta && <span className={`dayplan-meta ${critical ? 'critical' : ''}`}>{meta}</span>}
-    </div>
-  );
-}
-
-function Group({ label, children }) {
-  return (
-    <div className="dayplan-group">
-      <div className="dayplan-group-label">{label}</div>
-      {children}
+      <span className="dayplan-row-body">
+        <span className="dayplan-row-title">{title}</span>
+        {sub && <span className={`dayplan-sub ${critical ? 'critical' : ''}`}>{sub}</span>}
+      </span>
+      <span className={`dayplan-chip tone-${family}`}>{tag}</span>
     </div>
   );
 }
@@ -30,8 +31,8 @@ const fmtNum = (n) => Math.round(n).toLocaleString('de-DE');
 // Ernährungsstand des Tages: kein Haken, zählt nicht bei "x / y erledigt".
 // Block antippen → Mahlzeiten (Verlauf + Eintragen), "Ernährung ›" → Modul.
 // Wird auch oben auf der Ernährungs-Seite gezeigt (label="Heute", hideOpen: der
-// Link ins Modul entfällt dort).
-export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = false }) {
+// Link ins Modul entfällt dort, variant="hero": große Fokuskarte in Grün).
+export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = false, variant = 'tile' }) {
   const { kcal, goal, macros, slots, count, hasEstimate, eaten, overKcal } = data;
   const approx = hasEstimate ? '≈ ' : '';
   const over = overKcal > 0;
@@ -50,17 +51,23 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
   }
 
   return (
-    <div className={`dayplan-group dp-nut ${over ? 'over' : ''}`}>
+    <div className={`dp-nut tone-food dp-nut--${variant} ${over ? 'over' : ''}`}>
       <div className="dp-nut-head">
-        <div className="dayplan-group-label">{label}</div>
+        <div className="dp-nut-label">{label}</div>
         {!hideOpen && <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung ›</button>}
       </div>
       <button className="dp-nut-btn" onClick={() => onOpen?.('nutrition/mahlzeiten')}>
         <div className="dp-nut-top">
-          <div className="dp-nut-main">{main}</div>
-          {side && <div className="dp-nut-side">{side} ›</div>}
+          {kcal && (
+            <Ring size={variant === 'hero' ? 84 : 72} stroke={variant === 'hero' ? 9 : 8} value={kcal.pct / 100} className="dp-nut-ring">
+              <b>{Math.round(kcal.pct)} %</b>
+            </Ring>
+          )}
+          <div className="dp-nut-text">
+            <div className="dp-nut-main">{main}</div>
+            {side && <div className="dp-nut-side">{side} ›</div>}
+          </div>
         </div>
-        {kcal && <div className="dp-nut-bar"><div className="dp-nut-fill" style={{ width: `${kcal.pct}%` }} /></div>}
         {goal && (
           <div className="dp-macros">
             {MACROS.map(([key, label]) => macros[key] && (
@@ -89,73 +96,81 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
   );
 }
 
-export function DayPlanSection({ plan, nutrition, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance, onOpenNutrition }) {
+export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance }) {
   const pct = plan.total > 0 ? plan.done / plan.total : 0;
+  // Erstes noch offenes Training: eigener "Als Nächstes"-Block mit Erledigt-Knopf,
+  // gleiche Aktion wie das Häkchen in der Liste (onToggleWorkout).
+  const next = plan.workouts.find((w) => !w.done) ?? null;
+  const workouts = plan.workouts.filter((w) => w !== next);
+
   return (
     <div className="dayplan-card">
       <div className="dayplan-head">
-        <h2 className="dayplan-title">Dein Tagesplan</h2>
-        <span className="dayplan-count">{plan.done} / {plan.total} erledigt</span>
+        <div className="dayplan-head-text">
+          <h2 className="dayplan-title">Dein Tagesplan</h2>
+          <span className="dayplan-count">{plan.done} / {plan.total} erledigt</span>
+        </div>
+        <Ring size={54} stroke={6} value={pct} className="dayplan-ring" />
       </div>
-      <div className="dayplan-bar"><div className="dayplan-bar-fill" style={{ width: `${pct * 100}%` }} /></div>
+
+      {next && (
+        <div className="dayplan-next tone-sport">
+          <div className="dayplan-next-body">
+            <span className="dayplan-next-kicker">Als Nächstes</span>
+            <span className="dayplan-next-title">{next.title}</span>
+            {next.minutes ? <span className="dayplan-next-meta">Training · {next.minutes} Min</span> : <span className="dayplan-next-meta">Training</span>}
+          </div>
+          <button className="dayplan-next-btn" onClick={() => onToggleWorkout(next.workout)}>Erledigt</button>
+        </div>
+      )}
 
       {plan.isEmpty && <div className="dayplan-empty">Heute steht nichts an — freier Tag.</div>}
 
-      {plan.events.length > 0 && (
-        <Group label="Termine">
+      {(plan.events.length > 0 || plan.restDay || workouts.length > 0 || plan.todos.length > 0 || plan.habits.length > 0 || plan.posten.length > 0) && (
+        <div className="dayplan-list">
           {plan.events.map((e) => (
             <div key={e.id} className="dayplan-row">
               <span className="dayplan-time">{e.time ?? 'ganztägig'}</span>
-              <span className="dayplan-row-title">{e.title}</span>
+              <span className="dayplan-row-body"><span className="dayplan-row-title">{e.title}</span></span>
+              <span className="dayplan-chip tone-n">Termin</span>
             </div>
           ))}
-        </Group>
-      )}
 
-      {(plan.workouts.length > 0 || plan.restDay) && (
-        <Group label="Training">
-          {plan.restDay && <div className="dayplan-row"><span className="dayplan-icon">–</span><span className="dayplan-row-title">Restday</span></div>}
-          {plan.workouts.map((w) => (
-            <Row key={w.id} done={w.done} icon="💪" title={w.title}
-              meta={w.minutes ? `${w.minutes} Min` : null}
+          {plan.restDay && (
+            <div className="dayplan-row">
+              <span className="dayplan-time">–</span>
+              <span className="dayplan-row-body"><span className="dayplan-row-title">Restday</span></span>
+              <span className="dayplan-chip tone-sport">Training</span>
+            </div>
+          )}
+          {workouts.map((w) => (
+            <Row key={w.id} done={w.done} icon="💪" title={w.title} family="sport" tag="Training"
+              sub={w.minutes ? `${w.minutes} Min` : null}
               onToggle={() => onToggleWorkout(w.workout)} />
           ))}
-        </Group>
-      )}
 
-      {nutrition && <NutritionBlock data={nutrition} onOpen={onOpenNutrition} />}
-
-      {plan.todos.length > 0 && (
-        <Group label="Aufgaben">
           {plan.todos.map((t) => (
-            <Row key={t.id} done={t.done} title={t.title}
-              meta={t.overdue ? 'überfällig' : t.priority ? 'Wichtig' : null} critical={t.overdue}
+            <Row key={t.id} done={t.done} title={t.title} family="n" tag="Aufgabe"
+              sub={t.overdue ? 'überfällig' : t.priority ? 'Wichtig' : null} critical={t.overdue}
               onToggle={() => onToggleTodo(t.id, t.done)} />
           ))}
-        </Group>
-      )}
 
-      {plan.habits.length > 0 && (
-        <Group label="Gewohnheiten">
           {plan.habits.map((h) => (
-            <Row key={h.id} done={h.done} icon={h.icon} title={h.title} onToggle={() => onToggleHabit(h.habit)} />
+            <Row key={h.id} done={h.done} icon={h.icon} title={h.title} family="hab" tag="Gewohnheit"
+              onToggle={() => onToggleHabit(h.habit)} />
           ))}
-        </Group>
-      )}
 
-      {plan.posten.length > 0 && (
-        <Group label="Zahlungen">
           {plan.posten.map((p) => (
             <div key={p.id} className="dayplan-row">
               <button className="dayplan-check" onClick={() => onPayPosten(p.id)} aria-label="Als bezahlt markieren" />
-              <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
-              <span className="dayplan-amount">
-                <b>{formatEur(p.amount)}</b>
-                <span className={p.overdue ? 'critical' : ''}>{p.overdue ? 'überfällig' : 'heute'}</span>
+              <span className="dayplan-row-body">
+                <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
+                <span className={`dayplan-sub ${p.overdue ? 'critical' : ''}`}>{formatEur(p.amount)} · {p.overdue ? 'überfällig' : 'heute'}</span>
               </span>
+              <span className="dayplan-chip tone-fin">Zahlung</span>
             </div>
           ))}
-        </Group>
+        </div>
       )}
     </div>
   );

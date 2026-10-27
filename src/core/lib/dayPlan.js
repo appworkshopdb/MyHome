@@ -27,7 +27,7 @@ export async function setEntryPaid(id, paid) {
   if (error) throw error;
 }
 
-function sportLabel(w) {
+export function sportLabel(w) {
   if (w.is_rest) return 'Restday';
   if (w.title) return w.title;
   if (!w.type_key || w.type_key === 'sonstiges') return 'Training';

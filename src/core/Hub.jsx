@@ -6,9 +6,11 @@ import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
+import { useGamificationStore } from './lib/gamificationStore.js';
 import { openAmount, isOpenExpense } from './lib/paymentParts';
 import { HUB_CACHE_KEY } from './lib/hubCache';
-import { DayPlanSection } from './components/DayPlan';
+import { DayPlanSection, NutritionBlock } from './components/DayPlan';
+import { HabitTile, TrainingTile } from './components/HubTiles';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
@@ -166,6 +168,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
   // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
   // Abhaken hier ist sofort im Modul sichtbar und umgekehrt.
+  const { current_streak: streak } = useGamificationStore();
   const { habits: allHabits, entries: habEntries } = useHabitsStore();
   const habHabits = getDueToday(allHabits, habEntries);
   const habTotal  = habHabits.length;
@@ -657,35 +660,48 @@ export default function Hub({ onOpenModule, hasWarnings }) {
             <h1 className="overview-page-title">{greeting()}</h1>
             <div className="hub-date">{datumLang}</div>
 
-            {/* Fokuskarte: Saldo des laufenden Monats */}
-            <FocusCard>
-              <FocusCard.Eyebrow>Saldo {monatsname}</FocusCard.Eyebrow>
-              <FocusCard.Value>{formatEur(saldo)}</FocusCard.Value>
-              <FocusCard.Meta>
-                <span>Ein <b>{formatEur(income)}</b></span>
-                <span>Aus <b>{formatEur(expense)}</b></span>
-              </FocusCard.Meta>
-              {openPosten.length > 0 && (
-                <FocusCard.Footer>
-                  <span>{openPosten.length} offene Posten · {formatEur(offeneSumme)}</span>
-                  <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
-                </FocusCard.Footer>
-              )}
-            </FocusCard>
-
-            {/* Tagesplan — immer sichtbar, direkt unter der Fokuskarte */}
+            {/* Tagesplan — ganz oben, immer sichtbar */}
             <section className="page-section">
               <DayPlanSection
                 plan={dayPlan}
-                nutrition={nutrition}
                 onToggleTodo={handleToggleTodo}
                 onToggleWorkout={handleToggleWorkout}
                 onToggleHabit={handleToggleHabit}
                 onPayPosten={handlePayPosten}
                 onOpenFinance={() => onOpenModule('finance/offen')}
-                onOpenNutrition={onOpenModule}
               />
             </section>
+
+            {/* Saldo (Kachel, links hoch) + Gewohnheiten + Training */}
+            <div className="hub-grid">
+              <FocusCard family="fin" className="hub-saldo">
+                <FocusCard.Eyebrow>Saldo {monatsname}</FocusCard.Eyebrow>
+                <FocusCard.Value>{formatEur(saldo)}</FocusCard.Value>
+                <FocusCard.Meta>
+                  <span>Ein <b>{formatEur(income)}</b></span>
+                  <span>Aus <b>{formatEur(expense)}</b></span>
+                </FocusCard.Meta>
+                {openPosten.length > 0 && (
+                  <FocusCard.Footer>
+                    <span>{openPosten.length} offene Posten · {formatEur(offeneSumme)}</span>
+                    <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
+                  </FocusCard.Footer>
+                )}
+              </FocusCard>
+              <HabitTile done={habDone} total={habTotal} streak={streak} onPress={() => setBereich('gewohnheiten')} />
+              <TrainingTile
+                workout={dayPlan.workouts[0] ?? null}
+                rest={dayPlan.restDay}
+                onPress={() => onOpenModule('sport')}
+              />
+            </div>
+
+            {/* Ernährung — Tagesstand als eigener Block */}
+            {nutrition && (
+              <section className="page-section">
+                <NutritionBlock data={nutrition} onOpen={onOpenModule} />
+              </section>
+            )}
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
             <PageSection
@@ -726,19 +742,13 @@ export default function Hub({ onOpenModule, hasWarnings }) {
               </div>
             </PageSection>
 
-            {/* Kalender — Tag/Woche/Monat, inkl. Google-Kalender falls verbunden */}
-            <PageSection title="Kalender">
-              <AreaList>
-                <AreaRow label="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
-              </AreaList>
-            </PageSection>
-
-            {/* Statistiken — ein einzelner Bereich unter dem Kalender; dort die
-                Auswahl Wochen-/Monatsüberblick (eigene Route #/statistiken, damit
-                die Rückblick-Pushes direkt verlinken können). */}
+            {/* Kalender (Tag/Woche/Monat, inkl. Google-Kalender falls verbunden) und
+                Statistiken (Auswahl Wochen-/Monatsüberblick, eigene Route #/statistiken,
+                damit die Rückblick-Pushes direkt verlinken können). */}
             <section className="page-section">
-              <AreaList>
-                <AreaRow label="Statistiken" onPress={() => onOpenModule('statistiken')} />
+              <AreaList variant="tiles">
+                <AreaRow label="Kalender" icon="calendar" value="Alle Termine ansehen" onPress={() => setBereich('kalender')} />
+                <AreaRow label="Statistiken" icon="chart" value="Wochen- und Monatsüberblick" onPress={() => onOpenModule('statistiken')} />
               </AreaList>
             </section>
           </>
