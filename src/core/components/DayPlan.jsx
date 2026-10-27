@@ -1,4 +1,4 @@
-import { formatEur } from '../lib/format';
+import { formatEurMasked } from '../lib/format';
 import Ring from './Ring';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
@@ -88,7 +88,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
             </span>
           ))}
         </div>
-        {count === 0 && <div className="dp-cta">＋ Mahlzeit eintragen</div>}
+        {count === 0 && variant === 'hero' && <div className="dp-cta">＋ Mahlzeit eintragen</div>}
         {!goal && <div className="dp-hint">Trage im Körperprofil Größe, Gewicht und Alter ein, dann zeigt dir der Plan, wie viel noch offen ist.</div>}
         {hasEstimate && count > 0 && <div className="dp-hint">≈ enthält Foto-Schätzungen.</div>}
       </button>
@@ -96,7 +96,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
   );
 }
 
-export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance }) {
+export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHabit, onPayPosten, onOpenFinance, hideAmounts = false }) {
   const pct = plan.total > 0 ? plan.done / plan.total : 0;
   // Erstes noch offenes Training: eigener "Als Nächstes"-Block mit Erledigt-Knopf,
   // gleiche Aktion wie das Häkchen in der Liste (onToggleWorkout).
@@ -107,10 +107,11 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
     <div className="dayplan-card">
       <div className="dayplan-head">
         <h2 className="dayplan-title">Dein Tagesplan</h2>
-        <Ring size={58} stroke={6} value={pct} className="dayplan-ring">
-          <b>{plan.done}/{plan.total}</b>
-        </Ring>
+        <span className="dayplan-count" aria-hidden="true"><b>{plan.done}</b> / {plan.total} erledigt</span>
         <span className="dp-sr">{plan.done} / {plan.total} erledigt</span>
+      </div>
+      <div className="dayplan-bar" aria-hidden="true">
+        <div className="dayplan-bar-fill" style={{ width: `${Math.round(pct * 100)}%` }} />
       </div>
 
       {next && (
@@ -126,8 +127,8 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
 
       {plan.isEmpty && <div className="dayplan-empty">Heute steht nichts an — freier Tag.</div>}
 
-      {(plan.events.length > 0 || plan.restDay || workouts.length > 0 || plan.todos.length > 0 || plan.habits.length > 0 || plan.posten.length > 0) && (
-        <div className="dayplan-list">
+      {plan.events.length > 0 && (
+        <div className="dayplan-list dayplan-list--events">
           {plan.events.map((e) => (
             <div key={e.id} className="dayplan-row">
               <span className="dayplan-time">{e.time ?? 'ganztägig'}</span>
@@ -135,7 +136,11 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
               <span className="dayplan-chip tone-n">Termin</span>
             </div>
           ))}
+        </div>
+      )}
 
+      {(plan.restDay || workouts.length > 0 || plan.todos.length > 0 || plan.habits.length > 0 || plan.posten.length > 0) && (
+        <div className="dayplan-list">
           {plan.restDay && (
             <div className="dayplan-row">
               <span className="dayplan-time">–</span>
@@ -165,7 +170,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
               <button className="dayplan-check" onClick={() => onPayPosten(p.id)} aria-label="Als bezahlt markieren" />
               <span className="dayplan-row-body">
                 <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
-                <span className={`dayplan-sub ${p.overdue ? 'critical' : ''}`}>{formatEur(p.amount)} · {p.overdue ? 'überfällig' : 'heute'}</span>
+                <span className={`dayplan-sub ${p.overdue ? 'critical' : ''}`}>{formatEurMasked(p.amount, hideAmounts)} · {p.overdue ? 'überfällig' : 'heute'}</span>
               </span>
               <span className="dayplan-chip tone-fin">Zahlung</span>
             </div>

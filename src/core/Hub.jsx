@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum } from './lib/measurementsData';
-import { formatEur } from './lib/format';
+import { formatEurMasked } from './lib/format';
+import { useHideAmounts } from './lib/privacyStore';
+import EyeToggle from './components/EyeToggle';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
@@ -14,7 +16,6 @@ import { HabitTile, TrainingTile } from './components/HubTiles';
 import { loadNutritionDay } from './lib/nutritionDay';
 import ModuleTopBar from './components/ModuleTopBar';
 import FocusCard from './components/FocusCard';
-import PageSection from './components/PageSection';
 import AreaList from './components/AreaList';
 import AreaRow from './components/AreaRow';
 import TodoSheet from './components/TodoSheet';
@@ -169,6 +170,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   // Gemeinsamer Habits-Store — dieselben Daten wie im Habits-Modul.
   // Abhaken hier ist sofort im Modul sichtbar und umgekehrt.
   const { current_streak: streak } = useGamificationStore();
+  const [hideAmounts, toggleHideAmounts] = useHideAmounts();
   const { habits: allHabits, entries: habEntries } = useHabitsStore();
   const habHabits = getDueToday(allHabits, habEntries);
   const habTotal  = habHabits.length;
@@ -669,21 +671,22 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 onToggleHabit={handleToggleHabit}
                 onPayPosten={handlePayPosten}
                 onOpenFinance={() => onOpenModule('finance/offen')}
+                hideAmounts={hideAmounts}
               />
             </section>
 
             {/* Saldo (Kachel, links hoch) + Gewohnheiten + Training */}
             <div className="hub-grid">
               <FocusCard family="fin" className="hub-saldo">
-                <FocusCard.Eyebrow>Saldo {monatsname}</FocusCard.Eyebrow>
-                <FocusCard.Value>{formatEur(saldo)}</FocusCard.Value>
+                <FocusCard.Eyebrow right={<EyeToggle hidden={hideAmounts} onToggle={toggleHideAmounts} />}>Saldo {monatsname}</FocusCard.Eyebrow>
+                <FocusCard.Value>{formatEurMasked(saldo, hideAmounts)}</FocusCard.Value>
                 <FocusCard.Meta>
-                  <span>Ein <b>{formatEur(income)}</b></span>
-                  <span>Aus <b>{formatEur(expense)}</b></span>
+                  <span>Ein <b>{formatEurMasked(income, hideAmounts)}</b></span>
+                  <span>Aus <b>{formatEurMasked(expense, hideAmounts)}</b></span>
                 </FocusCard.Meta>
                 {openPosten.length > 0 && (
                   <FocusCard.Footer>
-                    <span>{openPosten.length} offene Posten · {formatEur(offeneSumme)}</span>
+                    <span>{openPosten.length} offene Posten · {formatEurMasked(offeneSumme, hideAmounts)}</span>
                     <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
                   </FocusCard.Footer>
                 )}
@@ -704,13 +707,14 @@ export default function Hub({ onOpenModule, hasWarnings }) {
             )}
 
             {/* Aufgaben — die drei nächsten Punkte, direkt abhakbar */}
-            <PageSection
-              title="Aufgaben"
-              action={todosAlle.length > 0
-                ? { label: `Alle ${todosAlle.length} ›`, onPress: () => setBereich('aufgaben') }
-                : undefined}
-            >
+            <section className="page-section">
               <div className="hub-task-card">
+                <div className="hub-task-head">
+                  <h2 className="hub-task-label">Aufgaben</h2>
+                  {todosAlle.length > 0 && (
+                    <button className="hub-task-all" onClick={() => setBereich('aufgaben')}>Alle {todosAlle.length} ›</button>
+                  )}
+                </div>
                 {naechsteTodos.length === 0 && (
                   <div className="hub-task-empty">Keine offenen Aufgaben.</div>
                 )}
@@ -740,7 +744,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   <span className="hub-task-title">Neue Aufgabe</span>
                 </button>
               </div>
-            </PageSection>
+            </section>
 
             {/* Kalender (Tag/Woche/Monat, inkl. Google-Kalender falls verbunden) und
                 Statistiken (Auswahl Wochen-/Monatsüberblick, eigene Route #/statistiken,

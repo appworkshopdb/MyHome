@@ -17,3 +17,8 @@ export function formatRelativeDate(isoDate) {
   if (diffDays > 1 && diffDays < 7) return `Vor ${diffDays} Tagen`;
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+// Betrag oder Platzhalter, wenn der Nutzer die Beträge ausgeblendet hat (core/lib/privacyStore.js).
+export function formatEurMasked(val, hide) {
+  return hide ? '•••• €' : formatEur(val);
+}

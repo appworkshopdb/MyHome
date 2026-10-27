@@ -280,10 +280,19 @@
   padding:       16px 12px 12px;
   box-shadow:    var(--shadow-float);
 }
-.dayplan-head      { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; }
+.dayplan-head      { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 6px; }
 .dayplan-title     { font-size: 20px; font-weight: 900; letter-spacing: -0.01em; }
-.dayplan-ring      { --ring-ac: var(--action-primary); color: var(--text-primary); }
-.dayplan-ring .ring-label b { font-size: 14px; }
+.dayplan-count     { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dayplan-count b   { font-size: 14px; font-weight: 900; color: var(--text-primary); }
+/* Linienbalken über die volle Kartenbreite, direkt unter der Überschrift */
+.dayplan-bar {
+  height:        8px;
+  margin:        10px 0 0;
+  border-radius: var(--r-pill);
+  background:    color-mix(in srgb, var(--action-primary) 16%, transparent);
+  overflow:      hidden;
+}
+.dayplan-bar-fill { height: 100%; border-radius: var(--r-pill); background: var(--action-primary); transition: width var(--motion-calm); }
 
 .dayplan-next {
   display:       flex;
@@ -319,6 +328,7 @@
   background:    var(--surface-sunken);
   border-radius: 20px;
 }
+.dayplan-list + .dayplan-list { margin-top: 6px; }
 .dayplan-list .dayplan-row { min-height: 48px; border-top: 1px solid var(--border-hairline); }
 .dayplan-list .dayplan-row:first-child { border-top: none; }
 .dayplan-check { border-radius: 8px; border-width: 2px; }
@@ -401,9 +411,37 @@
 .dp-nut--hero .dp-meal.next { outline-color: var(--t-hero-ink); }
 .dp-nut--hero.over .dp-nut-main { color: var(--t-hero-ink); }
 
-/* ── Aufgaben-Karte im Hub ───────────────────────────────────── */
+/* ── Aufgaben-Karte im Hub: Überschrift IN der Karte wie bei den anderen Kacheln ── */
 .hub-task-card { border: none; border-radius: var(--r-tile); }
 .hub-task-row  { border-top-color: var(--border-hairline); }
+.hub-task-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px 8px; }
+.hub-task-label {
+  margin:         0;
+  font-size:      11px;
+  font-weight:    800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--text-secondary);
+}
+.hub-task-all { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 13px; font-weight: 800; color: var(--action-primary); cursor: pointer; }
+.hub-task-head + .hub-task-row { border-top: none; }
+
+/* ── Auge (Beträge aus-/einblenden) in der Saldo-Karte ───────── */
+.eye-toggle {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           36px;
+  height:          36px;
+  margin:          -8px -8px -8px 0;
+  border:          0;
+  border-radius:   50%;
+  background:      transparent;
+  color:           var(--hero-fg);
+  cursor:          pointer;
+}
+.eye-toggle:hover { background: color-mix(in srgb, var(--hero-fg) 14%, transparent); }
+.eye-toggle:focus-visible { outline: 2px solid var(--hero-fg); outline-offset: 1px; }
 
 /* ── Schmale Geräte (≤ 380 px): Kachel stapelt Symbol/Pfeil, Label, Wert ── */
 @media (max-width: 380px) {

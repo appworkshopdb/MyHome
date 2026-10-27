@@ -297,6 +297,12 @@ Hub-Reihenfolge: Tagesplan (mit "Als Nächstes" = erstes offenes Training), Sald
 Training, Ernährung (`NutritionBlock`, in den Modulen `variant="hero"`), Aufgaben, Kalender/Statistiken.
 Logik, Texte, Links und Daten sind dieselben wie vorher; die Ernährung steht nicht mehr IM Tagesplan.
 
+Hub-Details: Der Tagesplan zeigt den Fortschritt als Linienbalken unter der Überschrift, Termine stehen in einer
+eigenen kleinen Liste über der übrigen. Das Auge in der Saldo-Karte blendet Beträge aus (`core/lib/privacyStore.js`,
+`formatEurMasked`; je Nutzer in `body_profile.hide_amounts`, Migration `supabase/hide_amounts_migration.sql`, ohne sie nur lokal).
+Bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
+innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch in der Ernährungs-Hero-Karte.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
