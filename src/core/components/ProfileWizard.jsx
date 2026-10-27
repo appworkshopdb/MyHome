@@ -64,7 +64,7 @@ const CONFETTI = [
 ];
 
 export default function ProfileWizard() {
-  const { session } = useAuth();
+  const { session, confirmedViaLink } = useAuth();
   const { showToast } = useUi();
   const gami = useGamificationStore(); // lädt den Store, den setBirdSpecies braucht
   const [step, setStep] = useState(0);
@@ -156,7 +156,15 @@ export default function ProfileWizard() {
       </div>
 
       {key === 'name' && (
-        <span className="onb-okchip"><i><UiIcon name="check" size={11} strokeWidth={3.4} /></i>E-Mail bestätigt</span>
+        <>
+          <span className="onb-okchip"><i><UiIcon name="check" size={11} strokeWidth={3.4} /></i>E-Mail bestätigt</span>
+          {confirmedViaLink && (
+            <p className="onb-linkhint" role="note">
+              Hast du dich in der App auf deinem Home-Bildschirm registriert? Dann tippe dort auf „Ich habe bestätigt“.
+              Oder mach einfach hier weiter.
+            </p>
+          )}
+        </>
       )}
 
       {/* Begleiter-Bühne: Ei füllt sich (R1–R4), in der Vogelwahl keine Bühne, am Ende das echte Ei */}
