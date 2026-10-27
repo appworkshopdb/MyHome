@@ -1,4 +1,4 @@
-import { formatEurMasked } from '../lib/format';
+import Money from './Money';
 import Ring from './Ring';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
@@ -170,7 +170,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
               <button className="dayplan-check" onClick={() => onPayPosten(p.id)} aria-label="Als bezahlt markieren" />
               <span className="dayplan-row-body">
                 <button className="dayplan-row-title dayplan-row-title--link" onClick={onOpenFinance}>{p.title}</button>
-                <span className={`dayplan-sub ${p.overdue ? 'critical' : ''}`}>{formatEurMasked(p.amount, hideAmounts)} · {p.overdue ? 'überfällig' : 'heute'}</span>
+                <span className={`dayplan-sub ${p.overdue ? 'critical' : ''}`}><Money value={p.amount} hide={hideAmounts} /> · {p.overdue ? 'überfällig' : 'heute'}</span>
               </span>
               <span className="dayplan-chip tone-fin">Zahlung</span>
             </div>

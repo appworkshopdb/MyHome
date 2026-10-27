@@ -425,6 +425,42 @@
 }
 .hub-task-all { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 13px; font-weight: 800; color: var(--action-primary); cursor: pointer; }
 .hub-task-head + .hub-task-row { border-top: none; }
+/* "Neue Aufgabe": als Knopf in der Karte erkennbar (der Plus-Knopf unten entfällt im Hub) */
+.hub-task-row.hub-task-add {
+  width:         calc(100% - 24px);
+  min-height:    48px;
+  margin:        8px 12px 12px;
+  padding:       10px 14px;
+  border:        0;
+  border-radius: 16px;
+  background:    color-mix(in srgb, var(--action-primary) 11%, transparent);
+}
+.hub-task-add .hub-task-add-plus {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           26px;
+  height:          26px;
+  border-radius:   50%;
+  background:      var(--action-primary);
+  color:           var(--text-on-accent);
+  font-size:       18px;
+  line-height:     1;
+  padding-bottom:  1px;
+}
+.hub-task-add .hub-task-title { font-weight: 800; color: var(--action-primary); }
+.hub-task-add:hover { background: color-mix(in srgb, var(--action-primary) 16%, transparent); }
+.hub-task-add:focus-visible { outline: 2px solid var(--action-primary); outline-offset: 2px; }
+
+/* Ausgeblendete Beträge: weichgezeichneter Platzhalter, Stärke relativ zur Schriftgröße */
+.amt-hidden {
+  display:        inline-block;
+  filter:         blur(0.24em);
+  opacity:        0.9;
+  user-select:    none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
 
 /* ── Auge (Beträge aus-/einblenden) in der Saldo-Karte ───────── */
 .eye-toggle {

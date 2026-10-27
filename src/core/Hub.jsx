@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 import { getMonthSum } from './lib/measurementsData';
-import { formatEurMasked } from './lib/format';
 import { useHideAmounts } from './lib/privacyStore';
 import EyeToggle from './components/EyeToggle';
+import Money from './components/Money';
 import { getSupabase } from './lib/supabaseClient';
 import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
@@ -679,14 +679,14 @@ export default function Hub({ onOpenModule, hasWarnings }) {
             <div className="hub-grid">
               <FocusCard family="fin" className="hub-saldo">
                 <FocusCard.Eyebrow right={<EyeToggle hidden={hideAmounts} onToggle={toggleHideAmounts} />}>Saldo {monatsname}</FocusCard.Eyebrow>
-                <FocusCard.Value>{formatEurMasked(saldo, hideAmounts)}</FocusCard.Value>
+                <FocusCard.Value><Money value={saldo} hide={hideAmounts} /></FocusCard.Value>
                 <FocusCard.Meta>
-                  <span>Ein <b>{formatEurMasked(income, hideAmounts)}</b></span>
-                  <span>Aus <b>{formatEurMasked(expense, hideAmounts)}</b></span>
+                  <span>Ein <b><Money value={income} hide={hideAmounts} /></b></span>
+                  <span>Aus <b><Money value={expense} hide={hideAmounts} /></b></span>
                 </FocusCard.Meta>
                 {openPosten.length > 0 && (
                   <FocusCard.Footer>
-                    <span>{openPosten.length} offene Posten · {formatEurMasked(offeneSumme, hideAmounts)}</span>
+                    <span>{openPosten.length} offene Posten · <Money value={offeneSumme} hide={hideAmounts} /></span>
                     <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
                   </FocusCard.Footer>
                 )}

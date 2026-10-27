@@ -4,11 +4,11 @@ import HabitQuickSheet    from './HabitQuickSheet';
 import SportQuickSheet    from './SportQuickSheet';
 import ShoppingQuickSheet from './ShoppingQuickSheet';
 import NutritionFabMenu   from './NutritionFabMenu';
-import TodoSheet          from './TodoSheet';
 
 // Globaler FAB — rendert sich je nach aktivem Modul anders.
-// Erscheint auf allen Screens außer Profil.
-// module: null = Hub, 'habits', 'finance', 'sport', 'nutrition', 'shopping'
+// Erscheint in den Modulen, nicht im Hub (dort legt "Neue Aufgabe" in der Aufgaben-Karte an),
+// auf Profil und Statistiken.
+// module: 'habits', 'finance', 'sport', 'nutrition', 'shopping'
 //
 // Ernährung hat zwei Anlege-Wege (Rezept/Lebensmittel) — dafür öffnet
 // der FAB eine kleine Moduswahl (NutritionFabMenu.jsx), die per
@@ -16,15 +16,14 @@ import TodoSheet          from './TodoSheet';
 // importieren (core/ darf nicht aus modules/ importieren). Vorher
 // hatten RezepteView/AmpelView je einen eigenen FAB — das ging nur gut,
 // solange nur einer der beiden Tabs gleichzeitig sichtbar war.
-export default function GlobalFab({ activeModule, onTodoSaved }) {
+export default function GlobalFab({ activeModule }) {
   const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
-  const [open, setOpen] = useState(null); // null | 'todo' | 'habit' | 'sport' | 'shopping' | 'nutrition'
+  const [open, setOpen] = useState(null); // null | 'habit' | 'sport' | 'shopping' | 'nutrition'
 
-  // Kein FAB auf Profil und Statistiken (reine Anzeigeseiten)
-  if (activeModule === 'profile' || activeModule === 'statistiken') return null;
+  // Kein FAB im Hub (activeModule null) sowie auf Profil und Statistiken (reine Anzeigeseiten)
+  if (activeModule === null || activeModule === 'profile' || activeModule === 'statistiken') return null;
 
   function handlePress() {
-    if (activeModule === null)       return setOpen('todo');
     if (activeModule === 'habits')   return setOpen('habit');
     if (activeModule === 'finance')  return openEntrySheet('finance');   // bestehender EntrySheet
     if (activeModule === 'sport')    return setOpen('sport');
@@ -42,12 +41,6 @@ export default function GlobalFab({ activeModule, onTodoSaved }) {
         <span className="global-fab-plus">+</span>
       </button>
 
-      {open === 'todo' && (
-        <TodoSheet
-          onClose={() => setOpen(null)}
-          onSaved={(t) => { onTodoSaved?.(t); }} /* TodoSheet schließt selbst; bei "Speichern & neu" bleibt es offen */
-        />
-      )}
       {open === 'habit' && (
         <HabitQuickSheet
           onClose={() => setOpen(null)}
