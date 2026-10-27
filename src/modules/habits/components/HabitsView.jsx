@@ -603,7 +603,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
       <div className="hab-habits-actions">
         <button className="hab-pill-btn" onClick={openLibrary}>Vorlagen</button>
-        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv">📦</button>
+        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv"><span aria-hidden="true">📦</span> Archiv</button>
       </div>
 
       {showOverloadWarning && (

@@ -3138,3 +3138,55 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MEINE GEWOHNHEITEN — neues Design (Gold-Familie über --m-*)
+   ═══════════════════════════════════════════════════════════ */
+.hab-habits-view .hab-habits-actions { gap: 8px; padding: 4px 0 12px; align-items: center; }
+.hab-habits-view .hab-pill-btn {
+  padding:     0 18px;
+  min-height:  38px;
+  background:  var(--m-ac);
+  color:       var(--m-on);
+  box-shadow:  none;
+  font-size:   0.875rem;
+  font-weight: 800;
+}
+.hab-habits-view .hab-archive-btn {
+  width:       auto;
+  height:      38px;
+  padding:     0 16px;
+  gap:         6px;
+  font-size:   0.875rem;
+  font-weight: 800;
+  color:       var(--text-primary);
+  box-shadow:  var(--shadow-card);
+}
+.hab-habits-view .hab-overload-warning {
+  background:    var(--m-tint);
+  color:         var(--m-ink);
+  border-radius: 20px;
+  font-weight:   600;
+  margin-bottom: 4px;
+}
+.hab-habits-view .hab-section { margin-top: 18px; }
+.hab-habits-view .hab-section-label { font-weight: 800; letter-spacing: 0.09em; margin: 0 4px 8px; }
+.hab-habits-view .hab-manage-card {
+  padding:       10px 8px 10px 6px;
+  border-radius: 24px;
+  gap:           6px;
+}
+.hab-habits-view .hab-drag-handle { color: var(--border-strong); padding: 0 2px 0 4px; }
+.hab-habits-view .hab-item-icon--tile {
+  width:         42px;
+  height:        42px;
+  line-height:   42px;
+  text-align:    center;
+  border-radius: 50%;
+  background:    var(--m-tint);
+}
+.hab-habits-view .hab-manage-card-left { gap: 10px; }
+.hab-habits-view .hab-manage-name { font-size: 1rem; font-weight: 800; }
+.hab-habits-view .hab-manage-meta { font-weight: 700; }
+.hab-habits-view .hab-manage-card-right { gap: 0; }
+.hab-habits-view .hab-manage-btn { width: 32px; }
