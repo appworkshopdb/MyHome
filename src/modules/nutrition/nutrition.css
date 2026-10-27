@@ -823,3 +823,40 @@
 }
 .ing-add:active { background: var(--surface-sunken); }
 .ing-add svg { display: block; width: 16px; height: 16px; flex: none; }
+
+/* ═══ Lexikon — neues Design (Grün-Familie über --m-*) ═══════════ */
+.lex-view .nut-search { margin: 2px 0 0; }
+.lex-view .nut-search > svg { left: 18px; width: 20px; height: 20px; }
+.lex-view .nut-search input {
+  width: 100%; min-height: 48px; padding: 0 18px 0 46px; border: 0; border-radius: var(--r-pill);
+  background: var(--surface-raised); box-shadow: var(--shadow-card); font-weight: 600;
+}
+.lex-view .chip-row { gap: 8px; margin: 14px 0 !important; }
+.lex-view .chip {
+  padding: 8px 18px; font-size: 0.875rem; font-weight: 800;
+  background: var(--surface-raised); color: var(--text-primary); border: 1.5px solid var(--border-hairline);
+}
+.lex-view .chip.active { background: var(--m-ac); border-color: var(--m-ac); color: var(--m-on); }
+.lex-view .lex-card {
+  background: var(--surface-raised); border: 0; border-radius: 22px; padding: 14px; box-shadow: var(--shadow-card);
+}
+.lex-view .lex-card .cat-badge { background: var(--m-tint); color: var(--m-ink); padding: 2px 9px; font-size: 0.7rem; font-weight: 800; margin-bottom: 0; }
+.lex-view .lex-card .term { font-size: 1rem; font-weight: 800; line-height: 1.25; margin: 8px 0 4px; }
+.lex-view .lex-card .short { font-size: 0.8125rem; font-weight: 600; }
+.lex-detail-head { display: flex; align-items: center; gap: 12px; margin: 2px 0 6px; }
+.lex-detail-head h2 { flex: 1; margin: 0; font-size: 1.375rem; font-weight: 900; letter-spacing: -0.01em; }
+.lex-back {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--surface-raised); box-shadow: var(--shadow-card); color: var(--m-deep); cursor: pointer;
+}
+.lex-back svg { width: 20px; height: 20px; }
+.lex-cat { flex: none; padding: 3px 10px; border-radius: var(--r-pill); background: var(--m-tint); color: var(--m-ink); font-size: 0.75rem; font-weight: 800; }
+.lex-detail-short { font-size: 1rem; font-weight: 800; line-height: 1.4; margin: 10px 2px 4px; }
+.lex-view .lex-detail-block { background: var(--surface-raised); border-radius: 22px; padding: 14px 16px; margin: 10px 0 0; box-shadow: var(--shadow-card); }
+.lex-view .lex-detail-block .heading { font-weight: 800; letter-spacing: 0.09em; color: var(--m-deep); margin: 0; }
+.lex-view .lex-detail-block p { margin: 5px 0 0; font-size: 0.875rem; line-height: 1.5; font-weight: 600; color: var(--text-primary); }
+.lex-view .lex-detail-block.need { background: var(--m-tint); color: var(--m-ink); box-shadow: none; }
+.lex-view .lex-detail-block.need .heading, .lex-view .lex-detail-block.need p { color: var(--m-ink); }
+.lex-view .lex-detail-block.pro { background: color-mix(in srgb, var(--m-ac) 14%, var(--surface-raised)); }
+.lex-view .lex-detail-block.con { background: color-mix(in srgb, var(--status-critical) 11%, var(--surface-raised)); }
+.lex-view .lex-detail-block.con .heading { color: var(--status-critical); }

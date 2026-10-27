@@ -21,36 +21,36 @@ export default function LexikonView() {
   if (selected) {
     const catInfo = LEX_CATS.find((c) => c.key === selected.cat);
     return (
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <button className="btn-icon" onClick={() => setSelected(null)}><IconBack /></button>
-          <h2 style={{ flex: 1, fontSize: '1.1rem' }}>{selected.term}</h2>
-          {catInfo && <span className="chip" style={{ background: catInfo.color, color: '#fff' }}>{catInfo.label}</span>}
+      <div className="lex-view">
+        <div className="lex-detail-head">
+          <button className="lex-back" onClick={() => setSelected(null)} aria-label="Zurück zur Liste"><IconBack /></button>
+          <h2>{selected.term}</h2>
+          {catInfo && <span className="lex-cat">{catInfo.label}</span>}
         </div>
 
-        <p style={{ fontWeight: 600, marginBottom: 14 }}>{selected.short}</p>
+        <p className="lex-detail-short">{selected.short}</p>
 
         <div className="lex-detail-block">
           <div className="heading">Was ist das?</div>
-          <div style={{ fontSize: '0.85rem' }}>{selected.was}</div>
+          <p>{selected.was}</p>
         </div>
 
         <div className="lex-detail-block">
           <div className="heading">Warum wichtig?</div>
-          <div style={{ fontSize: '0.85rem' }}>{selected.warum}</div>
+          <p>{selected.warum}</p>
         </div>
 
         {selected.quellen && (
           <div className="lex-detail-block">
             <div className="heading">Gute Quellen</div>
-            <div style={{ fontSize: '0.85rem' }}>{selected.quellen}</div>
+            <p>{selected.quellen}</p>
           </div>
         )}
 
         {selected.bedarf && (
-          <div className="lex-detail-block" style={{ background: 'var(--accent-light)' }}>
-            <div className="heading" style={{ color: 'var(--text-primary)' }}>Tagesbedarf (DGE)</div>
-            <div style={{ fontSize: '0.85rem' }}>{selected.bedarf}</div>
+          <div className="lex-detail-block need">
+            <div className="heading">Tagesbedarf (DGE)</div>
+            <p>{selected.bedarf}</p>
           </div>
         )}
 
@@ -58,11 +58,11 @@ export default function LexikonView() {
           <>
             <div className="lex-detail-block pro">
               <div className="heading">✓ Vorteile</div>
-              <div style={{ fontSize: '0.85rem' }}>{selected.pro}</div>
+              <p>{selected.pro}</p>
             </div>
             <div className="lex-detail-block con">
               <div className="heading">⚠ Nachteile / Risiken</div>
-              <div style={{ fontSize: '0.85rem' }}>{selected.con}</div>
+              <p>{selected.con}</p>
             </div>
           </>
         )}
@@ -71,7 +71,7 @@ export default function LexikonView() {
   }
 
   return (
-    <>
+    <div className="lex-view">
       <div className="nut-search">
         <IconSearch />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Im Lexikon suchen…" />
@@ -81,8 +81,7 @@ export default function LexikonView() {
         {LEX_CATS.map((c) => (
           <button
             key={c.key}
-            className="chip"
-            style={cat === c.key ? { background: c.color, color: '#fff' } : {}}
+            className={`chip ${cat === c.key ? 'active' : ''}`}
             onClick={() => setCat(cat === c.key ? 'all' : c.key)}
           >
             {c.label}
@@ -98,7 +97,7 @@ export default function LexikonView() {
             const c = LEX_CATS.find((x) => x.key === l.cat);
             return (
               <button key={l.id} className="lex-card" onClick={() => setSelected(l)}>
-                <span className="cat-badge" style={{ background: c?.color || '#94a3b8' }}>{c?.label || l.cat}</span>
+                <span className="cat-badge">{c?.label || l.cat}</span>
                 <div className="term">{l.term}</div>
                 <div className="short">{l.short}</div>
               </button>
@@ -106,6 +105,6 @@ export default function LexikonView() {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

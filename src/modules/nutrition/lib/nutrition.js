@@ -89,11 +89,12 @@ export function normalizeRecipeCategory(key) {
   return LEGACY_RECIPE_CATEGORY[key] || 'mittag';
 }
 
+// key = Wert von `cat` in lib/data/lexikon.js (vitamin/mineral/begriff, Einzahl).
 export const LEX_CATS = [
-  { key: 'makro', label: 'Makronährstoffe', color: '#3b82f6' },
-  { key: 'vitamine', label: 'Vitamine', color: '#16a34a' },
-  { key: 'minerale', label: 'Mineralstoffe', color: '#d97706' },
-  { key: 'begriffe', label: 'Ernährungsbegriffe', color: '#8b5cf6' },
+  { key: 'makro', label: 'Makronährstoffe' },
+  { key: 'vitamin', label: 'Vitamine' },
+  { key: 'mineral', label: 'Mineralstoffe' },
+  { key: 'begriff', label: 'Ernährungsbegriffe' },
 ];
 
 export const CUSTOM_TAGS = [
