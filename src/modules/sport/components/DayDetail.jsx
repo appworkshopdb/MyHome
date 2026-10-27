@@ -62,7 +62,6 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
                 <div className="sd-title">{w.title}</div>
                 <div className="sd-meta">
                   {done ? 'Erledigt' : 'Geplant'}
-                  {w.duration_min ? ` · ${w.duration_min} Min.` : ''}
                   {typeLabel ? ` · ${typeLabel}` : ''}
                 </div>
                 {w.notes && <div className="sd-meta sd-notes">{w.notes}</div>}

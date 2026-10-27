@@ -12,12 +12,6 @@ const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 
 // BUGFIX: hier stand zuvor eine hartcodierte Limette (rgba(214,255,61,…))
 // aus dem alten, längst abgelösten Lime-Design — sichtbar z.B. in der
 // Legende "Weniger…Mehr", die dadurch gelb-grün statt blau wirkte.
-const LEVEL_COLORS = [
-  'var(--border)',
-  'color-mix(in srgb, var(--accent) 30%, transparent)',
-  'color-mix(in srgb, var(--accent) 60%, transparent)',
-  'color-mix(in srgb, var(--accent) 90%, transparent)',
-];
 
 // Eine Zeile pro Monat statt eines starren Rasters — ein Monat hat nie
 // exakt 4 Wochen, eine Zeile pro Monat macht den Monatsdurchschnitt
@@ -52,55 +46,46 @@ export default function ActivityHeatmap({ workouts, year }) {
   const next = selectedIndex + 1 < weeks.length ? weeks[selectedIndex + 1] : null;
 
   return (
-    <div className="card">
-      <div className="card-title">Aktivität {year}</div>
+    <div className="sa-card">
+      <div className="sa-ch">Aktivität {year}</div>
 
-      {rows.map((row) => (
-        <div key={`${row.year}-${row.month}`} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-          <div style={{ width: 28, flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            {MONTHS[row.month]}
+      <div className="sa-heat">
+        {rows.map((row) => (
+          <div key={`${row.year}-${row.month}`} className="sa-heat-row">
+            <em>{MONTHS[row.month]}</em>
+            {row.weeks.map((week) => {
+              const globalIndex = weeks.indexOf(week);
+              return (
+                <button
+                  key={week.weekStart.getTime()}
+                  className={`sa-hc${globalIndex === selectedIndex ? ' sel' : ''}`}
+                  data-l={week.level}
+                  onClick={() => setSelectedIndex(globalIndex)}
+                  aria-label={`Woche ${formatWeekRange(week.weekStart)}`}
+                />
+              );
+            })}
           </div>
-          {row.weeks.map((week) => {
-            const globalIndex = weeks.indexOf(week);
-            const isSelected = globalIndex === selectedIndex;
-            return (
-              <button
-                key={week.weekStart.getTime()}
-                onClick={() => setSelectedIndex(globalIndex)}
-                aria-label={`Woche ${formatWeekRange(week.weekStart)}`}
-                style={{
-                  width: 32, height: 32, flexShrink: 0, padding: 0, cursor: 'pointer',
-                  borderRadius: 'var(--radius-xs)',
-                  background: LEVEL_COLORS[week.level],
-                  border: isSelected ? '2px solid var(--text-primary)' : 'none',
-                }}
-              />
-            );
-          })}
-        </div>
-      ))}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 14px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-        <span>Weniger</span>
-        {LEVEL_COLORS.map((c, i) => (
-          <span key={i} style={{ width: 11, height: 11, borderRadius: 3, background: c }} />
         ))}
+      </div>
+
+      <div className="sa-heat-legend">
+        <span>Weniger</span>
+        {[0, 1, 2, 3].map((l) => <span key={l} className="sa-hc" data-l={l} />)}
         <span>Mehr</span>
       </div>
 
       {selected && (
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{formatWeekRange(selected.weekStart)}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+        <div className="sa-heat-sum">
+          <b>{formatWeekRange(selected.weekStart)}</b>
+          <span>
             {selected.doneCount} erledigt{selected.plannedCount > 0 ? `, ${selected.plannedCount} geplant` : ''}
-          </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-            {selected.types.length > 0 ? selected.types.join(', ') : 'Keine Einheit'}
-          </div>
-          <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          </span>
+          <span>{selected.types.length > 0 ? selected.types.join(', ') : 'Keine Einheit'}</span>
+          <span className="sa-heat-diff">
             {prev && <span>Vorwoche: {formatDiff(selected.score - prev.score)}</span>}
             {next && <span>Folgewoche: {formatDiff(selected.score - next.score)}</span>}
-          </div>
+          </span>
         </div>
       )}
     </div>

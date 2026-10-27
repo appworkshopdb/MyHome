@@ -23,20 +23,18 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
   const [occurredOn, setOccurredOn] = useState(iv.occurred_on ?? TODAY());
   const [typeKey, setTypeKey] = useState(iv.type_key && iv.type_key !== 'sonstiges' ? iv.type_key : '');
   const [title, setTitle] = useState(iv.title ?? '');
-  const [durationMin, setDurationMin] = useState(iv.duration_min != null ? String(iv.duration_min) : '');
   const [notes, setNotes] = useState(iv.notes ?? '');
   const [mode, setMode] = useState(iv.is_rest ? 'rest' : (iv.status ?? 'done'));
 
   function handleTypeChange(key) {
     // "unit:<id>" markiert die Auswahl einer selbst angelegten Einheit
     // aus der Bibliothek — im Unterschied zu einem reinen Trainingstyp
-    // übernimmt das Titel UND Dauer mit, nicht nur den Typ.
+    // übernimmt das den Titel mit, nicht nur den Typ.
     if (key.startsWith('unit:')) {
       const unit = units.find((u) => u.id === key.slice(5));
       if (unit) {
         setTypeKey(unit.type_key ?? '');
         setTitle(unit.title);
-        if (unit.duration_min != null) setDurationMin(String(unit.duration_min));
         return;
       }
     }
@@ -66,16 +64,11 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
     }
 
     if (!title.trim()) return showToast('Bitte Bezeichnung eingeben, z.B. "Push" oder "Brust/Bizeps"');
-    const duration = durationMin === '' ? null : parseInt(durationMin, 10);
-    if (duration !== null && (isNaN(duration) || duration < 0 || duration > 1440)) {
-      return showToast('Bitte gültige Dauer eingeben (0–1440 Minuten)');
-    }
     onSave({
       ...(isEdit ? { id: iv.id } : {}),
       occurred_on: occurredOn,
       type_key: typeKey || 'sonstiges',
       title: title.trim(),
-      duration_min: duration,
       notes: notes.trim() || null,
       status: mode,
       is_rest: false,
@@ -91,12 +84,6 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
           <label>Datum</label>
           <input type="date" value={occurredOn} onChange={(e) => setOccurredOn(e.target.value)} />
         </div>
-        {mode !== 'rest' && (
-          <div className="form-group">
-            <label>Dauer (Min.)</label>
-            <input type="number" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} min="0" max="1440" placeholder="z.B. 60" />
-          </div>
-        )}
       </div>
 
       <div className="form-group">

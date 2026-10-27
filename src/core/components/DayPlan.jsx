@@ -122,7 +122,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
           <div className="dayplan-next-body">
             <span className="dayplan-next-kicker">Als Nächstes</span>
             <span className="dayplan-next-title">{next.title}</span>
-            {next.minutes ? <span className="dayplan-next-meta">Training · {next.minutes} Min</span> : <span className="dayplan-next-meta">Training</span>}
+            <span className="dayplan-next-meta">Training</span>
           </div>
           <button className="dayplan-next-btn" onClick={() => onToggleWorkout(next.workout)}>Erledigt</button>
         </div>
@@ -134,7 +134,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
           <div className="dayplan-next-body">
             <span className="dayplan-next-kicker">Erledigt</span>
             <span className="dayplan-next-title">{w.title}</span>
-            <span className="dayplan-next-meta">{w.minutes ? `Training · ${w.minutes} Min` : 'Training'}</span>
+            <span className="dayplan-next-meta">Training</span>
           </div>
           <button className="dayplan-next-btn" onClick={() => onToggleWorkout(w.workout)}>Rückgängig</button>
         </div>
@@ -165,7 +165,6 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
           )}
           {workouts.map((w) => (
             <Row key={w.id} done={w.done} icon="💪" title={w.title} family="sport" tag="Training"
-              sub={w.minutes ? `${w.minutes} Min` : null}
               onToggle={() => onToggleWorkout(w.workout)} />
           ))}
 

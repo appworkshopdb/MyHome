@@ -19,18 +19,15 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame,
 
 const GROUP_ICON = { Kraft: '💪', Ausdauer: '🏃', Beweglichkeit: '🧘' };
 const GROUPS = [...new Set(TRAINING_TYPES.map((t) => t.group))];
-const DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180];
-const DURATION_ITEMS = DURATIONS.map((d) => ({ value: String(d), label: `${d} Min` }));
 const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
 
 // "Push (Brust, Schultern, Trizeps)" → Titel "Push", Zusatz "Brust, Schultern, Trizeps"
 function splitLabel(t) {
   const m = /^(.*?)\s*\((.*)\)\s*$/.exec(t.label);
   if (m) return { title: m[1], sub: m[2] };
-  return { title: t.label, sub: t.typical_duration_min ? `≈ ${t.typical_duration_min} Min` : t.group };
+  return { title: t.label, sub: t.group };
 }
 const shortTitle = (t) => splitLabel(t).title;
-const nearestDuration = (min) => String(DURATIONS.reduce((a, b) => (Math.abs(b - min) < Math.abs(a - min) ? b : a), 60));
 
 // Trainingstyp: erst die Gruppe als große Karte, darunter die Typen als Kacheln
 function TypePicker({ typeKey, onSelect }) {
@@ -78,7 +75,6 @@ export default function SportQuickSheet({ onClose }) {
   const [title,   setTitle]   = useState('');
   const titleAuto = useRef(true);
   const [date,    setDate]    = useState(todayIso());
-  const [dur,     setDur]     = useState('60');
   const [statusPick, setStatusPick] = useState(null); // null = folgt dem Datum
   const [showMore, setShowMore] = useState(false);
 
@@ -88,7 +84,6 @@ export default function SportQuickSheet({ onClose }) {
   function selectType(t) {
     setTypeKey(t.key);
     if (titleAuto.current || !title) { setTitle(shortTitle(t)); titleAuto.current = true; }
-    if (t.typical_duration_min) setDur(nearestDuration(t.typical_duration_min));
   }
 
   async function saveWorkout() {
@@ -98,7 +93,6 @@ export default function SportQuickSheet({ onClose }) {
         occurred_on: date,
         type_key: typeKey,
         title: title.trim(),
-        duration_min: dur ? parseInt(dur, 10) : null,
         status,
         is_rest: false,
       });
@@ -232,7 +226,7 @@ export default function SportQuickSheet({ onClose }) {
       <>
         <button type="button" className="wz-row-btn" onClick={() => go('e1')}>
           <span className="wz-row-ico">⚡</span>
-          <span>Neue Einheit<small>Training mit Typ, Datum und Dauer</small></span>
+          <span>Neue Einheit<small>Training mit Typ und Datum</small></span>
           <span className="chev" aria-hidden="true">›</span>
         </button>
         <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
@@ -287,11 +281,7 @@ export default function SportQuickSheet({ onClose }) {
         {date > todayIso() && statusPick === null && <p className="wz-hint">Liegt in der Zukunft, wird als „Geplant" gespeichert.</p>}
 
         {showMore && (
-          <div className="wz-two" style={{ marginTop: 16 }}>
-            <div>
-              <div className="wz-col-lbl">Dauer</div>
-              <WheelPicker items={DURATION_ITEMS} value={dur} onChange={setDur} label="Dauer" />
-            </div>
+          <div style={{ marginTop: 16 }}>
             <div>
               <div className="wz-col-lbl">Status</div>
               <div style={{ display: 'grid', gap: 8 }} role="group" aria-label="Status">
@@ -327,7 +317,6 @@ export default function SportQuickSheet({ onClose }) {
           <div className="wz-rv-top"><small>Einheit</small><b style={{ fontSize: 24 }}>{title.trim()}</b></div>
           <div className="wz-rv-row"><span>Trainingstyp</span><span>{type ? `${shortTitle(type)} · ${type.group}` : '—'}</span></div>
           <div className="wz-rv-row"><span>Datum</span><span>{fmtDate(date)}</span></div>
-          <div className="wz-rv-row"><span>Dauer</span><span>{dur ? `${dur} Min` : '—'}</span></div>
           <div className="wz-rv-row"><span>Status</span><span>{status === 'planned' ? 'Geplant' : 'Erledigt'}</span></div>
         </div>
         {errorEl}
@@ -447,7 +436,7 @@ export default function SportQuickSheet({ onClose }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {manageUnits.map((u) => (
               <button key={u.id} type="button" className="wz-gbtn" style={{ textAlign: 'left', padding: '12px 14px' }} onClick={() => openTemplate(u)}>
-                {u.title}{u.duration_min ? ` · ${u.duration_min} Min.` : ''}
+                {u.title}
               </button>
             ))}
           </div>
@@ -490,8 +479,6 @@ export default function SportQuickSheet({ onClose }) {
       />
       <label className="wz-lbl" htmlFor="wz-tpl-name" style={{ marginTop: 18 }}>Name</label>
       <input id="wz-tpl-name" className="wz-input hero" type="text" value={unitTitle} onChange={(e) => setUnitTitle(e.target.value)} placeholder="z. B. Legday, Arme" autoComplete="off" />
-      <label className="wz-lbl" htmlFor="wz-tpl-dur">Richtwert Dauer <span className="opt">optional</span></label>
-      <input id="wz-tpl-dur" className="wz-input" type="number" inputMode="numeric" value={unitDuration} onChange={(e) => setUnitDuration(e.target.value)} placeholder="Minuten" min="0" max="1440" />
       {selectedId && (
         <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14, color: 'var(--danger)', borderColor: 'var(--danger)' }} disabled={saving} onClick={deleteTemplate}>
           Diese Einheit löschen

@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { computeStats, formatDuration } from '../lib/stats';
+import { computeStats } from '../lib/stats';
+import SportIcon from './SportIcons';
 import { weekRange, monthRange, yearRange, customRange, filterWorkoutsByRange } from '../lib/dateRange';
 import BadgesCard from './BadgesCard';
 import ActivityHeatmap from './ActivityHeatmap';
 import FilterBar from './FilterBar';
 import WeightTimeline from './WeightTimeline';
 
-function Stat({ label, value }) {
+function Tile({ icon, value, label, wide }) {
   return (
-    <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '1.6rem', fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{label}</div>
+    <div className={`sa-tile${wide ? ' wide' : ''}`}>
+      <span className="sa-tile-ic"><SportIcon name={icon} size={18} /></span>
+      <div><b>{value}</b><span>{label}</span></div>
     </div>
   );
 }
@@ -39,7 +40,7 @@ export default function AuswertungView({ workouts, loading }) {
   const [customEnd, setCustomEnd] = useState(TODAY);
 
   if (loading) {
-    return <div className="page"><div className="card">Lädt…</div></div>;
+    return <div className="page"><div className="sa-card">Lädt…</div></div>;
   }
 
   const statsAll = computeStats(workouts);
@@ -48,8 +49,8 @@ export default function AuswertungView({ workouts, loading }) {
     return (
       <div className="page">
         <WeightTimeline />
-        <div className="card">
-          <div className="card-title">Auswertung</div>
+        <div className="sa-card">
+          <div className="sa-ch">Auswertung</div>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Noch keine abgeschlossene Einheit. Hake im Kalender ein Training ab,
             dann erscheinen hier deine Zahlen.
@@ -97,66 +98,51 @@ export default function AuswertungView({ workouts, loading }) {
       />
 
       {!range ? (
-        <div className="card">
+        <div className="sa-card">
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Das Bis-Datum liegt vor dem Von-Datum. Bitte Zeitraum prüfen.
           </p>
         </div>
       ) : statsFiltered.allCount === 0 && statsFiltered.restCount === 0 ? (
-        <div className="card">
+        <div className="sa-card">
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Keine Einheit in diesem Zeitraum.
           </p>
         </div>
       ) : (
         <>
-          <div className="card">
-            <div className="card-title">{range.label}</div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-              <Stat label="Einheiten gesamt" value={statsFiltered.allCount} />
-              <Stat label="Erledigt" value={statsFiltered.totalCount} />
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <Stat label="Offen" value={statsFiltered.openCount} />
-              <Stat label="Restdays" value={statsFiltered.restCount} />
-            </div>
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-              <Stat label="Dauer (erledigt)" value={formatDuration(statsFiltered.totalDuration)} />
+          <div className="sa-card">
+            <div className="sa-ch">{range.label}</div>
+            <div className="sa-tiles">
+              <Tile icon="list" value={statsFiltered.allCount} label="Einheiten gesamt" />
+              <Tile icon="check" value={statsFiltered.totalCount} label="Erledigt" />
+              <Tile icon="clock" value={statsFiltered.openCount} label="Offen" />
+              <Tile icon="moon" value={statsFiltered.restCount} label="Restdays" />
             </div>
           </div>
 
           <BadgesCard workouts={filteredWorkouts} stats={statsFiltered} />
 
-          <div className="card">
-            <div className="card-title">Verteilung nach Typ</div>
+          <div className="sa-card">
+            <div className="sa-ch">Verteilung nach Typ</div>
             {statsFiltered.typeDistribution.map(({ label, count }) => (
-              <div key={label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: 4 }}>
-                  <span>{label}</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{count}×</span>
-                </div>
-                <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-input)' }}>
-                  <div style={{ height: '100%', borderRadius: 4, background: 'var(--accent)', width: `${(count / maxCount) * 100}%` }} />
-                </div>
+              <div key={label} className="sa-dist">
+                <div className="sa-dist-row"><span>{label}</span><span>{count}×</span></div>
+                <div className="sa-bar"><i style={{ width: `${(count / maxCount) * 100}%` }} /></div>
               </div>
             ))}
           </div>
         </>
       )}
 
-      <div className="card">
-        <div className="card-title">Insgesamt</div>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-          <Stat label="Einheiten gesamt" value={statsAll.allCount} />
-          <Stat label="Erledigt" value={statsAll.totalCount} />
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Stat label="Offen" value={statsAll.openCount} />
-          <Stat label="Restdays" value={statsAll.restCount} />
-        </div>
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 12 }}>
-          <Stat label="Dauer (erledigt)" value={formatDuration(statsAll.totalDuration)} />
-          <Stat label="Wochen-Serie" value={statsAll.streakWeeks} />
+      <div className="sa-card">
+        <div className="sa-ch">Insgesamt</div>
+        <div className="sa-tiles">
+          <Tile icon="list" value={statsAll.allCount} label="Einheiten gesamt" />
+          <Tile icon="check" value={statsAll.totalCount} label="Erledigt" />
+          <Tile icon="clock" value={statsAll.openCount} label="Offen" />
+          <Tile icon="moon" value={statsAll.restCount} label="Restdays" />
+          <Tile icon="flame" value={statsAll.streakWeeks} label="Wochen-Serie" wide />
         </div>
       </div>
     </div>

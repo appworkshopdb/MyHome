@@ -203,7 +203,7 @@ function SportCard({ data, period, today, copy, onOpen }) {
         <>
           <div className="wk-big">
             <b>{data.done} von {data.total}</b>
-            <span>Einheiten{data.minutes > 0 ? ` · ${nf(data.minutes)} Min` : ''}</span>
+            <span>Einheiten</span>
           </div>
           <Bar rate={data.rate} />
           <Strip cols={cols} today={today} days={period.dayMap} dot={!month} />

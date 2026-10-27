@@ -31,7 +31,6 @@ export function TrainingTile({ workout, rest, onPress }) {
   let title; let sub = null; let status = null;
   if (workout) {
     title = workout.title;
-    sub = workout.minutes ? `${workout.minutes} Min` : null;
     status = workout.done ? 'Erledigt' : 'Geplant';
   } else if (rest) {
     title = 'Ruhetag';

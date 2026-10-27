@@ -93,9 +93,7 @@ export default function OverviewSection({
               <span>
                 {focusWorkout.is_rest
                   ? 'Erholung eingeplant'
-                  : [resolveTypeLabel(focusWorkout.type_key),
-                     focusWorkout.duration_min ? `${focusWorkout.duration_min} Min.` : null]
-                      .filter(Boolean).join(' · ')}
+                  : resolveTypeLabel(focusWorkout.type_key)}
               </span>
             </FocusCard.Meta>
             <FocusCard.ActionRow>

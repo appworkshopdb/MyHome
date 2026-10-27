@@ -303,6 +303,10 @@ eigenen kleinen Liste über der übrigen. Das Auge in der Saldo-Karte blendet Be
 Die Saldo-Karte zeigt unter Ein/Aus auch "Spar" (Sparschwein-Stand, `core/lib/savingsBalance.js`, Regeln aus `finance.js` dupliziert). Bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
 innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch in der Ernährungs-Hero-Karte. Im Hub gibt es keinen Plus-Knopf (`GlobalFab`), Aufgaben legt der Knopf "Neue Aufgabe" in der Aufgaben-Karte an.
 
+Sport zeigt und fragt KEINE Dauer mehr (weder Einheiten, Hub, Auswertung noch Anlegen-Dialoge); die Spalten `duration_min`
+bleiben in der DB und werden nur durchgereicht, nichts anzeigen oder neu abfragen. Auswertung (`AuswertungView`, `BadgesCard`,
+`SportIcons.jsx`, Klassen `.sa-*` in `design-v2.css`): Zahlen auf ruhigen Kacheln, Erfolge als Medaillen mit Symbol je Badge-Schlüssel.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
