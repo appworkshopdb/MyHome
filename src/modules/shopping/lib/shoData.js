@@ -6,6 +6,7 @@
 import { getSupabase } from '../../../core/lib/supabaseClient.js';
 import { SESSION_STORAGE_KEY } from '../../../core/lib/rawAuth.js';
 import { track } from '../../../core/lib/analytics.js';
+import { voidShoppingExpense } from '../../../core/lib/financeBridge.js';
 
 // owner_id aus dem JWT-Token lesen (sub-claim = user UUID).
 // Analog zu rawAuth.js: kein supabase.auth.getUser(),
@@ -110,6 +111,32 @@ export async function linkListFinEntry(listId, finEntryId, finEntryIdOpen) {
     })
     .eq('id', listId);
   if (error) throw error;
+}
+
+// Storniert die beim Abschließen erzeugte(n) Buchung(en) einer Liste und löst
+// die Verknüpfung. Wird beim Wiederöffnen einer "erledigt"-Liste und vor jeder
+// erneuten Buchung aufgerufen, damit keine Doppelbuchung entsteht. Liest die
+// Verknüpfung frisch aus der DB (die Liste im State kann veraltet sein). Fehlt
+// die Verknüpfungs-Spalte (Migration nicht eingespielt), gab es nie eine
+// verknüpfte Buchung — dann ist nichts zu tun.
+export async function releaseListBooking(listId) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('sho_lists')
+    .select('fin_entry_id, fin_entry_id_open')
+    .eq('id', listId)
+    .single();
+  if (error) {
+    console.warn('Buchungs-Verknüpfung nicht lesbar:', error);
+    return 0;
+  }
+  const ids = [data?.fin_entry_id, data?.fin_entry_id_open].filter(Boolean);
+  for (const id of ids) {
+    // eslint-disable-next-line no-await-in-loop
+    await voidShoppingExpense(id);
+  }
+  if (ids.length > 0) await linkListFinEntry(listId, null, null);
+  return ids.length;
 }
 
 export async function deleteList(listId) {
@@ -243,26 +270,27 @@ export async function saveListAsTemplate(listId, templateName) {
     .single();
   if (e1) throw e1;
 
-  // Alle offenen Artikel der Quellliste kopieren
+  // Alle Artikel der Quellliste kopieren — auch abgehakte, denn eine Vorlage
+  // wird meist nach dem Einkauf gespeichert, wenn alles erledigt ist.
   const { data: sourceItems, error: e2 } = await sb
     .from('sho_items')
-    .select('name, category, quantity, unit, note, sort_order')
+    .select('name, category, quantity, unit, note, item_store_name, sort_order')
     .eq('list_id', listId)
-    .is('deleted_at', null)
-    .eq('done', false);
+    .is('deleted_at', null);
   if (e2) throw e2;
 
   if (sourceItems && sourceItems.length > 0) {
     const copies = sourceItems.map((item) => ({
       owner_id,
-      list_id:    tmpl.id,
-      name:       item.name,
-      category:   item.category,
-      quantity:   item.quantity,
-      unit:       item.unit,
-      note:       item.note,
-      sort_order: item.sort_order,
-      done:       false,
+      list_id:         tmpl.id,
+      name:            item.name,
+      category:        item.category,
+      quantity:        item.quantity,
+      unit:            item.unit,
+      note:            item.note,
+      item_store_name: item.item_store_name,
+      sort_order:      item.sort_order,
+      done:            false,
     }));
     const { error: e3 } = await sb.from('sho_items').insert(copies);
     if (e3) throw e3;
@@ -297,7 +325,7 @@ export async function loadFromTemplate(templateId, newListName, newListIcon) {
   // Vorlage-Artikel kopieren
   const { data: tmplItems, error: e2 } = await sb
     .from('sho_items')
-    .select('name, category, quantity, unit, note, sort_order')
+    .select('name, category, quantity, unit, note, item_store_name, sort_order')
     .eq('list_id', templateId)
     .is('deleted_at', null);
   if (e2) throw e2;
@@ -305,14 +333,15 @@ export async function loadFromTemplate(templateId, newListName, newListIcon) {
   if (tmplItems && tmplItems.length > 0) {
     const copies = tmplItems.map((item) => ({
       owner_id,
-      list_id:    newList.id,
-      name:       item.name,
-      category:   item.category,
-      quantity:   item.quantity,
-      unit:       item.unit,
-      note:       item.note,
-      sort_order: item.sort_order,
-      done:       false,
+      list_id:         newList.id,
+      name:            item.name,
+      category:        item.category,
+      quantity:        item.quantity,
+      unit:            item.unit,
+      note:            item.note,
+      item_store_name: item.item_store_name,
+      sort_order:      item.sort_order,
+      done:            false,
     }));
     const { error: e3 } = await sb.from('sho_items').insert(copies);
     if (e3) throw e3;
@@ -320,16 +349,16 @@ export async function loadFromTemplate(templateId, newListName, newListIcon) {
   return newList;
 }
 
-// Häufig gekaufte Artikel: Alle nicht-gelöschten Items aggregieren,
-// nach Artikelname gruppieren und nach Häufigkeit sortieren.
+// Häufig gekaufte Artikel: abgehakte Artikel aller Listen nach Name gruppieren
+// und nach Häufigkeit sortieren. Bewusst AUCH gelöschte Zeilen (deleted_at):
+// "erledigte löschen" räumt die Liste nach dem Einkauf auf, die Einkaufs-
+// gewohnheit soll dabei erhalten bleiben. Offene Artikel zählen nicht.
 export async function loadFrequentItems(limit = 20) {
   const sb = getSupabase();
-  // Nur abgehakte, nicht gelöschte Items aus normalen Listen laden
   const { data, error } = await sb
     .from('sho_items')
     .select('name, category, quantity, unit, list_id')
-    .is('deleted_at', null)
-    .eq('done', true)            // NUR abgehakte Items zählen
+    .eq('done', true)
     .order('created_at', { ascending: false })
     .limit(1000);
   if (error) throw error;
@@ -357,8 +386,6 @@ export async function loadFrequentItems(limit = 20) {
 
   const all = Object.values(counts).sort((a, b) => b.count - a.count);
 
-  // Unter 2 verschiedenen Artikel-Typen: alle anzeigen (noch wenig Daten)
-  // Ab 2+: nach Häufigkeit sortiert zurückgeben
   return all.slice(0, limit);
 }
 

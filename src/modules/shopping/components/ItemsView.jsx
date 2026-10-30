@@ -6,7 +6,7 @@ import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.j
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
   saveListAsTemplate, loadPayments, savePayment, deletePayment,
-  updateListStatus, linkListFinEntry,
+  updateListStatus, linkListFinEntry, releaseListBooking,
 } from '../lib/shoData.js';
 import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
 import { ALL_SUGGESTIONS, STORE_NAMES, getCategory } from '../lib/data/items.js';
@@ -341,6 +341,10 @@ export default function ItemsView({ list, onBack }) {
 
       let paidEntryId = null;
       let openEntryId = null;
+
+      // Hing an der Liste schon eine Buchung (z.B. nach Wiederöffnen), wird sie
+      // ersetzt statt doppelt gebucht.
+      await releaseListBooking(list.id);
 
       if (instantSum > 0) {
         const entry = await createShoppingExpense({
@@ -890,12 +894,11 @@ export default function ItemsView({ list, onBack }) {
 }
 
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
-function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
+function ItemRow({ item, onToggle, onDelete, onEdit, allStores }) {
   const [editing,   setEditing]   = useState(false);
   const [qty,       setQty]       = useState(item.quantity != null ? String(item.quantity) : '');
   const [unit,      setUnit]      = useState(item.unit || '');
   const [editStore, setEditStore] = useState(item.item_store_name || '');
-  const [showStore, setShowStore] = useState(false);
   const qtyRef = useRef(null);
 
   function openEdit() {
@@ -1010,46 +1013,6 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, onAssign }) {
               <span className="sho-item-store-label">{item.item_store_name || item.store_name}</span>
             )}
           </span>
-        </div>
-      )}
-
-      {!editing && (
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <button
-            className="sho-item-store-btn"
-            onClick={(e) => { e.stopPropagation(); setShowStore((v) => !v); }}
-            title="Laden zuweisen"
-          >
-            🏪
-          </button>
-          {showStore && (
-            <div className="sho-item-store-dropdown">
-              <button
-                className={`sho-item-store-opt ${!(item.item_store_name || item.store_name) ? 'active' : ''}`}
-                onClick={() => { onAssign(item.id, null); setShowStore(false); }}
-              >
-                Kein Laden
-              </button>
-              {allStores.map((name) => (
-                <button
-                  key={name}
-                  className={`sho-item-store-opt ${(item.item_store_name || item.store_name) === name ? 'active' : ''}`}
-                  onClick={() => { onAssign(item.id, name); setShowStore(false); }}
-                >
-                  {name}
-                </button>
-              ))}
-              {STORE_NAMES.filter((n) => !allStores.includes(n)).slice(0, 8).map((name) => (
-                <button
-                  key={name}
-                  className="sho-item-store-opt"
-                  onClick={() => { onAssign(item.id, name); setShowStore(false); }}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 

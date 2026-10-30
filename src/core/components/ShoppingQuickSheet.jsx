@@ -68,8 +68,6 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
         icon,
         due_date:     dueDate  || null,
         due_time:     dueTime  || null,
-        store_name:   storeName || null,
-        store_custom: store === '__custom' ? (storeCustom.trim() || null) : null,
       });
       // Artikel der Reihe nach anlegen (Reihenfolge = Eingabe)
       for (let i = 0; i < items.length; i += 1) {
@@ -81,7 +79,8 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
           category:        getCategory(it.name),
           quantity:        it.quantity,
           unit:            it.unit,
-          item_store_name: it.store,
+          // Laden der Liste (Schritt 1) gilt als Vorgabe für Artikel ohne eigenen Laden
+          item_store_name: it.store || storeName || null,
           sort_order:      i,
         });
       }

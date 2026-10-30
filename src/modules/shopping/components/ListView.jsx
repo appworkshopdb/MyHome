@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from 'react';
 import { IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
 import {
   saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
+  releaseListBooking,
 } from '../lib/shoData.js';
 import { STORES } from '../lib/data/stores.js';
 
@@ -104,8 +105,16 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     const current = list.status || 'offen';
     const cycle   = { offen: 'im_einkauf', im_einkauf: 'erledigt', erledigt: 'offen' };
     const next    = cycle[current];
+    // Wiederöffnen einer gebuchten Liste: die Finanz-Buchung würde sonst
+    // stehen bleiben und beim erneuten Abschließen doppelt entstehen.
+    const hasBooking = Boolean(list.fin_entry_id || list.fin_entry_id_open);
+    if (current === 'erledigt' && hasBooking
+        && !window.confirm('Die Liste wurde ins Finanzmodul gebucht. Beim Wiederöffnen wird diese Buchung storniert. Fortfahren?')) {
+      return;
+    }
     setStatusBusy(list.id);
     try {
+      if (current === 'erledigt' && hasBooking) await releaseListBooking(list.id);
       await updateListStatus(list.id, next);
       await onListsChange();
     } catch { setError('Status konnte nicht gesetzt werden.'); }
@@ -395,15 +404,25 @@ const TIME_ICONS = {
   abends:       '🌙',
 };
 
+// Lokale Datums-Strings (nie toISOString — das rechnet über UTC und verschiebt
+// den Tag in Berlin zwischen 0 und 2 Uhr).
+function toDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function DueBadge({ date, time }) {
-  const today    = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const now      = new Date();
+  const today    = toDateStr(now);
+  const tomorrow = toDateStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
 
   let label;
   if (date === today)    label = 'Heute';
   else if (date === tomorrow) label = 'Morgen';
   else {
-    // Deutsches Datum: TT.MM.
+    // Deutsches Datum: TT.MM.JJ
     const [y, m, d] = date.split('-');
     label = `${d}.${m}.${y.slice(2)}`;
   }
