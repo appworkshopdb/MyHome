@@ -548,6 +548,9 @@
 :root.dark      { --bg-glow: rgba(242, 185, 75, 0.14); }
 :root[data-module]      { --bg-glow: color-mix(in srgb, var(--m-ac) 26%, transparent); }
 :root.dark[data-module] { --bg-glow: color-mix(in srgb, var(--m-ac) 20%, transparent); }
+/* Sport: Terrakotta-Ton, daher dezenterer Glow als bei den anderen Modulen */
+:root[data-module="sport"]      { --bg-glow: color-mix(in srgb, var(--m-ac) 12%, transparent); }
+:root.dark[data-module="sport"] { --bg-glow: color-mix(in srgb, var(--m-ac) 10%, transparent); }
 
 body::before {
   content:        "";
