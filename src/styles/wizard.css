@@ -641,3 +641,14 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
 }
 @keyframes action-toast-shrink { to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .action-toast-timer { animation: none; } }
+
+/* Einkaufs-Wizard, Schritt 1: Vorlage wählen */
+.wz-tmpls { display: flex; flex-direction: column; gap: 8px; }
+.wz-tmpl { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; background: var(--surface-sunken); border: 1.5px solid var(--border-hairline); border-radius: 14px; }
+.wz-tmpl-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 4px; text-align: left; background: none; border: 0; color: var(--text-primary); font: inherit; cursor: pointer; }
+.wz-tmpl-main:disabled { opacity: 0.6; }
+.wz-tmpl-ic { flex: none; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--action-quiet-bg); font-size: 21px; }
+.wz-tmpl-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wz-tmpl-t b { font-size: 15px; font-weight: 800; overflow-wrap: anywhere; }
+.wz-tmpl-t small { font-size: 12px; color: var(--text-muted); }
+.wz-tmpl-del { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: none; border: 0; color: var(--text-muted); cursor: pointer; }

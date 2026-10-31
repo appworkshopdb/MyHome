@@ -175,12 +175,15 @@ Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2
 Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
 (`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
 Einkaufsliste (`UNIT_OPTIONS`).
-"Alle Listen" (`ListView.jsx`, Klassen `.sho-lq`/`.sho-lseg`/`.sho-lrow*`/`.sho-lsheet*` in `design-v2.css`): oben `FocusCard` (Liste "Im Einkauf",
-sonst nächster Termin, "Weiter einkaufen"), Schnell-Anlegen-Feld (Name + Plus), Link "Aus Vorlage anlegen", Filter Offen/Erledigt/Alle;
-in "Offen" nach Zeit gruppiert (Überfällig/Heute/Diese Woche/Später/Ohne Datum), Zeile = Symbol, Name, Fortschritts-Ring, "•••".
-"•••" öffnet ein Sheet: Status (Wiederöffnen einer gebuchten Liste storniert die Buchung), Fällig (Schnellwahl + Datum + Tageszeit),
-Name, Löschen (zweistufig). `saveList` schreibt beim Update nur übergebene Felder (sonst löschte Umbenennen Symbol und Datum).
-Die Seitenaufbauten-Entwürfe liegen in `design/mockup-alle-listen.html`.
+"Alle Listen" (`ListView.jsx`, Klassen `.sho-lseg`/`.sho-lrow*`/`.sho-lsheet*` in `design-v2.css`): oben `FocusCard` (Liste "Im Einkauf",
+sonst nächster Termin, "Weiter einkaufen"), Filter Offen/Erledigt/Alle; in "Offen" nach Zeit gruppiert (Überfällig/Heute/Diese Woche/
+Später/Ohne Datum), Zeile = Symbol, Name, Fortschritts-Ring, "•••". "•••" öffnet ein Sheet: Status (Wiederöffnen einer gebuchten Liste
+storniert die Buchung), Fällig (Schnellwahl + Datum + Tageszeit), Name, Löschen (zweistufig). `saveList` schreibt beim Update nur
+übergebene Felder (sonst löschte Umbenennen Symbol und Datum). Entwürfe: `design/mockup-alle-listen.html`.
+Neue Liste NUR über den globalen Plus-Knopf (`ShoppingQuickSheet`, 3 Schritte): 1 Auswahl "Aus Vorlage"/"Manuelle Eingabe" (wie im
+Finanz-Wizard; ohne Vorlagen ist die Karte ausgegraut; "Aus Vorlage" zeigt erst die Vorlagen, die gewählte füllt Schritt 2 und 3 vor,
+Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach dem Speichern meldet der Wizard (liegt in core) per
+`notifyShoppingChanged()` (`core/lib/shoppingHandoff.js`) window-Event, `ShoppingModule` lädt die Listen neu.
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
 2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,
@@ -188,7 +191,7 @@ Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen
 Markierungen → Artikel übertragen/verwerfen → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
 vorhandene Buchung wird ersetzt) → Status "erledigt". Zahlungsbereich, "erledigte löschen" und "Als Vorlage speichern"
 gibt es in der Liste nicht mehr (`saveListAsTemplate`/`clearDoneItems` in `shoData.js` sind ungenutzt; vorhandene Vorlagen
-laufen weiter über "Aus Vorlage"). `saveItem` schreibt beim Update nur
+laufen weiter über "Aus Vorlage" im Anlege-Wizard). `saveItem` schreibt beim Update nur
 übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
 
 ## Wochen- und Monatsüberblick (Hub → Statistiken)

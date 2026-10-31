@@ -25,7 +25,7 @@ import ItemsView   from './components/ItemsView.jsx';
 import FreqView    from './components/FreqView.jsx';
 
 import { loadLists } from './lib/shoData.js';
-import { takeOpenListRequest } from '../../core/lib/shoppingHandoff.js';
+import { takeOpenListRequest, SHOPPING_CHANGED } from '../../core/lib/shoppingHandoff.js';
 
 import './shopping.css';
 
@@ -51,6 +51,12 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
 
   useEffect(() => {
     fetchLists().finally(() => setLoading(false));
+  }, [fetchLists]);
+
+  // Neue Liste über den globalen Plus-Knopf (außerhalb des Moduls): Listen neu laden
+  useEffect(() => {
+    window.addEventListener(SHOPPING_CHANGED, fetchLists);
+    return () => window.removeEventListener(SHOPPING_CHANGED, fetchLists);
   }, [fetchLists]);
 
   // In der Artikelansicht hat die Eingabeleiste ein eigenes Plus: der globale Plus-Knopf

@@ -1,17 +1,16 @@
 // modules/shopping/components/ListView.jsx
 // "Alle Listen" (Variante B): oben die Fokus-Karte (Liste "Im Einkauf", sonst nächster Termin),
-// darunter Schnell-Anlegen, Filter (Offen / Erledigt / Alle) und kompakte Zeilen mit Fortschritts-Ring.
+// darunter Filter (Offen / Erledigt / Alle) und kompakte Zeilen mit Fortschritts-Ring.
 // In "Offen" sind die Listen nach Zeit gruppiert (Überfällig, Heute, Diese Woche, Später, Ohne Datum).
 // Status, Fälligkeit, Name und Löschen stecken hinter "•••" (Sheet). Tap auf die Zeile → ItemsView
-// (via onOpenList). "Aus Vorlage anlegen" bleibt, neue Listen entstehen per Schnell-Anlegen oder FAB.
+// (via onOpenList). Neue Listen (auch aus einer Vorlage) entstehen nur über den globalen Plus-Knopf
+// (ShoppingQuickSheet).
 
-import { useState, useRef } from 'react';
-import { IconTrash } from '../../../core/components/Icons.jsx';
+import { useState } from 'react';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import {
-  saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
-  releaseListBooking, pickActiveList,
+  saveList, deleteList, updateListStatus, releaseListBooking, pickActiveList,
 } from '../lib/shoData.js';
 import { DAY_PARTS } from '../lib/data/stores.js';
 
@@ -91,9 +90,6 @@ const GROUPS = [
 export default function ListView({ lists, onListsChange, onOpenList }) {
   const [error,   setError]   = useState(null);
   const [filter,  setFilter]  = useState('offen');
-  const [qa,      setQa]      = useState('');
-  const [qaBusy,  setQaBusy]  = useState(false);
-  const [msg,     setMsg]     = useState(null);
   const [statusBusy, setStatusBusy] = useState(null);
 
   // "•••"-Sheet
@@ -104,42 +100,12 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [sBusy,   setSBusy]   = useState(false);
   const [delAsk,  setDelAsk]  = useState(false);
 
-  // Vorlagen
-  const [templates,   setTemplates]   = useState([]);
-  const [showTmpl,    setShowTmpl]    = useState(false);
-  const [tmplLoading, setTmplLoading] = useState(false);
-  const [loadingTmpl, setLoadingTmpl] = useState(null);
-  const [deleting,    setDeleting]    = useState(null);
-  const msgTimer = useRef(null);
-
-  function flash(text) {
-    setMsg(text);
-    clearTimeout(msgTimer.current);
-    msgTimer.current = setTimeout(() => setMsg(null), 2500);
-  }
-
   const normal = lists.filter((l) => !l.is_template);
   const isDone = (l) => (l.status || 'offen') === 'erledigt';
   const open = normal.filter((l) => !isDone(l));
   const done = normal.filter(isDone);
   const focus = pickFocus(open);
   const sheetList = sheetId ? normal.find((l) => l.id === sheetId) : null;
-
-  // ─── Schnell anlegen ─────────────────────────────────────────
-  async function handleQuickAdd(e) {
-    e?.preventDefault();
-    const name = qa.trim();
-    if (!name || qaBusy) return;
-    setQaBusy(true); setError(null);
-    try {
-      await saveList({ name, icon: '🛒' });
-      setQa('');
-      setFilter('offen');
-      await onListsChange();
-      flash(`✓ „${name}“ angelegt`);
-    } catch { setError('Liste konnte nicht angelegt werden.'); }
-    finally { setQaBusy(false); }
-  }
 
   // ─── Status ──────────────────────────────────────────────────
   async function changeStatus(list, next) {
@@ -198,39 +164,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     finally { setSBusy(false); }
   }
 
-  // ─── Vorlagen ────────────────────────────────────────────────
-  async function handleShowTemplates() {
-    setTmplLoading(true);
-    try {
-      setTemplates(await loadTemplates());
-      setShowTmpl(true);
-    } catch { setError('Vorlagen konnten nicht geladen werden.'); }
-    finally { setTmplLoading(false); }
-  }
-
-  async function handleLoadTemplate(tmpl) {
-    const newName = tmpl.name.replace(' (Vorlage)', '').trim();
-    setLoadingTmpl(tmpl.id);
-    try {
-      const newList = await loadFromTemplate(tmpl.id, newName, tmpl.icon || '🛒');
-      await onListsChange();
-      setShowTmpl(false);
-      onOpenList(newList);
-    } catch { setError('Vorlage laden fehlgeschlagen.'); }
-    finally { setLoadingTmpl(null); }
-  }
-
-  async function handleDeleteTemplate(e, tmplId) {
-    e.stopPropagation();
-    if (!window.confirm('Vorlage löschen?')) return;
-    setDeleting(tmplId);
-    try {
-      await deleteList(tmplId);
-      setTemplates((prev) => prev.filter((t) => t.id !== tmplId));
-    } catch { setError('Löschen fehlgeschlagen.'); }
-    finally { setDeleting(null); }
-  }
-
   // ─── Darstellung ─────────────────────────────────────────────
   function renderRow(l) {
     const fin = isDone(l);
@@ -269,7 +202,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
       <div className="sho-lempty">
         <div className="sho-lempty-ic">🛒</div>
         <div className="sho-lempty-title">Noch keine Liste</div>
-        <div className="sho-lempty-text">Gib oben einen Namen ein — z.B. für REWE, Aldi oder den nächsten Grillabend.</div>
+        <div className="sho-lempty-text">Tippe unten rechts auf das Plus — z.B. für REWE, Aldi oder den nächsten Grillabend.</div>
       </div>
     );
   } else if (filter === 'offen') {
@@ -307,49 +240,10 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         ) : (
           <>
             <FocusCard.Eyebrow>Keine offene Liste</FocusCard.Eyebrow>
-            <div className="sho-focus-title">Leg unten deine erste Liste an</div>
+            <div className="sho-focus-title">Tippe auf das Plus, um deine erste Liste anzulegen</div>
           </>
         )}
       </FocusCard>
-
-      {/* Schnell anlegen */}
-      <form className="sho-lq" onSubmit={handleQuickAdd}>
-        <input
-          value={qa}
-          onChange={(e) => setQa(e.target.value)}
-          placeholder="Neue Liste, z. B. Samstag Markt"
-          maxLength={60}
-          aria-label="Name der neuen Liste"
-          enterKeyHint="done"
-        />
-        <button type="submit" disabled={!qa.trim() || qaBusy} aria-label="Liste anlegen">+</button>
-      </form>
-      {msg && <div className="sho-lmsg" role="status">{msg}</div>}
-      <button className="sho-ltmpl-link" onClick={handleShowTemplates} disabled={tmplLoading}>
-        📋 {tmplLoading ? 'Laden …' : 'Aus Vorlage anlegen'}
-      </button>
-
-      {/* Vorlagen-Panel */}
-      {showTmpl && (
-        <div className="sho-lpanel">
-          <div className="sho-lpanel-head">
-            <b>Vorlagen</b>
-            <button className="sho-lmore" onClick={() => setShowTmpl(false)} aria-label="Schließen">✕</button>
-          </div>
-          {templates.length === 0 && (
-            <div className="sho-lempty-text" style={{ padding: '10px 4px 6px' }}>Noch keine Vorlagen vorhanden.</div>
-          )}
-          {templates.map((tmpl) => (
-            <div key={tmpl.id} className="sho-lrow">
-              <button className="sho-lrow-open" onClick={() => handleLoadTemplate(tmpl)} disabled={loadingTmpl === tmpl.id || deleting === tmpl.id}>
-                <span className="sho-lrow-ic">{tmpl.icon || '📋'}</span>
-                <span className="sho-lrow-t"><b>{tmpl.name}</b><small>{loadingTmpl === tmpl.id ? 'Wird angelegt …' : 'Als neue Liste anlegen'}</small></span>
-              </button>
-              <button className="sho-lmore" onClick={(e) => handleDeleteTemplate(e, tmpl.id)} aria-label="Vorlage löschen"><IconTrash size={16} /></button>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Filter */}
       {normal.length > 0 && (

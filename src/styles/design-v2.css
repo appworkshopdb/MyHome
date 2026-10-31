@@ -923,18 +923,6 @@ button.cl-row-btn { cursor: pointer; }
 .sho-lview { padding-bottom: calc(var(--nav-height) + 90px + env(safe-area-inset-bottom)); }
 .sho-lview-error { margin-bottom: 12px; padding: 10px 14px; border-radius: 14px; background: var(--status-critical-bg); color: var(--status-critical); font-size: 13px; font-weight: 700; }
 
-.sho-lq {
-  display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 8px 8px 16px;
-  background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card);
-}
-.sho-lq input { flex: 1; min-width: 0; min-height: 38px; border: 0; background: none; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 700; outline: none; }
-.sho-lq input::placeholder { color: var(--text-muted); }
-.sho-lq button { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); font-size: 24px; font-weight: 800; line-height: 1; cursor: pointer; }
-.sho-lq button:disabled { opacity: 0.35; cursor: default; }
-.sho-lmsg { margin: 8px 6px 0; font-size: 13px; font-weight: 800; color: var(--status-positive); }
-.sho-ltmpl-link { display: block; margin: 8px 6px 0 auto; padding: 6px 4px; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 800; color: var(--m-deep, var(--text-primary)); cursor: pointer; }
-.sho-ltmpl-link:disabled { opacity: 0.6; }
-
 .sho-lseg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin-top: 12px; padding: 4px; background: var(--surface-raised); border-radius: var(--r-pill); box-shadow: var(--shadow-card); }
 .sho-lseg button { min-height: 38px; border: 0; border-radius: var(--r-pill); background: none; font: inherit; font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; }
 .sho-lseg button[aria-pressed="true"] { background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); }
@@ -969,9 +957,6 @@ button.cl-row-btn { cursor: pointer; }
 .sho-lempty-ic { font-size: 40px; line-height: 1; margin-bottom: 8px; }
 .sho-lempty-title { font-size: 17px; font-weight: 900; margin-bottom: 4px; }
 .sho-lempty-text { font-size: 13px; font-weight: 600; color: var(--text-muted); max-width: 34ch; margin: 0 auto; }
-
-.sho-lpanel { margin-top: 12px; padding: 8px 14px 6px; background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card); }
-.sho-lpanel-head { display: flex; align-items: center; justify-content: space-between; min-height: 40px; font-size: 15px; }
 
 /* "•••"-Sheet */
 .sho-lsheet { display: grid; gap: 8px; padding: 8px 18px 22px; }
