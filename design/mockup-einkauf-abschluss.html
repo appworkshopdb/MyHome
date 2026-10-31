@@ -120,7 +120,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
 .sh-foot .hint { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
 .cta { min-height: 50px; border-radius: 16px; background: var(--shop-ac); color: var(--shop-on); font-weight: 900; font-size: 15px; width: 100%; }
 .cta[disabled] { opacity: .4; cursor: not-allowed; }
-.link { min-height: 44px; font-weight: 800; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.cta2 { min-height: 50px; border-radius: 16px; background: var(--raised); color: var(--text); font-weight: 900; font-size: 15px; width: 100%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
 .sumbar { display: flex; align-items: center; gap: 10px; background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 12px 14px; margin-bottom: 4px; }
 .sumbar .n { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .sumbar .t { flex: 1; font-size: 13px; font-weight: 700; color: var(--muted); }
@@ -144,7 +144,14 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
 .lopt[aria-checked="true"] .rd { border-color: var(--shop-ac); background: radial-gradient(var(--shop-ac) 0 45%, transparent 50%); }
 .field { width: 100%; min-height: 46px; border-radius: 14px; background: var(--raised); border: 1.5px solid var(--line); padding: 0 14px; font-weight: 700; font-size: 14px; }
 .field::placeholder { color: var(--muted); }
-.two { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.flbl { margin: 2px 2px -4px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.flbl span { letter-spacing: 0; text-transform: none; font-weight: 700; margin-left: 4px; }
+.wheel { position: relative; height: 180px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; perspective: 600px; background: var(--sunken); }
+.wheel-list { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 72px 0; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-y; outline: none; cursor: ns-resize; position: relative; z-index: 1; }
+.wheel-list::-webkit-scrollbar { display: none; }
+.wheel-item { height: 36px; scroll-snap-align: center; display: grid; place-items: center; font-size: 19px; font-weight: 700; line-height: 1; padding: 0 10px; white-space: nowrap; will-change: transform, opacity; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 72px; height: 36px; border-radius: 10px; background: var(--line); opacity: .8; pointer-events: none; z-index: 0; }
+.wheel:focus-within .wheel-band { outline: 2px solid var(--shop-ac); outline-offset: -2px; }
 .meth { display: flex; flex-wrap: wrap; gap: 6px; }
 .meth button { padding: 7px 13px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-size: 13px; font-weight: 800; }
 .meth button[aria-pressed="true"] { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
@@ -227,6 +234,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
   var LISTNAME = 'Schinken Aufstrich Sandwich klassik';
   var METHODS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
   var INSTANT = ['Bar', 'Gutschein'];
+  var STORES = ['Kein Laden', 'Aldi Nord', 'Aldi Süd', 'Lidl', 'Penny', 'Netto Marken-Discount', 'Netto (Edeka)', 'Norma', 'REWE', 'Edeka', 'Tegut', 'Hit', 'Kaufland', 'Globus', "Denn's Biomarkt", 'Alnatura', 'Basic', 'dm', 'Rossmann', 'Müller', 'Wochenmarkt', 'Metzger', 'Bäcker', 'Asia-Shop', 'Online-Lieferung'];
   var TARGETS = {
     woche: { name: 'Wocheneinkauf', icon: '🛒', open: 6, items: [{ n: 'Karotte', q: 200, u: 'g' }, { n: 'Milch', q: 1, u: 'L' }] },
     grill: { name: 'Wochenende Grillen', icon: '🥩', open: 3, items: [{ n: 'Steak', q: 4, u: 'Stück' }] }
@@ -304,8 +312,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
     return '<div class="sumbar"><span class="n">' + open.length + '</span><span class="t"><b>Artikel nicht gekauft</b><br>Sie wandern auf die Liste, die du hier wählst.</span></div>' +
       '<div class="sec">Wird übertragen</div><div class="card">' + rows + '</div>' +
       '<div class="sec">Auf welche Liste?</div><div class="lists" role="radiogroup">' + lists + '</div>' +
-      (S.target === 'new' ? '<div style="margin-top:8px"><input class="field" id="newname" data-newname value="' + esc(S.newName) + '" maxlength="60" aria-label="Name der neuen Liste"></div>' : '') +
-      '<div class="note">Diese Liste bleibt mit den gekauften Artikeln abgeschlossen.</div>';
+      (S.target === 'new' ? '<div style="margin-top:8px"><input class="field" id="newname" data-newname value="' + esc(S.newName) + '" maxlength="60" aria-label="Name der neuen Liste"></div>' : '');
   }
 
   function stepPay() {
@@ -315,11 +322,12 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
       return '<div class="pay"><span class="am">' + nfE.format(p.amount) + '</span><span class="mt">' + esc(p.method) + (p.store ? ' · ' + esc(p.store) : '') + (p.note ? ' · ' + esc(p.note) : '') + '</span><button class="x" data-delpay="' + i + '" aria-label="Zahlung löschen">×</button></div>';
     }).join('');
     var f = S.form;
-    var form = f ? '<div class="form"><div class="two"><input class="field" id="f-amt" data-f="amount" inputmode="decimal" placeholder="Betrag (€)" value="' + esc(f.amount) + '" aria-label="Betrag"><input class="field" id="f-store" data-f="store" placeholder="Laden (optional)" value="' + esc(f.store) + '" aria-label="Laden"></div>' +
-      '<div class="meth" role="group" aria-label="Zahlungsart">' + METHODS.map(function (m) { return '<button data-meth="' + m + '" aria-pressed="' + (f.method === m) + '">' + m + '</button>'; }).join('') + '</div>' +
+    var form = f ? '<div class="form"><input class="field" id="f-amt" data-f="amount" inputmode="decimal" placeholder="Betrag (€)" value="' + esc(f.amount) + '" aria-label="Betrag">' +
+      '<div class="flbl">Zahlungsart</div><div class="meth" role="group" aria-label="Zahlungsart">' + METHODS.map(function (m) { return '<button data-meth="' + m + '" aria-pressed="' + (f.method === m) + '">' + m + '</button>'; }).join('') + '</div>' +
+      '<div class="flbl">Laden <span>optional</span></div><div class="wheel"><div class="wheel-band"></div><div class="wheel-list" id="wheel" tabindex="0" role="listbox" aria-label="Laden">' + STORES.map(function (n, i) { return '<div class="wheel-item" role="option" data-i="' + i + '" aria-selected="' + ((f.store || 'Kein Laden') === n) + '">' + esc(n) + '</div>'; }).join('') + '</div></div>' +
       '<input class="field" id="f-note" data-f="note" placeholder="Notiz (optional)" value="' + esc(f.note) + '" aria-label="Notiz"><div class="btns"><button class="sbtn" data-act="cancel-pay">Abbrechen</button><button class="sbtn p" data-act="save-pay">Zahlung speichern</button></div></div>'
       : '<button class="addpay" data-act="new-pay">+ Zahlung hinzufügen</button>';
-    return '<div class="sec" style="margin-top:6px">Zahlungen</div>' + (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung kannst du nur ohne Buchung abschließen.</div>') + form +
+    return '<div class="sec" style="margin-top:6px">Zahlungen</div>' + (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung schließt „Liste abschließen“ nur die Liste, es entsteht keine Buchung.</div>') + form +
       '<div class="total"><span>Gesamt</span><b>' + nfE.format(t) + '</b></div>' +
       (t > 0 ? '<div class="sec">Bezeichnung der Buchung</div><input class="field" id="bname" data-bname value="' + esc(S.booking) + '" maxlength="80" aria-label="Bezeichnung"><div class="split">' +
         (instant > 0 ? '<div class="paid"><span>✓ Sofort bezahlt (' + Object.keys(mi).join(', ') + ')</span><span>' + nfE.format(instant) + '</span></div>' : '') +
@@ -335,7 +343,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
     var foot;
     if (key === 'pay') {
       var t = total();
-      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="link" data-act="finish-nobook">Ohne Buchung abschließen</button>';
+      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="cta2" data-act="finish-nobook">Liste abschließen</button>';
     } else if (key === 'open') {
       var m = openItems().length;
       foot = '<button class="cta" data-act="next">Weiter</button><div class="hint">' + m + ' Artikel → ' + esc(targetName()) + '</div>';
@@ -360,7 +368,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
     list: { h: 'Die Liste, vereinfacht', li: ['Der Zahlungsbereich und die Chips „erledigte löschen“ und „Als Vorlage speichern“ sind weg. Oben bleibt nur die Kopf-Karte mit „Einkauf abschließen“.', 'Alle weiteren Dinge (Zahlung, nicht gekaufte Artikel) passieren erst im Abschluss.'], try: 'Tippe auf „Einkauf abschließen“.' },
     check: { h: 'Schritt 1 · Einkauf prüfen', li: ['Oben steht, wie viele Artikel gekauft (markiert) sind. Nicht markierte sind gekennzeichnet.', 'Ein Tipp stellt einen Artikel um, falls du etwas zu spät oder gar nicht abgehakt hast.', 'Gibt es nicht markierte Artikel, folgt Schritt 2, sonst gleich die Bezahlung.'], try: 'Stelle „Sauerkraut“ auf gekauft und dann „Karotte“ auch: Der Schritt „Nicht gekauft“ verschwindet aus dem Fortschritt.' },
     open: { h: 'Schritt 2 · Nicht gekauft', li: ['Alle nicht markierten Artikel werden auf die gewählte Liste übertragen. Es gibt keine Einzelauswahl.', 'Ziel ist eine bestehende Liste oder eine neue, die erst beim Abschließen angelegt wird.', 'Steht der Artikel in der Zielliste schon offen drauf, wird aufgestockt (Karotte: 200 g → 250 g).', 'Diese Liste behält nur die markierten Artikel und ist damit abgeschlossen.'], try: 'Wähle „Wocheneinkauf“ und sieh dir den Hinweis bei „Karotte“ an. Wähle dann „Neue Liste“.' },
-    pay: { h: 'Schritt 3 · Bezahlung', li: ['Hier werden Zahlungen erfasst, mehrere sind möglich. Gespeichert wird erst beim Abschließen.', 'Bar und Gutschein gelten als sofort bezahlt, alles andere als offen. Gemischt entstehen zwei Buchungen.', '„Buchen & abschließen“ legt die Buchung in den Finanzen an. „Ohne Buchung abschließen“ schließt nur die Liste.'], try: 'Erfasse 12,40 € mit Bar und 8 € mit Paypal und sieh dir die Aufteilung an.' },
+    pay: { h: 'Schritt 3 · Bezahlung', li: ['Hier werden Zahlungen erfasst, mehrere sind möglich. Gespeichert wird erst beim Abschließen.', 'Bar und Gutschein gelten als sofort bezahlt, alles andere als offen. Gemischt entstehen zwei Buchungen.', '„Buchen & abschließen“ legt die Buchung in den Finanzen an. „Liste abschließen“ schließt nur die Liste, ohne Buchung.'], try: 'Erfasse 12,40 € mit Bar und 8 € mit Paypal und wähle am Regler einen Laden.' },
     done: { h: 'Fertig', li: ['Eine Zusammenfassung zeigt, was passiert ist: gekauft, übertragen, nicht gekauft, gebucht.', 'Die Liste steht danach als „erledigt“ in „Alle Listen“.'], try: 'Mit „Fertig“ startest du den Ablauf neu.' }
   };
 
@@ -375,8 +383,41 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
     phone.innerHTML = html;
     var nb = phone.querySelector('.sh-body'); if (nb) nb.scrollTop = top;
     if (focusId) { var el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(selStart, selStart); } catch (e) {} } }
+    setupWheel();
     var ex = EXPL[key];
     document.getElementById('explain').innerHTML = '<h2>' + ex.h + '</h2><ul>' + ex.li.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul><div class="try">Zum Ausprobieren: ' + ex.try + '</div>';
+  }
+
+  // Wechselregler wie in der App (WheelPicker): Trommel-Effekt, Einrasten, Maus ziehbar
+  function setupWheel() {
+    var list = document.getElementById('wheel');
+    if (!list || !S.form) return;
+    var H = 36, timer = null, drag = null, moved = false;
+    function mark() {
+      var f = list.scrollTop / H;
+      Array.prototype.forEach.call(list.children, function (el, j) {
+        var d = Math.abs(j - f);
+        el.style.opacity = String(Math.max(0.1, 1 - 0.3 * d));
+        el.style.transform = 'rotateX(' + ((j - f) * -20) + 'deg) scale(' + Math.max(0.62, 1 - 0.09 * d) + ')';
+      });
+    }
+    function idx() { return Math.max(0, Math.min(STORES.length - 1, Math.round(list.scrollTop / H))); }
+    function commit() { var n = STORES[idx()]; S.form.store = n === 'Kein Laden' ? '' : n; }
+    var start = Math.max(0, STORES.indexOf(S.form.store || 'Kein Laden'));
+    list.style.scrollSnapType = 'none'; list.scrollTop = start * H; list.style.scrollSnapType = ''; mark();
+    list.addEventListener('scroll', function () { mark(); clearTimeout(timer); timer = setTimeout(function () { if (!drag) commit(); }, 90); });
+    list.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      drag = { y: e.clientY, top: list.scrollTop }; moved = false; list.style.scrollSnapType = 'none'; list.setPointerCapture(e.pointerId);
+    });
+    list.addEventListener('pointermove', function (e) { if (!drag) return; var dy = e.clientY - drag.y; if (Math.abs(dy) > 3) moved = true; list.scrollTop = drag.top - dy; });
+    function end() { if (!drag) return; drag = null; var i = idx(); list.style.scrollSnapType = ''; list.scrollTo({ top: i * H, behavior: 'smooth' }); setTimeout(commit, 260); }
+    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    list.addEventListener('click', function (e) { var it = e.target.closest('.wheel-item'); if (it && !moved) list.scrollTo({ top: +it.getAttribute('data-i') * H, behavior: 'smooth' }); });
+    list.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return; e.preventDefault();
+      list.scrollTo({ top: Math.max(0, Math.min(STORES.length - 1, idx() + (e.key === 'ArrowDown' ? 1 : -1))) * H, behavior: 'smooth' });
+    });
   }
 
   function finish(book) {
