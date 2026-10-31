@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
+import HabitTemplateLibrary from './HabitTemplateLibrary.jsx';
 import {
   DndContext,
   closestCenter,
@@ -26,7 +27,7 @@ import {
   restoreHabit, loadDeletedHabits, setStatsHidden,
 } from '../lib/habData.js';
 import {
-  HABIT_CATEGORIES, HABIT_ICONS, HABIT_LIBRARY, TIME_SLOTS,
+  HABIT_CATEGORIES, HABIT_ICONS, TIME_SLOTS,
 } from '../lib/habUtils.js';
 
 const FREQ_LABELS = {
@@ -357,36 +358,12 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
   // ─── Bibliothek ─────────────────────────────────────────
   if (showLibrary) {
-    const grouped = HABIT_LIBRARY.reduce((acc, t) => {
-      if (!acc[t.category]) acc[t.category] = [];
-      acc[t.category].push(t);
-      return acc;
-    }, {});
-
     return (
-      <div className="hab-library">
-        <div className="hab-library-header">
-          <button className="hab-back-btn" onClick={() => setShowLibrary(false)}>← Zurück</button>
-          <h2 className="hab-library-title">Vorlagen</h2>
-        </div>
-        <p className="hab-library-sub">Wähle eine Vorlage als Startpunkt — du kannst alles anpassen.</p>
-        {Object.entries(grouped).map(([cat, templates]) => (
-          <div key={cat} className="hab-library-group">
-            <div className="hab-library-cat">{cat}</div>
-            <div className="hab-library-items">
-              {templates.map((t, i) => (
-                <button key={i} className="hab-library-item" onClick={() => applyTemplate(t)}>
-                  <span className="hab-library-item-icon">{t.icon}</span>
-                  <span className="hab-library-item-name">{t.name}</span>
-                  {t.target_count > 1 && (
-                    <span className="hab-library-item-meta">{t.target_count}× {t.unit}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      <HabitTemplateLibrary
+        habits={habits}
+        onBack={() => setShowLibrary(false)}
+        onPick={applyTemplate}
+      />
     );
   }
 
