@@ -175,9 +175,12 @@ Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2
 Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
 (`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
 Einkaufsliste (`UNIT_OPTIONS`).
-"Alle Listen" (`ListView.jsx`, Klassen `.sho-lcard*`/`.sho-lview` in `design-v2.css`): jede Liste eine Karte mit Symbol-Kachel,
-Fortschritt, Status-Chip (Tipp schaltet weiter), Datum-Chip, Umbenennen/Löschen; Offene zuerst, Erledigte gedimmt darunter,
-"Aus Vorlage anlegen" als gestrichelter Knopf (neue Liste nur über den globalen FAB).
+"Alle Listen" (`ListView.jsx`, Klassen `.sho-lq`/`.sho-lseg`/`.sho-lrow*`/`.sho-lsheet*` in `design-v2.css`): oben `FocusCard` (Liste "Im Einkauf",
+sonst nächster Termin, "Weiter einkaufen"), Schnell-Anlegen-Feld (Name + Plus), Link "Aus Vorlage anlegen", Filter Offen/Erledigt/Alle;
+in "Offen" nach Zeit gruppiert (Überfällig/Heute/Diese Woche/Später/Ohne Datum), Zeile = Symbol, Name, Fortschritts-Ring, "•••".
+"•••" öffnet ein Sheet: Status (Wiederöffnen einer gebuchten Liste storniert die Buchung), Fällig (Schnellwahl + Datum + Tageszeit),
+Name, Löschen (zweistufig). `saveList` schreibt beim Update nur übergebene Felder (sonst löschte Umbenennen Symbol und Datum).
+Die Seitenaufbauten-Entwürfe liegen in `design/mockup-alle-listen.html`.
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
 2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,

@@ -82,15 +82,16 @@ export async function updateListStatus(listId, status) {
 export async function saveList(list) {
   const sb = getSupabase();
   if (list.id) {
+    // Nur die übergebenen Felder schreiben — sonst würde z.B. ein Umbenennen Symbol, Datum und
+    // Reihenfolge der Liste auf null setzen.
+    const patch = {};
+    for (const k of ['name', 'icon', 'sort_order', 'due_date', 'due_time']) {
+      if (list[k] === undefined) continue;
+      patch[k] = (k === 'due_date' || k === 'due_time') ? (list[k] || null) : list[k];
+    }
     const { data, error } = await sb
       .from('sho_lists')
-      .update({
-        name:       list.name,
-        icon:       list.icon ?? null,
-        sort_order: list.sort_order ?? 0,
-        due_date:   list.due_date  || null,
-        due_time:   list.due_time  || null,
-      })
+      .update(patch)
       .eq('id', list.id)
       .select()
       .single();
