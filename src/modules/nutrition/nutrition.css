@@ -860,3 +860,13 @@
 .lex-view .lex-detail-block.pro { background: color-mix(in srgb, var(--m-ac) 14%, var(--surface-raised)); }
 .lex-view .lex-detail-block.con { background: color-mix(in srgb, var(--status-critical) 11%, var(--surface-raised)); }
 .lex-view .lex-detail-block.con .heading { color: var(--status-critical); }
+
+/* Rezeptkarte: zwei Infokästchen (Portionen, Zutaten) über die volle Kartenhöhe */
+.recipe-card .head { align-items: stretch; }
+.recipe-side { display: flex; flex-direction: column; gap: 6px; flex: none; width: 54px; }
+.recipe-box {
+  flex: 1; min-height: 34px; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 14px; font-weight: 800; line-height: 1;
+}
+.recipe-box svg { width: 16px; height: 16px; flex: none; color: var(--action-primary); }

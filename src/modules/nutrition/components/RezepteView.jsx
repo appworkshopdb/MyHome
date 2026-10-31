@@ -187,12 +187,23 @@ export default function RezepteView({
           <div className="head">
             <RecipeCover recipe={r} className="thumb" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span className="title">{r.name}</span>
-                <span className="servings">{r.servings} Port.</span>
-              </div>
+              <div className="title">{r.name}</div>
               <div className="macros">{Math.round(facts.kcal)} kcal · {fmt(facts.protein)}g Eiweiß pro Portion</div>
               <RecipeMeta recipe={r} calc={calc} />
+            </div>
+            <div className="recipe-side">
+              <span className="recipe-box" title={`${r.servings} Portion${Number(r.servings) !== 1 ? 'en' : ''}`} aria-label={`${r.servings} Portion${Number(r.servings) !== 1 ? 'en' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 11h18c0 5.2-4 8.5-9 8.5S3 16.2 3 11z" /><path d="M8.5 22h7" /><path d="M9 7.5c0-1 .8-1.2.8-2.2M12.5 7.5c0-1 .8-1.2.8-2.2" />
+                </svg>
+                {r.servings}
+              </span>
+              <span className="recipe-box" title={`${r.ingredients.length} Zutat${r.ingredients.length !== 1 ? 'en' : ''}`} aria-label={`${r.ingredients.length} Zutat${r.ingredients.length !== 1 ? 'en' : ''}`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 19C4 11 8 5 20 4c.5 11-4.5 16-12 15.2" /><path d="M5 19c3-4 6-7 10-9.5" />
+                </svg>
+                {r.ingredients.length}
+              </span>
             </div>
           </div>
           {tab === 'vorlagen' && (
