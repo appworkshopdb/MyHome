@@ -139,6 +139,9 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
 .lopt .t b { display: block; font-size: 14px; font-weight: 800; }
 .lopt .t small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
 .lopt .rd { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line-strong); }
+.lopt.warn[aria-checked="true"] { border-color: var(--warn-ink); background: var(--warn-tint); color: var(--warn-ink); }
+.lopt.warn[aria-checked="true"] .t small { color: var(--warn-ink); }
+.lopt.warn[aria-checked="true"] .rd { border-color: var(--warn-ink); background: radial-gradient(var(--warn-ink) 0 45%, transparent 50%); }
 .lopt[aria-checked="true"] { border-color: var(--shop-ac); background: var(--shop-tint); color: var(--shop-ink); }
 .lopt[aria-checked="true"] .t small { color: var(--shop-ink); }
 .lopt[aria-checked="true"] .rd { border-color: var(--shop-ac); background: radial-gradient(var(--shop-ac) 0 45%, transparent 50%); }
@@ -219,7 +222,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
 
   <h2 class="sech2">Offene Entscheidungen</h2>
   <div class="dgrid">
-    <div class="dec"><h3>Was passiert mit nicht markierten Artikeln?</h3><p>Sie wandern alle auf die gewählte Liste (bestehend oder neu) und verschwinden aus dieser. Die markierten Artikel bleiben, die Liste ist abgeschlossen. Mehr nicht.</p><div class="rec"><b>Offen:</b> Es gibt keinen Weg, nicht markierte Artikel zu verwerfen. Dafür müsstest du sie vorher in der Liste löschen. Soll es im Schritt eine Auswahl „Nicht übertragen“ geben?</div></div>
+    <div class="dec"><h3>Was passiert mit nicht markierten Artikeln?</h3><p>Sie wandern alle auf die gewählte Liste (bestehend oder neu) und verschwinden aus dieser, oder du verwirfst sie. Die markierten Artikel bleiben, die Liste ist abgeschlossen. Mehr nicht.</p><div class="rec"><b>Neu:</b> Übertragen ist nicht Pflicht. Mit „Verwerfen“ werden die Artikel beim Abschließen gelöscht.</div></div>
     <div class="dec"><h3>Gleiche Artikel in der Zielliste</h3><p>Steht ein Artikel dort schon offen drauf, wird die Menge aufgestockt, wie beim Rezept-Import. Der Hinweis steht beim Artikel.</p><div class="rec"><b>Vorschlag:</b> gleiche Regel wie beim Rezept.</div></div>
     <div class="dec"><h3>Zahlungen nur noch im Abschluss</h3><p>Der Zahlungsbereich in der Liste entfällt. Im Schritt „Bezahlung“ trägst du eine oder mehrere Zahlungen ein, beim Abschließen entsteht die Buchung in den Finanzen. Bereits früher erfasste Zahlungen einer Liste erscheinen dort vorbefüllt (Szenario oben).</p><div class="rec"><b>Vorschlag:</b> so.</div></div>
     <div class="dec"><h3>Vorlagen und Aufräumen</h3><p>Ohne „Als Vorlage speichern“ lassen sich keine neuen Vorlagen mehr anlegen, „Aus Vorlage“ bleibt für vorhandene nutzbar. „Erledigte löschen“ entfällt, erledigte Artikel verschwinden mit der Liste. „Alle zurücksetzen“ bleibt, es erscheint nur, wenn alles abgehakt ist.</p><div class="rec"><b>Frage:</b> Soll „Als Vorlage speichern“ als Schalter im letzten Schritt wieder auftauchen?</div></div>
@@ -265,9 +268,9 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
   function doneItems() { return S.items.filter(function (i) { return i.done; }); }
   function steps() { return openItems().length ? ['check', 'open', 'pay'] : ['check', 'pay']; }
   function total() { return Math.round(S.payments.reduce(function (s, p) { return s + p.amount; }, 0) * 100) / 100; }
-  function targetName() { return S.target === 'new' ? (S.newName.trim() || 'Neue Liste') : TARGETS[S.target].name; }
+  function targetName() { return S.target === 'discard' ? 'verwerfen' : S.target === 'new' ? (S.newName.trim() || 'Neue Liste') : TARGETS[S.target].name; }
   function hint(it) {
-    if (S.target === 'new') return null;
+    if (S.target === 'new' || S.target === 'discard') return null;
     var hit = TARGETS[S.target].items.filter(function (t) { return t.n === it.n && t.u === it.u; })[0];
     return hit ? 'steht schon drauf: ' + amt(hit.q, hit.u) + ' → ' + amt(hit.q + it.q, it.u) : null;
   }
@@ -309,9 +312,11 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
       var t = TARGETS[k];
       return '<button class="lopt" role="radio" aria-checked="' + (S.target === k) + '" data-target="' + k + '"><span class="ic">' + t.icon + '</span><span class="t"><b>' + esc(t.name) + '</b><small>' + t.open + ' offen</small></span><span class="rd"></span></button>';
     }).join('') + '<button class="lopt" role="radio" aria-checked="' + (S.target === 'new') + '" data-target="new"><span class="ic">＋</span><span class="t"><b>Neue Liste</b><small>wird beim Abschließen angelegt</small></span><span class="rd"></span></button>';
-    return '<div class="sumbar"><span class="n">' + open.length + '</span><span class="t"><b>Artikel nicht gekauft</b><br>Sie wandern auf die Liste, die du hier wählst.</span></div>' +
-      '<div class="sec">Wird übertragen</div><div class="card">' + rows + '</div>' +
-      '<div class="sec">Auf welche Liste?</div><div class="lists" role="radiogroup">' + lists + '</div>' +
+    var drop = '<button class="lopt warn" role="radio" aria-checked="' + (S.target === 'discard') + '" data-target="discard"><span class="ic">🗑</span><span class="t"><b>Verwerfen</b><small>nicht mehr gebraucht, wird gelöscht</small></span><span class="rd"></span></button>';
+    var disc = S.target === 'discard';
+    return '<div class="sumbar"><span class="n">' + open.length + '</span><span class="t"><b>' + (open.length === 1 ? 'Artikel nicht gekauft' : 'Artikel nicht gekauft') + '</b><br>Übertrage sie auf eine Liste oder wirf sie weg.</span></div>' +
+      '<div class="sec">' + (disc ? 'Wird verworfen' : 'Wird übertragen') + '</div><div class="card' + (disc ? ' dim' : '') + '">' + rows + '</div>' +
+      '<div class="sec">Wohin damit?</div><div class="lists" role="radiogroup">' + lists + drop + '</div>' +
       (S.target === 'new' ? '<div style="margin-top:8px"><input class="field" id="newname" data-newname value="' + esc(S.newName) + '" maxlength="60" aria-label="Name der neuen Liste"></div>' : '');
   }
 
@@ -327,7 +332,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
       '<div class="flbl">Laden <span>optional</span></div><div class="wheel"><div class="wheel-band"></div><div class="wheel-list" id="wheel" tabindex="0" role="listbox" aria-label="Laden">' + STORES.map(function (n, i) { return '<div class="wheel-item" role="option" data-i="' + i + '" aria-selected="' + ((f.store || 'Kein Laden') === n) + '">' + esc(n) + '</div>'; }).join('') + '</div></div>' +
       '<input class="field" id="f-note" data-f="note" placeholder="Notiz (optional)" value="' + esc(f.note) + '" aria-label="Notiz"><div class="btns"><button class="sbtn" data-act="cancel-pay">Abbrechen</button><button class="sbtn p" data-act="save-pay">Zahlung speichern</button></div></div>'
       : '<button class="addpay" data-act="new-pay">+ Zahlung hinzufügen</button>';
-    return '<div class="sec" style="margin-top:6px">Zahlungen</div>' + (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung schließt „Liste abschließen“ nur die Liste, es entsteht keine Buchung.</div>') + form +
+    return '<div class="sec" style="margin-top:6px">Zahlungen</div>' + (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung schließt „Ohne Buchung abschließen“ nur die Liste.</div>') + form +
       '<div class="total"><span>Gesamt</span><b>' + nfE.format(t) + '</b></div>' +
       (t > 0 ? '<div class="sec">Bezeichnung der Buchung</div><input class="field" id="bname" data-bname value="' + esc(S.booking) + '" maxlength="80" aria-label="Bezeichnung"><div class="split">' +
         (instant > 0 ? '<div class="paid"><span>✓ Sofort bezahlt (' + Object.keys(mi).join(', ') + ')</span><span>' + nfE.format(instant) + '</span></div>' : '') +
@@ -343,10 +348,10 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
     var foot;
     if (key === 'pay') {
       var t = total();
-      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="cta2" data-act="finish-nobook">Liste abschließen</button>';
+      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="cta2" data-act="finish-nobook">Ohne Buchung abschließen</button>';
     } else if (key === 'open') {
       var m = openItems().length;
-      foot = '<button class="cta" data-act="next">Weiter</button><div class="hint">' + m + ' Artikel → ' + esc(targetName()) + '</div>';
+      foot = '<button class="cta" data-act="next">Weiter</button><div class="hint">' + (S.target === 'discard' ? m + (m === 1 ? ' Artikel wird verworfen' : ' Artikel werden verworfen') : m + ' Artikel → ' + esc(targetName())) + '</div>';
     } else {
       foot = '<button class="cta" data-act="next">Weiter</button>';
     }
@@ -358,6 +363,7 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
   function resultScreen() {
     var r = S.result;
     var lines = '<div><span class="ic">✓</span><span>' + r.bought + ' ' + (r.bought === 1 ? 'Artikel' : 'Artikel') + ' gekauft</span></div>';
+    if (r.discarded) lines += '<div><span class="ic">🗑</span><span>' + r.discarded + (r.discarded === 1 ? ' Artikel verworfen' : ' Artikel verworfen') + '<small>aus der Liste gelöscht</small></span></div>';
     if (r.moved) lines += '<div><span class="ic">↗</span><span>' + r.moved + ' Artikel auf „' + esc(r.target) + '“ übertragen<small>' + (r.merged ? r.merged + ' davon aufgestockt' : 'als neue Zeilen') + (r.newList ? ' · Liste neu angelegt' : '') + '</small></span></div>';
     lines += r.booked ? '<div><span class="ic">€</span><span>Buchung ' + nfE.format(r.total) + ' in den Finanzen<small>' + esc(r.name) + ' · Sonstige Ausgaben' + (r.split ? ' · zwei Buchungen (bezahlt und offen)' : r.open ? ' · offen' : ' · bezahlt') + '</small></span></div>' : '<div><span class="ic">–</span><span>Keine Buchung angelegt</span></div>';
     return '<div class="scr"><div class="result"><div class="big">' + CHECK.replace('width="14" height="14"', 'width="30" height="30"') + '</div><h3>Einkauf abgeschlossen</h3><p>' + esc(LISTNAME) + '</p></div><div class="rlist">' + lines + '</div>' +
@@ -367,8 +373,8 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
   var EXPL = {
     list: { h: 'Die Liste, vereinfacht', li: ['Der Zahlungsbereich und die Chips „erledigte löschen“ und „Als Vorlage speichern“ sind weg. Oben bleibt nur die Kopf-Karte mit „Einkauf abschließen“.', 'Alle weiteren Dinge (Zahlung, nicht gekaufte Artikel) passieren erst im Abschluss.'], try: 'Tippe auf „Einkauf abschließen“.' },
     check: { h: 'Schritt 1 · Einkauf prüfen', li: ['Oben steht, wie viele Artikel gekauft (markiert) sind. Nicht markierte sind gekennzeichnet.', 'Ein Tipp stellt einen Artikel um, falls du etwas zu spät oder gar nicht abgehakt hast.', 'Gibt es nicht markierte Artikel, folgt Schritt 2, sonst gleich die Bezahlung.'], try: 'Stelle „Sauerkraut“ auf gekauft und dann „Karotte“ auch: Der Schritt „Nicht gekauft“ verschwindet aus dem Fortschritt.' },
-    open: { h: 'Schritt 2 · Nicht gekauft', li: ['Alle nicht markierten Artikel werden auf die gewählte Liste übertragen. Es gibt keine Einzelauswahl.', 'Ziel ist eine bestehende Liste oder eine neue, die erst beim Abschließen angelegt wird.', 'Steht der Artikel in der Zielliste schon offen drauf, wird aufgestockt (Karotte: 200 g → 250 g).', 'Diese Liste behält nur die markierten Artikel und ist damit abgeschlossen.'], try: 'Wähle „Wocheneinkauf“ und sieh dir den Hinweis bei „Karotte“ an. Wähle dann „Neue Liste“.' },
-    pay: { h: 'Schritt 3 · Bezahlung', li: ['Hier werden Zahlungen erfasst, mehrere sind möglich. Gespeichert wird erst beim Abschließen.', 'Bar und Gutschein gelten als sofort bezahlt, alles andere als offen. Gemischt entstehen zwei Buchungen.', '„Buchen & abschließen“ legt die Buchung in den Finanzen an. „Liste abschließen“ schließt nur die Liste, ohne Buchung.'], try: 'Erfasse 12,40 € mit Bar und 8 € mit Paypal und wähle am Regler einen Laden.' },
+    open: { h: 'Schritt 2 · Nicht gekauft', li: ['Alle nicht markierten Artikel gehen gemeinsam dorthin, wohin du wählst. Es gibt keine Einzelauswahl.', 'Ziel ist eine bestehende Liste, eine neue (wird erst beim Abschließen angelegt) oder „Verwerfen“: dann werden die Artikel gelöscht.', 'Steht der Artikel in der Zielliste schon offen drauf, wird aufgestockt (Karotte: 200 g → 250 g).', 'Diese Liste behält nur die markierten Artikel und ist damit abgeschlossen.'], try: 'Wähle „Wocheneinkauf“ und sieh dir den Hinweis bei „Karotte“ an. Probiere dann „Neue Liste“ und „Verwerfen“.' },
+    pay: { h: 'Schritt 3 · Bezahlung', li: ['Hier werden Zahlungen erfasst, mehrere sind möglich. Gespeichert wird erst beim Abschließen.', 'Bar und Gutschein gelten als sofort bezahlt, alles andere als offen. Gemischt entstehen zwei Buchungen.', '„Buchen & abschließen“ legt die Buchung in den Finanzen an. „Ohne Buchung abschließen“ schließt nur die Liste.'], try: 'Erfasse 12,40 € mit Bar und 8 € mit Paypal und wähle am Regler einen Laden.' },
     done: { h: 'Fertig', li: ['Eine Zusammenfassung zeigt, was passiert ist: gekauft, übertragen, nicht gekauft, gebucht.', 'Die Liste steht danach als „erledigt“ in „Alle Listen“.'], try: 'Mit „Fertig“ startest du den Ablauf neu.' }
   };
 
@@ -421,12 +427,13 @@ h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
   }
 
   function finish(book) {
-    var moveList = openItems(), merged = 0;
+    var discard = S.target === 'discard';
+    var moveList = discard ? [] : openItems(), merged = 0;
     moveList.forEach(function (i) { if (hint(i)) merged++; });
     var instant = 0, pend = 0;
     S.payments.forEach(function (p) { if (INSTANT.indexOf(p.method) >= 0) instant += p.amount; else pend += p.amount; });
     S.result = {
-      bought: doneItems().length, moved: moveList.length, merged: merged, target: targetName(), newList: S.target === 'new' && moveList.length > 0,
+      bought: doneItems().length, moved: moveList.length, discarded: discard ? openItems().length : 0, merged: merged, target: targetName(), newList: S.target === 'new' && moveList.length > 0,
       booked: book, total: total(), name: S.booking.trim() || LISTNAME, split: instant > 0 && pend > 0, open: pend > 0 && instant === 0
     };
     S.view = 'done';
