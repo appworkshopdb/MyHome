@@ -152,3 +152,74 @@ export function planImport(rows, openItems, recipeName) {
   }));
   return { adds, updates };
 }
+
+// ─── Nicht gekaufte Artikel auf eine andere Liste übertragen ──
+// Gleiche Regeln wie beim Rezept-Import, nur mit Artikeln statt Zutaten: steht ein Artikel
+// (gleicher Name, verrechenbare Einheit) dort schon offen drauf, wird aufgestockt. Artikel ohne
+// Menge sind möglich: kennt eine Seite keine Menge, bleibt die der anderen.
+// items: { name, category, quantity, unit, note, item_store_name }; targetOpen: offene Artikel
+// der Zielliste. Liefert wie planImport { adds, updates } plus `merged` (Anzahl zusammengeführt).
+function sameName(a, b) { return (a.name || '').trim().toLowerCase() === (b.name || '').trim().toLowerCase(); }
+function comparable(target, item) {
+  const noAmount = (x) => x.quantity == null && !x.unit;
+  if (noAmount(target) || noAmount(item)) return true;
+  return baseOf(1, target.unit).key === baseOf(1, item.unit).key;
+}
+
+export function planTransfer(items, targetOpen) {
+  const work = targetOpen.map((i) => ({ ...i, prev: { quantity: i.quantity ?? null, unit: i.unit ?? null, note: i.note ?? null } }));
+  const adds = [];
+  const touched = new Map();
+  let merged = 0;
+
+  for (const it of items) {
+    const hit = work.find((w) => sameName(w, it) && comparable(w, it));
+    if (!hit) {
+      const add = {
+        name: it.name, category: it.category ?? null, quantity: it.quantity ?? null, unit: it.unit ?? null,
+        note: it.note ?? null, item_store_name: it.item_store_name ?? null,
+      };
+      adds.push(add);
+      work.push({ ...add, isNew: true, add });
+      continue;
+    }
+    merged += 1;
+    if (it.quantity != null) {
+      if (hit.quantity == null && !hit.unit) {
+        hit.quantity = it.quantity;
+        hit.unit = it.unit ?? null;
+      } else {
+        const a = baseOf(hit.quantity ?? 0, hit.unit);
+        const b = baseOf(it.quantity, it.unit);
+        const n = normalizeAmount(a.qty + b.qty, a.key);
+        hit.quantity = n.quantity;
+        hit.unit = n.unit;
+      }
+    }
+    if (it.note) {
+      // "für Suppe" an "für Pasta" hängen: "für Pasta + Suppe"
+      const extra = it.note.replace(/^(für|inkl\.)\s+/i, '');
+      if (!(hit.note || '').includes(extra)) hit.note = hit.note ? `${hit.note} + ${extra}` : it.note;
+    }
+    if (!hit.isNew) touched.set(hit.id, hit);
+  }
+  for (const w of work) if (w.isNew) { w.add.quantity = w.quantity ?? null; w.add.unit = w.unit ?? null; w.add.note = w.note ?? null; }
+
+  const updates = [...touched.values()].map((w) => ({
+    id: w.id, quantity: w.quantity ?? null, unit: w.unit ?? null, note: w.note ?? null, prev: w.prev,
+  }));
+  return { adds, updates, merged };
+}
+
+// Vorschau für einen Artikel gegen die offenen Artikel der Zielliste:
+// null (neue Zeile) oder 'steht schon drauf' bzw. 'steht schon drauf: 200 g → 250 g'.
+export function transferHint(item, targetOpen) {
+  const hit = targetOpen.find((w) => sameName(w, item) && comparable(w, item));
+  if (!hit) return null;
+  if (item.quantity == null) return 'steht schon drauf';
+  const probe = planTransfer([item], [hit]);
+  const to = probe.updates[0];
+  if (!to || to.quantity == null) return 'steht schon drauf';
+  const from = fmtAmount(hit.quantity, hit.unit);
+  return from ? `steht schon drauf: ${from} → ${fmtAmount(to.quantity, to.unit)}` : 'steht schon drauf';
+}

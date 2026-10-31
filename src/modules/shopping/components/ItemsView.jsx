@@ -1,32 +1,22 @@
 // src/modules/shopping/components/ItemsView.jsx
-// Artikel einer Einkaufsliste: hinzufügen, abhaken, löschen.
+// Artikel einer Einkaufsliste: hinzufügen, abhaken, bearbeiten/löschen. Der Abschluss
+// (Zahlung, nicht gekaufte Artikel) liegt in CompleteListSheet.jsx.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
-  loadItems, saveItem, toggleItemDone, deleteItem, clearDoneItems, resetAllItems,
-  saveListAsTemplate, loadPayments, savePayment, deletePayment,
-  updateListStatus, linkListFinEntry, releaseListBooking,
+  loadItems, saveItem, toggleItemDone, deleteItem, resetAllItems,
 } from '../lib/shoData.js';
-import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
 import { ALL_SUGGESTIONS, STORE_NAMES, UNIT_OPTIONS, getCategory } from '../lib/data/items.js';
 import { takeFreshItems } from '../../../core/lib/shoppingHandoff.js';
 import { fb } from '../../../core/lib/feedback';
-import { formatEur } from '../../../core/lib/format.js';
-import SheetShell from '../../../core/components/SheetShell.jsx';
-import { createShoppingExpense } from '../../../core/lib/financeBridge.js';
+import CompleteListSheet from './CompleteListSheet.jsx';
 
 const CATEGORY_ORDER = [
   'Obst & Gemüse', 'Brot & Backwaren', 'Milch & Eier',
   'Fleisch & Fisch', 'Tiefkühl', 'Nudeln & Reis',
   'Vorrat', 'Getränke', 'Snacks & Süßes', 'Drogerie', 'Sonstiges',
 ];
-
-// Rundet auf volle Cent — verhindert Fließkomma-Reste (0.1 + 0.2 = 0.300…04)
-// beim Summieren mehrerer Teilzahlungen.
-function round2(n) {
-  return Math.round((Number(n) || 0) * 100) / 100;
-}
 
 function groupByCategory(items) {
   const groups = {};
@@ -58,29 +48,11 @@ export default function ItemsView({ list, onBack }) {
   const [unit,             setUnit]             = useState('');
   const [suggestions,      setSuggestions]      = useState([]);
   const [saving,           setSaving]           = useState(false);
-  const [showTemplateForm, setShowTemplateForm] = useState(false);
-  const [templateName,     setTemplateName]     = useState('');
-  const [savingTemplate,   setSavingTemplate]   = useState(false);
-  const [templateSaved,    setTemplateSaved]    = useState(false);
   const inputRef    = useRef(null);
   const quantityRef = useRef(null);
   const addBtnRef   = useRef(null);
   const [flyAnim,   setFlyAnim] = useState(null);
-
-  // ─── Zahlungen ────────────────────────────────────────────
-  const [payments,          setPayments]          = useState([]);
-  const [showPaymentForm,   setShowPaymentForm]   = useState(false);
-  const [editingPaymentId,  setEditingPaymentId]  = useState(null);
-  const [paymentAmount,     setPaymentAmount]     = useState('');
-  const [paymentMethod,     setPaymentMethod]     = useState('Bar');
-  const [paymentStore,      setPaymentStore]      = useState('');
-  const [paymentNote,       setPaymentNote]       = useState('');
-  const [savingPayment,     setSavingPayment]     = useState(false);
-
-  // ─── Abschluss-Wizard ─────────────────────────────────────
-  const [showCompleteWizard, setShowCompleteWizard] = useState(false);
-  const [bookingName,        setBookingName]        = useState('');
-  const [completing,         setCompleting]         = useState(false);
+  const [showComplete, setShowComplete] = useState(false); // Abschluss-Sheet
 
   const fetchItems = useCallback(async () => {
     try {
@@ -94,18 +66,9 @@ export default function ItemsView({ list, onBack }) {
     }
   }, [list.id]);
 
-  const fetchPayments = useCallback(async () => {
-    try {
-      const data = await loadPayments(list.id);
-      setPayments(data);
-    } catch (e) {
-      setError('Zahlungen konnten nicht geladen werden.');
-    }
-  }, [list.id]);
-
   useEffect(() => {
-    Promise.all([fetchItems(), fetchPayments()]).finally(() => setLoading(false));
-  }, [fetchItems, fetchPayments]);
+    fetchItems().finally(() => setLoading(false));
+  }, [fetchItems]);
 
   function handleInputChange(val) {
     setInput(val);
@@ -197,15 +160,6 @@ export default function ItemsView({ list, onBack }) {
     }
   }
 
-  async function handleClearDone() {
-    try {
-      await clearDoneItems(list.id);
-      setItems((prev) => prev.filter((i) => !i.done));
-    } catch (e) {
-      setError('Bereinigen fehlgeschlagen.');
-    }
-  }
-
   async function handleResetAll() {
     if (!window.confirm('Alle Artikel auf "nicht erledigt" zurücksetzen?')) return;
     try {
@@ -213,198 +167,6 @@ export default function ItemsView({ list, onBack }) {
       setItems((prev) => prev.map((i) => ({ ...i, done: false })));
     } catch (e) {
       setError('Zurücksetzen fehlgeschlagen.');
-    }
-  }
-
-  async function handleSaveTemplate() {
-    const name = templateName.trim() || list.name;
-    setSavingTemplate(true);
-    setError(null);
-    try {
-      await saveListAsTemplate(list.id, name);
-      setShowTemplateForm(false);
-      setTemplateName('');
-      setTemplateSaved(true);
-      setTimeout(() => setTemplateSaved(false), 3000);
-    } catch (e) {
-      setError('Vorlage konnte nicht gespeichert werden.');
-    } finally {
-      setSavingTemplate(false);
-    }
-  }
-
-  function openNewPaymentForm() {
-    setEditingPaymentId(null);
-    setPaymentAmount('');
-    setPaymentMethod('Bar');
-    setPaymentStore(activeStore || '');
-    setPaymentNote('');
-    setShowPaymentForm(true);
-  }
-
-  function openEditPayment(p) {
-    setEditingPaymentId(p.id);
-    setPaymentAmount(p.amount != null ? String(p.amount).replace('.', ',') : '');
-    setPaymentMethod(p.payment || 'Bar');
-    setPaymentStore(p.store_name || '');
-    setPaymentNote(p.note || '');
-    setShowPaymentForm(true);
-  }
-
-  function closePaymentForm() {
-    setShowPaymentForm(false);
-    setEditingPaymentId(null);
-  }
-
-  async function handleSavePayment() {
-    const amount = round2(parseFloat(paymentAmount.replace(',', '.')));
-    if (!amount || amount <= 0) {
-      setError('Bitte einen gültigen Betrag eingeben.');
-      return;
-    }
-    setSavingPayment(true);
-    setError(null);
-    try {
-      await savePayment({
-        id:         editingPaymentId || undefined,
-        list_id:    list.id,
-        store_name: paymentStore.trim() || null,
-        amount,
-        payment:    paymentMethod,
-        note:       paymentNote.trim() || null,
-      });
-      await fetchPayments();
-      closePaymentForm();
-      fb.paymentCheck?.();
-    } catch (e) {
-      setError('Zahlung konnte nicht gespeichert werden.');
-    } finally {
-      setSavingPayment(false);
-    }
-  }
-
-  async function handleDeletePayment(id) {
-    try {
-      await deletePayment(id);
-      setPayments((prev) => prev.filter((p) => p.id !== id));
-    } catch (e) {
-      setError('Zahlung konnte nicht gelöscht werden.');
-    }
-  }
-
-  // Zahlungsart einer Buchung: die Methode mit dem höchsten Anteil
-  // innerhalb der übergebenen Teilliste. Ohne Zahlungen: 'Bar' als Default.
-  function dominantPaymentMethod(list) {
-    if (!list.length) return 'Bar';
-    const sums = {};
-    for (const p of list) sums[p.payment] = (sums[p.payment] || 0) + (Number(p.amount) || 0);
-    return Object.entries(sums).sort((a, b) => b[1] - a[1])[0][0];
-  }
-
-  // Nur Bar/Gutschein gelten als sofort beglichen (Nutzer-Entscheidung).
-  // Alles andere (Bank, Paypal, SEPA, Klarna) gilt als noch offen.
-  function splitPaymentsByInstant(list) {
-    const instant = list.filter((p) => INSTANT_PAYMENT_METHODS.includes(p.payment));
-    const pending = list.filter((p) => !INSTANT_PAYMENT_METHODS.includes(p.payment));
-    return { instant, pending };
-  }
-
-  function sumAmounts(list) {
-    return round2(list.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
-  }
-
-  // Notiz für die Buchung einer Gruppe (sofort bezahlt / offen):
-  // - Eine einzelne Zahlung: ihre eigene Notiz wird 1:1 übernommen.
-  // - Mehrere Zahlungen: Aufschlüsselung mit Betrag/Zahlungsart/Laden,
-  //   inkl. der jeweils eigenen Notiz pro Zahlung (falls vorhanden).
-  function buildNoteForGroup(list) {
-    if (list.length === 0) return null;
-    if (list.length === 1) return list[0].note || null;
-    return list
-      .map((p) => {
-        const base = `${formatEur(p.amount)} ${p.payment}${p.store_name ? ` (${p.store_name})` : ''}`;
-        return p.note ? `${base} – ${p.note}` : base;
-      })
-      .join(' · ');
-  }
-
-  function openCompleteWizard() {
-    closePaymentForm();
-    setBookingName(list.name);
-    setShowCompleteWizard(true);
-  }
-
-  async function handleCompleteWithBooking() {
-    setCompleting(true);
-    setError(null);
-    try {
-      const { instant, pending } = splitPaymentsByInstant(payments);
-      const instantSum = sumAmounts(instant);
-      const pendingSum = sumAmounts(pending);
-      const baseName   = bookingName.trim() || list.name;
-      const mixed      = instantSum > 0 && pendingSum > 0;
-
-      let paidEntryId = null;
-      let openEntryId = null;
-
-      // Hing an der Liste schon eine Buchung (z.B. nach Wiederöffnen), wird sie
-      // ersetzt statt doppelt gebucht.
-      await releaseListBooking(list.id);
-
-      if (instantSum > 0) {
-        const entry = await createShoppingExpense({
-          name:    baseName,
-          amount:  instantSum,
-          payment: dominantPaymentMethod(instant),
-          note:    buildNoteForGroup(instant),
-          paid:    true,
-        });
-        paidEntryId = entry.id;
-      }
-      if (pendingSum > 0) {
-        const entry = await createShoppingExpense({
-          name:    mixed ? `${baseName} (offen)` : baseName,
-          amount:  pendingSum,
-          payment: dominantPaymentMethod(pending),
-          note:    buildNoteForGroup(pending),
-          paid:    false,
-        });
-        openEntryId = entry.id;
-      }
-
-      // Verknüpfung ist "nice to have" (für ein künftiges Stornieren beim
-      // Wiedereröffnen) — die Buchung(en) existieren zu diesem Zeitpunkt
-      // bereits. Ein Fehler hier (z.B. fehlende Migration) darf den
-      // Abschluss der Liste nicht mehr verhindern.
-      try {
-        await linkListFinEntry(list.id, paidEntryId, openEntryId);
-      } catch (linkErr) {
-        console.warn('Verknüpfung Liste↔Buchung fehlgeschlagen:', linkErr);
-      }
-
-      await updateListStatus(list.id, 'erledigt');
-      fb.listStatusCycle?.();
-      setShowCompleteWizard(false);
-      onBack();
-    } catch (e) {
-      setError('Buchung konnte nicht erstellt werden.');
-    } finally {
-      setCompleting(false);
-    }
-  }
-
-  async function handleCompleteWithoutBooking() {
-    setCompleting(true);
-    setError(null);
-    try {
-      await updateListStatus(list.id, 'erledigt');
-      fb.listStatusCycle?.();
-      setShowCompleteWizard(false);
-      onBack();
-    } catch (e) {
-      setError('Liste konnte nicht abgeschlossen werden.');
-    } finally {
-      setCompleting(false);
     }
   }
 
@@ -431,82 +193,10 @@ export default function ItemsView({ list, onBack }) {
   const openGroups = groupByCategory(openItems);
   const allDoneCount = items.filter((i) => i.done).length;
 
-  const paymentsTotal = round2(payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
-  const { instant: instantPayments, pending: pendingPayments } = splitPaymentsByInstant(payments);
-  const instantSum = sumAmounts(instantPayments);
-  const pendingSum = sumAmounts(pendingPayments);
-
-  // Zahlungs-Formular — wird sowohl im normalen Zahlungen-Bereich als auch
-  // im Abschluss-Wizard verwendet (dieselbe State/Handler-Instanz, daher
-  // als gemeinsames Fragment statt zweimal geschrieben).
-  const paymentFormEl = showPaymentForm && (
-    <div className="sho-payment-form">
-      <div className="sho-payment-form-row">
-        <input
-          type="number"
-          inputMode="decimal"
-          placeholder="Betrag (€)"
-          value={paymentAmount}
-          onChange={(e) => setPaymentAmount(e.target.value)}
-          className="sho-qty-input"
-          min="0"
-          step="any"
-          autoFocus
-        />
-        <select
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-          className="sho-unit-select"
-        >
-          {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
-      </div>
-      <div className="sho-payment-form-row">
-        <input
-          type="text"
-          placeholder="Laden (optional)"
-          value={paymentStore}
-          onChange={(e) => setPaymentStore(e.target.value)}
-          list="sho-payment-store-suggestions"
-          maxLength={60}
-        />
-        <datalist id="sho-payment-store-suggestions">
-          {storeNames.map((n) => <option key={n} value={n} />)}
-          {STORE_NAMES.filter((n) => !storeNames.includes(n)).map((n) => (
-            <option key={n} value={n} />
-          ))}
-        </datalist>
-      </div>
-      <input
-        type="text"
-        placeholder="Notiz (optional)"
-        value={paymentNote}
-        onChange={(e) => setPaymentNote(e.target.value)}
-        maxLength={140}
-      />
-      <div className="sho-new-list-actions">
-        <button className="btn btn-secondary" onClick={closePaymentForm}>
-          Abbrechen
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={handleSavePayment}
-          disabled={savingPayment}
-        >
-          {savingPayment ? 'Speichern …' : 'Speichern'}
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="sho-items-wrap">
       {error && (
         <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
-      )}
-
-      {templateSaved && (
-        <div className="sho-msg-success">✓ Vorlage gespeichert</div>
       )}
 
       {/* Kopf: Listenname, Fortschritt, Einkauf abschließen — bewusst unabhängig vom
@@ -520,59 +210,9 @@ export default function ItemsView({ list, onBack }) {
         <div className="sho-hd-bar" aria-hidden="true">
           <i style={{ width: `${items.length ? Math.round((allDoneCount / items.length) * 100) : 0}%` }} />
         </div>
-        <button className="btn sho-complete-btn" onClick={openCompleteWizard}>
+        <button className="btn sho-complete-btn" onClick={() => setShowComplete(true)}>
           Einkauf abschließen
         </button>
-      </div>
-
-      {/* Zahlungen */}
-      <div className="sho-payments-section">
-        <div className="sho-payments-header">
-          <span className="sho-payments-title">Zahlungen</span>
-          <span className="sho-payments-head-right">
-            {payments.length > 0 && (
-              <span className="sho-payments-total">{formatEur(paymentsTotal)}</span>
-            )}
-            {!showPaymentForm && (
-              <button className="sho-pay-add" onClick={openNewPaymentForm}>+ Zahlung</button>
-            )}
-          </span>
-        </div>
-
-        {payments.length > 0 && (
-          <div className="sho-payments-list">
-            {payments.map((p) => (
-              <div key={p.id} className="sho-payment-row">
-                <div className="sho-payment-row-main">
-                  <span className="sho-payment-amount">{formatEur(p.amount)}</span>
-                  <span className="sho-payment-meta">
-                    {p.payment}
-                    {p.store_name ? ` · ${p.store_name}` : ''}
-                  </span>
-                  {p.note && <span className="sho-payment-note">{p.note}</span>}
-                </div>
-                <div className="sho-payment-row-actions">
-                  <button
-                    className="btn-icon"
-                    onClick={() => openEditPayment(p)}
-                    aria-label="Zahlung bearbeiten"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDeletePayment(p.id)}
-                    aria-label="Zahlung löschen"
-                  >
-                    <IconTrash size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {paymentFormEl}
       </div>
 
       {/* Laden-Filter */}
@@ -599,50 +239,11 @@ export default function ItemsView({ list, onBack }) {
       {/* Aktions-Leiste */}
       {items.length > 0 && (
         <div className="sho-action-row">
-          {doneItems.length > 0 && (
-            <button className="btn btn-secondary sho-action-btn" onClick={handleClearDone}>
-              {doneItems.length} erledigte löschen
-            </button>
-          )}
           {doneItems.length > 0 && openItems.length === 0 && (
             <button className="btn btn-secondary sho-action-btn" onClick={handleResetAll}>
               Alle zurücksetzen
             </button>
           )}
-          {!showTemplateForm && (
-            <button
-              className="btn btn-secondary sho-action-btn"
-              onClick={() => { setShowTemplateForm(true); setTemplateName(list.name); }}
-            >
-              Als Vorlage speichern
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Vorlage-Formular */}
-      {showTemplateForm && (
-        <div className="sho-new-list-form" style={{ marginBottom: 12 }}>
-          <input
-            type="text"
-            placeholder="Name der Vorlage"
-            value={templateName}
-            onChange={(e) => setTemplateName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTemplate(); if (e.key === 'Escape') setShowTemplateForm(false); }}
-            autoFocus
-          />
-          <div className="sho-new-list-actions">
-            <button className="btn btn-secondary" onClick={() => setShowTemplateForm(false)}>
-              Abbrechen
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleSaveTemplate}
-              disabled={savingTemplate}
-            >
-              {savingTemplate ? 'Speichern …' : 'Speichern'}
-            </button>
-          </div>
         </div>
       )}
 
@@ -783,110 +384,14 @@ export default function ItemsView({ list, onBack }) {
         </div>
       </div>
 
-      {/* Abschluss-Wizard */}
-      {showCompleteWizard && (
-        <SheetShell onClose={() => setShowCompleteWizard(false)} labelledBy="sho-complete-title">
-          <div className="sho-complete-wizard">
-            <h3 id="sho-complete-title" className="sho-complete-title">Einkauf abschließen</h3>
-            <p className="sho-complete-sub">{list.name}</p>
-
-            {error && (
-              <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
-            )}
-
-            {payments.length > 0 ? (
-              <div className="sho-payments-list">
-                {payments.map((p) => (
-                  <div key={p.id} className="sho-payment-row">
-                    <div className="sho-payment-row-main">
-                      <span className="sho-payment-amount">{formatEur(p.amount)}</span>
-                      <span className="sho-payment-meta">
-                        {p.payment}
-                        {p.store_name ? ` · ${p.store_name}` : ''}
-                      </span>
-                    </div>
-                    <div className="sho-payment-row-actions">
-                      <button className="btn-icon" onClick={() => openEditPayment(p)} aria-label="Zahlung bearbeiten">
-                        ✏️
-                      </button>
-                      <button className="btn-icon" onClick={() => handleDeletePayment(p.id)} aria-label="Zahlung löschen">
-                        <IconTrash size={15} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="sho-complete-hint">Noch keine Zahlung erfasst.</p>
-            )}
-
-            {!showPaymentForm && (
-              <button className="btn btn-secondary sho-action-btn" onClick={openNewPaymentForm}>
-                + Zahlung
-              </button>
-            )}
-            {paymentFormEl}
-
-            <div className="sho-complete-total-row">
-              <span>Gesamt</span>
-              <strong>{formatEur(paymentsTotal)}</strong>
-            </div>
-
-            {paymentsTotal > 0 && (
-              <input
-                type="text"
-                placeholder="Bezeichnung"
-                value={bookingName}
-                onChange={(e) => setBookingName(e.target.value)}
-                maxLength={80}
-              />
-            )}
-
-            {paymentsTotal > 0 && (
-              <div className="sho-complete-split">
-                {instantSum > 0 && (
-                  <div className="sho-complete-split-row sho-complete-split-paid">
-                    <span>✓ Sofort bezahlt ({dominantPaymentMethod(instantPayments)}{
-                      new Set(instantPayments.map((p) => p.payment)).size > 1 ? ' u.a.' : ''
-                    })</span>
-                    <strong>{formatEur(instantSum)}</strong>
-                  </div>
-                )}
-                {pendingSum > 0 && (
-                  <div className="sho-complete-split-row sho-complete-split-open">
-                    <span>Teil offen ({[...new Set(pendingPayments.map((p) => p.payment))].join(', ')})</span>
-                    <strong>{formatEur(pendingSum)}</strong>
-                  </div>
-                )}
-              </div>
-            )}
-            {pendingSum > 0 && (
-              <p className="sho-complete-hint">
-                {instantSum > 0
-                  ? 'Es werden zwei Buchungen angelegt: eine bezahlte und eine offene über den Restbetrag.'
-                  : 'Die Buchung wird als offen angelegt, bis du sie im Finanzmodul abhakst.'}
-              </p>
-            )}
-            {pendingSum === 0 && payments.length > 1 && (
-              <p className="sho-complete-hint">
-                Mehrere Zahlungen — die Aufschlüsselung wird als Notiz an der Buchung hinterlegt.
-              </p>
-            )}
-
-            <div className="sho-new-list-actions" style={{ marginTop: 8 }}>
-              <button className="btn btn-secondary" onClick={handleCompleteWithoutBooking} disabled={completing}>
-                Ohne Buchung abschließen
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleCompleteWithBooking}
-                disabled={completing || paymentsTotal <= 0}
-              >
-                {completing ? 'Buchen …' : 'Buchen & abschließen'}
-              </button>
-            </div>
-          </div>
-        </SheetShell>
+      {/* Abschluss: Prüfen, nicht gekaufte Artikel übertragen/verwerfen, Bezahlung */}
+      {showComplete && (
+        <CompleteListSheet
+          list={list}
+          items={items}
+          onClose={() => setShowComplete(false)}
+          onFinished={() => { setShowComplete(false); onBack(); }}
+        />
       )}
     </div>
   );

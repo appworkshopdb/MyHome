@@ -174,7 +174,15 @@ Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2
 "Einkauf abschließen", Zahlungen als schmale Karte, Kategorien als Karten, Menge als Chip, schwebende Eingabeleiste.
 Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
 (`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
-Einkaufsliste (`UNIT_OPTIONS`). `saveItem` schreibt beim Update nur
+Einkaufsliste (`UNIT_OPTIONS`).
+Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
+2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
+`planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,
+Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"). Geschrieben wird erst am Ende, Reihenfolge:
+Markierungen → Artikel übertragen/verwerfen → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
+vorhandene Buchung wird ersetzt) → Status "erledigt". Zahlungsbereich, "erledigte löschen" und "Als Vorlage speichern"
+gibt es in der Liste nicht mehr (`saveListAsTemplate`/`clearDoneItems` in `shoData.js` sind ungenutzt; vorhandene Vorlagen
+laufen weiter über "Aus Vorlage"). `saveItem` schreibt beim Update nur
 übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
 
 ## Wochen- und Monatsüberblick (Hub → Statistiken)

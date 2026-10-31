@@ -246,6 +246,17 @@ export async function deleteItem(itemId) {
   if (error) throw error;
 }
 
+// Mehrere Artikel auf einmal entfernen (Soft Delete) — z.B. beim Abschließen einer Liste.
+export async function deleteItems(ids) {
+  if (!ids || ids.length === 0) return;
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('sho_items')
+    .update({ deleted_at: new Date().toISOString() })
+    .in('id', ids);
+  if (error) throw error;
+}
+
 // Alle erledigten Artikel einer Liste entfernen (Soft Delete).
 // Wird nach dem Einkauf verwendet — "Liste leeren".
 export async function clearDoneItems(listId) {
@@ -275,7 +286,7 @@ export async function resetAllItems(listId) {
 // plan = { adds: [{ name, category, quantity, unit, note }],
 //          updates: [{ id, quantity, unit, note, prev: { quantity, unit, note } }] }
 // (siehe lib/recipeImport.js). Liefert, was zum Rückgängigmachen nötig ist.
-export async function applyShoppingPlan(listId, plan) {
+export async function applyShoppingPlan(listId, plan, event = 'recipe_to_shopping') {
   const sb = getSupabase();
   const owner_id = getOwnerIdFromToken();
   const done = { insertedIds: [], updates: [] };
@@ -290,6 +301,7 @@ export async function applyShoppingPlan(listId, plan) {
         quantity:   a.quantity ?? null,
         unit:       a.unit ?? null,
         note:       a.note ?? null,
+        item_store_name: a.item_store_name ?? null,
         done:       false,
         sort_order: i,
       }));
@@ -310,7 +322,7 @@ export async function applyShoppingPlan(listId, plan) {
     await undoShoppingPlan(done).catch(() => {});
     throw e;
   }
-  track('recipe_to_shopping', { count: plan.adds.length + plan.updates.length });
+  track(event, { count: plan.adds.length + plan.updates.length });
   return done;
 }
 
