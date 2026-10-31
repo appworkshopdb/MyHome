@@ -160,6 +160,19 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 
+## Rezept → Einkaufsliste
+
+Knopf "Einkaufsliste" im Rezept-Dialog (`RecipeDetailModal`) öffnet `core/components/RecipeToShoppingSheet.jsx`:
+Portionen, Liste (vorgewählt: aktive Liste, sonst "Neue Liste") und Zutaten an-/abwählen. Rechenlogik rein in
+`modules/shopping/lib/recipeImport.js` (Mengen umrechnen, Kategorie, Zusammenführen); Schreiben/Rückgängig in
+`shoData.js` (`applyShoppingPlan`/`undoShoppingPlan`), keine Migration. Zutat steht schon OFFEN auf der Liste (gleicher
+Name, verrechenbare Einheit, g/kg und ml/L) → Menge wird aufgestockt, sonst neue Zeile; abgehakte Artikel zählen nicht.
+Herkunft steht im Feld `note` ("für Linsen-Curry" / "inkl. …"). Basis-Zutaten (Gruppe Gewürze, Salz/Öl/…, `isBasic`) sind
+nicht vorgewählt. Der Hinweis mit "Rückgängig"/"Liste öffnen" (`ActionToast`) liegt im `NutritionModule`; die Übergabe an
+das Einkaufsmodul (einmalige NEU-Markierung, gezielt Liste öffnen) läuft im Speicher über `core/lib/shoppingHandoff.js`.
+Einheiten "Zehe"/"Scheibe" gibt es auch in der Einkaufsliste (`UNIT_OPTIONS`). `saveItem` schreibt beim Update nur
+übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
+
 ## Wochen- und Monatsüberblick (Hub → Statistiken)
 
 Im Hub steht unter dem Kalender EIN Bereich "Statistiken" → `core/Statistiken.jsx` (Auswahl

@@ -575,3 +575,58 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
 .wz-part-rest { cursor: default; }
 .wz-part-rm { flex: 0 0 28px; width: 28px; height: 28px; margin-right: -6px; border-radius: 50%; font-size: 20px; line-height: 1; color: var(--text-secondary); background: var(--surface-raised); }
 .wz-part-add { margin-top: 0; }
+
+/* ── Rezept → Einkaufsliste (RecipeToShoppingSheet) ─────────────
+   Violett = Familie des Einkaufs, auch wenn das Sheet aus der Ernährung (grün) geöffnet wird. */
+.rts-portions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rts-muted { font-size: 13px; color: var(--text-muted); padding: 6px 2px; }
+.rts-lists { display: flex; flex-direction: column; gap: 6px; }
+.rts-list {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 12px; background: var(--surface-raised);
+  border: 1.5px solid var(--border-hairline); border-radius: 12px; color: var(--text-primary);
+}
+.rts-list[aria-checked="true"] { border-color: var(--mod-shop-ac); background: var(--mod-shop-tint); color: var(--mod-shop-ink); }
+.rts-ic { font-size: 18px; flex: 0 0 auto; }
+.rts-nm { flex: 1; min-width: 0; display: block; }
+.rts-nm b { display: block; font-size: 14px; font-weight: 700; }
+.rts-nm small { display: block; font-size: 12px; color: var(--text-muted); }
+.rts-list[aria-checked="true"] .rts-nm small { color: var(--mod-shop-ink); }
+.rts-radio { flex: 0 0 18px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); }
+.rts-list[aria-checked="true"] .rts-radio { border-color: var(--mod-shop-ac); background: radial-gradient(var(--mod-shop-ac) 0 45%, transparent 50%); }
+
+.rts-group { background: var(--surface-raised); border: 1px solid var(--border-hairline); border-radius: 14px; overflow: hidden; }
+.rts-pick {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 10px 12px; border: 0; border-bottom: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-primary);
+}
+.rts-pick:last-child { border-bottom: 0; }
+.rts-box {
+  flex: 0 0 22px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--border-strong);
+  display: grid; place-items: center; background: var(--surface-raised);
+}
+.rts-pick[aria-checked="true"] .rts-box { background: var(--mod-shop-ac); border-color: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.rts-pick .merge { color: var(--mod-shop-deep); font-weight: 700; }
+.rts-am { font-size: 14px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rts-pick[aria-checked="false"] .rts-nm b, .rts-pick[aria-checked="false"] .rts-am { color: var(--text-muted); }
+
+.btn.rts-cta { background: var(--mod-shop-ac); color: var(--mod-shop-on); border: 0; }
+.btn.rts-cta:disabled { opacity: .45; }
+.btn.rts-btn { background: var(--mod-shop-ac); color: var(--mod-shop-on); border: 0; }
+
+/* Rezept-Dialog: "Gegessen eintragen" und "Einkaufsliste" nebeneinander */
+.recipe-top-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+/* Hinweis unten mit Knöpfen (ActionToast) */
+.action-toast {
+  position: fixed; left: 12px; right: 12px; z-index: 300; margin: 0 auto; max-width: 460px;
+  bottom: calc(var(--nav-height, 68px) + 16px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  background: var(--text-primary); color: var(--surface-page);
+  border-radius: 14px; box-shadow: var(--shadow-float);
+}
+.action-toast-ok { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.action-toast-tx { flex: 1; min-width: 0; font-size: 13px; }
+.action-toast-tx b { display: block; font-size: 14px; font-weight: 800; }
+.action-toast-btn { flex: 0 0 auto; padding: 8px 6px; font-size: 13px; font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 3px; }

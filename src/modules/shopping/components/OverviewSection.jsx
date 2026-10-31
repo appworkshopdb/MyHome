@@ -13,32 +13,13 @@
 // Drill-down mit eigenem Zurück-Pfeil — unverändert, kein Hash-Bereich.
 
 import { useEffect, useState } from 'react';
-import { loadFrequentItems, saveItem } from '../lib/shoData.js';
+import { loadFrequentItems, saveItem, pickActiveList } from '../lib/shoData.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
 const CHIP_COUNT = 6;
-
-function changedAt(list) {
-  return new Date(list.updated_at || list.created_at || 0).getTime();
-}
-function createdAt(list) {
-  return new Date(list.created_at || 0).getTime();
-}
-
-export function pickActiveList(lists) {
-  const imEinkauf = lists.filter((l) => l.status === 'im_einkauf');
-  if (imEinkauf.length > 0) {
-    return imEinkauf.slice().sort((a, b) => changedAt(b) - changedAt(a))[0];
-  }
-  const offen = lists.filter((l) => (l.status || 'offen') === 'offen');
-  if (offen.length > 0) {
-    return offen.slice().sort((a, b) => createdAt(b) - createdAt(a))[0];
-  }
-  return null;
-}
 
 export default function OverviewSection({ lists, onOpenList, onListsChange, onNavigate }) {
   const [freq, setFreq]       = useState([]);

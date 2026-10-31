@@ -125,5 +125,5 @@ export const STORE_NAMES = [
 // Einheiten für die Mengenangabe (Auswahl neben der Menge)
 export const UNIT_OPTIONS = [
   'Stück', 'g', 'kg', 'ml', 'L', 'Packung', 'Karton', 'Kasten',
-  'Flasche', 'Dose', 'Becher', 'Bund', 'EL', 'TL',
+  'Flasche', 'Dose', 'Becher', 'Bund', 'Zehe', 'Scheibe', 'EL', 'TL',
 ];

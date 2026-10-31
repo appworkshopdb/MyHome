@@ -22,6 +22,26 @@ function getOwnerIdFromToken() {
   }
 }
 
+// ─── Aktive Liste ─────────────────────────────────────────────
+// Regel für "die eine aktive Liste" (kein Flag in der DB, nur ein Status je Liste):
+//   1. zuletzt geänderte Liste mit Status "im_einkauf"
+//   2. sonst die zuletzt angelegte offene Liste
+//   3. sonst null
+const changedAt = (l) => new Date(l.updated_at || l.created_at || 0).getTime();
+const createdAt = (l) => new Date(l.created_at || 0).getTime();
+
+export function pickActiveList(lists) {
+  const imEinkauf = lists.filter((l) => l.status === 'im_einkauf');
+  if (imEinkauf.length > 0) {
+    return imEinkauf.slice().sort((a, b) => changedAt(b) - changedAt(a))[0];
+  }
+  const offen = lists.filter((l) => (l.status || 'offen') === 'offen');
+  if (offen.length > 0) {
+    return offen.slice().sort((a, b) => createdAt(b) - createdAt(a))[0];
+  }
+  return null;
+}
+
 // ─── Listen ───────────────────────────────────────────────────
 
 export async function loadLists() {
@@ -167,17 +187,15 @@ export async function loadItems(listId) {
 export async function saveItem(item) {
   const sb = getSupabase();
   if (item.id) {
+    // Nur die übergebenen Felder schreiben — sonst würde z.B. eine Mengenänderung
+    // Kategorie und Notiz des Artikels auf null setzen.
+    const patch = {};
+    for (const k of ['name', 'category', 'quantity', 'unit', 'note', 'item_store_name', 'sort_order']) {
+      if (item[k] !== undefined) patch[k] = item[k];
+    }
     const { data, error } = await sb
       .from('sho_items')
-      .update({
-        name:            item.name,
-        category:        item.category        ?? null,
-        quantity:        item.quantity        ?? null,
-        unit:            item.unit            ?? null,
-        note:            item.note            ?? null,
-        item_store_name: item.item_store_name ?? null,
-        sort_order: item.sort_order ?? 0,
-      })
+      .update(patch)
       .eq('id', item.id)
       .select()
       .single();
@@ -251,6 +269,64 @@ export async function resetAllItems(listId) {
     .eq('list_id', listId)
     .is('deleted_at', null);
   if (error) throw error;
+}
+
+// ─── Rezept-Zutaten übernehmen ────────────────────────────────
+// plan = { adds: [{ name, category, quantity, unit, note }],
+//          updates: [{ id, quantity, unit, note, prev: { quantity, unit, note } }] }
+// (siehe lib/recipeImport.js). Liefert, was zum Rückgängigmachen nötig ist.
+export async function applyShoppingPlan(listId, plan) {
+  const sb = getSupabase();
+  const owner_id = getOwnerIdFromToken();
+  const done = { insertedIds: [], updates: [] };
+
+  try {
+    if (plan.adds.length > 0) {
+      const rows = plan.adds.map((a, i) => ({
+        owner_id,
+        list_id:    listId,
+        name:       a.name,
+        category:   a.category ?? null,
+        quantity:   a.quantity ?? null,
+        unit:       a.unit ?? null,
+        note:       a.note ?? null,
+        done:       false,
+        sort_order: i,
+      }));
+      const { data, error } = await sb.from('sho_items').insert(rows).select('id, name');
+      if (error) throw error;
+      done.insertedIds = (data ?? []).map((r) => r.id);
+    }
+    for (const u of plan.updates) {
+      const { error } = await sb
+        .from('sho_items')
+        .update({ quantity: u.quantity, unit: u.unit, note: u.note })
+        .eq('id', u.id);
+      if (error) throw error;
+      done.updates.push(u);
+    }
+  } catch (e) {
+    // Halb angewendet ist schlimmer als gar nicht: zurückrollen, dann Fehler weitergeben.
+    await undoShoppingPlan(done).catch(() => {});
+    throw e;
+  }
+  track('recipe_to_shopping', { count: plan.adds.length + plan.updates.length });
+  return done;
+}
+
+export async function undoShoppingPlan(done) {
+  const sb = getSupabase();
+  for (const u of done.updates) {
+    const { error } = await sb.from('sho_items').update(u.prev).eq('id', u.id);
+    if (error) throw error;
+  }
+  if (done.insertedIds.length > 0) {
+    const { error } = await sb
+      .from('sho_items')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', done.insertedIds);
+    if (error) throw error;
+  }
 }
 
 // ─── Vorlagen ─────────────────────────────────────────────────

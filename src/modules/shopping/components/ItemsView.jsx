@@ -9,7 +9,8 @@ import {
   updateListStatus, linkListFinEntry, releaseListBooking,
 } from '../lib/shoData.js';
 import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
-import { ALL_SUGGESTIONS, STORE_NAMES, getCategory } from '../lib/data/items.js';
+import { ALL_SUGGESTIONS, STORE_NAMES, UNIT_OPTIONS, getCategory } from '../lib/data/items.js';
+import { takeFreshItems } from '../../../core/lib/shoppingHandoff.js';
 import { fb } from '../../../core/lib/feedback';
 import { formatEur } from '../../../core/lib/format.js';
 import SheetShell from '../../../core/components/SheetShell.jsx';
@@ -47,6 +48,7 @@ function groupByCategory(items) {
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
   const [items,            setItems]            = useState([]);
+  const [fresh,            setFresh]            = useState({}); // id → 'new' | 'merged' (gerade aus einem Rezept dazugekommen)
   const [activeStore,      setActiveStore]      = useState('');
   const [selectedStore,    setSelectedStore]    = useState('');
   const [loading,          setLoading]          = useState(true);
@@ -84,6 +86,9 @@ export default function ItemsView({ list, onBack }) {
     try {
       const data = await loadItems(list.id);
       setItems(data);
+      // Einmalig anzeigen, was gerade aus einem Rezept dazukam
+      const marks = takeFreshItems(data.map((i) => i.id));
+      if (Object.keys(marks).length > 0) setFresh((prev) => ({ ...prev, ...marks }));
     } catch (e) {
       setError('Artikel konnten nicht geladen werden.');
     }
@@ -661,6 +666,7 @@ export default function ItemsView({ list, onBack }) {
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
                 allStores={storeNames}
+                mark={fresh[item.id]}
               />
             ))}
           </div>
@@ -684,6 +690,7 @@ export default function ItemsView({ list, onBack }) {
                 onDelete={handleDelete}
                 onEdit={handleEditItem}
                 allStores={storeNames}
+                mark={fresh[item.id]}
               />
             ))}
           </div>
@@ -730,21 +737,7 @@ export default function ItemsView({ list, onBack }) {
             className="sho-unit-select sho-unit-select--sm"
           >
             <option value="">Einheit</option>
-            <option value="Stück">Stück</option>
-            <option value="g">g</option>
-            <option value="kg">kg</option>
-            <option value="ml">ml</option>
-            <option value="L">Liter</option>
-            <option value="Packung">Packung</option>
-            <option value="Pack">Pack</option>
-            <option value="Karton">Karton</option>
-            <option value="Kasten">Kasten</option>
-            <option value="Flasche">Flasche</option>
-            <option value="Dose">Dose</option>
-            <option value="Becher">Becher</option>
-            <option value="Bund">Bund</option>
-            <option value="EL">EL</option>
-            <option value="TL">TL</option>
+            {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
           <select
             value={selectedStore}
@@ -894,7 +887,7 @@ export default function ItemsView({ list, onBack }) {
 }
 
 // ─── Einzelne Artikel-Zeile ───────────────────────────────────────────
-function ItemRow({ item, onToggle, onDelete, onEdit, allStores }) {
+function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
   const [editing,   setEditing]   = useState(false);
   const [qty,       setQty]       = useState(item.quantity != null ? String(item.quantity) : '');
   const [unit,      setUnit]      = useState(item.unit || '');
@@ -926,7 +919,7 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores }) {
     : null;
 
   return (
-    <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}`}>
+    <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}${mark ? ' sho-item-fresh' : ''}`}>
       <button
         className={`sho-item-check ${item.done ? 'done' : ''}`}
         onClick={() => { setEditing(false); onToggle(item); }}
@@ -960,21 +953,9 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores }) {
               className="sho-unit-select sho-unit-select--sm"
             >
               <option value="">Einheit</option>
-              <option value="Stück">Stück</option>
-              <option value="g">g</option>
-              <option value="kg">kg</option>
-              <option value="ml">ml</option>
-              <option value="L">Liter</option>
-              <option value="Packung">Packung</option>
-              <option value="Pack">Pack</option>
-              <option value="Karton">Karton</option>
-              <option value="Kasten">Kasten</option>
-              <option value="Flasche">Flasche</option>
-              <option value="Dose">Dose</option>
-              <option value="Becher">Becher</option>
-              <option value="Bund">Bund</option>
-              <option value="EL">EL</option>
-              <option value="TL">TL</option>
+              {/* Eine ältere Einheit (z.B. "Pack"), die nicht mehr in der Liste steht, bleibt wählbar */}
+              {unit && !UNIT_OPTIONS.includes(unit) && <option value={unit}>{unit}</option>}
+              {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
             <select
               value={editStore}
@@ -1001,7 +982,9 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores }) {
         <div className="sho-item-body" onClick={openEdit}>
           <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
             {item.name}
+            {mark && <span className="sho-item-tag">{mark === 'new' ? 'NEU' : '+'}</span>}
           </span>
+          {item.note && <span className="sho-item-note">{item.note}</span>}
           <span className="sho-item-meta" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             {metaLabel && (
               <span className="sho-item-meta--qty">{metaLabel}</span>

@@ -14,6 +14,8 @@ import LexikonView from './components/LexikonView';
 import TippsView from './components/TippsView';
 import MealScanModal from './components/MealScanModal';
 import LogRecipeModal from './components/LogRecipeModal';
+import ActionToast from '../../core/components/ActionToast';
+import { requestOpenList } from '../../core/lib/shoppingHandoff';
 import MealsView from './components/MealsView';
 import * as db from './lib/nutData';
 import { isGramFood } from './lib/meals';
@@ -66,6 +68,8 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   const [mealResult, setMealResult] = useState(null);
   // "Rezept eintragen": undefined = zu, null = Rezept wählen, Objekt = dieses Rezept
   const [logRecipe, setLogRecipe] = useState(undefined);
+  // Hinweis nach "Zutaten auf die Einkaufsliste" (mit Rückgängig / Liste öffnen)
+  const [shopToast, setShopToast] = useState(null);
   // Bereich "Mahlzeiten": nach dem Speichern neu laden und auf das Datum springen
   const [mealsRefresh, setMealsRefresh] = useState(0);
   const [mealsFocus, setMealsFocus]     = useState(null);
@@ -142,6 +146,29 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     onNavigateView('mahlzeiten');
     showToast('Mahlzeit gespeichert');
   }
+
+  const closeShopToast = useCallback(() => setShopToast(null), []);
+  const shopToastEl = shopToast && (
+    <ActionToast
+      key={shopToast.id}
+      title={`${shopToast.count} ${shopToast.count === 1 ? 'Zutat' : 'Zutaten'} hinzugefügt`}
+      text={`auf „${shopToast.listName}“`}
+      onClose={closeShopToast}
+      actions={[
+        {
+          label: 'Rückgängig',
+          onPress: async () => {
+            try { await shopToast.undo(); showToast('Rückgängig gemacht'); }
+            catch (e) { console.error('[shopping-undo]', e); showToast('Konnte nicht rückgängig gemacht werden'); }
+          },
+        },
+        {
+          label: 'Liste öffnen',
+          onPress: () => { requestOpenList(shopToast.listId); window.location.hash = '/shopping'; },
+        },
+      ]}
+    />
+  );
 
   const mealModal = mealResult && (
     <MealScanModal meal={mealResult} foods={foods} onSaveMeal={handleSaveMeal} onClose={() => setMealResult(null)} />
@@ -232,6 +259,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
               editing={editingRecipe}
               setEditing={setEditingRecipe}
               onLogMeal={(r) => setLogRecipe(r)}
+              onShoppingAdded={(info) => setShopToast({ ...info, id: Date.now() })}
             />
           )}
 
@@ -240,6 +268,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
         </div>
         {mealModal}
         {logModal}
+        {shopToastEl}
       </>
     );
   }
@@ -257,6 +286,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
       </div>
       {mealModal}
       {logModal}
+      {shopToastEl}
     </>
   );
 }

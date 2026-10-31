@@ -37,6 +37,7 @@ export default function RezepteView({
   foods, recipes, currentUserId, onSaveRecipe, onSaveFood, onDeleteRecipe, showToast,
   editing, setEditing, // lifted nach NutritionModule.jsx — siehe dort für Begründung
   onLogMeal,           // "Gegessen eintragen" → Dialog im NutritionModule
+  onShoppingAdded,     // Zutaten auf die Einkaufsliste gesetzt → Hinweis mit Rückgängig im NutritionModule
 }) {
   const [tab, setTab] = useState('eigene'); // 'eigene' | 'vorlagen'
   const [detail, setDetail] = useState(null);
@@ -259,6 +260,7 @@ export default function RezepteView({
           onDelete={handleDelete}
           onCopy={copyTemplate}
           onLogMeal={onLogMeal ? (r) => { setDetail(null); onLogMeal(r); } : undefined}
+          onShoppingAdded={onShoppingAdded}
           onClose={() => setDetail(null)}
         />
       )}

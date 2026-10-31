@@ -25,6 +25,7 @@ import ItemsView   from './components/ItemsView.jsx';
 import FreqView    from './components/FreqView.jsx';
 
 import { loadLists } from './lib/shoData.js';
+import { takeOpenListRequest } from '../../core/lib/shoppingHandoff.js';
 
 import './shopping.css';
 
@@ -51,6 +52,17 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
   useEffect(() => {
     fetchLists().finally(() => setLoading(false));
   }, [fetchLists]);
+
+  // "Liste öffnen" aus dem Hinweis nach Rezept → Einkaufsliste: gezielt diese Liste zeigen.
+  // Die Anfrage wird nur einmal gelesen und danach verworfen.
+  useEffect(() => {
+    const id = takeOpenListRequest();
+    if (!id) return;
+    loadLists().then((all) => {
+      const hit = all.find((l) => l.id === id);
+      if (hit) setOpenList(hit);
+    }).catch(() => {});
+  }, []);
 
   function backToOverview() { onNavigateView(null); }
 
