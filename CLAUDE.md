@@ -252,6 +252,10 @@ Sortierung im Bottom-Sheet `RecipeFilterSheet` (Knopf im Suchfeld, gewählte Fil
 Rezeptbild) und die Suche (Name > Zutaten > Tags/Notiz, Umlaut-unabhängig, alle Wörter
 müssen passen) werden abgeleitet. Rezept-Dialog: Portionsrechner rechnet Zutatenmengen und
 Nährwerte nur in der Ansicht um (`servings` = Portionen, für die die Mengen angelegt sind).
+Tab "Vorlagen" zeigt zuerst Kategorien (`TemplateCategories.jsx`, Regeln in `lib/templateCategories.js`: 4 Mahlzeiten + Schnell & einfach
+(≤ 4 Zutaten), Süßes, Sportlich (≥ 30 g Eiweiß), Vegetarisch & vegan, Meal Prep, Leicht (< 300 kcal), Fisch & Meer, Low Carb; alles aus
+den Rezeptdaten abgeleitet, ein Rezept kann in mehreren stehen). Tipp öffnet die Liste (Zurück-Pfeil, Suche/Filter/Sortierung wie sonst,
+auf die Kategorie begrenzt); Suche oder Filter in der Übersicht zeigen direkt die Gesamtliste. Karte: zwei Infokästchen rechts (Portionen, Zutaten).
 
 ## Finanz-Auswertung (Dashboard)
 

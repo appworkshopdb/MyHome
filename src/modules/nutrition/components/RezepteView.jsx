@@ -8,6 +8,8 @@ import RecipeEditorModal from './RecipeEditorModal';
 import RecipeWizard from './RecipeWizard';
 import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeDetailModal from './RecipeDetailModal';
+import TemplateCategories from './TemplateCategories';
+import { TEMPLATE_CAT_BY_KEY, countTemplateCats } from '../lib/templateCategories';
 
 // Karte bleibt kompakt: statt aller Tags und der ganzen Notiz nur die Anzahl der
 // Tags (eigene, Ziele und aus den Zutaten abgeleitete, ohne Doppelte) und ein
@@ -50,15 +52,19 @@ export default function RezepteView({
   const [art, setArt] = useState(null);
   const [sort, setSort] = useState('standard');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [cat, setCat] = useState(null); // geöffnete Vorlagen-Kategorie (nur Tab Vorlagen)
 
   const foodsById = useMemo(() => Object.fromEntries(foods.map((f) => [f.id, f])), [foods]);
 
   const source = tab === 'eigene' ? recipes : TEMPLATE_RECIPES;
-  const items = useMemo(() => source.map((recipe) => {
+  const allItems = useMemo(() => source.map((recipe) => {
     const calc = computeNutrition(recipe.ingredients, foodsById);
     const mealLabel = RECIPE_CATS.find((c) => c.key === recipe.category)?.label || '';
     return { recipe, calc, facts: recipeFacts(recipe, calc, foodsById, mealLabel) };
   }), [source, foodsById]);
+  const catDef = tab === 'vorlagen' && cat ? TEMPLATE_CAT_BY_KEY[cat] : null;
+  const items = useMemo(() => (catDef ? allItems.filter(catDef.test) : allItems), [allItems, catDef]);
+  const catCounts = useMemo(() => (tab === 'vorlagen' ? countTemplateCats(allItems) : null), [allItems, tab]);
 
   const rows = useMemo(
     () => applyRecipeFilters(items, { query, meal, diet, nutri, art, sort, newestFirst: tab === 'eigene' }),
@@ -80,6 +86,8 @@ export default function RezepteView({
 
   const activeCount = (diet ? 1 : 0) + nutri.length + (art ? 1 : 0); // Filter aus dem Sheet
   const filtered = query.trim() !== '' || meal !== 'all' || activeCount > 0;
+  // Vorlagen: ohne Suche, Filter und geöffnete Kategorie zeigt die Seite die Kategorien
+  const showCats = tab === 'vorlagen' && !cat && query.trim() === '' && meal === 'all' && activeCount === 0;
   const dietLabel = DIET_FILTERS.find((d) => d.key === diet)?.label;
   const artLabel = ART_GROUPS.find((g) => g.key === art)?.label;
   const sortLabel = SORTS.find((o) => o.key === sort)?.label;
@@ -116,10 +124,22 @@ export default function RezepteView({
 
   return (
     <>
+      {catDef ? (
+        <div className="tpl-top">
+          <button type="button" className="tpl-back" aria-label="Zurück zu den Kategorien" onClick={() => { setCat(null); setMeal('all'); resetSheetFilters(); }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <div>
+            <div className="tpl-top-t">{catDef.label}</div>
+            <div className="tpl-top-s">{items.length} Rezepte{catDef.hint ? ` · ${catDef.hint}${catDef.perPortion ? ' pro Portion' : ''}` : ''}</div>
+          </div>
+        </div>
+      ) : (
       <div className="chip-row" style={{ marginBottom: 12 }}>
-        <button className={`chip ${tab === 'eigene' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => setTab('eigene')}>Eigene Rezepte</button>
-        <button className={`chip ${tab === 'vorlagen' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => setTab('vorlagen')}>Vorlagen</button>
+        <button className={`chip ${tab === 'eigene' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => { setTab('eigene'); setCat(null); }}>Eigene Rezepte</button>
+        <button className={`chip ${tab === 'vorlagen' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => { setTab('vorlagen'); setCat(null); }}>Vorlagen</button>
       </div>
+      )}
 
       <div className="nut-searchbar">
         <div className="nut-search">
@@ -140,6 +160,9 @@ export default function RezepteView({
         </button>
       </div>
 
+      {showCats && <TemplateCategories counts={catCounts} onPick={(k) => { setCat(k); setMeal('all'); }} />}
+
+      {!showCats && catDef?.kind !== 'meal' && (!catDef || mealChips.length > 2) && (
       <div className="chip-row" style={{ marginBottom: 8 }}>
         {mealChips.map((c) => (
           <button key={c.key} className={`chip ${meal === c.key ? 'active' : ''}`} onClick={() => setMeal(c.key)}>
@@ -147,8 +170,9 @@ export default function RezepteView({
           </button>
         ))}
       </div>
+      )}
 
-      {activeCount > 0 && (
+      {!showCats && activeCount > 0 && (
         <div className="chip-row rf-active">
           {diet && <button type="button" className="chip rf-out" onClick={() => setDiet(null)} aria-label={`${dietLabel} entfernen`}>{dietLabel} <IconClose /></button>}
           {nutri.map((k) => {
@@ -160,14 +184,14 @@ export default function RezepteView({
         </div>
       )}
 
-      {items.length > 0 && (
+      {!showCats && items.length > 0 && (
         <div className="rf-info">
           <span>{rows.length}{filtered ? ` von ${items.length}` : ''} Rezept{items.length !== 1 ? 'e' : ''}</span>
           <button type="button" className="rf-sort-btn" onClick={() => setSheetOpen(true)}>Sortieren: {sortLabel} ▾</button>
         </div>
       )}
 
-      {items.length === 0 && (
+      {!showCats && items.length === 0 && (
         <div className="empty-state">
           <div style={{ fontSize: '2.5rem' }}>🍽️</div>
           <p>{tab === 'eigene' ? 'Noch keine Rezepte' : 'Keine Vorlagen vorhanden'}</p>
@@ -175,7 +199,7 @@ export default function RezepteView({
         </div>
       )}
 
-      {items.length > 0 && rows.length === 0 && (
+      {!showCats && items.length > 0 && rows.length === 0 && (
         <div className="empty-state">
           <IconSearch />
           <p>Keine Treffer</p>
@@ -183,7 +207,7 @@ export default function RezepteView({
         </div>
       )}
 
-      {rows.map(({ recipe: r, calc, facts }) => (
+      {!showCats && rows.map(({ recipe: r, calc, facts }) => (
         <div key={r.id} className="card recipe-card" onClick={() => setDetail(r)}>
           <div className="head">
             <RecipeCover recipe={r} className="thumb" />
