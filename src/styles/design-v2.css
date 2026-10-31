@@ -917,3 +917,76 @@ button.cl-row-btn { cursor: pointer; }
 .cl-rlist > div { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; background: var(--surface-raised); border-radius: 16px; box-shadow: var(--shadow-card); font-size: 14px; font-weight: 700; }
 .cl-rlist i { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--m-tint, var(--action-quiet-bg)); color: var(--m-ink, var(--text-primary)); font-style: normal; font-size: 13px; font-weight: 900; }
 .cl-rlist small { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+/* ── Einkauf · Alle Listen (ListView): Listen als Karten ─────────────────────
+   Symbol-Kachel, Name, Fortschritt, Status- und Datum-Chip; Offene zuerst, Erledigte gedimmt darunter. */
+.sho-lview { padding-bottom: calc(var(--nav-height) + 90px + env(safe-area-inset-bottom)); }
+.sho-lview-error { margin-bottom: 12px; padding: 10px 14px; border-radius: 14px; background: var(--status-critical-bg); color: var(--status-critical); font-size: 13px; font-weight: 700; }
+.sho-lsec { margin: 18px 6px 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.sho-lsec:first-child { margin-top: 4px; }
+.sho-lcards { display: grid; gap: 12px; }
+
+.sho-lcard {
+  background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card);
+  padding: 14px 14px 12px; display: grid; gap: 10px;
+}
+.sho-lcard--done { opacity: 0.65; }
+.sho-lcard--edit { grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.sho-lcard-main {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; text-align: left;
+  background: none; border: 0; padding: 0; color: var(--text-primary); font: inherit; cursor: pointer;
+}
+.sho-lcard-main:disabled { opacity: 0.5; }
+.sho-lcard-ic {
+  flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center;
+  background: var(--m-tint, var(--action-quiet-bg)); font-size: 22px;
+}
+.sho-lcard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sho-lcard-body b { font-size: 16px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.sho-lcard-body small { font-size: 12px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sho-lcard-chev { flex: none; width: 18px; height: 18px; color: var(--text-muted); }
+.sho-lcard-bar { height: 6px; border-radius: var(--r-pill); overflow: hidden; background: color-mix(in srgb, var(--m-ac, var(--action-primary)) 18%, transparent); }
+.sho-lcard-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--m-ac, var(--action-primary)); }
+
+.sho-lcard-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.sho-lcard-meta .sho-status-badge,
+.sho-lcard-meta .sho-due-badge,
+.sho-lcard-meta .sho-date-add { min-height: 30px; padding: 0 12px; border-radius: var(--r-pill); font-size: 12px; font-weight: 800; }
+.sho-lcard-meta .sho-status-im_einkauf { background: var(--m-tint, var(--action-quiet-bg)); color: var(--m-ink, var(--action-primary)); }
+.sho-lcard-meta .sho-date-add { border: 1.5px dashed var(--border-strong); background: none; }
+.sho-lcard-meta .sho-date-edit-row { gap: 2px; }
+.sho-lcard-meta .sho-date-remove { min-width: 28px; min-height: 28px; font-size: 12px; }
+.sho-lcard-actions { margin-left: auto; display: inline-flex; gap: 4px; }
+.sho-lcard-icon {
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-sunken); color: var(--text-muted); border: 0; cursor: pointer;
+}
+.sho-lcard-icon svg { width: 18px; height: 18px; }
+.sho-lcard-icon:hover { color: var(--text-primary); }
+.sho-lcard-chev svg { width: 100%; height: 100%; }
+
+.sho-lcard .sho-date-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; }
+.sho-lcard .sho-date-inline .sho-due-input,
+.sho-lcard .sho-date-inline .sho-unit-select { min-height: 40px; border-radius: 12px; background: var(--surface-sunken); border: 1px solid var(--border-hairline); font-size: 13px; font-weight: 700; padding: 0 10px; }
+.sho-lcard .sho-date-inline .sho-lcard-ok { grid-column: 1; }
+.sho-lcard .sho-date-inline .sho-lcard-x { grid-column: 2; min-height: 40px; border-radius: 12px; font-weight: 800; color: var(--text-muted); background: none; border: 1.5px solid var(--border-strong); cursor: pointer; }
+.sho-lcard-ok { min-height: 40px; padding: 0 18px; border-radius: var(--r-pill); }
+.sho-lcard-input {
+  min-width: 0; min-height: 44px; padding: 0 14px; border-radius: 14px; background: var(--surface-sunken);
+  border: 1.5px solid var(--border-hairline); color: var(--text-primary); font: inherit; font-size: 16px; font-weight: 800;
+}
+
+.sho-lempty { margin-top: 8px; padding: 36px 20px; text-align: center; background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card); }
+.sho-lempty-ic { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+.sho-lempty-title { font-size: 17px; font-weight: 900; margin-bottom: 4px; }
+.sho-lempty-text { font-size: 13px; font-weight: 600; color: var(--text-muted); max-width: 32ch; margin: 0 auto; }
+
+.sho-ltmpl {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 18px;
+  border-radius: 16px; border: 1.5px dashed var(--border-strong); background: none; color: var(--m-deep, var(--text-primary));
+  font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+}
+.sho-ltmpl:disabled { opacity: 0.6; }
+.sho-lpanel { margin-top: 12px; padding: 8px 14px 6px; background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card); }
+.sho-lpanel-head { display: flex; align-items: center; justify-content: space-between; min-height: 40px; font-size: 15px; }
+.sho-lpanel-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border-hairline); }

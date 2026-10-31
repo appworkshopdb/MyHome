@@ -175,6 +175,9 @@ Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2
 Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
 (`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
 Einkaufsliste (`UNIT_OPTIONS`).
+"Alle Listen" (`ListView.jsx`, Klassen `.sho-lcard*`/`.sho-lview` in `design-v2.css`): jede Liste eine Karte mit Symbol-Kachel,
+Fortschritt, Status-Chip (Tipp schaltet weiter), Datum-Chip, Umbenennen/Löschen; Offene zuerst, Erledigte gedimmt darunter,
+"Aus Vorlage anlegen" als gestrichelter Knopf (neue Liste nur über den globalen FAB).
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
 2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,

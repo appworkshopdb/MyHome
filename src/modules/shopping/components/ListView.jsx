@@ -1,7 +1,7 @@
 // modules/shopping/components/ListView.jsx
-// Punkte 9 (Liste leeren ist in ItemsView), 10 (Umbenennen), 11 (Vorlagen).
-// Zeigt normale Listen + Vorlagen getrennt.
-// Tap auf Liste → öffnet ItemsView (via onOpenList).
+// "Alle Listen": jede Liste als Karte (Symbol, Name, Fortschritt, Status, Datum), Offene zuerst,
+// Erledigte darunter. Umbenennen, Löschen, Datum, Status-Wechsel und "Aus Vorlage" wie bisher.
+// Tap auf die Karte → öffnet ItemsView (via onOpenList). Neue Liste läuft über den globalen FAB.
 
 import { useState, useRef, useEffect } from 'react';
 import { IconTrash, IconChevronRight, IconEdit } from '../../../core/components/Icons.jsx';
@@ -9,7 +9,6 @@ import {
   saveList, deleteList, loadTemplates, loadFromTemplate, updateListStatus,
   releaseListBooking,
 } from '../lib/shoData.js';
-import { STORES } from '../lib/data/stores.js';
 
 export default function ListView({ lists, onListsChange, onOpenList }) {
   const [error,       setError]       = useState(null);
@@ -160,194 +159,155 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     if (e.key === 'Escape') setEditId(null);
   }
 
-  // Normale Listen (keine Vorlagen)
+  // Normale Listen (keine Vorlagen): Offene und "Im Einkauf" zuerst, Erledigte darunter
   const normalLists = lists.filter((l) => !l.is_template);
+  const rank = { im_einkauf: 0, offen: 1, erledigt: 2 };
+  const sorted = normalLists
+    .map((l, i) => ({ l, i }))
+    .sort((a, b) => (rank[a.l.status || 'offen'] - rank[b.l.status || 'offen']) || (a.i - b.i))
+    .map((x) => x.l);
+  const activeLists = sorted.filter((l) => (l.status || 'offen') !== 'erledigt');
+  const doneLists   = sorted.filter((l) => (l.status || 'offen') === 'erledigt');
+
+  function renderCard(list) {
+    const total = list._total ?? 0;
+    const done  = list._done ?? 0;
+    const finished = (list.status || 'offen') === 'erledigt';
+    const sub = total === 0 ? 'Noch keine Artikel' : done === total ? `Alle ${total} erledigt` : `${done} von ${total} erledigt`;
+
+    if (editId === list.id) {
+      return (
+        <div key={list.id} className="sho-lcard sho-lcard--edit">
+          <input
+            ref={editRef}
+            className="sho-lcard-input"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={handleEditKeyDown}
+            onBlur={handleRename}
+            maxLength={60}
+            aria-label="Name der Liste"
+          />
+          <button className="btn btn-primary sho-lcard-ok" onClick={handleRename} disabled={editSaving}>
+            {editSaving ? '…' : 'OK'}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div key={list.id} className={`sho-lcard${finished ? ' sho-lcard--done' : ''}`}>
+        <button className="sho-lcard-main" onClick={() => onOpenList(list)} disabled={deleting === list.id}>
+          <span className="sho-lcard-ic">{list.icon || '🛒'}</span>
+          <span className="sho-lcard-body">
+            <b>{list.name}</b>
+            <small>{sub}</small>
+          </span>
+          <span className="sho-lcard-chev" aria-hidden="true"><IconChevronRight /></span>
+        </button>
+
+        {total > 0 && (
+          <div className="sho-lcard-bar" aria-hidden="true">
+            <i style={{ width: `${Math.round((done / total) * 100)}%` }} />
+          </div>
+        )}
+
+        {dateEditId === list.id ? (
+          <div className="sho-date-inline">
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+              className="sho-due-input"
+              aria-label="Fällig am"
+            />
+            <select value={editTime} onChange={(e) => setEditTime(e.target.value)} className="sho-unit-select" aria-label="Tageszeit">
+              <option value="">Tageszeit</option>
+              <option value="morgens">🌅 Morgens</option>
+              <option value="mittags">☀️ Mittags</option>
+              <option value="nachmittags">🌤️ Nachmittags</option>
+              <option value="abends">🌙 Abends</option>
+            </select>
+            <button className="btn btn-primary sho-lcard-ok" onClick={() => handleSaveDate(list.id)} disabled={dateSaving}>
+              {dateSaving ? '…' : 'OK'}
+            </button>
+            <button className="sho-lcard-x" onClick={() => setDateEditId(null)} aria-label="Abbrechen">✕</button>
+          </div>
+        ) : (
+          <div className="sho-lcard-meta">
+            <StatusBadge list={list} busy={statusBusy === list.id} onCycle={(e) => handleStatusCycle(e, list)} />
+            {list.due_date ? (
+              <span className="sho-date-edit-row">
+                <button className="sho-due-badge-btn" onClick={(e) => startDateEdit(e, list)} title="Datum ändern">
+                  <DueBadge date={list.due_date} time={list.due_time} />
+                </button>
+                <button className="sho-date-remove" onClick={(e) => handleRemoveDate(e, list)} title="Datum entfernen" aria-label="Datum entfernen">✕</button>
+              </span>
+            ) : (
+              <button className="sho-date-add" onClick={(e) => startDateEdit(e, list)}>+ Datum</button>
+            )}
+            <span className="sho-lcard-actions">
+              <button className="sho-lcard-icon" onClick={(e) => startEdit(e, list)} aria-label="Umbenennen"><IconEdit size={16} /></button>
+              <button className="sho-lcard-icon" onClick={(e) => handleDelete(e, list.id)} aria-label="Liste löschen"><IconTrash size={16} /></button>
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {error && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--danger)', marginBottom: 12 }}>
-          {error}
-        </div>
-      )}
+    <div className="sho-lview">
+      {error && <div className="sho-lview-error">{error}</div>}
 
       {/* Empty State */}
       {normalLists.length === 0 && (
-        <div className="sho-empty">
-          <div className="sho-empty-icon">🛒</div>
-          <div className="sho-empty-title">Noch keine Liste</div>
-          <div className="sho-empty-text">
-            Leg eine Einkaufsliste an — z.B. für REWE, Aldi oder den nächsten Grillabend.
-          </div>
+        <div className="sho-lempty">
+          <div className="sho-lempty-ic">🛒</div>
+          <div className="sho-lempty-title">Noch keine Liste</div>
+          <div className="sho-lempty-text">Leg eine Einkaufsliste an — z.B. für REWE, Aldi oder den nächsten Grillabend.</div>
         </div>
       )}
 
-      {/* Listen */}
-      {normalLists.length > 0 && (
-        <div className="sho-lists">
-          {normalLists.map((list) => (
-            <div key={list.id} className="sho-list-item-wrap">
-              {/* Umbenennen-Modus */}
-              {editId === list.id ? (
-                <div className="sho-inline-edit">
-                  <input
-                    ref={editRef}
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={handleEditKeyDown}
-                    onBlur={handleRename}
-                    maxLength={60}
-                  />
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleRename}
-                    disabled={editSaving}
-                    style={{ flexShrink: 0, padding: '6px 12px', minHeight: 36 }}
-                  >
-                    {editSaving ? '…' : 'OK'}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="sho-list-item"
-                  onClick={() => onOpenList(list)}
-                  disabled={deleting === list.id}
-                >
-                  <div className="sho-list-icon">{list.icon || '🛒'}</div>
-                  <div className="sho-list-info">
-                    <div className="sho-list-name">{list.name}</div>
-                    {dateEditId === list.id ? (
-                      <div className="sho-date-inline" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="date"
-                          value={editDate}
-                          onChange={(e) => setEditDate(e.target.value)}
-                          className="sho-due-input"
-                          style={{ flex: 1, minHeight: 32, fontSize: '0.85rem' }}
-                        />
-                        <select
-                          value={editTime}
-                          onChange={(e) => setEditTime(e.target.value)}
-                          className="sho-unit-select"
-                          style={{ minHeight: 32, fontSize: '0.85rem' }}
-                        >
-                          <option value="">Tageszeit</option>
-                          <option value="morgens">🌅 Morgens</option>
-                          <option value="mittags">☀️ Mittags</option>
-                          <option value="nachmittags">🌤️ Nachmittags</option>
-                          <option value="abends">🌙 Abends</option>
-                        </select>
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleSaveDate(list.id)}
-                          disabled={dateSaving}
-                          style={{ minHeight: 32, padding: '4px 10px', fontSize: '0.8rem', flexShrink: 0 }}
-                        >
-                          {dateSaving ? '…' : 'OK'}
-                        </button>
-                        <button
-                          className="btn btn-secondary"
-                          onClick={() => setDateEditId(null)}
-                          style={{ minHeight: 32, padding: '4px 8px', fontSize: '0.8rem', flexShrink: 0 }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : list.due_date ? (
-                      <span className="sho-date-edit-row">
-                        <button className="sho-due-badge-btn" onClick={(e) => startDateEdit(e, list)} title="Datum ändern">
-                          <DueBadge date={list.due_date} time={list.due_time} />
-                        </button>
-                        <button className="sho-date-remove" onClick={(e) => handleRemoveDate(e, list)} title="Datum entfernen">✕</button>
-                      </span>
-                    ) : (
-                      <button className="sho-date-add" onClick={(e) => startDateEdit(e, list)}>
-                        + Datum
-                      </button>
-                    )}
-                    <StatusBadge
-                      list={list}
-                      busy={statusBusy === list.id}
-                      onCycle={(e) => handleStatusCycle(e, list)}
-                    />
-                  </div>
-                  {/* Umbenennen */}
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => startEdit(e, list)}
-                    aria-label="Umbenennen"
-                    style={{ marginRight: 0 }}
-                  >
-                    <IconEdit size={15} />
-                  </button>
-                  {/* Löschen */}
-                  <button
-                    className="btn-icon"
-                    onClick={(e) => handleDelete(e, list.id)}
-                    aria-label="Liste löschen"
-                  >
-                    <IconTrash size={15} />
-                  </button>
-                  <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
-                    <IconChevronRight />
-                  </div>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+      {activeLists.length > 0 && (
+        <>
+          <div className="sho-lsec">Offen ({activeLists.length})</div>
+          <div className="sho-lcards">{activeLists.map(renderCard)}</div>
+        </>
+      )}
+      {doneLists.length > 0 && (
+        <>
+          <div className="sho-lsec">Erledigt ({doneLists.length})</div>
+          <div className="sho-lcards">{doneLists.map(renderCard)}</div>
+        </>
       )}
 
-      {/* Aus Vorlage — Neue Liste läuft nur noch über den globalen FAB */}
-      <div className="sho-bottom-actions">
-        <button
-          className="sho-add-btn sho-tmpl-btn"
-          onClick={handleShowTemplates}
-          disabled={tmplLoading}
-        >
-          <span style={{ fontSize: '1rem' }}>📋</span>
-          {tmplLoading ? 'Laden …' : 'Aus Vorlage'}
-        </button>
-      </div>
+      {/* Aus Vorlage — neue Liste läuft über den globalen FAB */}
+      <button className="sho-ltmpl" onClick={handleShowTemplates} disabled={tmplLoading}>
+        <span aria-hidden="true">📋</span>
+        {tmplLoading ? 'Laden …' : 'Aus Vorlage anlegen'}
+      </button>
 
       {/* Vorlagen-Panel */}
       {showTmpl && (
-        <div className="sho-tmpl-panel">
-          <div className="sho-tmpl-header">
-            <span className="card-title" style={{ marginBottom: 0 }}>Vorlagen</span>
-            <button className="btn-icon" onClick={() => setShowTmpl(false)}>✕</button>
+        <div className="sho-lpanel">
+          <div className="sho-lpanel-head">
+            <b>Vorlagen</b>
+            <button className="sho-lcard-icon" onClick={() => setShowTmpl(false)} aria-label="Schließen">✕</button>
           </div>
-
           {templates.length === 0 && (
-            <div className="sho-empty" style={{ padding: '24px 0' }}>
-              <div className="sho-empty-text">
-                Noch keine Vorlagen. Öffne eine Liste und tippe auf „Als Vorlage speichern".
-              </div>
+            <div className="sho-lempty-text" style={{ padding: '10px 4px 6px' }}>
+              Noch keine Vorlagen vorhanden.
             </div>
           )}
-
           {templates.map((tmpl) => (
-            <button
-              key={tmpl.id}
-              className="sho-list-item"
-              onClick={() => handleLoadTemplate(tmpl)}
-              disabled={loadingTmpl === tmpl.id || deleting === tmpl.id}
-            >
-              <div className="sho-list-icon">{tmpl.icon || '📋'}</div>
-              <div className="sho-list-info">
-                <div className="sho-list-name">{tmpl.name}</div>
-              </div>
-              <button
-                className="btn-icon"
-                onClick={(e) => handleDeleteTemplate(e, tmpl.id)}
-                aria-label="Vorlage löschen"
-              >
-                <IconTrash size={15} />
+            <div key={tmpl.id} className="sho-lpanel-row">
+              <button className="sho-lcard-main" onClick={() => handleLoadTemplate(tmpl)} disabled={loadingTmpl === tmpl.id || deleting === tmpl.id}>
+                <span className="sho-lcard-ic">{tmpl.icon || '📋'}</span>
+                <span className="sho-lcard-body"><b>{tmpl.name}</b><small>{loadingTmpl === tmpl.id ? 'Wird angelegt …' : 'Als neue Liste anlegen'}</small></span>
               </button>
-              <div style={{ width: 16, height: 16, color: 'var(--text-muted)', flexShrink: 0 }}>
-                <IconChevronRight />
-              </div>
-            </button>
+              <button className="sho-lcard-icon" onClick={(e) => handleDeleteTemplate(e, tmpl.id)} aria-label="Vorlage löschen"><IconTrash size={16} /></button>
+            </div>
           ))}
         </div>
       )}
@@ -361,38 +321,18 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
 //   - Automatik: offen / im_einkauf / erledigt aus _done/_total
 // Tap → Status manuell weiterschalten (Cycle)
 function StatusBadge({ list, busy, onCycle }) {
-  const total  = list._total ?? 0;
-  const done   = list._done  ?? 0;
-  const openLeft = total - done;
-
-  // Gespeicherter Status ist immer maßgeblich.
-  // Auto-Überschreibung absichtlich entfernt — Nutzer kann Status jederzeit
-  // beliebig cyclen, unabhängig davon wie viele Artikel abgehakt sind.
+  // Gespeicherter Status ist immer maßgeblich; Tipp schaltet weiter (offen → im Einkauf → erledigt → offen).
   const effective = list.status || 'offen';
-
-  const labels = {
-    offen:      'Offen',
-    im_einkauf: 'Im Einkauf',
-    erledigt:   'Erledigt',
-  };
-
-  // Artikel-offen-Hinweis in allen Stati anzeigen (außer wenn 0 offen)
-  const showHint = openLeft > 0 && total > 0;
-
+  const labels = { offen: 'Offen', im_einkauf: 'Im Einkauf', erledigt: 'Erledigt' };
   return (
-    <span className="sho-status-wrap">
-      <button
-        className={`sho-status-badge sho-status-${effective}`}
-        onClick={onCycle}
-        disabled={busy}
-        title="Status ändern — Tippen zum Wechseln"
-      >
-        {busy ? '…' : labels[effective]}
-      </button>
-      {showHint && (
-        <span className="sho-status-hint">{openLeft} offen</span>
-      )}
-    </span>
+    <button
+      className={`sho-status-badge sho-status-${effective}`}
+      onClick={onCycle}
+      disabled={busy}
+      title="Status ändern — Tippen zum Wechseln"
+    >
+      {busy ? '…' : labels[effective]}
+    </button>
   );
 }
 
