@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Einkauf abschließen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+/* Layout: links ein bedienbares Handy mit dem ganzen Ablauf, rechts die Regeln des aktuellen Schritts, darunter die offenen Entscheidungen. Tokens wie die App (Sand, warmes Dunkelblau, Familie Einkauf = Violett). */
+:root {
+  --page: #EFE9DF; --screen: #F6F1EA; --raised: #FFFFFF; --sunken: #FBF8F3;
+  --text: #25304A; --muted: #6B6A73; --line: #EAE2D6; --line-strong: #D5CABB; --action: #1B2A4A;
+  --shop-tint: #E6DFF5; --shop-ink: #2E2457; --shop-ac: #7461C4; --shop-on: #FFFFFF; --shop-deep: #5F4DB0;
+  --warn-tint: #F7E8D0; --warn-ink: #6B4310; --ok-tint: #DCEFE2; --ok-ink: #14452B; --crit: #B3261E;
+  --shadow-card: 0 2px 8px rgba(70, 50, 30, .08); --shadow-float: 0 6px 18px rgba(70, 50, 30, .14);
+  --scrim: rgba(15, 26, 49, .45); --frame: #1B2A4A;
+  --font: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+    --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+    --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+    --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit: #F2998F;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+    --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+  --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+  --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+  --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit: #F2998F;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+  --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45;
+  padding-block: 26px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--shop-ac); outline-offset: 2px; }
+.wrap { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 16px; max-width: 64ch; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip-btn { padding: 8px 14px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-weight: 800; font-size: .82rem; }
+.theme { display: flex; gap: 4px; background: var(--raised); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; }
+.theme button { padding: 6px 12px; border-radius: 999px; font-size: .8rem; font-weight: 800; color: var(--muted); }
+.theme button[aria-pressed="true"] { background: var(--action); color: var(--screen); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 36px; align-items: start; }
+@media (max-width: 800px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.phone {
+  position: relative; width: 100%; max-width: 360px; height: 760px; margin: 0 auto; overflow: hidden;
+  background: var(--screen); border: 8px solid var(--frame); border-radius: 38px; box-shadow: 0 18px 40px -18px rgba(15, 26, 49, .5);
+}
+.scr { position: absolute; inset: 0; overflow-y: auto; padding: 16px 14px 120px; }
+.nav {
+  position: absolute; left: 14px; right: 14px; bottom: 12px; height: 54px; border-radius: 999px; background: var(--raised);
+  box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; color: var(--muted);
+}
+.nav i { width: 22px; height: 22px; border-radius: 7px; border: 2px solid currentColor; opacity: .6; }
+.nav .on { background: var(--shop-ac); color: var(--shop-on); padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: .8rem; }
+
+/* Liste */
+.hd { background: var(--raised); border-radius: 28px; padding: 14px 16px; box-shadow: var(--shadow-float); }
+.hd-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.hd h2 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -.01em; }
+.hd .cnt { font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hd .cnt b { font-size: 14px; font-weight: 900; color: var(--text); }
+.hd .line { height: 8px; margin: 10px 0 12px; border-radius: 999px; background: color-mix(in srgb, var(--shop-ac) 18%, transparent); overflow: hidden; }
+.hd .line i { display: block; height: 100%; border-radius: 999px; background: var(--shop-ac); }
+.pill-btn { width: 100%; min-height: 42px; border-radius: 999px; background: var(--shop-ac); color: var(--shop-on); font-weight: 900; font-size: 13px; }
+.lbl { margin: 18px 6px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-card); padding: 4px 16px; }
+.card.dim { opacity: .6; }
+.rw { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 9px 0; border-top: 1px solid var(--line); }
+.rw:first-child { border-top: 0; }
+.ck { flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line-strong); display: grid; place-items: center; color: var(--shop-on); }
+.rw.done .ck, .ck.on { background: var(--shop-ac); border-color: var(--shop-ac); }
+.bd { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bd b { font-size: 15px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.bd small { font-size: 11px; font-weight: 700; color: var(--muted); }
+.bd small.merge { color: var(--shop-deep); }
+.rw.done .bd b { text-decoration: line-through; color: var(--muted); font-weight: 700; }
+.q { flex: none; padding: 4px 11px; border-radius: 999px; background: var(--shop-tint); color: var(--shop-ink); font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rw.done .q { background: var(--sunken); color: var(--muted); }
+.ib { position: absolute; left: 12px; right: 12px; bottom: 76px; background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-float); padding: 10px; display: grid; gap: 8px; }
+.ib .f { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 6px; }
+.ib .f div { height: 34px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; padding: 0 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.ib .a { display: flex; gap: 8px; }
+.ib .a div { flex: 1; height: 44px; border-radius: 14px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; color: var(--muted); font-weight: 700; font-size: 14px; }
+.ib .a span { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+
+/* Sheet */
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 92%; background: var(--screen); border-radius: 26px 26px 0 0;
+  display: flex; flex-direction: column; box-shadow: 0 -10px 30px rgba(0, 0, 0, .25);
+}
+.sh-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 6px; }
+.sh-ico { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line); display: grid; place-items: center; font-size: 16px; font-weight: 800; }
+.sh-ico.ghost { visibility: hidden; }
+.sh-ttl { flex: 1; min-width: 0; }
+.sh-ttl b { display: block; font-size: 17px; font-weight: 900; line-height: 1.2; }
+.sh-ttl small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prog { display: flex; gap: 6px; padding: 6px 16px 4px; }
+.prog i { flex: 1; height: 5px; border-radius: 999px; background: var(--line); }
+.prog i.on { background: var(--shop-ac); }
+.sh-body { flex: 1; overflow-y: auto; padding: 8px 16px 12px; }
+.sh-foot { padding: 10px 16px 18px; border-top: 1px solid var(--line); background: var(--screen); display: grid; gap: 6px; }
+.sh-foot .hint { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
+.cta { min-height: 50px; border-radius: 16px; background: var(--shop-ac); color: var(--shop-on); font-weight: 900; font-size: 15px; width: 100%; }
+.cta[disabled] { opacity: .4; cursor: not-allowed; }
+.link { min-height: 44px; font-weight: 800; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.sumbar { display: flex; align-items: center; gap: 10px; background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 12px 14px; margin-bottom: 4px; }
+.sumbar .n { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.sumbar .t { flex: 1; font-size: 13px; font-weight: 700; color: var(--muted); }
+.sumbar .t b { color: var(--text); }
+.flag { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--warn-tint); color: var(--warn-ink); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.flag.ok { background: var(--ok-tint); color: var(--ok-ink); }
+.rw.pick { width: 100%; text-align: left; }
+.rw.open .ck { border-color: var(--warn-ink); }
+.note { margin: 10px 2px 0; padding: 10px 12px; border-radius: 14px; background: var(--shop-tint); color: var(--shop-ink); font-size: 12.5px; font-weight: 700; }
+.note.warn { background: var(--warn-tint); color: var(--warn-ink); }
+
+.lists { display: grid; gap: 6px; }
+.lopt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; background: var(--raised); border: 1.5px solid var(--line); border-radius: 14px; }
+.lopt .ic { font-size: 18px; flex: none; }
+.lopt .t { flex: 1; min-width: 0; }
+.lopt .t b { display: block; font-size: 14px; font-weight: 800; }
+.lopt .t small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+.lopt .rd { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line-strong); }
+.lopt[aria-checked="true"] { border-color: var(--shop-ac); background: var(--shop-tint); color: var(--shop-ink); }
+.lopt[aria-checked="true"] .t small { color: var(--shop-ink); }
+.lopt[aria-checked="true"] .rd { border-color: var(--shop-ac); background: radial-gradient(var(--shop-ac) 0 45%, transparent 50%); }
+.field { width: 100%; min-height: 46px; border-radius: 14px; background: var(--raised); border: 1.5px solid var(--line); padding: 0 14px; font-weight: 700; font-size: 14px; }
+.field::placeholder { color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.meth { display: flex; flex-wrap: wrap; gap: 6px; }
+.meth button { padding: 7px 13px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-size: 13px; font-weight: 800; }
+.meth button[aria-pressed="true"] { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
+.pay { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); }
+.pay:first-child { border-top: 0; }
+.pay .am { font-weight: 900; font-size: 15px; font-variant-numeric: tabular-nums; }
+.pay .mt { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pay .x { flex: none; width: 30px; height: 30px; border-radius: 50%; color: var(--muted); font-size: 18px; }
+.addpay { width: 100%; min-height: 46px; border-radius: 14px; border: 1.5px dashed var(--line-strong); font-weight: 800; font-size: 14px; color: var(--shop-deep); margin-top: 6px; }
+.form { background: var(--raised); border-radius: 20px; box-shadow: var(--shadow-card); padding: 12px; display: grid; gap: 10px; margin-top: 8px; }
+.form .btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.sbtn { min-height: 44px; border-radius: 14px; font-weight: 800; font-size: 14px; background: var(--sunken); border: 1.5px solid var(--line-strong); }
+.sbtn.p { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
+.total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 4px 4px; font-weight: 800; }
+.total b { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.split { display: grid; gap: 6px; margin-top: 8px; }
+.split div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; }
+.split .paid { background: var(--ok-tint); color: var(--ok-ink); }
+.split .pend { background: var(--warn-tint); color: var(--warn-ink); }
+.sec { margin: 16px 2px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.result { padding: 8px 4px; text-align: center; }
+.result .big { width: 64px; height: 64px; margin: 18px auto 12px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); display: grid; place-items: center; }
+.result h3 { margin: 0 0 4px; font-size: 20px; font-weight: 900; }
+.result p { margin: 0 0 14px; color: var(--muted); font-weight: 700; font-size: 13px; }
+.rlist { text-align: left; display: grid; gap: 8px; }
+.rlist div { display: flex; gap: 10px; align-items: flex-start; background: var(--raised); border-radius: 16px; box-shadow: var(--shadow-card); padding: 12px 14px; font-size: 14px; font-weight: 700; }
+.rlist .ic { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--shop-tint); color: var(--shop-ink); display: grid; place-items: center; font-size: 13px; font-weight: 900; }
+.rlist small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+.explain h2 { font-size: 1.15rem; font-weight: 900; margin: 0 0 8px; }
+.explain ul { padding-left: 1.1rem; margin: 0 0 14px; display: grid; gap: 7px; }
+.explain li::marker { color: var(--shop-ac); }
+.try { background: var(--shop-tint); color: var(--shop-ink); border-radius: 14px; padding: 10px 12px; font-size: .86rem; font-weight: 700; }
+.sech2 { font-size: 1.2rem; font-weight: 900; margin: 40px 0 0; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; margin-top: 14px; }
+.dec { background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 14px; }
+.dec h3 { margin: 0 0 6px; font-size: .95rem; font-weight: 900; }
+.dec p { margin: 0 0 8px; font-size: .86rem; color: var(--muted); }
+.dec .rec { font-size: .86rem; background: var(--shop-tint); color: var(--shop-ink); border-radius: 10px; padding: 8px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Einkauf abschließen</h1>
+  <p class="lede">Interaktives Mockup: die Liste ohne Zahlungsbereich und ohne die zwei Chips, danach der erweiterte Abschluss mit Übersicht, Übertragen nicht gekaufter Artikel und Bezahlung. Alles im Handy ist bedienbar.</p>
+
+  <div class="tools">
+    <div class="chips">
+      <button class="chip-btn" data-scn="open">Neu starten: 2 Artikel offen</button>
+      <button class="chip-btn" data-scn="all">Neu starten: alles gekauft</button>
+      <button class="chip-btn" data-scn="paid">Neu starten: Zahlung schon vorhanden</button>
+    </div>
+    <div class="theme" role="group" aria-label="Darstellung">
+      <button data-theme-set="system" aria-pressed="true">System</button>
+      <button data-theme-set="light" aria-pressed="false">Hell</button>
+      <button data-theme-set="dark" aria-pressed="false">Dunkel</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="phone" id="phone"></div>
+    <div class="explain" id="explain"></div>
+  </div>
+
+  <h2 class="sech2">Offene Entscheidungen</h2>
+  <div class="dgrid">
+    <div class="dec"><h3>Was passiert mit nicht gekauften Artikeln?</h3><p>Du wählst pro Artikel, ob er übertragen wird. Übertragene Artikel wandern in die andere Liste und verschwinden aus dieser. Nicht gewählte bleiben in der abgeschlossenen Liste, markiert als „nicht gekauft“.</p><div class="rec"><b>Vorschlag:</b> so, alle vorab zum Übertragen gewählt.</div></div>
+    <div class="dec"><h3>Gleiche Artikel in der Zielliste</h3><p>Steht ein Artikel dort schon offen drauf, wird die Menge aufgestockt, wie beim Rezept-Import. Der Hinweis steht beim Artikel.</p><div class="rec"><b>Vorschlag:</b> gleiche Regel wie beim Rezept.</div></div>
+    <div class="dec"><h3>Zahlungen nur noch im Abschluss</h3><p>Der Zahlungsbereich in der Liste entfällt. Im Schritt „Bezahlung“ trägst du eine oder mehrere Zahlungen ein, beim Abschließen entsteht die Buchung in den Finanzen. Bereits früher erfasste Zahlungen einer Liste erscheinen dort vorbefüllt (Szenario oben).</p><div class="rec"><b>Vorschlag:</b> so.</div></div>
+    <div class="dec"><h3>Vorlagen und Aufräumen</h3><p>Ohne „Als Vorlage speichern“ lassen sich keine neuen Vorlagen mehr anlegen, „Aus Vorlage“ bleibt für vorhandene nutzbar. „Erledigte löschen“ entfällt, erledigte Artikel verschwinden mit der Liste. „Alle zurücksetzen“ bleibt, es erscheint nur, wenn alles abgehakt ist.</p><div class="rec"><b>Frage:</b> Soll „Als Vorlage speichern“ als Schalter im letzten Schritt wieder auftauchen?</div></div>
+    <div class="dec"><h3>Schritt „Nicht gekauft“ entfällt</h3><p>Ist alles gekauft, gibt es nur zwei Schritte: Übersicht und Bezahlung. Teste das mit „alles gekauft“ oben.</p><div class="rec"><b>Vorschlag:</b> so.</div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var NAV = '<div class="nav"><i></i><i></i><i></i><i></i><i></i><span class="on">Einkauf</span></div>';
+  var LISTNAME = 'Schinken Aufstrich Sandwich klassik';
+  var METHODS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
+  var INSTANT = ['Bar', 'Gutschein'];
+  var TARGETS = {
+    woche: { name: 'Wocheneinkauf', icon: '🛒', open: 6, items: [{ n: 'Karotte', q: 200, u: 'g' }, { n: 'Milch', q: 1, u: 'L' }] },
+    grill: { name: 'Wochenende Grillen', icon: '🥩', open: 3, items: [{ n: 'Steak', q: 4, u: 'Stück' }] }
+  };
+
+  function fresh(scn) {
+    var items = [
+      { id: 1, n: 'Salami', q: 200, u: 'g', note: 'für Schinken Aufstrich Sandwich klassik', cat: 'Fleisch & Fisch', done: true },
+      { id: 2, n: 'Gulaschsuppe Fertig', q: 850, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Vorrat', done: true },
+      { id: 3, n: 'Weißer Reis', q: 200, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Nudeln & Reis', done: true },
+      { id: 4, n: 'Sauerkraut (natur)', q: 50, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Vorrat', done: false },
+      { id: 5, n: 'Karotte', q: 50, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Obst & Gemüse', done: false }
+    ];
+    if (scn === 'all') items.forEach(function (i) { i.done = true; });
+    return {
+      view: 'list', step: 0, items: items, move: {}, target: 'woche', newName: 'Rest von ' + LISTNAME,
+      payments: scn === 'paid' ? [{ amount: 12.4, method: 'Paypal', store: 'REWE', note: '' }] : [],
+      form: null, booking: LISTNAME, result: null, scn: scn || 'open'
+    };
+  }
+  var S = fresh('open');
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var nfN = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+  var nfE = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  function amt(q, u) { if (u === 'g' && q >= 1000) return nfN.format(q / 1000) + ' kg'; return nfN.format(q) + ' ' + u; }
+  function openItems() { return S.items.filter(function (i) { return !i.done; }); }
+  function doneItems() { return S.items.filter(function (i) { return i.done; }); }
+  function steps() { return openItems().length ? ['check', 'open', 'pay'] : ['check', 'pay']; }
+  function total() { return Math.round(S.payments.reduce(function (s, p) { return s + p.amount; }, 0) * 100) / 100; }
+  function moving() { return openItems().filter(function (i) { return S.move[i.id] !== false; }); }
+  function targetName() { return S.target === 'new' ? (S.newName.trim() || 'Neue Liste') : TARGETS[S.target].name; }
+  function hint(it) {
+    if (S.target === 'new') return null;
+    var hit = TARGETS[S.target].items.filter(function (t) { return t.n === it.n && t.u === it.u; })[0];
+    return hit ? 'steht schon drauf: ' + amt(hit.q, hit.u) + ' → ' + amt(hit.q + it.q, it.u) : null;
+  }
+
+  /* ---------- Bildschirme ---------- */
+  function listScreen() {
+    var open = openItems(), done = doneItems();
+    function row(it) {
+      return '<div class="rw' + (it.done ? ' done' : '') + '"><span class="ck">' + (it.done ? CHECK : '') + '</span><span class="bd"><b>' + esc(it.n) + '</b><small>' + esc(it.note) + '</small></span><span class="q">' + amt(it.q, it.u) + '</span></div>';
+    }
+    var cats = {};
+    open.forEach(function (i) { (cats[i.cat] = cats[i.cat] || []).push(i); });
+    var groups = Object.keys(cats).map(function (c) { return '<div class="lbl">' + c + '</div><div class="card">' + cats[c].map(row).join('') + '</div>'; }).join('');
+    var pct = Math.round(done.length / S.items.length * 100);
+    return '<div class="scr"><div class="hd"><div class="hd-row"><h2>' + esc(LISTNAME) + '</h2><span class="cnt"><b>' + done.length + '</b> / ' + S.items.length + '</span></div>' +
+      '<div class="line"><i style="width:' + pct + '%"></i></div><button class="pill-btn" data-act="open-sheet">Einkauf abschließen</button></div>' + groups +
+      (done.length ? '<div class="lbl">Erledigt (' + done.length + ')</div><div class="card dim">' + done.map(row).join('') + '</div>' : '') + '</div>' +
+      '<div class="ib"><div class="f"><div>Menge</div><div>Einheit</div><div>Laden (optional)</div></div><div class="a"><div>Artikel hinzufügen …</div><span>+</span></div></div>' + NAV;
+  }
+
+  function stepCheck() {
+    var open = openItems(), done = doneItems();
+    function row(it) {
+      return '<button class="rw pick' + (it.done ? ' done' : ' open') + '" data-toggle="' + it.id + '"><span class="ck' + (it.done ? ' on' : '') + '">' + (it.done ? CHECK : '') + '</span><span class="bd"><b>' + esc(it.n) + '</b><small>' + esc(it.note) + '</small></span>' +
+        (it.done ? '' : '<span class="flag">nicht gekauft</span> ') + '<span class="q">' + amt(it.q, it.u) + '</span></button>';
+    }
+    return '<div class="sumbar"><span class="n">' + done.length + '/' + S.items.length + '</span><span class="t"><b>' + (open.length ? open.length + ' Artikel nicht gekauft' : 'Alles gekauft') + '</b><br>Tippe einen Artikel an, um ihn umzustellen.</span></div>' +
+      (open.length ? '<div class="sec">Nicht gekauft (' + open.length + ')</div><div class="card">' + open.map(row).join('') + '</div>' : '') +
+      '<div class="sec">Gekauft (' + done.length + ')</div>' + (done.length ? '<div class="card">' + done.map(row).join('') + '</div>' : '<div class="note warn">Nichts gekauft. Du kannst trotzdem abschließen.</div>');
+  }
+
+  function stepOpen() {
+    var open = openItems();
+    var rows = open.map(function (it) {
+      var on = S.move[it.id] !== false, h = hint(it);
+      return '<button class="rw pick" role="checkbox" aria-checked="' + on + '" data-move="' + it.id + '"><span class="ck' + (on ? ' on' : '') + '">' + (on ? CHECK : '') + '</span><span class="bd"><b>' + esc(it.n) + '</b>' +
+        (on && h ? '<small class="merge">' + h + '</small>' : '<small>' + (on ? 'wird übertragen' : 'bleibt hier, „nicht gekauft“') + '</small>') + '</span><span class="q">' + amt(it.q, it.u) + '</span></button>';
+    }).join('');
+    var lists = Object.keys(TARGETS).map(function (k) {
+      var t = TARGETS[k];
+      return '<button class="lopt" role="radio" aria-checked="' + (S.target === k) + '" data-target="' + k + '"><span class="ic">' + t.icon + '</span><span class="t"><b>' + esc(t.name) + '</b><small>' + t.open + ' offen</small></span><span class="rd"></span></button>';
+    }).join('') + '<button class="lopt" role="radio" aria-checked="' + (S.target === 'new') + '" data-target="new"><span class="ic">＋</span><span class="t"><b>Neue Liste</b><small>wird beim Abschließen angelegt</small></span><span class="rd"></span></button>';
+    return '<div class="sumbar"><span class="n">' + open.length + '</span><span class="t"><b>Artikel nicht gekauft</b><br>Wähle, was auf eine andere Liste soll.</span></div>' +
+      '<div class="sec">Übertragen</div><div class="card">' + rows + '</div>' +
+      '<div class="sec">Auf welche Liste?</div><div class="lists" role="radiogroup">' + lists + '</div>' +
+      (S.target === 'new' ? '<div style="margin-top:8px"><input class="field" id="newname" data-newname value="' + esc(S.newName) + '" maxlength="60" aria-label="Name der neuen Liste"></div>' : '') +
+      '<div class="note">Nicht gewählte Artikel bleiben in dieser Liste, als „nicht gekauft“ markiert.</div>';
+  }
+
+  function stepPay() {
+    var t = total(), instant = 0, pend = 0, mi = {}, mp = {};
+    S.payments.forEach(function (p) { if (INSTANT.indexOf(p.method) >= 0) { instant += p.amount; mi[p.method] = 1; } else { pend += p.amount; mp[p.method] = 1; } });
+    var list = S.payments.map(function (p, i) {
+      return '<div class="pay"><span class="am">' + nfE.format(p.amount) + '</span><span class="mt">' + esc(p.method) + (p.store ? ' · ' + esc(p.store) : '') + (p.note ? ' · ' + esc(p.note) : '') + '</span><button class="x" data-delpay="' + i + '" aria-label="Zahlung löschen">×</button></div>';
+    }).join('');
+    var f = S.form;
+    var form = f ? '<div class="form"><div class="two"><input class="field" id="f-amt" data-f="amount" inputmode="decimal" placeholder="Betrag (€)" value="' + esc(f.amount) + '" aria-label="Betrag"><input class="field" id="f-store" data-f="store" placeholder="Laden (optional)" value="' + esc(f.store) + '" aria-label="Laden"></div>' +
+      '<div class="meth" role="group" aria-label="Zahlungsart">' + METHODS.map(function (m) { return '<button data-meth="' + m + '" aria-pressed="' + (f.method === m) + '">' + m + '</button>'; }).join('') + '</div>' +
+      '<input class="field" id="f-note" data-f="note" placeholder="Notiz (optional)" value="' + esc(f.note) + '" aria-label="Notiz"><div class="btns"><button class="sbtn" data-act="cancel-pay">Abbrechen</button><button class="sbtn p" data-act="save-pay">Zahlung speichern</button></div></div>'
+      : '<button class="addpay" data-act="new-pay">+ Zahlung hinzufügen</button>';
+    return '<div class="sec" style="margin-top:6px">Zahlungen</div>' + (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung kannst du nur ohne Buchung abschließen.</div>') + form +
+      '<div class="total"><span>Gesamt</span><b>' + nfE.format(t) + '</b></div>' +
+      (t > 0 ? '<div class="sec">Bezeichnung der Buchung</div><input class="field" id="bname" data-bname value="' + esc(S.booking) + '" maxlength="80" aria-label="Bezeichnung"><div class="split">' +
+        (instant > 0 ? '<div class="paid"><span>✓ Sofort bezahlt (' + Object.keys(mi).join(', ') + ')</span><span>' + nfE.format(instant) + '</span></div>' : '') +
+        (pend > 0 ? '<div class="pend"><span>Teil offen (' + Object.keys(mp).join(', ') + ')</span><span>' + nfE.format(pend) + '</span></div>' : '') + '</div>' +
+        '<div class="note">' + (pend > 0 ? (instant > 0 ? 'Es entstehen zwei Buchungen in den Finanzen: eine bezahlte und eine offene.' : 'Die Buchung ist in den Finanzen offen, bis du sie dort abhakst.') : 'Eine Buchung in den Finanzen, Kategorie „Sonstige Ausgaben“.') + '</div>' : '');
+  }
+
+  function sheet() {
+    var st = steps(), key = st[S.step];
+    var title = key === 'check' ? 'Einkauf prüfen' : key === 'open' ? 'Nicht gekauft' : 'Bezahlung';
+    var body = key === 'check' ? stepCheck() : key === 'open' ? stepOpen() : stepPay();
+    var prog = st.map(function (_, i) { return '<i class="' + (i <= S.step ? 'on' : '') + '"></i>'; }).join('');
+    var foot;
+    if (key === 'pay') {
+      var t = total();
+      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="link" data-act="finish-nobook">Ohne Buchung abschließen</button>';
+    } else if (key === 'open') {
+      var m = moving().length;
+      foot = '<button class="cta" data-act="next">Weiter</button><div class="hint">' + (m ? m + (m === 1 ? ' Artikel' : ' Artikel') + ' → ' + esc(targetName()) : 'Nichts wird übertragen') + '</div>';
+    } else {
+      foot = '<button class="cta" data-act="next">Weiter</button>';
+    }
+    return '<div class="scrim" data-act="close-sheet"></div><div class="sheet" role="dialog" aria-label="Einkauf abschließen">' +
+      '<div class="sh-head"><button class="sh-ico' + (S.step === 0 ? ' ghost' : '') + '" data-act="back" aria-label="Zurück">‹</button><div class="sh-ttl"><b>' + title + '</b><small>' + esc(LISTNAME) + '</small></div><button class="sh-ico" data-act="close-sheet" aria-label="Schließen">✕</button></div>' +
+      '<div class="prog">' + prog + '</div><div class="sh-body">' + body + '</div><div class="sh-foot">' + foot + '</div></div>';
+  }
+
+  function resultScreen() {
+    var r = S.result;
+    var lines = '<div><span class="ic">✓</span><span>' + r.bought + ' ' + (r.bought === 1 ? 'Artikel' : 'Artikel') + ' gekauft</span></div>';
+    if (r.moved) lines += '<div><span class="ic">↗</span><span>' + r.moved + ' ' + (r.moved === 1 ? 'Artikel' : 'Artikel') + ' auf „' + esc(r.target) + '“ übertragen<small>' + (r.merged ? r.merged + ' davon aufgestockt' : 'als neue Zeilen') + (r.newList ? ' · Liste neu angelegt' : '') + '</small></span></div>';
+    if (r.left) lines += '<div><span class="ic">!</span><span>' + r.left + ' Artikel bleiben als „nicht gekauft“ in dieser Liste</span></div>';
+    lines += r.booked ? '<div><span class="ic">€</span><span>Buchung ' + nfE.format(r.total) + ' in den Finanzen<small>' + esc(r.name) + ' · Sonstige Ausgaben' + (r.split ? ' · zwei Buchungen (bezahlt und offen)' : r.open ? ' · offen' : ' · bezahlt') + '</small></span></div>' : '<div><span class="ic">–</span><span>Keine Buchung angelegt</span></div>';
+    return '<div class="scr"><div class="result"><div class="big">' + CHECK.replace('width="14" height="14"', 'width="30" height="30"') + '</div><h3>Einkauf abgeschlossen</h3><p>' + esc(LISTNAME) + '</p></div><div class="rlist">' + lines + '</div>' +
+      '<div style="margin-top:16px;display:grid"><button class="cta" data-act="restart">Fertig</button></div></div>' + NAV;
+  }
+
+  var EXPL = {
+    list: { h: 'Die Liste, vereinfacht', li: ['Der Zahlungsbereich und die Chips „erledigte löschen“ und „Als Vorlage speichern“ sind weg. Oben bleibt nur die Kopf-Karte mit „Einkauf abschließen“.', 'Alle weiteren Dinge (Zahlung, nicht gekaufte Artikel) passieren erst im Abschluss.'], try: 'Tippe auf „Einkauf abschließen“.' },
+    check: { h: 'Schritt 1 · Einkauf prüfen', li: ['Oben steht, wie viele Artikel gekauft sind. Nicht gekaufte sind gekennzeichnet.', 'Ein Tipp stellt einen Artikel um: zu spät abgehakt oder doch vergessen.', 'Gibt es nicht gekaufte Artikel, folgt Schritt 2, sonst gleich die Bezahlung.'], try: 'Stelle „Sauerkraut“ auf gekauft und dann „Karotte“ auch: Der Schritt „Nicht gekauft“ verschwindet aus dem Fortschritt.' },
+    open: { h: 'Schritt 2 · Nicht gekauft', li: ['Jeder nicht gekaufte Artikel ist vorab zum Übertragen gewählt. Abwählen lässt ihn in dieser Liste.', 'Ziel ist eine bestehende Liste oder eine neue, die erst beim Abschließen angelegt wird.', 'Steht der Artikel in der Zielliste schon offen drauf, wird aufgestockt (Karotte: 200 g → 250 g).'], try: 'Wähle „Wocheneinkauf“ und sieh dir den Hinweis bei „Karotte“ an. Wähle dann „Neue Liste“.' },
+    pay: { h: 'Schritt 3 · Bezahlung', li: ['Hier werden Zahlungen erfasst, mehrere sind möglich. Gespeichert wird erst beim Abschließen.', 'Bar und Gutschein gelten als sofort bezahlt, alles andere als offen. Gemischt entstehen zwei Buchungen.', '„Buchen & abschließen“ legt die Buchung in den Finanzen an. „Ohne Buchung abschließen“ schließt nur die Liste.'], try: 'Erfasse 12,40 € mit Bar und 8 € mit Paypal und sieh dir die Aufteilung an.' },
+    done: { h: 'Fertig', li: ['Eine Zusammenfassung zeigt, was passiert ist: gekauft, übertragen, nicht gekauft, gebucht.', 'Die Liste steht danach als „erledigt“ in „Alle Listen“.'], try: 'Mit „Fertig“ startest du den Ablauf neu.' }
+  };
+
+  function render() {
+    var phone = document.getElementById('phone');
+    var keep = phone.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0;
+    var focusId = document.activeElement && document.activeElement.id, selStart = document.activeElement && document.activeElement.selectionStart;
+    var html, key;
+    if (S.view === 'list') { html = listScreen(); key = 'list'; }
+    else if (S.view === 'sheet') { html = listScreen() + sheet(); key = steps()[S.step]; }
+    else { html = resultScreen(); key = 'done'; }
+    phone.innerHTML = html;
+    var nb = phone.querySelector('.sh-body'); if (nb) nb.scrollTop = top;
+    if (focusId) { var el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(selStart, selStart); } catch (e) {} } }
+    var ex = EXPL[key];
+    document.getElementById('explain').innerHTML = '<h2>' + ex.h + '</h2><ul>' + ex.li.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul><div class="try">Zum Ausprobieren: ' + ex.try + '</div>';
+  }
+
+  function finish(book) {
+    var moveList = moving(), left = openItems().length - moveList.length, merged = 0;
+    moveList.forEach(function (i) { if (hint(i)) merged++; });
+    var instant = 0, pend = 0;
+    S.payments.forEach(function (p) { if (INSTANT.indexOf(p.method) >= 0) instant += p.amount; else pend += p.amount; });
+    S.result = {
+      bought: doneItems().length, moved: moveList.length, merged: merged, left: left, target: targetName(), newList: S.target === 'new' && moveList.length > 0,
+      booked: book, total: total(), name: S.booking.trim() || LISTNAME, split: instant > 0 && pend > 0, open: pend > 0 && instant === 0
+    };
+    S.view = 'done';
+  }
+
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.hasAttribute('data-f')) S.form[t.getAttribute('data-f')] = t.value;
+    else if (t.hasAttribute('data-newname')) S.newName = t.value;
+    else if (t.hasAttribute('data-bname')) S.booking = t.value;
+  });
+
+  document.addEventListener('click', function (e) {
+    var th = e.target.closest('[data-theme-set]');
+    if (th) { var v = th.getAttribute('data-theme-set'); if (v === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v); document.querySelectorAll('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', b === th); }); return; }
+    var sc = e.target.closest('[data-scn]');
+    if (sc) { S = fresh(sc.getAttribute('data-scn')); render(); return; }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) { var id = +tg.getAttribute('data-toggle'); S.items.forEach(function (i) { if (i.id === id) i.done = !i.done; }); if (S.step >= steps().length) S.step = steps().length - 1; render(); return; }
+    var mv = e.target.closest('[data-move]');
+    if (mv) { var mid = mv.getAttribute('data-move'); S.move[mid] = S.move[mid] === false ? true : false; render(); return; }
+    var ta = e.target.closest('[data-target]');
+    if (ta) { S.target = ta.getAttribute('data-target'); render(); return; }
+    var me = e.target.closest('[data-meth]');
+    if (me) { S.form.method = me.getAttribute('data-meth'); render(); return; }
+    var dp = e.target.closest('[data-delpay]');
+    if (dp) { S.payments.splice(+dp.getAttribute('data-delpay'), 1); render(); return; }
+    var a = e.target.closest('[data-act]'); if (!a) return;
+    var act = a.getAttribute('data-act');
+    if (act === 'open-sheet') { S.view = 'sheet'; S.step = 0; }
+    else if (act === 'close-sheet') { S.view = 'list'; }
+    else if (act === 'next') { S.step = Math.min(steps().length - 1, S.step + 1); }
+    else if (act === 'back') { S.step = Math.max(0, S.step - 1); }
+    else if (act === 'new-pay') { S.form = { amount: '', method: 'Bar', store: '', note: '' }; }
+    else if (act === 'cancel-pay') { S.form = null; }
+    else if (act === 'save-pay') {
+      var n = parseFloat(String(S.form.amount).replace(',', '.'));
+      if (!(n > 0)) { S.form.amount = ''; render(); var f = document.getElementById('f-amt'); if (f) { f.placeholder = 'Bitte einen Betrag eingeben'; f.focus(); } return; }
+      S.payments.push({ amount: Math.round(n * 100) / 100, method: S.form.method, store: S.form.store.trim(), note: S.form.note.trim() }); S.form = null;
+    }
+    else if (act === 'finish-book') finish(true);
+    else if (act === 'finish-nobook') finish(false);
+    else if (act === 'restart') S = fresh(S.scn);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
