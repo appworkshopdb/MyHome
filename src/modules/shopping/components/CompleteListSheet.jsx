@@ -8,7 +8,7 @@
 // Reihenfolge dort: Markierungen → offene Artikel übertragen/verwerfen → Zahlungen → Buchung → Status.
 // Danach eine Zusammenfassung; "Fertig" geht zurück in die Übersicht.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import { WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit.jsx';
 import { IconCheck } from '../../../core/components/Icons.jsx';
@@ -18,6 +18,7 @@ import { createShoppingExpense } from '../../../core/lib/financeBridge.js';
 import {
   loadLists, loadItems, saveList, toggleItemDone, deleteItems, applyShoppingPlan,
   loadPayments, savePayment, deletePayment, updateListStatus, linkListFinEntry, releaseListBooking,
+  saveListAsTemplate,
 } from '../lib/shoData.js';
 import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
 import { STORE_NAMES } from '../lib/data/items.js';
@@ -60,6 +61,9 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   const [removed,  setRemoved]  = useState([]);            // ids bereits gespeicherter, entfernter Zahlungen
   const [form,     setForm]     = useState(null);
   const [booking,  setBooking]  = useState(list.name);
+  const [saveTmpl, setSaveTmpl]   = useState(false);     // "Als Vorlage speichern" (Schritt 3)
+  const [tmplName, setTmplName]   = useState(list.name);
+  const tmplDone = useRef(false);                          // nicht doppelt anlegen, falls ein späterer Schritt scheitert und man es erneut versucht
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState('');
   const [result,   setResult]   = useState(null);
@@ -163,6 +167,20 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
         }
       }
 
+      // Als Vorlage speichern: jetzt, wo nur noch die gekauften Artikel in der Liste stehen.
+      // Ein Fehler hier darf den Abschluss nicht verhindern.
+      if (saveTmpl && bought > 0 && !tmplDone.current) {
+        try {
+          const tName = tmplName.trim() || list.name;
+          await saveListAsTemplate(list.id, tName, list.icon || '🛒');
+          tmplDone.current = true;
+          sum.template = tName;
+        } catch (e) {
+          console.warn('Vorlage konnte nicht gespeichert werden:', e);
+          sum.templateFailed = true;
+        }
+      }
+
       // 3) Zahlungen und Buchung
       if (book && total > 0) {
         for (const id of removed) {
@@ -223,6 +241,12 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
             )}
             {result.discarded > 0 && (
               <div><i>🗑</i><span>{result.discarded} Artikel verworfen<small>aus der Liste gelöscht</small></span></div>
+            )}
+            {result.template && (
+              <div><i>📋</i><span>Als Vorlage „{result.template}“ gespeichert<small>zu finden unter Plus → Aus Vorlage</small></span></div>
+            )}
+            {result.templateFailed && (
+              <div><i>!</i><span>Vorlage konnte nicht gespeichert werden</span></div>
             )}
             {result.booked ? (
               <div><i>€</i><span>Buchung {formatEur(result.total)} in den Finanzen
@@ -379,6 +403,18 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
                 : 'Eine Buchung in den Finanzen, Kategorie „Sonstige Ausgaben“.'}
             </div>
           </>
+        )}
+
+        {bought > 0 && (
+          <div className="cl-tmpl">
+            <button type="button" className="cl-switch-row" role="switch" aria-checked={saveTmpl} onClick={() => setSaveTmpl((v) => !v)}>
+              <span className="t"><b>Als Vorlage speichern</b><small>{bought === 1 ? 'Den gekauften Artikel' : `Die ${bought} gekauften Artikel`} für den nächsten Einkauf merken</small></span>
+              <span className="cl-switch" aria-hidden="true"><i /></span>
+            </button>
+            {saveTmpl && (
+              <input className="cl-field" value={tmplName} onChange={(e) => setTmplName(e.target.value)} maxLength={60} aria-label="Name der Vorlage" />
+            )}
+          </div>
         )}
       </>
     );

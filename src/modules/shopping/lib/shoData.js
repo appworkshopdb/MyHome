@@ -347,14 +347,14 @@ export async function undoShoppingPlan(done) {
 // Artikel einer Vorlage werden per "Als Liste laden" in eine
 // neue normale Liste kopiert — keine eigene Tabelle nötig.
 
-export async function saveListAsTemplate(listId, templateName) {
+export async function saveListAsTemplate(listId, templateName, icon = '📋') {
   const sb = getSupabase();
   const owner_id = getOwnerIdFromToken();
 
   // Vorlage-Liste anlegen
   const { data: tmpl, error: e1 } = await sb
     .from('sho_lists')
-    .insert({ owner_id, name: templateName, icon: '📋', is_template: true })
+    .insert({ owner_id, name: templateName, icon, is_template: true })
     .select()
     .single();
   if (e1) throw e1;

@@ -973,3 +973,15 @@ button.cl-row-btn { cursor: pointer; }
 .sho-lbtn.primary { background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); }
 .sho-lbtn.danger { background: var(--status-critical-bg); color: var(--status-critical); }
 .sho-lbtn:disabled { opacity: 0.5; }
+
+/* Abschluss, Schritt 3: "Als Vorlage speichern" */
+.cl-tmpl { display: grid; gap: 8px; margin-top: 18px; padding: 12px 14px; background: var(--surface-raised); border-radius: 18px; box-shadow: var(--shadow-card); }
+.cl-switch-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: 0; padding: 0; color: var(--text-primary); font: inherit; cursor: pointer; }
+.cl-switch-row .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cl-switch-row b { font-size: 15px; font-weight: 800; }
+.cl-switch-row small { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.cl-switch { flex: none; position: relative; width: 48px; height: 28px; border-radius: var(--r-pill); background: var(--border-strong); transition: background var(--motion-fast); }
+.cl-switch i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-raised); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform var(--motion-fast); }
+.cl-switch-row[aria-checked="true"] .cl-switch { background: var(--m-ac, var(--action-primary)); }
+.cl-switch-row[aria-checked="true"] .cl-switch i { transform: translateX(20px); }
+@media (prefers-reduced-motion: reduce) { .cl-switch, .cl-switch i { transition: none; } }

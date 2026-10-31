@@ -187,11 +187,12 @@ Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach 
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
 2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,
-Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"). Geschrieben wird erst am Ende, Reihenfolge:
-Markierungen → Artikel übertragen/verwerfen → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
+Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld,
+speichert die gekauften Artikel über `saveListAsTemplate`, Fehler blockieren den Abschluss nicht). Geschrieben wird erst am Ende, Reihenfolge:
+Markierungen → Artikel übertragen/verwerfen → Vorlage → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
 vorhandene Buchung wird ersetzt) → Status "erledigt". Zahlungsbereich, "erledigte löschen" und "Als Vorlage speichern"
-gibt es in der Liste nicht mehr (`saveListAsTemplate`/`clearDoneItems` in `shoData.js` sind ungenutzt; vorhandene Vorlagen
-laufen weiter über "Aus Vorlage" im Anlege-Wizard). `saveItem` schreibt beim Update nur
+gibt es in der Liste selbst nicht mehr (`clearDoneItems` in `shoData.js` ist ungenutzt; Vorlagen entstehen im Abschluss und werden im
+Anlege-Wizard über "Aus Vorlage" genutzt). `saveItem` schreibt beim Update nur
 übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
 
 ## Wochen- und Monatsüberblick (Hub → Statistiken)
