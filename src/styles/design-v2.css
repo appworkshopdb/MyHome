@@ -729,3 +729,127 @@ body::before {
 .sa-medal-ck { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface-raised); color: var(--m-deep); box-shadow: 0 0 0 2px var(--surface-raised); }
 .sa-medal b { font-size: 12.5px; font-weight: 800; line-height: 1.2; }
 .sa-medal small { margin-top: -3px; font-size: 11px; font-weight: 700; color: var(--text-muted); }
+
+/* ── Einkauf · Artikelansicht (neues Design, Familie über --m-*) ─────────────
+   Kopf-Karte wie der Tagesplan, Kategorien als Karten, Menge als Chip, schwebende
+   Eingabeleiste. Löschen nur noch im Bearbeiten-Modus. Den globalen Plus-Knopf blendet
+   ShoppingModule über data-sho-items am <html> aus (die Leiste hat ein eigenes Plus). */
+html[data-sho-items] .global-fab { display: none; }
+
+.sho-items-wrap { padding-bottom: calc(var(--nav-height) + 150px + env(safe-area-inset-bottom)); }
+
+/* Kopf */
+.sho-hd {
+  background: var(--surface-raised); border-radius: var(--r-hero); box-shadow: var(--shadow-float);
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.sho-hd-row   { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.sho-hd-title { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.01em; min-width: 0; overflow-wrap: anywhere; }
+.sho-hd-count { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sho-hd-count b { font-size: 14px; font-weight: 900; color: var(--text-primary); }
+.sho-hd-bar   { height: 8px; margin: 10px 0 12px; border-radius: var(--r-pill); overflow: hidden; background: color-mix(in srgb, var(--m-ac, var(--action-primary)) 18%, transparent); }
+.sho-hd-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--m-ac, var(--action-primary)); transition: width var(--motion-calm); }
+.sho-hd .sho-complete-btn {
+  width: 100%; min-height: 42px; margin: 0; border: 0; border-radius: var(--r-pill);
+  background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); font-size: 13px; font-weight: 900;
+}
+
+/* Zahlungen als schmale Karte */
+.sho-items-wrap .sho-payments-section {
+  background: var(--surface-raised); border-radius: 20px; box-shadow: var(--shadow-card);
+  padding: 8px 16px; margin-bottom: 4px;
+}
+.sho-items-wrap .sho-payments-header { margin: 0; min-height: 36px; }
+.sho-items-wrap .sho-payments-title  { font-size: 14px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--text-primary); }
+.sho-payments-head-right { display: flex; align-items: center; gap: 10px; }
+.sho-items-wrap .sho-payments-total { font-size: 14px; font-weight: 900; }
+.sho-pay-add {
+  padding: 5px 12px; border-radius: var(--r-pill); background: var(--m-tint, var(--action-quiet-bg));
+  color: var(--m-ink, var(--text-primary)); font-size: 12px; font-weight: 800;
+}
+.sho-items-wrap .sho-payments-list { margin: 4px 0 6px; }
+.sho-items-wrap .sho-payment-form { background: var(--surface-sunken); border-radius: 16px; margin: 6px 0 4px; }
+
+/* Laden-Filter und Aktionen als Chips */
+.sho-items-wrap .sho-store-filter { margin-top: 12px; }
+.sho-items-wrap .sho-action-row { margin: 12px 0 0; }
+.sho-items-wrap .sho-action-btn {
+  border-radius: var(--r-pill); border: 0; background: var(--surface-raised); box-shadow: var(--shadow-card);
+  color: var(--text-primary); font-size: 12px; font-weight: 800; min-height: 34px; padding: 6px 14px;
+}
+
+/* Kategorien als Karten */
+.sho-items-wrap .sho-category-group { margin-top: 0; }
+.sho-items-wrap .sho-category-label {
+  padding: 0; margin: 18px 6px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+}
+.sho-items-wrap .sho-items-list {
+  background: var(--surface-raised); border-radius: var(--r-tile); box-shadow: var(--shadow-card); padding: 4px 16px;
+}
+.sho-items-wrap .sho-done-section .sho-items-list { opacity: 0.6; }
+
+.sho-items-wrap .sho-item-row { gap: 12px; min-height: 58px; padding: 9px 0; border-bottom: 1px solid var(--border-hairline); }
+.sho-items-wrap .sho-item-row:last-child { border-bottom: 0; }
+.sho-items-wrap .sho-item-row.sho-item-done { opacity: 1; } /* Gruppe wird gedimmt, nicht die Zeile doppelt */
+.sho-items-wrap .sho-item-check {
+  width: 26px; height: 26px; min-width: 26px; border-radius: 8px; border: 2px solid var(--border-strong);
+  background: transparent; color: var(--m-on, var(--on-accent));
+}
+.sho-items-wrap .sho-item-check.done { background: var(--m-ac, var(--accent)); border-color: var(--m-ac, var(--accent)); }
+.sho-items-wrap .sho-item-body { gap: 0; }
+.sho-items-wrap .sho-item-name { font-size: 15px; font-weight: 800; line-height: 1.25; }
+.sho-items-wrap .sho-item-name.done { font-weight: 700; }
+.sho-items-wrap .sho-item-note { font-size: 11px; font-weight: 700; color: var(--text-muted); line-height: 1.35; }
+.sho-items-wrap .sho-item-meta--hint { opacity: 1; font-style: normal; }
+.sho-item-qty {
+  flex: none; padding: 4px 11px; border-radius: var(--r-pill); background: var(--m-tint, var(--action-quiet-bg));
+  color: var(--m-ink, var(--text-primary)); font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.sho-items-wrap .sho-item-done .sho-item-qty { background: var(--surface-sunken); color: var(--text-muted); }
+
+/* NEU / aufgestockt: Fläche in der Familienfarbe, rund, innerhalb der Karte */
+.sho-items-wrap .sho-item-row.sho-item-fresh {
+  background: var(--m-tint, var(--action-quiet-bg)); border-radius: 18px; border-bottom-color: transparent;
+  margin: 3px -8px; padding-left: 8px; padding-right: 8px;
+}
+.sho-items-wrap .sho-item-row:has(+ .sho-item-fresh) { border-bottom-color: transparent; }
+.sho-items-wrap .sho-item-fresh .sho-item-note { color: var(--m-deep, var(--text-muted)); }
+.sho-items-wrap .sho-item-fresh .sho-item-qty { background: var(--surface-raised); }
+.sho-items-wrap .sho-item-tag { background: var(--m-ac); color: var(--m-on); }
+
+/* Bearbeiten-Modus der Zeile (hier steht auch "Löschen") */
+.sho-items-wrap .sho-item-row.sho-item-editing { align-items: flex-start; padding-top: 14px; padding-bottom: 12px; }
+.sho-items-wrap .sho-item-edit { padding: 0; gap: 8px; }
+.sho-items-wrap .sho-item-edit-actions { display: flex; align-items: center; gap: 8px; }
+.sho-item-del {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: var(--r-pill);
+  color: var(--status-critical); font-size: 13px; font-weight: 800;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--status-critical) 40%, transparent);
+}
+.sho-item-cancel { margin-left: auto; padding: 0 8px; min-height: 36px; font-size: 13px; font-weight: 800; color: var(--text-muted); }
+.sho-items-wrap .sho-item-ok { min-height: 36px; padding: 4px 18px; border-radius: var(--r-pill); }
+
+/* Eingabeleiste: schwebende Karte über der Navigation */
+.sho-items-wrap .sho-input-bar {
+  left: 12px; right: 12px; bottom: calc(var(--nav-height) + 8px + env(safe-area-inset-bottom));
+  background: var(--surface-raised); border: 0; border-radius: var(--r-tile); box-shadow: var(--shadow-float);
+  padding: 10px; gap: 8px;
+}
+.sho-items-wrap .sho-qty-row { gap: 6px; }
+.sho-items-wrap .sho-qty-row .sho-qty-input { flex: 1; width: auto; text-align: left; }
+.sho-items-wrap .sho-qty-row .sho-unit-select { flex: 1; }
+.sho-items-wrap .sho-qty-row .sho-store-select { flex: 1.3; }
+.sho-items-wrap .sho-qty-input,
+.sho-items-wrap .sho-unit-select {
+  min-height: 34px; border-radius: 12px; background: var(--surface-sunken); border: 1px solid var(--border-hairline);
+  font-size: 12px; font-weight: 700; padding: 0 10px;
+}
+.sho-items-wrap .sho-input-row input { min-height: 44px; border-radius: 14px; font-size: 14px; font-weight: 700; }
+.sho-items-wrap .sho-input-row .btn {
+  width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent));
+}
+.sho-suggestions {
+  left: 12px; right: 12px; bottom: calc(var(--nav-height) + 138px + env(safe-area-inset-bottom));
+  border: 0; border-radius: 18px; background: var(--surface-raised); box-shadow: var(--shadow-float);
+}

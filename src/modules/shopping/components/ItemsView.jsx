@@ -429,6 +429,7 @@ export default function ItemsView({ list, onBack }) {
   const openItems  = visibleItems.filter((i) => !i.done);
   const doneItems  = visibleItems.filter((i) => i.done);
   const openGroups = groupByCategory(openItems);
+  const allDoneCount = items.filter((i) => i.done).length;
 
   const paymentsTotal = round2(payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
   const { instant: instantPayments, pending: pendingPayments } = splitPaymentsByInstant(payments);
@@ -508,6 +509,72 @@ export default function ItemsView({ list, onBack }) {
         <div className="sho-msg-success">✓ Vorlage gespeichert</div>
       )}
 
+      {/* Kopf: Listenname, Fortschritt, Einkauf abschließen — bewusst unabhängig vom
+          Status-Zyklus in ListView. Öffnen/Bearbeiten einer Liste bleibt jederzeit
+          möglich, unabhängig davon ob/wie sie abgeschlossen wird. */}
+      <div className="sho-hd">
+        <div className="sho-hd-row">
+          <h1 className="sho-hd-title">{list.name}</h1>
+          <span className="sho-hd-count"><b>{allDoneCount}</b> / {items.length}</span>
+        </div>
+        <div className="sho-hd-bar" aria-hidden="true">
+          <i style={{ width: `${items.length ? Math.round((allDoneCount / items.length) * 100) : 0}%` }} />
+        </div>
+        <button className="btn sho-complete-btn" onClick={openCompleteWizard}>
+          Einkauf abschließen
+        </button>
+      </div>
+
+      {/* Zahlungen */}
+      <div className="sho-payments-section">
+        <div className="sho-payments-header">
+          <span className="sho-payments-title">Zahlungen</span>
+          <span className="sho-payments-head-right">
+            {payments.length > 0 && (
+              <span className="sho-payments-total">{formatEur(paymentsTotal)}</span>
+            )}
+            {!showPaymentForm && (
+              <button className="sho-pay-add" onClick={openNewPaymentForm}>+ Zahlung</button>
+            )}
+          </span>
+        </div>
+
+        {payments.length > 0 && (
+          <div className="sho-payments-list">
+            {payments.map((p) => (
+              <div key={p.id} className="sho-payment-row">
+                <div className="sho-payment-row-main">
+                  <span className="sho-payment-amount">{formatEur(p.amount)}</span>
+                  <span className="sho-payment-meta">
+                    {p.payment}
+                    {p.store_name ? ` · ${p.store_name}` : ''}
+                  </span>
+                  {p.note && <span className="sho-payment-note">{p.note}</span>}
+                </div>
+                <div className="sho-payment-row-actions">
+                  <button
+                    className="btn-icon"
+                    onClick={() => openEditPayment(p)}
+                    aria-label="Zahlung bearbeiten"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="btn-icon"
+                    onClick={() => handleDeletePayment(p.id)}
+                    aria-label="Zahlung löschen"
+                  >
+                    <IconTrash size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {paymentFormEl}
+      </div>
+
       {/* Laden-Filter */}
       {storeNames.length > 0 && (
         <div className="sho-store-filter">
@@ -552,67 +619,6 @@ export default function ItemsView({ list, onBack }) {
           )}
         </div>
       )}
-
-      {/* Zahlungen */}
-      <div className="sho-payments-section">
-        <div className="sho-payments-header">
-          <span className="sho-payments-title">Zahlungen</span>
-          {payments.length > 0 && (
-            <span className="sho-payments-total">{formatEur(paymentsTotal)}</span>
-          )}
-        </div>
-
-        {payments.length > 0 && (
-          <div className="sho-payments-list">
-            {payments.map((p) => (
-              <div key={p.id} className="sho-payment-row">
-                <div className="sho-payment-row-main">
-                  <span className="sho-payment-amount">{formatEur(p.amount)}</span>
-                  <span className="sho-payment-meta">
-                    {p.payment}
-                    {p.store_name ? ` · ${p.store_name}` : ''}
-                  </span>
-                  {p.note && <span className="sho-payment-note">{p.note}</span>}
-                </div>
-                <div className="sho-payment-row-actions">
-                  <button
-                    className="btn-icon"
-                    onClick={() => openEditPayment(p)}
-                    aria-label="Zahlung bearbeiten"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDeletePayment(p.id)}
-                    aria-label="Zahlung löschen"
-                  >
-                    <IconTrash size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {!showPaymentForm && (
-          <button className="btn btn-secondary sho-action-btn" onClick={openNewPaymentForm}>
-            + Zahlung
-          </button>
-        )}
-
-        {paymentFormEl}
-      </div>
-
-      {/* Einkauf abschließen — bewusst unabhängig vom Status-Zyklus in
-          ListView. Öffnen/Bearbeiten einer Liste bleibt jederzeit möglich,
-          unabhängig davon ob/wie sie abgeschlossen wird. */}
-      <button
-        className="btn btn-primary sho-complete-btn"
-        onClick={openCompleteWizard}
-      >
-        ✓ Einkauf abschließen
-      </button>
 
       {/* Vorlage-Formular */}
       {showTemplateForm && (
@@ -917,9 +923,10 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
         ? `${item.quantity} ${item.unit}`
         : item.quantity ?? item.unit)
     : null;
+  const storeLabel = item.item_store_name || item.store_name;
 
   return (
-    <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}${mark ? ' sho-item-fresh' : ''}`}>
+    <div className={`sho-item-row ${item.done ? 'sho-item-done' : ''}${mark ? ' sho-item-fresh' : ''}${editing ? ' sho-item-editing' : ''}`}>
       <button
         className={`sho-item-check ${item.done ? 'done' : ''}`}
         onClick={() => { setEditing(false); onToggle(item); }}
@@ -969,44 +976,38 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <button
-              className="btn btn-primary"
-              onClick={commitEdit}
-              style={{ minHeight: 36, padding: '4px 12px', flexShrink: 0 }}
-            >
-              OK
+          </div>
+          {/* Löschen gibt es nur hier, nicht in jeder Zeile (Fehltipps) */}
+          <div className="sho-item-edit-actions">
+            <button type="button" className="sho-item-del" onClick={() => onDelete(item.id)}>
+              <IconTrash size={15} /> Löschen
             </button>
+            <button type="button" className="sho-item-cancel" onClick={() => setEditing(false)}>Abbrechen</button>
+            <button type="button" className="btn btn-primary sho-item-ok" onClick={commitEdit}>OK</button>
           </div>
         </div>
       ) : (
-        <div className="sho-item-body" onClick={openEdit}>
-          <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
-            {item.name}
-            {mark && <span className="sho-item-tag">{mark === 'new' ? 'NEU' : '+'}</span>}
-          </span>
-          {item.note && <span className="sho-item-note">{item.note}</span>}
-          <span className="sho-item-meta" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            {metaLabel && (
-              <span className="sho-item-meta--qty">{metaLabel}</span>
+        <>
+          <div className="sho-item-body" onClick={openEdit}>
+            <span className={`sho-item-name ${item.done ? 'done' : ''}`}>
+              {item.name}
+              {mark && <span className="sho-item-tag">{mark === 'new' ? 'NEU' : '+'}</span>}
+            </span>
+            {item.note && <span className="sho-item-note">{item.note}</span>}
+            {(storeLabel || !metaLabel) && (
+              <span className="sho-item-note">
+                {!metaLabel && <span className="sho-item-meta--hint">Menge tippen …</span>}
+                {!metaLabel && storeLabel ? ' · ' : ''}
+                {storeLabel}
+              </span>
             )}
-            {!metaLabel && (
-              <span className="sho-item-meta--hint">Menge tippen …</span>
-            )}
-            {(item.item_store_name || item.store_name) && (
-              <span className="sho-item-store-label">{item.item_store_name || item.store_name}</span>
-            )}
-          </span>
-        </div>
-      )}
-
-      {!editing && (
-        <button
-          className="btn-icon sho-item-delete"
-          onClick={() => onDelete(item.id)}
-          aria-label="Artikel löschen"
-        >
-          <IconTrash size={15} />
-        </button>
+          </div>
+          {metaLabel && (
+            <button type="button" className="sho-item-qty" onClick={openEdit} aria-label={`Menge ändern: ${metaLabel}`}>
+              {metaLabel}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

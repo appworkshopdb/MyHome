@@ -170,7 +170,11 @@ Name, verrechenbare Einheit, g/kg und ml/L) → Menge wird aufgestockt, sonst ne
 Herkunft steht im Feld `note` ("für Linsen-Curry" / "inkl. …"). Basis-Zutaten (Gruppe Gewürze, Salz/Öl/…, `isBasic`) sind
 nicht vorgewählt. Der Hinweis mit "Rückgängig"/"Liste öffnen" (`ActionToast`) liegt im `NutritionModule`; die Übergabe an
 das Einkaufsmodul (einmalige NEU-Markierung, gezielt Liste öffnen) läuft im Speicher über `core/lib/shoppingHandoff.js`.
-Einheiten "Zehe"/"Scheibe" gibt es auch in der Einkaufsliste (`UNIT_OPTIONS`). `saveItem` schreibt beim Update nur
+Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2.css`): Kopf-Karte mit Fortschritt und
+"Einkauf abschließen", Zahlungen als schmale Karte, Kategorien als Karten, Menge als Chip, schwebende Eingabeleiste.
+Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
+(`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
+Einkaufsliste (`UNIT_OPTIONS`). `saveItem` schreibt beim Update nur
 übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
 
 ## Wochen- und Monatsüberblick (Hub → Statistiken)

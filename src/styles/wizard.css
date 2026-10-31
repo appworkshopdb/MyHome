@@ -618,15 +618,26 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
 /* Rezept-Dialog: "Gegessen eintragen" und "Einkaufsliste" nebeneinander */
 .recipe-top-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
 
-/* Hinweis unten mit Knöpfen (ActionToast) */
+/* Hinweis unten mit Knöpfen (ActionToast): Text in einer Zeile, zwei große Knöpfe darunter, Restzeit-Balken */
 .action-toast {
-  position: fixed; left: 12px; right: 12px; z-index: 300; margin: 0 auto; max-width: 460px;
+  position: fixed; left: 12px; right: 12px; z-index: 300; margin: 0 auto; max-width: 460px; overflow: hidden;
   bottom: calc(var(--nav-height, 68px) + 16px + env(safe-area-inset-bottom));
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-  background: var(--text-primary); color: var(--surface-page);
-  border-radius: 14px; box-shadow: var(--shadow-float);
+  padding: 14px 14px 16px; background: var(--text-primary); color: var(--surface-page);
+  border-radius: 24px; box-shadow: var(--shadow-float);
 }
-.action-toast-ok { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--mod-shop-ac); color: var(--mod-shop-on); }
-.action-toast-tx { flex: 1; min-width: 0; font-size: 13px; }
-.action-toast-tx b { display: block; font-size: 14px; font-weight: 800; }
-.action-toast-btn { flex: 0 0 auto; padding: 8px 6px; font-size: 13px; font-weight: 800; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.action-toast-head { display: flex; align-items: center; gap: 10px; }
+.action-toast-head b { font-size: 17px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-toast-ok { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.action-toast-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.action-toast-btn {
+  min-height: 48px; padding: 0 12px; border-radius: var(--r-pill); font-size: 15px; font-weight: 900; color: inherit;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 60%, transparent);
+}
+.action-toast-btn.primary { background: var(--surface-page); color: var(--text-primary); box-shadow: none; }
+.action-toast-timer {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; transform-origin: left;
+  background: color-mix(in srgb, currentColor 40%, transparent);
+  animation-name: action-toast-shrink; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes action-toast-shrink { to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .action-toast-timer { animation: none; } }

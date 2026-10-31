@@ -1251,7 +1251,7 @@
 
 /* Artikel, die gerade aus einem Rezept dazukamen: Notiz ("für Linsen-Curry") und einmalige Hervorhebung */
 .sho-item-note { font-size: 0.74rem; color: var(--text-muted); line-height: 1.3; }
-.sho-item-row.sho-item-fresh { background: var(--mod-shop-tint); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 10px; }
+.sho-item-row.sho-item-fresh { background: var(--mod-shop-tint); }
 .sho-item-row.sho-item-fresh .sho-item-note { color: var(--mod-shop-ink); }
 .sho-item-tag {
   display: inline-block; margin-left: 6px; padding: 1px 6px; vertical-align: 1px;

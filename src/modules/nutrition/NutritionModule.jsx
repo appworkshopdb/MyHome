@@ -152,7 +152,6 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     <ActionToast
       key={shopToast.id}
       title={`${shopToast.count} ${shopToast.count === 1 ? 'Zutat' : 'Zutaten'} hinzugefügt`}
-      text={`auf „${shopToast.listName}“`}
       onClose={closeShopToast}
       actions={[
         {
@@ -164,6 +163,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
         },
         {
           label: 'Liste öffnen',
+          primary: true,
           onPress: () => { requestOpenList(shopToast.listId); window.location.hash = '/shopping'; },
         },
       ]}
