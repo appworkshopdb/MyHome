@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alle Listen Varianten</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+/* Layout: Reiter (heutiger Stand, Variante B, Variante C), je ein bedienbares Handy mit Erklärung daneben, unten der Vergleich. Tokens wie die App (Sand, warmes Dunkelblau, Familie Einkauf = Violett). */
+:root {
+  --page: #EFE9DF; --screen: #F6F1EA; --raised: #FFFFFF; --sunken: #FBF8F3;
+  --text: #25304A; --muted: #6B6A73; --line: #EAE2D6; --line-strong: #D5CABB; --action: #1B2A4A;
+  --shop-tint: #E6DFF5; --shop-ink: #2E2457; --shop-ac: #7461C4; --shop-on: #FFFFFF; --shop-deep: #5F4DB0;
+  --hero: linear-gradient(150deg, #7360C8 0%, #5F4DB0 100%); --hero-ink: #FFFFFF; --hero-pill: #5F4DB0;
+  --warn-tint: #F7E8D0; --warn-ink: #6B4310; --ok-tint: #DCEFE2; --ok-ink: #14452B; --crit-tint: #F8E1DF; --crit: #B3261E;
+  --shadow-card: 0 2px 8px rgba(70, 50, 30, .08); --shadow-float: 0 6px 18px rgba(70, 50, 30, .14);
+  --scrim: rgba(15, 26, 49, .45); --frame: #1B2A4A;
+  --font: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+    --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+    --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+    --hero: linear-gradient(150deg, #4F4296 0%, #382C6E 100%); --hero-ink: #EEE9FF; --hero-pill: #382C6E;
+    --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit-tint: #3A1F1C; --crit: #F2998F;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+    --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+  --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+  --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+  --hero: linear-gradient(150deg, #4F4296 0%, #382C6E 100%); --hero-ink: #EEE9FF; --hero-pill: #382C6E;
+  --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit-tint: #3A1F1C; --crit: #F2998F;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+  --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45;
+  padding-block: 26px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--shop-ac); outline-offset: 2px; }
+.wrap { max-width: 920px; margin: 0 auto; }
+h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 16px; max-width: 64ch; }
+.bar-top { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab { padding: 10px 16px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line); font-weight: 800; font-size: .9rem; }
+.tab[aria-selected="true"] { background: var(--shop-tint); border-color: var(--shop-ac); color: var(--shop-ink); }
+.theme { display: flex; gap: 4px; background: var(--raised); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; }
+.theme button { padding: 6px 12px; border-radius: 999px; font-size: .8rem; font-weight: 800; color: var(--muted); }
+.theme button[aria-pressed="true"] { background: var(--action); color: var(--screen); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 36px; align-items: start; }
+@media (max-width: 800px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.phone { position: relative; width: 100%; max-width: 360px; height: 760px; margin: 0 auto; overflow: hidden; background: var(--screen); border: 8px solid var(--frame); border-radius: 38px; box-shadow: 0 18px 40px -18px rgba(15, 26, 49, .5); }
+.scr { position: absolute; inset: 0; overflow-y: auto; padding: 14px 14px 110px; }
+.nav { position: absolute; left: 14px; right: 14px; bottom: 12px; height: 54px; border-radius: 999px; background: var(--raised); box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; color: var(--muted); z-index: 3; }
+.nav i { width: 22px; height: 22px; border-radius: 7px; border: 2px solid currentColor; opacity: .6; }
+.nav .on { background: var(--shop-ac); color: var(--shop-on); padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: .8rem; }
+.fab { position: absolute; right: 18px; bottom: 76px; width: 52px; height: 52px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); font-size: 28px; font-weight: 800; box-shadow: var(--shadow-float); z-index: 3; }
+.tb { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tb .back { width: 36px; height: 36px; border-radius: 50%; background: var(--raised); box-shadow: var(--shadow-card); display: grid; place-items: center; font-weight: 800; }
+.tb b { font-size: 17px; font-weight: 900; flex: 1; }
+.tb .txt { font-size: 13px; font-weight: 800; color: var(--shop-deep); padding: 6px 10px; border-radius: 999px; background: var(--shop-tint); }
+
+/* gemeinsame Bausteine */
+.ic { flex: none; display: grid; place-items: center; background: var(--shop-tint); }
+.chip { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; white-space: nowrap; background: var(--sunken); color: var(--muted); }
+.chip.im { background: var(--shop-tint); color: var(--shop-ink); }
+.chip.ok { background: var(--ok-tint); color: var(--ok-ink); }
+.chip.due { background: var(--warn-tint); color: var(--warn-ink); }
+.chip.late { background: var(--crit-tint); color: var(--crit); }
+.chip.dash { background: none; border: 1.5px dashed var(--line-strong); }
+.more { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--sunken); color: var(--muted); font-weight: 900; letter-spacing: 1px; display: grid; place-items: center; }
+.lbl { margin: 16px 6px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.card { background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-card); }
+.ring { position: relative; flex: none; width: 38px; height: 38px; }
+.ring svg { width: 38px; height: 38px; transform: rotate(-90deg); }
+.ring span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.lineb { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--shop-ac) 18%, transparent); overflow: hidden; }
+.lineb i { display: block; height: 100%; border-radius: 999px; background: var(--shop-ac); }
+
+/* A · heutiger Stand */
+.a-card { background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-card); padding: 14px 14px 12px; display: grid; gap: 10px; margin-bottom: 12px; }
+.a-main { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; }
+.a-main .ic { width: 44px; height: 44px; border-radius: 14px; font-size: 22px; }
+.a-main .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.a-main .t b { font-size: 16px; font-weight: 800; line-height: 1.25; }
+.a-main .t small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.a-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.a-meta .sp { margin-left: auto; display: inline-flex; gap: 4px; }
+.a-card.done { opacity: .65; }
+.dashbtn { width: 100%; min-height: 48px; border-radius: 16px; border: 1.5px dashed var(--line-strong); font-weight: 800; font-size: 14px; color: var(--shop-deep); margin-top: 6px; }
+
+/* B · Fokus + Zeilen */
+.hero { border-radius: 28px; background: var(--hero); color: var(--hero-ink); padding: 14px 16px 16px; box-shadow: var(--shadow-float); }
+.hero small { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.hero h2 { margin: 2px 0 10px; font-size: 20px; font-weight: 900; line-height: 1.2; }
+.hero .hb { height: 8px; border-radius: 999px; background: rgba(255,255,255,.28); overflow: hidden; }
+.hero .hb i { display: block; height: 100%; border-radius: 999px; background: var(--hero-ink); }
+.hero .hf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 12.5px; font-weight: 700; }
+.hero .go { padding: 0 16px; min-height: 38px; border-radius: 999px; background: var(--hero-ink); color: var(--hero-pill); font-size: 13px; font-weight: 900; }
+.qa { display: flex; gap: 8px; align-items: center; padding: 8px 8px 8px 14px; margin-top: 12px; }
+.qa input { flex: 1; min-width: 0; border: 0; background: none; font-size: 14px; font-weight: 700; min-height: 36px; }
+.qa input::placeholder { color: var(--muted); }
+.qa .add { width: 38px; height: 38px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); font-size: 22px; font-weight: 800; }
+.qa .add[disabled] { opacity: .35; cursor: default; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; margin-top: 12px; background: var(--raised); border-radius: 999px; box-shadow: var(--shadow-card); }
+.seg button { min-height: 36px; border-radius: 999px; font-size: 13px; font-weight: 800; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--shop-ac); color: var(--shop-on); }
+.rows { padding: 2px 14px; }
+.rw { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 0; border-top: 1px solid var(--line); }
+.rw:first-child { border-top: 0; }
+.rw .open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; }
+.rw .ic { width: 40px; height: 40px; border-radius: 13px; font-size: 20px; }
+.rw .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rw .t b { font-size: 15px; font-weight: 800; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rw .t small { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.rw.done .t b { color: var(--muted); }
+.rw.done { opacity: .75; }
+
+/* C · Kacheln */
+.stat { display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 6px; text-align: center; }
+.stat div { display: flex; flex-direction: column; gap: 1px; border-left: 1px solid var(--line); padding: 0 6px; }
+.stat div:first-child { border-left: 0; }
+.stat b { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stat b.sm { font-size: 15px; padding-top: 4px; }
+.stat span { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fchips { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 2px; scrollbar-width: none; }
+.fchips::-webkit-scrollbar { display: none; }
+.fchips button { flex: none; min-height: 34px; padding: 0 14px; border-radius: 999px; background: var(--raised); box-shadow: var(--shadow-card); font-size: 13px; font-weight: 800; color: var(--muted); }
+.fchips button[aria-pressed="true"] { background: var(--shop-ac); color: var(--shop-on); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.tile { position: relative; background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-card); padding: 12px; min-height: 168px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.tile .th { display: flex; justify-content: space-between; align-items: flex-start; }
+.tile .ic { width: 42px; height: 42px; border-radius: 14px; font-size: 21px; }
+.tile .more { width: 30px; height: 30px; }
+.tile .open { flex: 1; display: flex; flex-direction: column; gap: 6px; text-align: left; width: 100%; }
+.tile b { font-size: 15px; font-weight: 800; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.tile small { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.tile .foot { margin-top: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.tile.done { opacity: .7; }
+.tile.add { background: none; box-shadow: none; border: 1.5px dashed var(--line-strong); align-items: center; justify-content: center; text-align: center; color: var(--shop-deep); font-weight: 800; font-size: 14px; gap: 6px; }
+.tile.add .pl { font-size: 28px; line-height: 1; }
+.tile.add small { color: var(--muted); }
+.acc { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 16px; padding: 10px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Sheet */
+.scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 4; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86%; z-index: 5; background: var(--screen); border-radius: 26px 26px 0 0; display: flex; flex-direction: column; box-shadow: 0 -10px 30px rgba(0,0,0,.25); }
+.sh-h { padding: 12px 16px 6px; display: flex; align-items: center; gap: 10px; }
+.sh-h .grab { position: absolute; top: 6px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 4px; background: var(--line-strong); }
+.sh-h .ic { width: 40px; height: 40px; border-radius: 13px; font-size: 20px; }
+.sh-h b { flex: 1; font-size: 17px; font-weight: 900; margin-top: 6px; }
+.sh-b { overflow-y: auto; padding: 4px 16px 18px; display: grid; gap: 4px; }
+.sh-l { margin: 12px 2px 4px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opts button { min-height: 38px; padding: 0 14px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-size: 13px; font-weight: 800; }
+.opts button[aria-pressed="true"] { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
+.field { width: 100%; min-height: 46px; padding: 0 14px; border-radius: 14px; background: var(--raised); border: 1.5px solid var(--line); font-weight: 700; font-size: 14px; }
+.btn { min-height: 48px; border-radius: 16px; font-weight: 900; font-size: 15px; width: 100%; }
+.btn.p { background: var(--shop-ac); color: var(--shop-on); }
+.btn.d { background: var(--crit-tint); color: var(--crit); }
+.btn.g { background: var(--raised); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.trow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; background: var(--raised); border-radius: 16px; box-shadow: var(--shadow-card); margin-bottom: 6px; }
+.trow .ic { width: 40px; height: 40px; border-radius: 13px; font-size: 20px; }
+.trow .t b { display: block; font-size: 14px; font-weight: 800; }
+.trow .t small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.toast { position: absolute; left: 14px; right: 14px; bottom: 80px; z-index: 6; padding: 11px 14px; border-radius: 16px; background: var(--text); color: var(--screen); font-size: 13px; font-weight: 700; text-align: center; box-shadow: var(--shadow-float); }
+
+/* Erklärung / Vergleich */
+.explain h2 { font-size: 1.15rem; font-weight: 900; margin: 0 0 8px; }
+.explain ul { padding-left: 1.1rem; margin: 0 0 14px; display: grid; gap: 7px; }
+.explain li::marker { color: var(--shop-ac); }
+.try { background: var(--shop-tint); color: var(--shop-ink); border-radius: 14px; padding: 10px 12px; font-size: .86rem; font-weight: 700; margin-bottom: 10px; }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .pc { grid-template-columns: 1fr; } }
+.pc div { background: var(--raised); border-radius: 14px; box-shadow: var(--shadow-card); padding: 10px 12px; font-size: .84rem; }
+.pc b { display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.pc .pro b { color: var(--ok-ink); } .pc .con b { color: var(--warn-ink); }
+.cmp { margin-top: 40px; }
+.cmp h2 { font-size: 1.2rem; font-weight: 900; margin: 0 0 12px; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; }
+.cc { background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 14px; font-size: .88rem; }
+.cc h3 { margin: 0 0 6px; font-size: .98rem; font-weight: 900; }
+.cc p { margin: 0 0 6px; color: var(--muted); }
+.rec { margin-top: 14px; background: var(--shop-tint); color: var(--shop-ink); border-radius: 16px; padding: 12px 14px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Alle Listen: zwei neue Aufbauten</h1>
+  <p class="lede">Links der Stand, der heute auf Staging läuft. Variante B setzt auf Fokus und kompakte Zeilen, Variante C auf ein Kachel-Raster wie die Bereiche im Hub. Beide sind bedienbar: filtern, Liste anlegen, über „⋯“ Status, Datum, Namen ändern oder löschen.</p>
+
+  <div class="bar-top">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="false" data-tab="a">Heute (Vergleich)</button>
+      <button class="tab" role="tab" aria-selected="true" data-tab="b">Variante B · Fokus &amp; Zeilen</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="c">Variante C · Kacheln</button>
+    </div>
+    <div class="theme" role="group" aria-label="Darstellung">
+      <button data-theme-set="system" aria-pressed="true">System</button>
+      <button data-theme-set="light" aria-pressed="false">Hell</button>
+      <button data-theme-set="dark" aria-pressed="false">Dunkel</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="phone" id="phone"></div>
+    <div class="explain" id="explain"></div>
+  </div>
+
+  <section class="cmp">
+    <h2>Vergleich</h2>
+    <div class="cgrid">
+      <div class="cc"><h3>Heute</h3><p>Große Karten, alles an jeder Liste sichtbar.</p><p>Gut bei wenigen Listen. Ab fünf Listen lang, und Löschen und Umbenennen liegen immer offen.</p></div>
+      <div class="cc"><h3>B · Fokus &amp; Zeilen</h3><p>Oben die Liste, die du gerade brauchst, darunter kompakte Zeilen nach Zeit gruppiert. Neue Liste per Schnelleingabe.</p><p>Beste Antwort auf „Was ist als Nächstes dran?“, viele Listen passen auf einen Bildschirm.</p></div>
+      <div class="cc"><h3>C · Kacheln</h3><p>Zwei Spalten, Übersicht auf einen Blick, „Neue Liste“ und „Aus Vorlage“ als Kacheln im Raster.</p><p>Wirkt wie der Hub und lädt zum Stöbern ein. Lange Namen werden auf zwei Zeilen gekürzt, Zeiten sind weniger prominent.</p></div>
+    </div>
+    <div class="rec"><b>Meine Empfehlung:</b> B. Einkaufslisten werden meist spontan und unterwegs geöffnet, da zählt „die richtige Liste in einem Tipp“ mehr als ein schöner Überblick. Aus C würde ich die Zusammenfassung oben (Offen, Artikel offen, nächster Termin) in B übernehmen.</div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var NAV = '<div class="nav"><i></i><i></i><i></i><i></i><i></i><span class="on">Einkauf</span></div>';
+  var DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var STATUS = { offen: 'Offen', im_einkauf: 'Im Einkauf', erledigt: 'Erledigt' };
+  var CYCLE = { offen: 'im_einkauf', im_einkauf: 'erledigt', erledigt: 'offen' };
+  var ICONS = ['🛒', '🥩', '🥦', '🍞', '🧴', '🎁'];
+  var uid = 10;
+  function fresh() {
+    return {
+      tab: 'b', fb: 'offen', fc: 'alle', accC: false, sheet: null, toast: null, delAsk: false, qa: '',
+      lists: [
+        { id: 1, name: 'Wocheneinkauf', icon: '🛒', status: 'im_einkauf', total: 8, done: 2, due: 0, time: 'abends' },
+        { id: 2, name: 'Schinken Aufstrich Sandwich klassik', icon: '🥪', status: 'offen', total: 5, done: 3, due: -1, time: '' },
+        { id: 3, name: 'Wochenende Grillen', icon: '🥩', status: 'offen', total: 6, done: 0, due: 3, time: 'mittags' },
+        { id: 4, name: 'Test', icon: '🛒', status: 'offen', total: 0, done: 0, due: null, time: '' },
+        { id: 5, name: 'Gulaschsuppe', icon: '🍲', status: 'erledigt', total: 4, done: 4, due: null, time: '' },
+        { id: 6, name: 'Geburtstag', icon: '🎁', status: 'erledigt', total: 12, done: 12, due: null, time: '' }
+      ]
+    };
+  }
+  var S = fresh();
+  var TEMPLATES = [{ name: 'Grillabend', icon: '🥩', total: 9 }, { name: 'Basics', icon: '🧴', total: 14 }];
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function byId(id) { return S.lists.filter(function (l) { return l.id === id; })[0]; }
+  function isDone(l) { return l.status === 'erledigt'; }
+  function dueText(l) {
+    if (l.due == null) return '';
+    var t = l.due === 0 ? 'Heute' : l.due === 1 ? 'Morgen' : l.due === -1 ? 'Gestern' : l.due < 0 ? 'Überfällig' : DAYS[(new Date().getDay() + l.due) % 7];
+    return t + (l.time ? ' · ' + l.time : '');
+  }
+  function dueChip(l) {
+    if (l.due == null || isDone(l)) return '';
+    return '<span class="chip ' + (l.due < 0 ? 'late' : 'due') + '">' + (l.due < 0 ? '⚠ ' : '📅 ') + esc(dueText(l)) + '</span>';
+  }
+  function sub(l) { return l.total === 0 ? 'Noch keine Artikel' : l.done === l.total ? 'Alle ' + l.total + ' erledigt' : l.done + ' von ' + l.total + ' erledigt'; }
+  function ring(l) {
+    var p = l.total ? l.done / l.total : 0, r = 15, c = 2 * Math.PI * r;
+    return '<span class="ring"><svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="color-mix(in srgb, var(--shop-ac) 18%, transparent)" stroke-width="4"/><circle cx="19" cy="19" r="' + r + '" fill="none" stroke="var(--shop-ac)" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (c * p).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg><span>' + (l.total ? l.done + '/' + l.total : '–') + '</span></span>';
+  }
+  function open() { return S.lists.filter(function (l) { return !isDone(l); }); }
+  function doneL() { return S.lists.filter(isDone); }
+  function openArt() { return open().reduce(function (s, l) { return s + (l.total - l.done); }, 0); }
+  function nextDue() {
+    var d = open().filter(function (l) { return l.due != null; }).sort(function (a, b) { return a.due - b.due; })[0];
+    return d ? (d.due === 0 ? 'Heute' : d.due === 1 ? 'Morgen' : d.due < 0 ? 'Überfällig' : DAYS[(new Date().getDay() + d.due) % 7]) : '–';
+  }
+  function topbar(title, right) { return '<div class="tb"><span class="back">‹</span><b>' + title + '</b>' + (right || '') + '</div>'; }
+
+  /* ---------- A · heute ---------- */
+  function viewA() {
+    function card(l) {
+      return '<div class="a-card' + (isDone(l) ? ' done' : '') + '"><button class="a-main" data-open="' + l.id + '"><span class="ic">' + l.icon + '</span><span class="t"><b>' + esc(l.name) + '</b><small>' + sub(l) + '</small></span><span>›</span></button>' +
+        (l.total ? '<div class="lineb"><i style="width:' + Math.round(l.done / l.total * 100) + '%"></i></div>' : '') +
+        '<div class="a-meta"><span class="chip ' + (l.status === 'im_einkauf' ? 'im' : isDone(l) ? 'ok' : '') + '">' + STATUS[l.status] + '</span>' + (dueChip(l) || (isDone(l) ? '' : '<span class="chip dash">+ Datum</span>')) + '<span class="sp"><button class="more" data-more="' + l.id + '" aria-label="Aktionen">✎</button><button class="more" data-more="' + l.id + '" aria-label="Löschen">🗑</button></span></div></div>';
+    }
+    var o = open().sort(function (a, b) { return (a.status === 'im_einkauf' ? 0 : 1) - (b.status === 'im_einkauf' ? 0 : 1); });
+    return '<div class="scr">' + topbar('Alle Listen') + '<div class="lbl">Offen (' + o.length + ')</div>' + o.map(card).join('') +
+      '<div class="lbl">Erledigt (' + doneL().length + ')</div>' + doneL().map(card).join('') + '<button class="dashbtn" data-act="tmpl">📋 Aus Vorlage anlegen</button></div><button class="fab" data-act="new" aria-label="Neue Liste">+</button>' + NAV;
+  }
+
+  /* ---------- B · Fokus + Zeilen ---------- */
+  function focusList() {
+    var o = open();
+    return o.filter(function (l) { return l.status === 'im_einkauf'; })[0] || o.filter(function (l) { return l.due != null; }).sort(function (a, b) { return a.due - b.due; })[0] || o[0] || null;
+  }
+  function groups(list) {
+    var def = [['Überfällig', function (l) { return l.due != null && l.due < 0; }], ['Heute', function (l) { return l.due === 0; }], ['Diese Woche', function (l) { return l.due != null && l.due >= 1 && l.due <= 6; }], ['Später', function (l) { return l.due != null && l.due >= 7; }], ['Ohne Datum', function (l) { return l.due == null; }]];
+    return def.map(function (d) { return { t: d[0], items: list.filter(d[1]) }; }).filter(function (g) { return g.items.length; });
+  }
+  function row(l) {
+    return '<div class="rw' + (isDone(l) ? ' done' : '') + '"><button class="open" data-open="' + l.id + '"><span class="ic">' + l.icon + '</span><span class="t"><b>' + esc(l.name) + '</b><small>' + sub(l) + (dueText(l) && !isDone(l) ? ' · ' + esc(dueText(l)) : '') + '</small></span></button>' + ring(l) + '<button class="more" data-more="' + l.id + '" aria-label="Aktionen für ' + esc(l.name) + '">•••</button></div>';
+  }
+  function viewB() {
+    var f = focusList(), o = open(), d = doneL();
+    var hero = f ? '<div class="hero"><small>' + (f.status === 'im_einkauf' ? 'Im Einkauf' : 'Als Nächstes') + '</small><h2>' + esc(f.name) + '</h2><div class="hb"><i style="width:' + (f.total ? Math.round(f.done / f.total * 100) : 0) + '%"></i></div><div class="hf"><span>' + sub(f) + (dueText(f) ? ' · ' + esc(dueText(f)) : '') + '</span><button class="go" data-open="' + f.id + '">' + (f.status === 'im_einkauf' ? 'Weiter einkaufen' : 'Öffnen') + '</button></div></div>'
+      : '<div class="hero"><small>Keine offene Liste</small><h2>Leg unten deine erste Liste an</h2></div>';
+    var shown = S.fb === 'offen' ? o : S.fb === 'erledigt' ? d : S.lists;
+    var body;
+    if (S.fb === 'offen') body = groups(o).map(function (g) { return '<div class="lbl"><span>' + g.t + '</span><span>' + g.items.length + '</span></div><div class="card rows">' + g.items.map(row).join('') + '</div>'; }).join('');
+    else body = '<div class="card rows" style="margin-top:12px">' + shown.map(row).join('') + '</div>';
+    if (!shown.length) body = '<div class="card" style="margin-top:12px;padding:26px 16px;text-align:center;color:var(--muted);font-weight:700">Keine Listen in dieser Ansicht.</div>';
+    return '<div class="scr">' + topbar('Alle Listen', '<button class="txt" data-act="tmpl">Aus Vorlage</button>') + hero +
+      '<div class="card qa"><input id="qa" data-qa placeholder="Neue Liste, z. B. Samstag Markt" value="' + esc(S.qa) + '" maxlength="60" aria-label="Name der neuen Liste"><button class="add" data-act="qadd" ' + (S.qa.trim() ? '' : 'disabled') + ' aria-label="Liste anlegen">+</button></div>' +
+      '<div class="seg" role="group" aria-label="Filter">' + [['offen', 'Offen (' + o.length + ')'], ['erledigt', 'Erledigt (' + d.length + ')'], ['alle', 'Alle']].map(function (x) { return '<button data-fb="' + x[0] + '" aria-pressed="' + (S.fb === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+      body + '</div>' + NAV;
+  }
+
+  /* ---------- C · Kacheln ---------- */
+  function tile(l) {
+    return '<div class="tile' + (isDone(l) ? ' done' : '') + '"><div class="th"><span class="ic">' + l.icon + '</span><button class="more" data-more="' + l.id + '" aria-label="Aktionen für ' + esc(l.name) + '">•••</button></div>' +
+      '<button class="open" data-open="' + l.id + '"><b>' + esc(l.name) + '</b><small>' + sub(l) + '</small>' + (l.total ? '<div class="lineb" style="width:100%"><i style="width:' + Math.round(l.done / l.total * 100) + '%"></i></div>' : '') + '</button>' +
+      '<div class="foot">' + (isDone(l) ? '<span class="chip ok">✓ Erledigt</span>' : (l.status === 'im_einkauf' ? '<span class="chip im">Im Einkauf</span>' : '') + (dueChip(l))) + '</div></div>';
+  }
+  function viewC() {
+    var o = open(), d = doneL();
+    var f = S.fc;
+    var act = f === 'erledigt' ? [] : o.filter(function (l) { return f === 'alle' || (f === 'im_einkauf' ? l.status === 'im_einkauf' : l.status === 'offen'); });
+    var dn = (f === 'alle' || f === 'erledigt') ? d : [];
+    var chips = [['alle', 'Alle'], ['offen', 'Offen'], ['im_einkauf', 'Im Einkauf'], ['erledigt', 'Erledigt']];
+    return '<div class="scr">' + topbar('Alle Listen') +
+      '<div class="card stat"><div><b>' + o.length + '</b><span>Offen</span></div><div><b>' + openArt() + '</b><span>Artikel offen</span></div><div><b class="sm">' + nextDue() + '</b><span>Nächster</span></div></div>' +
+      '<div class="fchips" role="group" aria-label="Filter">' + chips.map(function (c) { return '<button data-fc="' + c[0] + '" aria-pressed="' + (S.fc === c[0]) + '">' + c[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="grid">' + (f === 'erledigt' ? '' : '<button class="tile add" data-act="new"><span class="pl">+</span>Neue Liste</button><button class="tile add" data-act="tmpl"><span class="pl">📋</span>Aus Vorlage<small>2 Vorlagen</small></button>') + act.map(tile).join('') + '</div>' +
+      (dn.length ? (f === 'alle' ? '<button class="acc" data-act="acc"><span>Erledigt (' + dn.length + ')</span><span>' + (S.accC ? '▴' : '▾') + '</span></button>' : '') + ((S.accC || f === 'erledigt') ? '<div class="grid">' + dn.map(tile).join('') + '</div>' : '') : '') + '</div>' + NAV;
+  }
+
+  /* ---------- Sheets ---------- */
+  function sheet() {
+    var s = S.sheet; if (!s) return '';
+    if (s.type === 'actions') {
+      var l = byId(s.id); if (!l) return '';
+      var dueOpts = [['Heute', 0], ['Morgen', 1], ['Wochenende', 3], ['Kein Datum', null]];
+      return '<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="Liste bearbeiten"><div class="sh-h"><span class="grab"></span><span class="ic">' + l.icon + '</span><b>' + esc(l.name) + '</b></div><div class="sh-b">' +
+        '<div class="sh-l">Status</div><div class="opts">' + Object.keys(STATUS).map(function (k) { return '<button data-status="' + k + '" aria-pressed="' + (l.status === k) + '">' + STATUS[k] + '</button>'; }).join('') + '</div>' +
+        '<div class="sh-l">Fällig</div><div class="opts">' + dueOpts.map(function (o) { return '<button data-due="' + (o[1] == null ? 'x' : o[1]) + '" aria-pressed="' + (l.due === o[1]) + '">' + o[0] + '</button>'; }).join('') + '</div>' +
+        '<div class="sh-l">Name</div><input class="field" id="rn" data-rn value="' + esc(l.name) + '" maxlength="60" aria-label="Name der Liste">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn d" data-act="del">' + (S.delAsk ? 'Wirklich löschen?' : 'Liste löschen') + '</button><button class="btn p" data-act="save-rn">Fertig</button></div></div></div>';
+    }
+    if (s.type === 'new') {
+      return '<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="Neue Liste"><div class="sh-h"><span class="grab"></span><b>Neue Liste</b></div><div class="sh-b"><input class="field" id="nn" data-nn placeholder="z. B. Wocheneinkauf" maxlength="60" aria-label="Name"><div class="sh-l">Symbol</div><div class="opts">' + ICONS.map(function (i) { return '<button data-nicon="' + i + '" aria-pressed="' + (s.icon === i) + '">' + i + '</button>'; }).join('') + '</div><div style="margin-top:14px"><button class="btn p" data-act="create">Anlegen</button></div></div></div>';
+    }
+    if (s.type === 'tmpl') {
+      return '<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="Aus Vorlage"><div class="sh-h"><span class="grab"></span><b>Aus Vorlage anlegen</b></div><div class="sh-b">' + TEMPLATES.map(function (t, i) { return '<button class="trow" data-tmpl="' + i + '"><span class="ic">' + t.icon + '</span><span class="t"><b>' + t.name + '</b><small>' + t.total + ' Artikel</small></span></button>'; }).join('') + '</div></div>';
+    }
+    return '';
+  }
+
+  function say(msg) { S.toast = msg; setTimeout(function () { if (S.toast === msg) { S.toast = null; render(); } }, 2200); }
+
+  var EXPL = {
+    a: { h: 'So läuft es heute auf Staging', li: ['Jede Liste ist eine große Karte mit Fortschritt, Status, Datum, Umbenennen und Löschen.', 'Neue Liste nur über den Plus-Knopf unten.'], pro: ['Alles sofort sichtbar', 'Klar und ruhig bei 2 bis 4 Listen'], con: ['Ab 5 Listen viel Scrollen', 'Löschen liegt offen an jeder Karte', 'Keine Antwort auf „Was ist als Nächstes dran?“'], try: 'Tippe „✎“ oder „🗑“: Beide öffnen hier dasselbe Bearbeiten-Sheet, in der echten App sind es zwei Aktionen.' },
+    b: { h: 'Variante B · Fokus und kompakte Zeilen', li: ['<b>Oben der Fokus:</b> die Liste „Im Einkauf“, sonst die mit dem nächsten Termin. Ein großer Knopf bringt dich direkt hinein.', '<b>Schnell anlegen:</b> Name tippen, Plus, fertig. Der Plus-Knopf unten entfällt.', '<b>Filter:</b> Offen, Erledigt, Alle. In „Offen“ sind die Listen nach Zeit gruppiert: Überfällig, Heute, Diese Woche, Später, Ohne Datum.', '<b>Zeilen statt Karten:</b> Symbol, Name, Fortschritts-Ring. Alles Weitere (Status, Datum, Name, Löschen) steckt hinter „•••“.'], pro: ['Schnellster Weg zur richtigen Liste', 'Viele Listen passen auf einen Bildschirm', 'Löschen nicht mehr ständig sichtbar'], con: ['Datum und Status nur über „•••“ änderbar', 'Weniger „Karten-Charme“'], try: 'Tippe auf „•••“ bei einer Liste, stelle den Status um und wechsle dann den Filter. Lege oben „Samstag Markt“ an.' },
+    c: { h: 'Variante C · Kachel-Raster', li: ['<b>Zusammenfassung:</b> offene Listen, offene Artikel und der nächste Termin in einer Leiste.', '<b>Kacheln:</b> zwei Spalten wie die Bereiche im Hub. „Neue Liste“ und „Aus Vorlage“ sind die ersten beiden Kacheln.', '<b>Filter-Chips:</b> Alle, Offen, Im Einkauf, Erledigt. Erledigte sind unten eingeklappt.', '<b>Aktionen:</b> „•••“ oben rechts in der Kachel öffnet dasselbe Bearbeiten-Sheet.'], pro: ['Überblick auf einen Blick', 'Passt optisch zum Hub', 'Anlegen und Vorlage prominent'], con: ['Lange Namen werden gekürzt', 'Zeit-Reihenfolge weniger klar', 'Etwas mehr Tipps bis zur Liste (zielen auf kleine Kachel)'], try: 'Lege über die erste Kachel eine Liste an, filtere auf „Im Einkauf“ und klappe „Erledigt“ auf.' }
+  };
+
+  function render() {
+    var phone = document.getElementById('phone');
+    var sc = phone.querySelector('.scr'), top = sc ? sc.scrollTop : 0;
+    var focusId = document.activeElement && document.activeElement.id, pos = document.activeElement && document.activeElement.selectionStart;
+    var html = S.tab === 'a' ? viewA() : S.tab === 'b' ? viewB() : viewC();
+    phone.innerHTML = html + sheet() + (S.toast ? '<div class="toast" role="status">' + esc(S.toast) + '</div>' : '');
+    var sc2 = phone.querySelector('.scr'); if (sc2) sc2.scrollTop = top;
+    if (focusId) { var el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (e) {} } }
+    document.querySelectorAll('.tab').forEach(function (t) { t.setAttribute('aria-selected', t.getAttribute('data-tab') === S.tab); });
+    var x = EXPL[S.tab];
+    document.getElementById('explain').innerHTML = '<h2>' + x.h + '</h2><ul>' + x.li.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul><div class="try">Zum Ausprobieren: ' + x.try + '</div><div class="pc"><div class="pro"><b>Stark</b>' + x.pro.join('<br>') + '</div><div class="con"><b>Schwächer</b>' + x.con.join('<br>') + '</div></div>';
+  }
+
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.hasAttribute('data-qa')) { S.qa = t.value; var b = document.querySelector('.qa .add'); if (b) b.disabled = !S.qa.trim(); }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.hasAttribute && e.target.hasAttribute('data-qa') && S.qa.trim()) { addList(S.qa.trim(), '🛒'); S.qa = ''; render(); }
+  });
+  function addList(name, icon) { S.lists.unshift({ id: uid++, name: name, icon: icon || '🛒', status: 'offen', total: 0, done: 0, due: null, time: '' }); say('Liste „' + name + '“ angelegt'); }
+
+  document.addEventListener('click', function (e) {
+    var th = e.target.closest('[data-theme-set]');
+    if (th) { var v = th.getAttribute('data-theme-set'); if (v === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v); document.querySelectorAll('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', b === th); }); return; }
+    var q;
+    if ((q = e.target.closest('[data-tab]'))) { S = Object.assign(fresh(), { tab: q.getAttribute('data-tab') }); render(); return; }
+    if ((q = e.target.closest('[data-fb]'))) { S.fb = q.getAttribute('data-fb'); }
+    else if ((q = e.target.closest('[data-fc]'))) { S.fc = q.getAttribute('data-fc'); }
+    else if ((q = e.target.closest('[data-open]'))) { var l0 = byId(+q.getAttribute('data-open')); say('Öffnet „' + l0.name + '“ in der Artikelansicht'); }
+    else if ((q = e.target.closest('[data-more]'))) { S.sheet = { type: 'actions', id: +q.getAttribute('data-more') }; S.delAsk = false; }
+    else if ((q = e.target.closest('[data-status]'))) { byId(S.sheet.id).status = q.getAttribute('data-status'); }
+    else if ((q = e.target.closest('[data-due]'))) { var dv = q.getAttribute('data-due'); var l1 = byId(S.sheet.id); l1.due = dv === 'x' ? null : +dv; if (dv === 'x') l1.time = ''; }
+    else if ((q = e.target.closest('[data-nicon]'))) { S.sheet.icon = q.getAttribute('data-nicon'); }
+    else if ((q = e.target.closest('[data-tmpl]'))) { var t = TEMPLATES[+q.getAttribute('data-tmpl')]; S.lists.unshift({ id: uid++, name: t.name, icon: t.icon, status: 'offen', total: t.total, done: 0, due: null, time: '' }); S.sheet = null; say('Liste „' + t.name + '“ aus Vorlage angelegt'); }
+    else if ((q = e.target.closest('[data-act]'))) {
+      var a = q.getAttribute('data-act');
+      if (a === 'close') S.sheet = null;
+      else if (a === 'new') S.sheet = { type: 'new', icon: '🛒' };
+      else if (a === 'tmpl') S.sheet = { type: 'tmpl' };
+      else if (a === 'acc') S.accC = !S.accC;
+      else if (a === 'qadd' && S.qa.trim()) { addList(S.qa.trim(), '🛒'); S.qa = ''; }
+      else if (a === 'create') { var nn = document.getElementById('nn'); var nm = nn && nn.value.trim(); if (!nm) { nn.placeholder = 'Bitte einen Namen eingeben'; nn.focus(); return; } addList(nm, S.sheet.icon); S.sheet = null; }
+      else if (a === 'save-rn') { var rn = document.getElementById('rn'); var l2 = byId(S.sheet.id); if (rn && rn.value.trim()) l2.name = rn.value.trim(); S.sheet = null; say('Gespeichert'); }
+      else if (a === 'del') { if (!S.delAsk) { S.delAsk = true; } else { var gone = byId(S.sheet.id); S.lists = S.lists.filter(function (l) { return l.id !== gone.id; }); S.sheet = null; S.delAsk = false; say('Liste „' + gone.name + '“ gelöscht'); } }
+      else return;
+    } else return;
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
