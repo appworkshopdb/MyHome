@@ -15,6 +15,8 @@ import { WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/w
 import { IconCheck, IconTrash } from '../../../core/components/Icons.jsx';
 import { fb } from '../../../core/lib/feedback';
 import { formatEur } from '../../../core/lib/format.js';
+import { formatReceiptDate } from '../../../core/lib/photoScan.js';
+import ReceiptScanChoice from '../../../core/components/ReceiptScanChoice.jsx';
 import { createShoppingExpense } from '../../../core/lib/financeBridge.js';
 import {
   loadLists, loadItems, saveList, toggleItemDone, deleteItems, applyShoppingPlan,
@@ -51,6 +53,9 @@ function noteFor(list) {
 
 const EMPTY_FORM = { amount: '', payment: 'Bar', store_name: '', note: '' };
 
+// Zahlungsart aus dem Beleg-Scan → Zahlungsarten der App (wie im Finanz-Wizard: Karte = Bank, sonstige/unbekannt = Bank)
+const RECEIPT_PAYMENT_MAP = { bar: 'Bar', karte: 'Bank', paypal: 'Paypal', gutschein: 'Gutschein', klarna: 'Klarna' };
+
 export default function CompleteListSheet({ list, items, onClose, onFinished }) {
   const [stepIdx,  setStepIdx]  = useState(0);
   const [doneMap,  setDoneMap]  = useState(() => Object.fromEntries(items.map((i) => [i.id, !!i.done])));
@@ -61,6 +66,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   const [payments, setPayments] = useState([]);
   const [removed,  setRemoved]  = useState([]);            // ids bereits gespeicherter, entfernter Zahlungen
   const [form,     setForm]     = useState(null);
+  const [choosing, setChoosing] = useState(false);       // "Beleg scannen / Manuelle Eingabe" vor dem Zahlungsformular
   const [booking,  setBooking]  = useState(list.name);
   const [saveTmpl, setSaveTmpl]   = useState(false);     // "Als Vorlage speichern" (Schritt 3)
   const [tmplName, setTmplName]   = useState(list.name);
@@ -113,8 +119,27 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   const storeItems = useMemo(() => {
     const used = [...new Set(items.map((i) => i.item_store_name).filter(Boolean))].sort();
     const rest = STORE_NAMES.filter((n) => !used.includes(n));
-    return [{ value: '', label: 'Kein Laden' }, ...used.map((n) => ({ value: n, label: n })), ...rest.map((n) => ({ value: n, label: n }))];
-  }, [items]);
+    const extra = form?.store_name && !used.includes(form.store_name) && !rest.includes(form.store_name) ? [form.store_name] : [];
+    return [{ value: '', label: 'Kein Laden' }, ...extra.map((n) => ({ value: n, label: n })), ...used.map((n) => ({ value: n, label: n })), ...rest.map((n) => ({ value: n, label: n }))];
+  }, [items, form?.store_name]);
+
+  // Ergebnis des Beleg-Scans: nur das Formular vorbefüllen, gespeichert wird erst mit "Zahlung speichern".
+  // Das Belegdatum landet in der Notiz (wie im Finanz-Wizard).
+  function applyReceipt(r) {
+    const merchant = (r.merchant || '').trim();
+    const known = [...new Set([...items.map((i) => i.item_store_name).filter(Boolean), ...STORE_NAMES])]
+      .find((n) => n.toLowerCase() === merchant.toLowerCase());
+    const d = formatReceiptDate(r.date);
+    setForm({
+      amount:     r.total != null ? String(r.total).replace('.', ',') : '',
+      payment:    RECEIPT_PAYMENT_MAP[r.payment_method] || 'Bank',
+      store_name: known || merchant,
+      note:       d ? `Beleg vom ${d}` : '',
+      scan:       r.total != null ? 'ok' : 'noTotal',
+    });
+    setChoosing(false);
+    setError('');
+  }
 
   const targetName = target === 'new'
     ? (newName.trim() || `Rest von ${list.name}`)
@@ -358,6 +383,11 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
 
         {form ? (
           <div className="cl-form">
+            {form.scan && (
+              <div className={`cl-note${form.scan === 'noTotal' ? ' warn' : ''}`} style={{ margin: 0 }}>
+                {form.scan === 'ok' ? 'Beleg gelesen – bitte prüfen und bei Bedarf ändern.' : 'Betrag nicht erkannt – bitte eingeben.'}
+              </div>
+            )}
             <input
               className="cl-field" inputMode="decimal" placeholder="Betrag (€)" aria-label="Betrag" autoFocus
               value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^\d.,]/g, '') })}
@@ -379,8 +409,16 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <button type="button" className="cl-sbtn p" onClick={savePaymentForm}>Zahlung speichern</button>
             </div>
           </div>
+        ) : choosing ? (
+          <div className="cl-form">
+            <ReceiptScanChoice
+              onScanned={applyReceipt}
+              onManual={() => { setChoosing(false); setForm({ ...EMPTY_FORM }); }}
+            />
+            <button type="button" className="cl-sbtn" onClick={() => setChoosing(false)}>Abbrechen</button>
+          </div>
         ) : (
-          <button type="button" className="cl-addpay" onClick={() => setForm({ ...EMPTY_FORM })}>+ Zahlung hinzufügen</button>
+          <button type="button" className="cl-addpay" onClick={() => setChoosing(true)}>+ Zahlung hinzufügen</button>
         )}
 
         <div className="cl-gesamt"><span>Gesamt</span><b>{formatEur(total)}</b></div>
