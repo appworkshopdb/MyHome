@@ -1,7 +1,7 @@
 // src/modules/shopping/components/CompleteListSheet.jsx
 // "Einkauf abschließen" in bis zu drei Schritten (siehe CLAUDE.md):
-//   1. Einkauf prüfen     gekauft (markiert) / nicht gekauft, ein Tipp stellt um
-//   2. Nicht gekauft      nur wenn Artikel offen sind: alle gemeinsam auf eine bestehende oder
+//   1. Alles gefunden?    gekauft (im Warenkorb) / noch offen, ein Tipp stellt um
+//   2. Nicht gefunden     nur wenn Artikel offen sind: alle gemeinsam auf eine bestehende oder
 //                         neue Liste übertragen — oder verwerfen (löschen)
 //   3. Bezahlung          Zahlungen erfassen (mehrere möglich), Buchung in den Finanzen
 // Geschrieben wird erst ganz am Ende ("Buchen & abschließen" / "Ohne Buchung abschließen").
@@ -261,7 +261,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   }
 
   // ── Schritte ──
-  const titles = { check: 'Einkauf prüfen', open: 'Nicht gekauft', pay: 'Bezahlung' };
+  const titles = { check: 'Alles gefunden?', open: 'Nicht gefunden', pay: 'Bezahlung' };
 
   const row = (it, interactive) => (
     <div key={it.id} className={`cl-row${doneMap[it.id] ? ' done' : ' open'}`}>
@@ -295,10 +295,10 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
       <>
         <div className="cl-sum">
           <span className="n">{bought}/{items.length}</span>
-          <span className="t"><b>{open.length ? `${open.length} Artikel nicht gekauft` : 'Alles gekauft'}</b><br />Tippe einen Artikel an, um ihn umzustellen.</span>
+          <span className="t"><b>{open.length ? `${open.length} Artikel noch offen` : 'Alles gekauft'}</b></span>
         </div>
-        {open.length > 0 && (<><div className="cl-sec">Nicht gekauft ({open.length})</div><div className="cl-card">{open.map((i) => row(i, true))}</div></>)}
-        <div className="cl-sec">Gekauft ({doneList.length})</div>
+        {open.length > 0 && (<><div className="cl-sec">Noch offen ({open.length})</div><div className="cl-card">{open.map((i) => row(i, true))}</div></>)}
+        <div className="cl-sec">Im Warenkorb ({doneList.length})</div>
         {doneList.length > 0
           ? <div className="cl-card">{doneList.map((i) => row(i, true))}</div>
           : <div className="cl-note warn">Nichts gekauft. Du kannst trotzdem abschließen.</div>}
@@ -308,11 +308,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
     const discard = target === 'discard';
     body = (
       <>
-        <div className="cl-sum">
-          <span className="n">{open.length}</span>
-          <span className="t"><b>Artikel nicht gekauft</b><br />Übertrage sie auf eine Liste oder wirf sie weg.</span>
-        </div>
-        <div className="cl-sec">{discard ? 'Wird verworfen' : 'Wird übertragen'}</div>
         <div className={`cl-card${discard ? ' dim' : ''}`}>{open.map((i) => row(i, false))}</div>
         <div className="cl-sec">Wohin damit?</div>
         <div className="cl-lists" role="radiogroup" aria-label="Ziel der nicht gekauften Artikel">
@@ -342,7 +337,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   } else {
     body = (
       <>
-        <div className="cl-sec" style={{ marginTop: 0 }}>Zahlungen</div>
         {payments.length > 0 ? (
           <div className="cl-card">
             {payments.map((p, i) => (
@@ -429,13 +423,9 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
       </WizardFoot>
     );
   } else if (key === 'open') {
-    const hint = target === 'discard'
-      ? `${open.length} ${open.length === 1 ? 'Artikel wird' : 'Artikel werden'} verworfen`
-      : `${open.length} Artikel → ${targetName}`;
     footer = (
       <WizardFoot one hint={error}>
         <button type="button" className="btn cl-cta" disabled={lists === null} onClick={() => setStepIdx(stepIdx + 1)}>Weiter</button>
-        <div className="cl-hint">{hint}</div>
       </WizardFoot>
     );
   } else {
@@ -450,7 +440,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
     <SheetShell onClose={onClose} wizard>
       <WizardFrame
         title={titles[key]}
-        sub={list.name}
         step={steps.indexOf(key) + 1}
         total={steps.length}
         stepKey={key}

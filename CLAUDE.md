@@ -184,8 +184,8 @@ Neue Liste NUR über den globalen Plus-Knopf (`ShoppingQuickSheet`, 3 Schritte):
 Finanz-Wizard; ohne Vorlagen ist die Karte ausgegraut; "Aus Vorlage" zeigt erst die Vorlagen, die gewählte füllt Schritt 2 und 3 vor,
 Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach dem Speichern meldet der Wizard (liegt in core) per
 `notifyShoppingChanged()` (`core/lib/shoppingHandoff.js`) window-Event, `ShoppingModule` lädt die Listen neu.
-Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 Einkauf prüfen (Tipp stellt gekauft/nicht gekauft um),
-2 Nicht gekauft (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
+Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 "Alles gefunden?" (Tipp stellt "Noch offen"/"Im Warenkorb" um),
+2 "Nicht gefunden" (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,
 Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld,
 speichert die gekauften Artikel über `saveListAsTemplate`, Fehler blockieren den Abschluss nicht). Geschrieben wird erst am Ende, Reihenfolge:

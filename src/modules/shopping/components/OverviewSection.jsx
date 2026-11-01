@@ -35,7 +35,6 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
 
   const active     = pickActiveList(lists);
   const offeneListen = lists.filter((l) => (l.status || 'offen') !== 'erledigt');
-  const weitere    = offeneListen.filter((l) => l.id !== active?.id).slice(0, 3);
 
   const done  = active?._done  ?? 0;
   const total = active?._total ?? 0;
@@ -131,15 +130,6 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
             value={`${lists.length} · ${offeneListen.length} offen`}
             onPress={() => onNavigate('listen')}
           />
-          {weitere.map((l) => (
-            <AreaRow
-              key={l.id}
-              label={l.name}
-              icon="list"
-              value={`${l._done ?? 0} / ${l._total ?? 0}`}
-              onPress={() => onOpenList(l)}
-            />
-          ))}
         </AreaList>
       </PageSection>
     </>
