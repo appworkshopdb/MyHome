@@ -9,9 +9,10 @@
 // Danach eine Zusammenfassung; "Fertig" geht zurück in die Übersicht.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import { WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit.jsx';
-import { IconCheck } from '../../../core/components/Icons.jsx';
+import { IconCheck, IconTrash } from '../../../core/components/Icons.jsx';
 import { fb } from '../../../core/lib/feedback';
 import { formatEur } from '../../../core/lib/format.js';
 import { createShoppingExpense } from '../../../core/lib/financeBridge.js';
@@ -63,6 +64,8 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   const [booking,  setBooking]  = useState(list.name);
   const [saveTmpl, setSaveTmpl]   = useState(false);     // "Als Vorlage speichern" (Schritt 3)
   const [tmplName, setTmplName]   = useState(list.name);
+  const [tmplRemoved, setTmplRemoved] = useState({});     // im Fenster "Artikel ansehen" entfernte Artikel (gilt nur für die Vorlage)
+  const [tmplPopup, setTmplPopup] = useState(false);
   const tmplDone = useRef(false);                          // nicht doppelt anlegen, falls ein späterer Schritt scheitert und man es erneut versucht
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState('');
@@ -70,6 +73,8 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
 
   const open = useMemo(() => items.filter((i) => !doneMap[i.id]), [items, doneMap]);
   const bought = items.length - open.length;
+  // Artikel der Vorlage: die gekauften, abzüglich der im Fenster entfernten
+  const tmplItems = useMemo(() => items.filter((i) => doneMap[i.id] && !tmplRemoved[i.id]), [items, doneMap, tmplRemoved]);
   const steps = open.length > 0 ? ['check', 'open', 'pay'] : ['check', 'pay'];
   const key = steps[Math.min(stepIdx, steps.length - 1)];
 
@@ -169,12 +174,13 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
 
       // Als Vorlage speichern: jetzt, wo nur noch die gekauften Artikel in der Liste stehen.
       // Ein Fehler hier darf den Abschluss nicht verhindern.
-      if (saveTmpl && bought > 0 && !tmplDone.current) {
+      if (saveTmpl && tmplItems.length > 0 && !tmplDone.current) {
         try {
           const tName = tmplName.trim() || list.name;
-          await saveListAsTemplate(list.id, tName, list.icon || '🛒');
+          await saveListAsTemplate(list.id, tName, list.icon || '🛒', Object.keys(tmplRemoved));
           tmplDone.current = true;
           sum.template = tName;
+          sum.templateCount = tmplItems.length;
         } catch (e) {
           console.warn('Vorlage konnte nicht gespeichert werden:', e);
           sum.templateFailed = true;
@@ -243,7 +249,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <div><i>🗑</i><span>{result.discarded} Artikel verworfen<small>aus der Liste gelöscht</small></span></div>
             )}
             {result.template && (
-              <div><i>📋</i><span>Als Vorlage „{result.template}“ gespeichert<small>zu finden unter Plus → Aus Vorlage</small></span></div>
+              <div><i>📋</i><span>Als Vorlage „{result.template}“ gespeichert<small>{result.templateCount} {result.templateCount === 1 ? 'Artikel' : 'Artikel'} · zu finden unter Plus → Aus Vorlage</small></span></div>
             )}
             {result.templateFailed && (
               <div><i>!</i><span>Vorlage konnte nicht gespeichert werden</span></div>
@@ -269,7 +275,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
         <button type="button" className="cl-row-btn" role="checkbox" aria-checked={!!doneMap[it.id]} onClick={() => toggle(it.id)}>
           <span className={`cl-ck${doneMap[it.id] ? ' on' : ''}`}>{doneMap[it.id] && <IconCheck />}</span>
           <span className="cl-bd"><b>{it.name}</b>{it.note && <small>{it.note}</small>}</span>
-          {!doneMap[it.id] && <span className="cl-flag">nicht gekauft</span>}
           {qtyLabel(it) && <span className="cl-q">{qtyLabel(it)}</span>}
         </button>
       ) : (
@@ -308,7 +313,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
     const discard = target === 'discard';
     body = (
       <>
-        <div className={`cl-card${discard ? ' dim' : ''}`}>{open.map((i) => row(i, false))}</div>
+        <div className={`cl-card cl-ocard${discard ? ' dim' : ''}`}>{open.map((i) => row(i, false))}</div>
         <div className="cl-sec">Wohin damit?</div>
         <div className="cl-lists" role="radiogroup" aria-label="Ziel der nicht gekauften Artikel">
           {(lists || []).map((l) => (
@@ -318,7 +323,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <span className="rd" />
             </button>
           ))}
-          <button type="button" className="cl-lopt" role="radio" aria-checked={target === 'new'} onClick={() => setTarget('new')}>
+          <button type="button" className="cl-lopt new" role="radio" aria-checked={target === 'new'} onClick={() => setTarget('new')}>
             <span className="ic">＋</span>
             <span className="t"><b>Neue Liste</b><small>wird beim Abschließen angelegt</small></span>
             <span className="rd" />
@@ -378,24 +383,16 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
           <button type="button" className="cl-addpay" onClick={() => setForm({ ...EMPTY_FORM })}>+ Zahlung hinzufügen</button>
         )}
 
-        <div className="cl-total"><span>Gesamt</span><b>{formatEur(total)}</b></div>
+        <div className="cl-gesamt"><span>Gesamt</span><b>{formatEur(total)}</b></div>
         {total > 0 && (
           <>
             <div className="cl-sec">Bezeichnung der Buchung</div>
             <input className="cl-field" value={booking} onChange={(e) => setBooking(e.target.value)} maxLength={80} aria-label="Bezeichnung der Buchung" />
-            <div className="cl-split">
-              {instant > 0 && (
-                <div className="paid"><span>✓ Sofort bezahlt ({[...new Set(payments.filter((p) => INSTANT_PAYMENT_METHODS.includes(p.payment)).map((p) => p.payment))].join(', ')})</span><span>{formatEur(instant)}</span></div>
-              )}
-              {pending > 0 && (
-                <div className="pend"><span>Teil offen ({[...new Set(payments.filter((p) => !INSTANT_PAYMENT_METHODS.includes(p.payment)).map((p) => p.payment))].join(', ')})</span><span>{formatEur(pending)}</span></div>
-              )}
-            </div>
-            <div className="cl-note">
-              {pending > 0
-                ? (instant > 0 ? 'Es entstehen zwei Buchungen in den Finanzen: eine bezahlte und eine offene.' : 'Die Buchung ist in den Finanzen offen, bis du sie dort abhakst.')
-                : 'Eine Buchung in den Finanzen, Kategorie „Sonstige Ausgaben“.'}
-            </div>
+            {pending > 0 && (
+              <div className="cl-note">
+                {instant > 0 ? 'Es entstehen zwei Buchungen in den Finanzen: eine bezahlte und eine offene.' : 'Die Buchung ist in den Finanzen offen, bis du sie dort abhakst.'}
+              </div>
+            )}
           </>
         )}
 
@@ -406,9 +403,44 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <span className="cl-switch" aria-hidden="true"><i /></span>
             </button>
             {saveTmpl && (
-              <input className="cl-field" value={tmplName} onChange={(e) => setTmplName(e.target.value)} maxLength={60} aria-label="Name der Vorlage" />
+              <>
+                <label className="cl-flbl" htmlFor="cl-tmpl-name">Name der Vorlage</label>
+                <input id="cl-tmpl-name" className="cl-field" value={tmplName} onChange={(e) => setTmplName(e.target.value)} maxLength={60} />
+                <button type="button" className="cl-aview" onClick={() => setTmplPopup(true)}>
+                  <span>Artikel ansehen</span>
+                  <span className="cl-q">{tmplItems.length}</span>
+                  <span className="go" aria-hidden="true">›</span>
+                </button>
+                {tmplItems.length === 0 && <div className="cl-note warn">Keine Artikel in der Vorlage. Es wird keine Vorlage gespeichert.</div>}
+              </>
             )}
           </div>
+        )}
+
+        {tmplPopup && createPortal(
+          <>
+            <div className="cl-pop-scrim" onClick={() => setTmplPopup(false)} />
+            <div className="cl-pop" role="dialog" aria-modal="true" aria-label="Artikel der Vorlage">
+              <div className="cl-pop-h">
+                <span className="t"><b>Artikel der Vorlage</b><small>Entfernen gilt nur für die Vorlage, nicht für deine Liste</small></span>
+                <button type="button" className="cl-pop-x" onClick={() => setTmplPopup(false)} aria-label="Schließen">✕</button>
+              </div>
+              <div className="cl-pop-list">
+                {tmplItems.length === 0 && <div className="cl-pop-empty">Keine Artikel mehr in der Vorlage.</div>}
+                {tmplItems.map((it) => (
+                  <div key={it.id} className="cl-prow">
+                    <span className="cl-bd"><b>{it.name}</b>{it.note && <small>{it.note}</small>}</span>
+                    {qtyLabel(it) && <span className="cl-q">{qtyLabel(it)}</span>}
+                    <button type="button" className="cl-trash" onClick={() => setTmplRemoved((r) => ({ ...r, [it.id]: true }))} aria-label={`${it.name} aus der Vorlage entfernen`}>
+                      <IconTrash size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="cl-pop-f"><button type="button" className="btn cl-cta" onClick={() => setTmplPopup(false)}>Fertig</button></div>
+            </div>
+          </>,
+          document.body,
         )}
       </>
     );

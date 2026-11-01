@@ -187,8 +187,11 @@ Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach 
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 "Alles gefunden?" (Tipp stellt "Noch offen"/"Im Warenkorb" um),
 2 "Nicht gefunden" (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
 `planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen,
-Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld,
-speichert die gekauften Artikel über `saveListAsTemplate`, Fehler blockieren den Abschluss nicht). Geschrieben wird erst am Ende, Reihenfolge:
+Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld und
+"Artikel ansehen" (Fenster, Eimer entfernt einen Artikel NUR aus der Vorlage; ohne Artikel keine Vorlage), speichert die gekauften
+Artikel über `saveListAsTemplate(listId, name, icon, excludeIds)`, Fehler blockieren den Abschluss nicht; Buchungen landen immer in
+"Sonstige Ausgaben", ein Hinweis erscheint nur bei offenen Zahlungsarten). Optik: offene Artikel getönt in Schritt 2, "Neue Liste" in
+Modulfarbe, "Verwerfen" rot, "Gesamt" als eigene Karte (`.cl-*` in `design-v2.css`). Geschrieben wird erst am Ende, Reihenfolge:
 Markierungen → Artikel übertragen/verwerfen → Vorlage → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
 vorhandene Buchung wird ersetzt) → Status "erledigt". Zahlungsbereich, "erledigte löschen" und "Als Vorlage speichern"
 gibt es in der Liste selbst nicht mehr (`clearDoneItems` in `shoData.js` ist ungenutzt; Vorlagen entstehen im Abschluss und werden im

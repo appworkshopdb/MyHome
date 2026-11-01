@@ -347,7 +347,7 @@ export async function undoShoppingPlan(done) {
 // Artikel einer Vorlage werden per "Als Liste laden" in eine
 // neue normale Liste kopiert — keine eigene Tabelle nötig.
 
-export async function saveListAsTemplate(listId, templateName, icon = '📋') {
+export async function saveListAsTemplate(listId, templateName, icon = '📋', excludeIds = []) {
   const sb = getSupabase();
   const owner_id = getOwnerIdFromToken();
 
@@ -363,13 +363,15 @@ export async function saveListAsTemplate(listId, templateName, icon = '📋') {
   // wird meist nach dem Einkauf gespeichert, wenn alles erledigt ist.
   const { data: sourceItems, error: e2 } = await sb
     .from('sho_items')
-    .select('name, category, quantity, unit, note, item_store_name, sort_order')
+    .select('id, name, category, quantity, unit, note, item_store_name, sort_order')
     .eq('list_id', listId)
     .is('deleted_at', null);
   if (e2) throw e2;
 
-  if (sourceItems && sourceItems.length > 0) {
-    const copies = sourceItems.map((item) => ({
+  // Vom Nutzer im Abschluss entfernte Artikel kommen nicht in die Vorlage (die Liste bleibt unberührt)
+  const keep = (sourceItems || []).filter((i) => !excludeIds.includes(i.id));
+  if (keep.length > 0) {
+    const copies = keep.map((item) => ({
       owner_id,
       list_id:         tmpl.id,
       name:            item.name,
