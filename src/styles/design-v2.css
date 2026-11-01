@@ -1004,3 +1004,9 @@ button.cl-row-btn { cursor: pointer; }
 .cl-trash:hover { color: var(--status-critical); }
 .cl-pop-empty { padding: 26px 8px; text-align: center; color: var(--text-muted); font-weight: 700; }
 .cl-pop-f { padding: 10px 16px 16px; border-top: 1px solid var(--border-hairline); }
+
+/* Beleg-Scan-Auswahl, schmale Variante (Einkauf: weitere Belege nach der ersten Zahlung) */
+.wiz-mode-grid--mini { gap: 8px; margin-top: 8px; }
+.wiz-mode--mini { flex-direction: row; min-height: 48px; padding: 0 12px; gap: 8px; font-size: 13px; }
+.wiz-mode--mini .wiz-mode-icon { width: 20px; height: 20px; flex: none; }
+.wiz-mode--mini .wiz-mode-title { font-size: 13px; font-weight: 800; text-align: left; }

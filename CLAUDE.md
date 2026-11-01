@@ -186,8 +186,8 @@ Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach 
 `notifyShoppingChanged()` (`core/lib/shoppingHandoff.js`) window-Event, `ShoppingModule` lädt die Listen neu.
 Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 "Alles gefunden?" (Tipp stellt "Noch offen"/"Im Warenkorb" um),
 2 "Nicht gefunden" (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
-`planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen; "+ Zahlung hinzufügen" zeigt zuerst `ReceiptScanChoice` "Beleg scannen / Manuelle Eingabe" wie im
-Finanz-Wizard, ein Scan füllt Betrag, Zahlungsart, Laden und Notiz "Beleg vom …" nur VOR, gespeichert wird erst mit "Zahlung speichern";
+`planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen; `ReceiptScanChoice` "Beleg scannen / Manuelle Eingabe" steht direkt im Schritt, ohne Galerie-Option
+(`allowGallery={false}`); nach der ersten Zahlung nur noch zwei schmale Knöpfe (`compact`), "Gesamt" und Buchungsbezeichnung erst ab dann; ein Scan füllt Betrag, Zahlungsart, Laden und Notiz "Beleg vom …" nur VOR, gespeichert wird erst mit "Zahlung speichern";
 das Scan-Kontingent ist dasselbe wie in Finanzen; Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld und
 "Artikel ansehen" (Fenster, Eimer entfernt einen Artikel NUR aus der Vorlage; ohne Artikel keine Vorlage), speichert die gekauften
 Artikel über `saveListAsTemplate(listId, name, icon, excludeIds)`, Fehler blockieren den Abschluss nicht; Buchungen landen immer in

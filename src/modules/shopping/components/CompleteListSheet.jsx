@@ -66,7 +66,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   const [payments, setPayments] = useState([]);
   const [removed,  setRemoved]  = useState([]);            // ids bereits gespeicherter, entfernter Zahlungen
   const [form,     setForm]     = useState(null);
-  const [choosing, setChoosing] = useState(false);       // "Beleg scannen / Manuelle Eingabe" vor dem Zahlungsformular
   const [booking,  setBooking]  = useState(list.name);
   const [saveTmpl, setSaveTmpl]   = useState(false);     // "Als Vorlage speichern" (Schritt 3)
   const [tmplName, setTmplName]   = useState(list.name);
@@ -137,7 +136,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
       note:       d ? `Beleg vom ${d}` : '',
       scan:       r.total != null ? 'ok' : 'noTotal',
     });
-    setChoosing(false);
     setError('');
   }
 
@@ -367,7 +365,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
   } else {
     body = (
       <>
-        {payments.length > 0 ? (
+        {payments.length > 0 && (
           <div className="cl-card">
             {payments.map((p, i) => (
               <div key={p.id || `new-${i}`} className="cl-pay">
@@ -377,8 +375,6 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               </div>
             ))}
           </div>
-        ) : (
-          <div className="cl-note warn">Noch keine Zahlung erfasst. Ohne Zahlung schließt „Ohne Buchung abschließen“ nur die Liste.</div>
         )}
 
         {form ? (
@@ -409,19 +405,16 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <button type="button" className="cl-sbtn p" onClick={savePaymentForm}>Zahlung speichern</button>
             </div>
           </div>
-        ) : choosing ? (
-          <div className="cl-form">
-            <ReceiptScanChoice
-              onScanned={applyReceipt}
-              onManual={() => { setChoosing(false); setForm({ ...EMPTY_FORM }); }}
-            />
-            <button type="button" className="cl-sbtn" onClick={() => setChoosing(false)}>Abbrechen</button>
-          </div>
         ) : (
-          <button type="button" className="cl-addpay" onClick={() => setChoosing(true)}>+ Zahlung hinzufügen</button>
+          <ReceiptScanChoice
+            allowGallery={false}
+            compact={payments.length > 0}
+            onScanned={applyReceipt}
+            onManual={() => setForm({ ...EMPTY_FORM })}
+          />
         )}
 
-        <div className="cl-gesamt"><span>Gesamt</span><b>{formatEur(total)}</b></div>
+        {payments.length > 0 && <div className="cl-gesamt"><span>Gesamt</span><b>{formatEur(total)}</b></div>}
         {total > 0 && (
           <>
             <div className="cl-sec">Bezeichnung der Buchung</div>
