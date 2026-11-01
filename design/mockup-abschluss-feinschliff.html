@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abschluss Feinschliff</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap">
+<style>
+/* Layout: links ein bedienbares Handy mit dem ganzen Ablauf, rechts die Regeln des aktuellen Schritts, darunter die offenen Entscheidungen. Tokens wie die App (Sand, warmes Dunkelblau, Familie Einkauf = Violett). */
+:root {
+  --page: #EFE9DF; --screen: #F6F1EA; --raised: #FFFFFF; --sunken: #FBF8F3;
+  --text: #25304A; --muted: #6B6A73; --line: #EAE2D6; --line-strong: #D5CABB; --action: #1B2A4A;
+  --shop-tint: #E6DFF5; --shop-ink: #2E2457; --shop-ac: #7461C4; --shop-on: #FFFFFF; --shop-deep: #5F4DB0;
+  --warn-tint: #F7E8D0; --warn-ink: #6B4310; --ok-tint: #DCEFE2; --ok-ink: #14452B; --crit: #B3261E;
+  --shadow-card: 0 2px 8px rgba(70, 50, 30, .08); --shadow-float: 0 6px 18px rgba(70, 50, 30, .14);
+  --scrim: rgba(15, 26, 49, .45); --frame: #1B2A4A;
+  --font: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+    --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+    --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+    --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit: #F2998F;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+    --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #1A1714; --screen: #211D1A; --raised: #2A2622; --sunken: #2F2A26;
+  --text: #F3ECE4; --muted: #B3A9A0; --line: #3A342E; --line-strong: #4A433B; --action: #8FA6D6;
+  --shop-tint: #2B2545; --shop-ink: #E4DDF7; --shop-ac: #A898F0; --shop-on: #1C1636; --shop-deep: #A898F0;
+  --warn-tint: #3A2E1A; --warn-ink: #F0D7A8; --ok-tint: #17301F; --ok-ink: #CFEBD8; --crit: #F2998F;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, .35); --shadow-float: 0 6px 18px rgba(0, 0, 0, .45);
+  --scrim: rgba(0, 0, 0, .55); --frame: #3A342E; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45;
+  padding-block: 26px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--shop-ac); outline-offset: 2px; }
+.wrap { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.6rem; font-weight: 900; margin: 0 0 4px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 16px; max-width: 64ch; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip-btn { padding: 8px 14px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-weight: 800; font-size: .82rem; }
+.chip-btn[aria-pressed="true"] { background: var(--shop-tint); border-color: var(--shop-ac); color: var(--shop-ink); }
+.theme { display: flex; gap: 4px; background: var(--raised); border: 1.5px solid var(--line); border-radius: 999px; padding: 3px; }
+.theme button { padding: 6px 12px; border-radius: 999px; font-size: .8rem; font-weight: 800; color: var(--muted); }
+.theme button[aria-pressed="true"] { background: var(--action); color: var(--screen); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 36px; align-items: start; }
+@media (max-width: 800px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+.phone {
+  position: relative; width: 100%; max-width: 360px; height: 760px; margin: 0 auto; overflow: hidden;
+  background: var(--screen); border: 8px solid var(--frame); border-radius: 38px; box-shadow: 0 18px 40px -18px rgba(15, 26, 49, .5);
+}
+.scr { position: absolute; inset: 0; overflow-y: auto; padding: 16px 14px 120px; }
+.nav {
+  position: absolute; left: 14px; right: 14px; bottom: 12px; height: 54px; border-radius: 999px; background: var(--raised);
+  box-shadow: var(--shadow-float); display: flex; align-items: center; justify-content: space-around; padding: 0 8px; color: var(--muted);
+}
+.nav i { width: 22px; height: 22px; border-radius: 7px; border: 2px solid currentColor; opacity: .6; }
+.nav .on { background: var(--shop-ac); color: var(--shop-on); padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: .8rem; }
+
+/* Liste */
+.hd { background: var(--raised); border-radius: 28px; padding: 14px 16px; box-shadow: var(--shadow-float); }
+.hd-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.hd h2 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -.01em; }
+.hd .cnt { font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hd .cnt b { font-size: 14px; font-weight: 900; color: var(--text); }
+.hd .line { height: 8px; margin: 10px 0 12px; border-radius: 999px; background: color-mix(in srgb, var(--shop-ac) 18%, transparent); overflow: hidden; }
+.hd .line i { display: block; height: 100%; border-radius: 999px; background: var(--shop-ac); }
+.pill-btn { width: 100%; min-height: 42px; border-radius: 999px; background: var(--shop-ac); color: var(--shop-on); font-weight: 900; font-size: 13px; }
+.lbl { margin: 18px 6px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-card); padding: 4px 16px; }
+.card.dim { opacity: .6; }
+.rw { display: flex; align-items: center; gap: 12px; min-height: 58px; padding: 9px 0; border-top: 1px solid var(--line); }
+.rw:first-child { border-top: 0; }
+.ck { flex: none; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line-strong); display: grid; place-items: center; color: var(--shop-on); }
+.rw.done .ck, .ck.on { background: var(--shop-ac); border-color: var(--shop-ac); }
+.bd { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bd b { font-size: 15px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.bd small { font-size: 11px; font-weight: 700; color: var(--muted); }
+.bd small.merge { color: var(--shop-deep); }
+.rw.done .bd b { text-decoration: line-through; color: var(--muted); font-weight: 700; }
+.q { flex: none; padding: 4px 11px; border-radius: 999px; background: var(--shop-tint); color: var(--shop-ink); font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rw.done .q { background: var(--sunken); color: var(--muted); }
+.ib { position: absolute; left: 12px; right: 12px; bottom: 76px; background: var(--raised); border-radius: 24px; box-shadow: var(--shadow-float); padding: 10px; display: grid; gap: 8px; }
+.ib .f { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 6px; }
+.ib .f div { height: 34px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; padding: 0 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.ib .a { display: flex; gap: 8px; }
+.ib .a div { flex: 1; height: 44px; border-radius: 14px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; color: var(--muted); font-weight: 700; font-size: 14px; }
+.ib .a span { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+
+/* Sheet */
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 92%; background: var(--screen); border-radius: 26px 26px 0 0;
+  display: flex; flex-direction: column; box-shadow: 0 -10px 30px rgba(0, 0, 0, .25);
+}
+.sh-head { display: flex; align-items: center; gap: 8px; padding: 14px 14px 6px; }
+.sh-ico { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--raised); border: 1px solid var(--line); display: grid; place-items: center; font-size: 16px; font-weight: 800; }
+.sh-ico.ghost { visibility: hidden; }
+.sh-ttl { flex: 1; min-width: 0; }
+.sh-ttl b { display: block; font-size: 17px; font-weight: 900; line-height: 1.2; }
+.sh-ttl small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prog { display: flex; gap: 6px; padding: 6px 16px 4px; }
+.prog i { flex: 1; height: 5px; border-radius: 999px; background: var(--line); }
+.prog i.on { background: var(--shop-ac); }
+.sh-body { flex: 1; overflow-y: auto; padding: 8px 16px 12px; }
+.sh-foot { padding: 10px 16px 18px; border-top: 1px solid var(--line); background: var(--screen); display: grid; gap: 6px; }
+.sh-foot .hint { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
+.cta { min-height: 50px; border-radius: 16px; background: var(--shop-ac); color: var(--shop-on); font-weight: 900; font-size: 15px; width: 100%; }
+.cta[disabled] { opacity: .4; cursor: not-allowed; }
+.cta2 { min-height: 50px; border-radius: 16px; background: var(--raised); color: var(--text); font-weight: 900; font-size: 15px; width: 100%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.sumbar { display: flex; align-items: center; gap: 10px; background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 12px 14px; margin-bottom: 4px; }
+.sumbar .n { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.sumbar .t { flex: 1; font-size: 13px; font-weight: 700; color: var(--muted); }
+.sumbar .t b { color: var(--text); }
+.flag { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--warn-tint); color: var(--warn-ink); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.flag.ok { background: var(--ok-tint); color: var(--ok-ink); }
+.rw.pick { width: 100%; text-align: left; }
+.rw.open .ck { border-color: var(--warn-ink); }
+.note { margin: 10px 2px 0; padding: 10px 12px; border-radius: 14px; background: var(--shop-tint); color: var(--shop-ink); font-size: 12.5px; font-weight: 700; }
+.note.warn { background: var(--warn-tint); color: var(--warn-ink); }
+
+.lists { display: grid; gap: 6px; }
+.lopt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; background: var(--raised); border: 1.5px solid var(--line); border-radius: 14px; }
+.lopt .ic { font-size: 18px; flex: none; }
+.lopt .t { flex: 1; min-width: 0; }
+.lopt .t b { display: block; font-size: 14px; font-weight: 800; }
+.lopt .t small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+.lopt .rd { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line-strong); }
+.lopt.new { background: color-mix(in srgb, var(--shop-tint) 55%, var(--raised)); border-color: color-mix(in srgb, var(--shop-ac) 40%, transparent); }
+.lopt.warn { background: color-mix(in srgb, var(--crit-tint) 55%, var(--raised)); border-color: color-mix(in srgb, var(--crit) 40%, transparent); }
+.lopt.warn[aria-checked="true"] { border-color: var(--crit); background: var(--crit-tint); color: var(--crit); }
+.lopt.warn[aria-checked="true"] .t small { color: var(--crit); }
+.lopt.warn[aria-checked="true"] .rd { border-color: var(--crit); background: radial-gradient(var(--crit) 0 45%, transparent 50%); }
+.lopt[aria-checked="true"] { border-color: var(--shop-ac); background: var(--shop-tint); color: var(--shop-ink); }
+.lopt[aria-checked="true"] .t small { color: var(--shop-ink); }
+.lopt[aria-checked="true"] .rd { border-color: var(--shop-ac); background: radial-gradient(var(--shop-ac) 0 45%, transparent 50%); }
+.field { width: 100%; min-height: 46px; border-radius: 14px; background: var(--raised); border: 1.5px solid var(--line); padding: 0 14px; font-weight: 700; font-size: 14px; }
+.field::placeholder { color: var(--muted); }
+.flbl { margin: 2px 2px -4px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.flbl span { letter-spacing: 0; text-transform: none; font-weight: 700; margin-left: 4px; }
+.wheel { position: relative; height: 180px; border-radius: 14px; overflow: hidden; user-select: none; -webkit-user-select: none; perspective: 600px; background: var(--sunken); }
+.wheel-list { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; padding: 72px 0; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-y; outline: none; cursor: ns-resize; position: relative; z-index: 1; }
+.wheel-list::-webkit-scrollbar { display: none; }
+.wheel-item { height: 36px; scroll-snap-align: center; display: grid; place-items: center; font-size: 19px; font-weight: 700; line-height: 1; padding: 0 10px; white-space: nowrap; will-change: transform, opacity; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 72px; height: 36px; border-radius: 10px; background: var(--line); opacity: .8; pointer-events: none; z-index: 0; }
+.wheel:focus-within .wheel-band { outline: 2px solid var(--shop-ac); outline-offset: -2px; }
+.meth { display: flex; flex-wrap: wrap; gap: 6px; }
+.meth button { padding: 7px 13px; border-radius: 999px; background: var(--raised); border: 1.5px solid var(--line-strong); font-size: 13px; font-weight: 800; }
+.meth button[aria-pressed="true"] { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
+.pay { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); }
+.pay:first-child { border-top: 0; }
+.pay .am { font-weight: 900; font-size: 15px; font-variant-numeric: tabular-nums; }
+.pay .mt { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pay .x { flex: none; width: 30px; height: 30px; border-radius: 50%; color: var(--muted); font-size: 18px; }
+.addpay { width: 100%; min-height: 46px; border-radius: 14px; border: 1.5px dashed var(--line-strong); font-weight: 800; font-size: 14px; color: var(--shop-deep); margin-top: 6px; }
+.form { background: var(--raised); border-radius: 20px; box-shadow: var(--shadow-card); padding: 12px; display: grid; gap: 10px; margin-top: 8px; }
+.form .btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.sbtn { min-height: 44px; border-radius: 14px; font-weight: 800; font-size: 14px; background: var(--sunken); border: 1.5px solid var(--line-strong); }
+.sbtn.p { background: var(--shop-ac); border-color: var(--shop-ac); color: var(--shop-on); }
+.ocard.tint { background: color-mix(in srgb, var(--shop-tint) 70%, var(--raised)); box-shadow: none; }
+.ocard.frame { box-shadow: inset 0 0 0 1.5px var(--shop-ac); }
+.gesamt { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 14px 16px; border-radius: 18px; background: var(--shop-tint); color: var(--shop-ink); }
+.gesamt span { font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.gesamt b { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tmpl { display: grid; gap: 8px; margin-top: 18px; padding: 12px 14px; background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); }
+.swrow { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; }
+.swrow .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.swrow b { font-size: 15px; font-weight: 800; }
+.swrow small { font-size: 12px; font-weight: 700; color: var(--muted); }
+.sw { flex: none; position: relative; width: 48px; height: 28px; border-radius: 999px; background: var(--line-strong); transition: background .15s; }
+.sw i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--raised); box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s; }
+.swrow[aria-checked="true"] .sw { background: var(--shop-ac); }
+.swrow[aria-checked="true"] .sw i { transform: translateX(20px); }
+.tmpl .flbl { margin: 6px 2px -2px; }
+.aview { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border-radius: 14px; border: 1.5px solid var(--line-strong); background: var(--sunken); font-size: 14px; font-weight: 800; text-align: left; }
+.aview .go { margin-left: auto; color: var(--muted); }
+.pop-scrim { position: absolute; inset: 0; background: var(--scrim); z-index: 8; }
+.pop { position: absolute; left: 12px; right: 12px; top: 12%; bottom: 12%; z-index: 9; background: var(--screen); border-radius: 22px; box-shadow: var(--shadow-float); display: flex; flex-direction: column; overflow: hidden; }
+.pop-h { display: flex; align-items: flex-start; gap: 10px; padding: 14px 14px 8px 16px; }
+.pop-h .t { flex: 1; min-width: 0; }
+.pop-h b { display: block; font-size: 17px; font-weight: 900; }
+.pop-h small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+.pop-list { flex: 1; overflow-y: auto; padding: 0 16px; }
+.prow { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--line); }
+.prow:first-child { border-top: 0; }
+.prow .bd { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.prow .bd b { font-size: 15px; font-weight: 800; }
+.prow .bd small { font-size: 11px; font-weight: 700; color: var(--muted); }
+.prow .trash { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--sunken); }
+.prow .trash svg { width: 18px; height: 18px; }
+.prow .trash:hover { color: var(--crit); }
+.pop-f { padding: 10px 16px 16px; border-top: 1px solid var(--line); }
+.pop-empty { padding: 26px 8px; text-align: center; color: var(--muted); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .sw, .sw i { transition: none; } }
+.total { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 4px 4px; font-weight: 800; }
+.total b { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.split { display: grid; gap: 6px; margin-top: 8px; }
+.split div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; }
+.split .paid { background: var(--ok-tint); color: var(--ok-ink); }
+.split .pend { background: var(--warn-tint); color: var(--warn-ink); }
+.sec { margin: 16px 2px 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+.result { padding: 8px 4px; text-align: center; }
+.result .big { width: 64px; height: 64px; margin: 18px auto 12px; border-radius: 50%; background: var(--shop-ac); color: var(--shop-on); display: grid; place-items: center; }
+.result h3 { margin: 0 0 4px; font-size: 20px; font-weight: 900; }
+.result p { margin: 0 0 14px; color: var(--muted); font-weight: 700; font-size: 13px; }
+.rlist { text-align: left; display: grid; gap: 8px; }
+.rlist div { display: flex; gap: 10px; align-items: flex-start; background: var(--raised); border-radius: 16px; box-shadow: var(--shadow-card); padding: 12px 14px; font-size: 14px; font-weight: 700; }
+.rlist .ic { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--shop-tint); color: var(--shop-ink); display: grid; place-items: center; font-size: 13px; font-weight: 900; }
+.rlist small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+.explain h2 { font-size: 1.15rem; font-weight: 900; margin: 0 0 8px; }
+.explain ul { padding-left: 1.1rem; margin: 0 0 14px; display: grid; gap: 7px; }
+.explain li::marker { color: var(--shop-ac); }
+.try { background: var(--shop-tint); color: var(--shop-ink); border-radius: 14px; padding: 10px 12px; font-size: .86rem; font-weight: 700; }
+.sech2 { font-size: 1.2rem; font-weight: 900; margin: 40px 0 0; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 12px; margin-top: 14px; }
+.dec { background: var(--raised); border-radius: 18px; box-shadow: var(--shadow-card); padding: 14px; }
+.dec h3 { margin: 0 0 6px; font-size: .95rem; font-weight: 900; }
+.dec p { margin: 0 0 8px; font-size: .86rem; color: var(--muted); }
+.dec .rec { font-size: .86rem; background: var(--shop-tint); color: var(--shop-ink); border-radius: 10px; padding: 8px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Abschluss: Feinschliff</h1>
+  <p class="lede">Die Texte sind schon in der App angepasst. Hier siehst du die optischen Änderungen und die Erweiterung bei „Als Vorlage speichern“. Alles im Handy ist bedienbar, die Schritte 2 und 3 sind besonders wichtig.</p>
+
+  <div class="tools">
+    <div class="chips">
+      <button class="chip-btn" data-scn="open">Neu starten: 2 Artikel offen</button>
+      <button class="chip-btn" data-scn="long">Neu starten: langer Einkauf (12 gekauft)</button>
+      <button class="chip-btn" data-scn="all">Neu starten: alles gekauft</button>
+    </div>
+    <div class="chips" role="group" aria-label="Hervorhebung der offenen Artikel">
+      <button class="chip-btn" data-ostyle="tint" aria-pressed="true">Offen: getönt</button>
+      <button class="chip-btn" data-ostyle="frame" aria-pressed="false">Offen: Rahmen</button>
+    </div>
+    <div class="theme" role="group" aria-label="Darstellung">
+      <button data-theme-set="system" aria-pressed="true">System</button>
+      <button data-theme-set="light" aria-pressed="false">Hell</button>
+      <button data-theme-set="dark" aria-pressed="false">Dunkel</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="phone" id="phone"></div>
+    <div class="explain" id="explain"></div>
+  </div>
+
+  <h2 class="sech2">Offene Entscheidungen</h2>
+  <div class="dgrid">
+    <div class="dec"><h3>Hervorhebung der offenen Artikel</h3><p>Zwei Varianten zum Umschalten: getönte Fläche in der Modulfarbe (ruhiger) oder ein Rahmen (klarer abgegrenzt).</p><div class="rec"><b>Vorschlag:</b> getönt. Der Rahmen wirkt neben den Listen-Karten unruhiger.</div></div>
+    <div class="dec"><h3>Kennzeichnung „nicht gekauft“ in Schritt 1</h3><p>An jedem offenen Artikel stand bisher ein Chip „nicht gekauft“. Die Gruppe „Noch offen“ sagt dasselbe.</p><div class="rec"><b>Vorschlag:</b> Chip entfernen, wie im Mockup.</div></div>
+    <div class="dec"><h3>Vorlage bearbeiten</h3><p>Das Entfernen im Fenster „Artikel ansehen“ betrifft nur die Vorlage, nicht die Liste. Menge und Name der Artikel lassen sich dort nicht ändern, nur entfernen.</p><div class="rec"><b>Vorschlag:</b> so. Mehr wäre ein eigener Editor.</div></div>
+    <div class="dec"><h3>Leere Vorlage</h3><p>Entfernst du alle Artikel, bleibt der Schalter an, aber es wird nichts gespeichert (Hinweis im Bereich).</p><div class="rec"><b>Vorschlag:</b> so.</div></div>
+    <div class="dec"><h3>„Alles gekauft“</h3><p>Wenn nichts mehr offen ist, steht oben „Alles gekauft“. Passend zu „Im Warenkorb“ könnte es „Alles im Warenkorb“ heißen.</p><div class="rec"><b>Frage:</b> Soll ich es umbenennen?</div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var NAV = '<div class="nav"><i></i><i></i><i></i><i></i><i></i><span class="on">Einkauf</span></div>';
+  var LISTNAME = 'Schinken Aufstrich Sandwich klassik';
+  var METHODS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Gutschein', 'Klarna'];
+  var INSTANT = ['Bar', 'Gutschein'];
+  var STORES = ['Kein Laden', 'Aldi Nord', 'Aldi Süd', 'Lidl', 'Penny', 'Netto Marken-Discount', 'Netto (Edeka)', 'Norma', 'REWE', 'Edeka', 'Tegut', 'Hit', 'Kaufland', 'Globus', "Denn's Biomarkt", 'Alnatura', 'Basic', 'dm', 'Rossmann', 'Müller', 'Wochenmarkt', 'Metzger', 'Bäcker', 'Asia-Shop', 'Online-Lieferung'];
+  var TARGETS = {
+    woche: { name: 'Wocheneinkauf', icon: '🛒', open: 6, items: [{ n: 'Karotte', q: 200, u: 'g' }, { n: 'Milch', q: 1, u: 'L' }] },
+    grill: { name: 'Wochenende Grillen', icon: '🥩', open: 3, items: [{ n: 'Steak', q: 4, u: 'Stück' }] }
+  };
+
+  function fresh(scn) {
+    var items = [
+      { id: 1, n: 'Salami', q: 200, u: 'g', note: 'für Schinken Aufstrich Sandwich klassik', cat: 'Fleisch & Fisch', done: true },
+      { id: 2, n: 'Gulaschsuppe Fertig', q: 850, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Vorrat', done: true },
+      { id: 3, n: 'Weißer Reis', q: 200, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Nudeln & Reis', done: true },
+      { id: 4, n: 'Sauerkraut (natur)', q: 50, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Vorrat', done: false },
+      { id: 5, n: 'Karotte', q: 50, u: 'g', note: 'für Gulaschsuppe mit Reis (fertig)', cat: 'Obst & Gemüse', done: false }
+    ];
+    if (scn === 'all') items.forEach(function (i) { i.done = true; });
+    if (scn === 'long') ['Käse', 'Butter', 'Eier', 'Gurke', 'Tomaten', 'Nudeln', 'Pesto', 'Joghurt', 'Brot'].forEach(function (n, k) { items.push({ id: 20 + k, n: n, q: 1 + k, u: 'Stück', note: '', cat: 'Vorrat', done: true }); });
+    return {
+      view: 'list', step: 0, items: items, target: 'woche', newName: 'Rest von ' + LISTNAME,
+      payments: [{ amount: 23.4, method: 'Bar', store: 'REWE', note: '' }], openStyle: (S && S.openStyle) || 'tint', tmpl: { on: false, name: LISTNAME, removed: {}, popup: false },
+      form: null, booking: LISTNAME, result: null, scn: scn || 'open'
+    };
+  }
+  var S = null;
+  S = fresh('open');
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var nfN = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+  var nfE = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  function amt(q, u) { if (u === 'g' && q >= 1000) return nfN.format(q / 1000) + ' kg'; return nfN.format(q) + ' ' + u; }
+  function openItems() { return S.items.filter(function (i) { return !i.done; }); }
+  function doneItems() { return S.items.filter(function (i) { return i.done; }); }
+  function steps() { return openItems().length ? ['check', 'open', 'pay'] : ['check', 'pay']; }
+  function total() { return Math.round(S.payments.reduce(function (s, p) { return s + p.amount; }, 0) * 100) / 100; }
+  function targetName() { return S.target === 'discard' ? 'verwerfen' : S.target === 'new' ? (S.newName.trim() || 'Neue Liste') : TARGETS[S.target].name; }
+  function hint(it) {
+    if (S.target === 'new' || S.target === 'discard') return null;
+    var hit = TARGETS[S.target].items.filter(function (t) { return t.n === it.n && t.u === it.u; })[0];
+    return hit ? 'steht schon drauf: ' + amt(hit.q, hit.u) + ' → ' + amt(hit.q + it.q, it.u) : null;
+  }
+
+  /* ---------- Bildschirme ---------- */
+  function listScreen() {
+    var open = openItems(), done = doneItems();
+    function row(it) {
+      return '<div class="rw' + (it.done ? ' done' : '') + '"><span class="ck">' + (it.done ? CHECK : '') + '</span><span class="bd"><b>' + esc(it.n) + '</b><small>' + esc(it.note) + '</small></span><span class="q">' + amt(it.q, it.u) + '</span></div>';
+    }
+    var cats = {};
+    open.forEach(function (i) { (cats[i.cat] = cats[i.cat] || []).push(i); });
+    var groups = Object.keys(cats).map(function (c) { return '<div class="lbl">' + c + '</div><div class="card">' + cats[c].map(row).join('') + '</div>'; }).join('');
+    var pct = Math.round(done.length / S.items.length * 100);
+    return '<div class="scr"><div class="hd"><div class="hd-row"><h2>' + esc(LISTNAME) + '</h2><span class="cnt"><b>' + done.length + '</b> / ' + S.items.length + '</span></div>' +
+      '<div class="line"><i style="width:' + pct + '%"></i></div><button class="pill-btn" data-act="open-sheet">Einkauf abschließen</button></div>' + groups +
+      (done.length ? '<div class="lbl">Erledigt (' + done.length + ')</div><div class="card dim">' + done.map(row).join('') + '</div>' : '') + '</div>' +
+      '<div class="ib"><div class="f"><div>Menge</div><div>Einheit</div><div>Laden (optional)</div></div><div class="a"><div>Artikel hinzufügen …</div><span>+</span></div></div>' + NAV;
+  }
+
+  function stepCheck() {
+    var open = openItems(), done = doneItems();
+    function row(it) {
+      return '<button class="rw pick' + (it.done ? ' done' : ' open') + '" data-toggle="' + it.id + '"><span class="ck' + (it.done ? ' on' : '') + '">' + (it.done ? CHECK : '') + '</span><span class="bd"><b>' + esc(it.n) + '</b><small>' + esc(it.note) + '</small></span><span class="q">' + amt(it.q, it.u) + '</span></button>';
+    }
+    return '<div class="sumbar"><span class="n">' + done.length + '/' + S.items.length + '</span><span class="t"><b>' + (open.length ? open.length + ' Artikel noch offen' : 'Alles gekauft') + '</b></span></div>' +
+      (open.length ? '<div class="sec">Noch offen (' + open.length + ')</div><div class="card">' + open.map(row).join('') + '</div>' : '') +
+      '<div class="sec">Im Warenkorb (' + done.length + ')</div>' + (done.length ? '<div class="card">' + done.map(row).join('') + '</div>' : '<div class="note warn">Nichts gekauft. Du kannst trotzdem abschließen.</div>');
+  }
+
+  function stepOpen() {
+    var open = openItems();
+    var rows = open.map(function (it) {
+      var h = hint(it);
+      return '<div class="rw open"><span class="bd"><b>' + esc(it.n) + '</b>' + (h ? '<small class="merge">' + h + '</small>' : '<small>' + esc(it.note) + '</small>') + '</span><span class="q">' + amt(it.q, it.u) + '</span></div>';
+    }).join('');
+    var lists = Object.keys(TARGETS).map(function (k) {
+      var t = TARGETS[k];
+      return '<button class="lopt" role="radio" aria-checked="' + (S.target === k) + '" data-target="' + k + '"><span class="ic">' + t.icon + '</span><span class="t"><b>' + esc(t.name) + '</b><small>' + t.open + ' offen</small></span><span class="rd"></span></button>';
+    }).join('') + '<button class="lopt new" role="radio" aria-checked="' + (S.target === 'new') + '" data-target="new"><span class="ic">＋</span><span class="t"><b>Neue Liste</b><small>wird beim Abschließen angelegt</small></span><span class="rd"></span></button>';
+    var drop = '<button class="lopt warn" role="radio" aria-checked="' + (S.target === 'discard') + '" data-target="discard"><span class="ic">🗑</span><span class="t"><b>Verwerfen</b><small>nicht mehr gebraucht, wird gelöscht</small></span><span class="rd"></span></button>';
+    var disc = S.target === 'discard';
+    return '<div class="card ocard ' + S.openStyle + (disc ? ' dim' : '') + '">' + rows + '</div>' +
+      '<div class="sec">Wohin damit?</div><div class="lists" role="radiogroup">' + lists + drop + '</div>' +
+      (S.target === 'new' ? '<div style="margin-top:8px"><input class="field" id="newname" data-newname value="' + esc(S.newName) + '" maxlength="60" aria-label="Name der neuen Liste"></div>' : '');
+  }
+
+  function stepPay() {
+    var t = total(), instant = 0, pend = 0, mi = {}, mp = {};
+    S.payments.forEach(function (p) { if (INSTANT.indexOf(p.method) >= 0) { instant += p.amount; mi[p.method] = 1; } else { pend += p.amount; mp[p.method] = 1; } });
+    var list = S.payments.map(function (p, i) {
+      return '<div class="pay"><span class="am">' + nfE.format(p.amount) + '</span><span class="mt">' + esc(p.method) + (p.store ? ' · ' + esc(p.store) : '') + (p.note ? ' · ' + esc(p.note) : '') + '</span><button class="x" data-delpay="' + i + '" aria-label="Zahlung löschen">×</button></div>';
+    }).join('');
+    var f = S.form;
+    var form = f ? '<div class="form"><input class="field" id="f-amt" data-f="amount" inputmode="decimal" placeholder="Betrag (€)" value="' + esc(f.amount) + '" aria-label="Betrag">' +
+      '<div class="flbl">Zahlungsart</div><div class="meth" role="group" aria-label="Zahlungsart">' + METHODS.map(function (m) { return '<button data-meth="' + m + '" aria-pressed="' + (f.method === m) + '">' + m + '</button>'; }).join('') + '</div>' +
+      '<div class="flbl">Laden <span>optional</span></div><div class="wheel"><div class="wheel-band"></div><div class="wheel-list" id="wheel" tabindex="0" role="listbox" aria-label="Laden">' + STORES.map(function (n, i) { return '<div class="wheel-item" role="option" data-i="' + i + '" aria-selected="' + ((f.store || 'Kein Laden') === n) + '">' + esc(n) + '</div>'; }).join('') + '</div></div>' +
+      '<input class="field" id="f-note" data-f="note" placeholder="Notiz (optional)" value="' + esc(f.note) + '" aria-label="Notiz"><div class="btns"><button class="sbtn" data-act="cancel-pay">Abbrechen</button><button class="sbtn p" data-act="save-pay">Zahlung speichern</button></div></div>'
+      : '<button class="addpay" data-act="new-pay">+ Zahlung hinzufügen</button>';
+    return (S.payments.length ? '<div class="card">' + list + '</div>' : '<div class="note warn">Noch keine Zahlung erfasst. Ohne Zahlung schließt „Ohne Buchung abschließen“ nur die Liste.</div>') + form +
+      '<div class="gesamt"><span>Gesamt</span><b>' + nfE.format(t) + '</b></div>' +
+      (t > 0 ? '<div class="sec">Bezeichnung der Buchung</div><input class="field" id="bname" data-bname value="' + esc(S.booking) + '" maxlength="80" aria-label="Bezeichnung"><div class="split">' +
+        (instant > 0 ? '<div class="paid"><span>✓ Sofort bezahlt (' + Object.keys(mi).join(', ') + ')</span><span>' + nfE.format(instant) + '</span></div>' : '') +
+        (pend > 0 ? '<div class="pend"><span>Teil offen (' + Object.keys(mp).join(', ') + ')</span><span>' + nfE.format(pend) + '</span></div>' : '') + '</div>' +
+        '<div class="note">' + (pend > 0 ? (instant > 0 ? 'Es entstehen zwei Buchungen in den Finanzen: eine bezahlte und eine offene.' : 'Die Buchung ist in den Finanzen offen, bis du sie dort abhakst.') : 'Eine Buchung in den Finanzen, Kategorie „Sonstige Ausgaben“.') + '</div>' : '') + templateBlock();
+  }
+
+  function tmplItems() { return doneItems().filter(function (i) { return !S.tmpl.removed[i.id]; }); }
+  var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/></svg>';
+  function templateBlock() {
+    var bought = doneItems().length; if (!bought) return '';
+    var n = tmplItems().length, on = S.tmpl.on;
+    return '<div class="tmpl"><button class="swrow" role="switch" aria-checked="' + on + '" data-act="tmpl-toggle"><span class="t"><b>Als Vorlage speichern</b><small>' + (bought === 1 ? 'Den gekauften Artikel' : 'Die ' + bought + ' gekauften Artikel') + ' für den nächsten Einkauf merken</small></span><span class="sw" aria-hidden="true"><i></i></span></button>' +
+      (on ? '<div class="flbl">Name der Vorlage</div><input class="field" id="tname" data-tname value="' + esc(S.tmpl.name) + '" maxlength="60" aria-label="Name der Vorlage">' +
+        '<button class="aview" data-act="tmpl-popup"><span>Artikel ansehen</span><span class="q">' + n + '</span><span class="go">›</span></button>' +
+        (n === 0 ? '<div class="note warn">Keine Artikel in der Vorlage. Es wird keine Vorlage gespeichert.</div>' : '') : '') + '</div>';
+  }
+  function popup() {
+    if (!S.tmpl.popup) return '';
+    var items = tmplItems();
+    return '<div class="pop-scrim" data-act="tmpl-close"></div><div class="pop" role="dialog" aria-label="Artikel der Vorlage"><div class="pop-h"><span class="t"><b>Artikel der Vorlage</b><small>Entfernen gilt nur für die Vorlage, nicht für deine Liste</small></span><button class="sh-ico" data-act="tmpl-close" aria-label="Schließen">✕</button></div><div class="pop-list">' +
+      (items.length ? items.map(function (i) { return '<div class="prow"><span class="bd"><b>' + esc(i.n) + '</b>' + (i.note ? '<small>' + esc(i.note) + '</small>' : '') + '</span><span class="q">' + amt(i.q, i.u) + '</span><button class="trash" data-trash="' + i.id + '" aria-label="' + esc(i.n) + ' aus der Vorlage entfernen">' + TRASH + '</button></div>'; }).join('') : '<div class="pop-empty">Keine Artikel mehr in der Vorlage.</div>') +
+      '</div><div class="pop-f"><button class="cta" data-act="tmpl-close">Fertig</button></div></div>';
+  }
+
+  function sheet() {
+    var st = steps(), key = st[S.step];
+    var title = key === 'check' ? 'Alles gefunden?' : key === 'open' ? 'Nicht gefunden' : 'Bezahlung';
+    var body = key === 'check' ? stepCheck() : key === 'open' ? stepOpen() : stepPay();
+    var prog = st.map(function (_, i) { return '<i class="' + (i <= S.step ? 'on' : '') + '"></i>'; }).join('');
+    var foot;
+    if (key === 'pay') {
+      var t = total();
+      foot = '<button class="cta" data-act="finish-book"' + (t > 0 ? '' : ' disabled') + '>Buchen &amp; abschließen</button><button class="cta2" data-act="finish-nobook">Ohne Buchung abschließen</button>';
+    } else if (key === 'open') {
+      foot = '<button class="cta" data-act="next">Weiter</button>';
+    } else {
+      foot = '<button class="cta" data-act="next">Weiter</button>';
+    }
+    return '<div class="scrim" data-act="close-sheet"></div><div class="sheet" role="dialog" aria-label="Einkauf abschließen">' +
+      '<div class="sh-head"><button class="sh-ico' + (S.step === 0 ? ' ghost' : '') + '" data-act="back" aria-label="Zurück">‹</button><div class="sh-ttl"><b>' + title + '</b></div><button class="sh-ico" data-act="close-sheet" aria-label="Schließen">✕</button></div>' +
+      '<div class="prog">' + prog + '</div><div class="sh-body">' + body + '</div><div class="sh-foot">' + foot + '</div></div>' + popup();
+  }
+
+  function resultScreen() {
+    var r = S.result;
+    var lines = '<div><span class="ic">✓</span><span>' + r.bought + ' ' + (r.bought === 1 ? 'Artikel' : 'Artikel') + ' gekauft</span></div>';
+    if (r.discarded) lines += '<div><span class="ic">🗑</span><span>' + r.discarded + (r.discarded === 1 ? ' Artikel verworfen' : ' Artikel verworfen') + '<small>aus der Liste gelöscht</small></span></div>';
+    if (r.moved) lines += '<div><span class="ic">↗</span><span>' + r.moved + ' Artikel auf „' + esc(r.target) + '“ übertragen<small>' + (r.merged ? r.merged + ' davon aufgestockt' : 'als neue Zeilen') + (r.newList ? ' · Liste neu angelegt' : '') + '</small></span></div>';
+    if (r.template) lines += '<div><span class="ic">📋</span><span>Als Vorlage „' + esc(r.template) + '“ gespeichert<small>' + r.tcount + ' Artikel</small></span></div>';
+    lines += r.booked ? '<div><span class="ic">€</span><span>Buchung ' + nfE.format(r.total) + ' in den Finanzen<small>' + esc(r.name) + ' · Sonstige Ausgaben' + (r.split ? ' · zwei Buchungen (bezahlt und offen)' : r.open ? ' · offen' : ' · bezahlt') + '</small></span></div>' : '<div><span class="ic">–</span><span>Keine Buchung angelegt</span></div>';
+    return '<div class="scr"><div class="result"><div class="big">' + CHECK.replace('width="14" height="14"', 'width="30" height="30"') + '</div><h3>Einkauf abgeschlossen</h3><p>' + esc(LISTNAME) + '</p></div><div class="rlist">' + lines + '</div>' +
+      '<div style="margin-top:16px;display:grid"><button class="cta" data-act="restart">Fertig</button></div></div>' + NAV;
+  }
+
+  var EXPL = {
+    list: { h: 'Ausgangspunkt', li: ['Die Liste ist wie zuletzt abgestimmt. Alles Neue steckt im Abschluss.'], try: 'Tippe auf „Einkauf abschließen“.' },
+    check: { h: 'Schritt 1 · Alles gefunden?', li: ['Die Texte sind angepasst: „N Artikel noch offen“, „Noch offen“, „Im Warenkorb“. Der Hinweistext und der Listenname im Kopf sind weg.', 'Die Kennzeichnung „nicht gekauft“ an jedem offenen Artikel habe ich hier weggelassen, weil die Gruppe „Noch offen“ dasselbe sagt.'], try: 'Stelle „Karotte“ und „Sauerkraut“ um: Der nächste Schritt verschwindet.' },
+    open: { h: 'Schritt 2 · Nicht gefunden', li: ['Die offenen Artikel stehen ganz oben direkt unter dem Fortschritt. Sie heben sich leicht ab: als getönte Fläche in der Modulfarbe oder mit Rahmen (Schalter über dem Handy).', '„Neue Liste“ ist leicht in der Modulfarbe getönt, „Verwerfen“ leicht rot. Die vorhandenen Listen bleiben neutral weiß.', 'Gewählt wird jeweils mit stärkerer Farbe und gefülltem Punkt.', 'Der Infobereich und der Hinweis unter „Weiter“ sind weg.'], try: 'Wechsle zwischen Wocheneinkauf, Neue Liste und Verwerfen. Schalte oben zwischen „getönt“ und „Rahmen“.' },
+    pay: { h: 'Schritt 3 · Bezahlung', li: ['„Gesamt“ ist jetzt eine eigene getönte Karte mit großer Summe und trennt sich klar von den Zahlungen darüber. „Zahlungen“ als Überschrift ist weg.', '<b>Als Vorlage speichern:</b> Ist der Schalter an, steht über dem Feld „Name der Vorlage“. Darunter „Artikel ansehen (n)“.', '<b>Artikel ansehen</b> öffnet ein scrollbares Fenster mit allen Artikeln der Vorlage, jeweils mit Eimer-Symbol zum Entfernen. Entfernt wird nur in der Vorlage, nicht in deiner Liste.', 'Sind alle Artikel entfernt, wird keine Vorlage gespeichert (Hinweis im Bereich).'], try: 'Schalter an, „Artikel ansehen“ öffnen, ein paar Artikel entfernen. Mit „langer Einkauf“ oben scrollt das Fenster.' },
+    done: { h: 'Fertig', li: ['Die Zusammenfassung nennt auch die gespeicherte Vorlage mit Anzahl der Artikel.'], try: 'Mit „Fertig“ startest du neu.' }
+  };
+
+  function render() {
+    var phone = document.getElementById('phone');
+    var keep = phone.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0;
+    var focusId = document.activeElement && document.activeElement.id, selStart = document.activeElement && document.activeElement.selectionStart;
+    var html, key;
+    if (S.view === 'list') { html = listScreen(); key = 'list'; }
+    else if (S.view === 'sheet') { html = listScreen() + sheet(); key = steps()[S.step]; }
+    else { html = resultScreen(); key = 'done'; }
+    phone.innerHTML = html;
+    var nb = phone.querySelector('.sh-body'); if (nb) nb.scrollTop = top;
+    if (focusId) { var el = document.getElementById(focusId); if (el) { el.focus(); try { el.setSelectionRange(selStart, selStart); } catch (e) {} } }
+    setupWheel();
+    document.querySelectorAll('[data-ostyle]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-ostyle') === S.openStyle); });
+    var ex = EXPL[key];
+    document.getElementById('explain').innerHTML = '<h2>' + ex.h + '</h2><ul>' + ex.li.map(function (l) { return '<li>' + l + '</li>'; }).join('') + '</ul><div class="try">Zum Ausprobieren: ' + ex.try + '</div>';
+  }
+
+  // Wechselregler wie in der App (WheelPicker): Trommel-Effekt, Einrasten, Maus ziehbar
+  function setupWheel() {
+    var list = document.getElementById('wheel');
+    if (!list || !S.form) return;
+    var H = 36, timer = null, drag = null, moved = false;
+    function mark() {
+      var f = list.scrollTop / H;
+      Array.prototype.forEach.call(list.children, function (el, j) {
+        var d = Math.abs(j - f);
+        el.style.opacity = String(Math.max(0.1, 1 - 0.3 * d));
+        el.style.transform = 'rotateX(' + ((j - f) * -20) + 'deg) scale(' + Math.max(0.62, 1 - 0.09 * d) + ')';
+      });
+    }
+    function idx() { return Math.max(0, Math.min(STORES.length - 1, Math.round(list.scrollTop / H))); }
+    function commit() { var n = STORES[idx()]; S.form.store = n === 'Kein Laden' ? '' : n; }
+    var start = Math.max(0, STORES.indexOf(S.form.store || 'Kein Laden'));
+    list.style.scrollSnapType = 'none'; list.scrollTop = start * H; list.style.scrollSnapType = ''; mark();
+    list.addEventListener('scroll', function () { mark(); clearTimeout(timer); timer = setTimeout(function () { if (!drag) commit(); }, 90); });
+    list.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      drag = { y: e.clientY, top: list.scrollTop }; moved = false; list.style.scrollSnapType = 'none'; list.setPointerCapture(e.pointerId);
+    });
+    list.addEventListener('pointermove', function (e) { if (!drag) return; var dy = e.clientY - drag.y; if (Math.abs(dy) > 3) moved = true; list.scrollTop = drag.top - dy; });
+    function end() { if (!drag) return; drag = null; var i = idx(); list.style.scrollSnapType = ''; list.scrollTo({ top: i * H, behavior: 'smooth' }); setTimeout(commit, 260); }
+    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+    list.addEventListener('click', function (e) { var it = e.target.closest('.wheel-item'); if (it && !moved) list.scrollTo({ top: +it.getAttribute('data-i') * H, behavior: 'smooth' }); });
+    list.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return; e.preventDefault();
+      list.scrollTo({ top: Math.max(0, Math.min(STORES.length - 1, idx() + (e.key === 'ArrowDown' ? 1 : -1))) * H, behavior: 'smooth' });
+    });
+  }
+
+  function finish(book) {
+    var discard = S.target === 'discard';
+    var moveList = discard ? [] : openItems(), merged = 0;
+    moveList.forEach(function (i) { if (hint(i)) merged++; });
+    var instant = 0, pend = 0;
+    S.payments.forEach(function (p) { if (INSTANT.indexOf(p.method) >= 0) instant += p.amount; else pend += p.amount; });
+    S.result = {
+      bought: doneItems().length, moved: moveList.length, discarded: discard ? openItems().length : 0, merged: merged, target: targetName(), newList: S.target === 'new' && moveList.length > 0,
+      template: (S.tmpl.on && tmplItems().length) ? (S.tmpl.name.trim() || LISTNAME) : null, tcount: tmplItems().length,
+      booked: book, total: total(), name: S.booking.trim() || LISTNAME, split: instant > 0 && pend > 0, open: pend > 0 && instant === 0
+    };
+    S.view = 'done';
+  }
+
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.hasAttribute('data-f')) S.form[t.getAttribute('data-f')] = t.value;
+    else if (t.hasAttribute('data-newname')) S.newName = t.value;
+    else if (t.hasAttribute('data-bname')) S.booking = t.value;
+    else if (t.hasAttribute('data-tname')) S.tmpl.name = t.value;
+  });
+
+  document.addEventListener('click', function (e) {
+    var th = e.target.closest('[data-theme-set]');
+    if (th) { var v = th.getAttribute('data-theme-set'); if (v === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v); document.querySelectorAll('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', b === th); }); return; }
+    var os = e.target.closest('[data-ostyle]');
+    if (os) { S.openStyle = os.getAttribute('data-ostyle'); render(); return; }
+    var tr = e.target.closest('[data-trash]');
+    if (tr) { S.tmpl.removed[tr.getAttribute('data-trash')] = true; render(); return; }
+    var sc = e.target.closest('[data-scn]');
+    if (sc) { S = fresh(sc.getAttribute('data-scn')); render(); return; }
+    var tg = e.target.closest('[data-toggle]');
+    if (tg) { var id = +tg.getAttribute('data-toggle'); S.items.forEach(function (i) { if (i.id === id) i.done = !i.done; }); if (S.step >= steps().length) S.step = steps().length - 1; render(); return; }
+    var ta = e.target.closest('[data-target]');
+    if (ta) { S.target = ta.getAttribute('data-target'); render(); return; }
+    var me = e.target.closest('[data-meth]');
+    if (me) { S.form.method = me.getAttribute('data-meth'); render(); return; }
+    var dp = e.target.closest('[data-delpay]');
+    if (dp) { S.payments.splice(+dp.getAttribute('data-delpay'), 1); render(); return; }
+    var a = e.target.closest('[data-act]'); if (!a) return;
+    var act = a.getAttribute('data-act');
+    if (act === 'tmpl-toggle') S.tmpl.on = !S.tmpl.on;
+    else if (act === 'tmpl-popup') S.tmpl.popup = true;
+    else if (act === 'tmpl-close') S.tmpl.popup = false;
+    else if (act === 'open-sheet') { S.view = 'sheet'; S.step = 0; }
+    else if (act === 'close-sheet') { S.view = 'list'; }
+    else if (act === 'next') { S.step = Math.min(steps().length - 1, S.step + 1); }
+    else if (act === 'back') { S.step = Math.max(0, S.step - 1); }
+    else if (act === 'new-pay') { S.form = { amount: '', method: 'Bar', store: '', note: '' }; }
+    else if (act === 'cancel-pay') { S.form = null; }
+    else if (act === 'save-pay') {
+      var n = parseFloat(String(S.form.amount).replace(',', '.'));
+      if (!(n > 0)) { S.form.amount = ''; render(); var f = document.getElementById('f-amt'); if (f) { f.placeholder = 'Bitte einen Betrag eingeben'; f.focus(); } return; }
+      S.payments.push({ amount: Math.round(n * 100) / 100, method: S.form.method, store: S.form.store.trim(), note: S.form.note.trim() }); S.form = null;
+    }
+    else if (act === 'finish-book') finish(true);
+    else if (act === 'finish-nobook') finish(false);
+    else if (act === 'restart') S = fresh(S.scn);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
