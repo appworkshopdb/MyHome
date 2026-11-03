@@ -9,7 +9,7 @@ import { resolveTypeLabel } from './typeLabel';
 
 function isDone(w) {
   // is_rest explizit ausschließen: ein Ruhetag hat status='done' (siehe
-  // applyPlan), ist aber keine absolvierte Einheit. Ohne diesen
+  // Plan-Eintragen), ist aber keine absolvierte Einheit. Ohne diesen
   // Ausschluss würde jeder Ruhetag die Statistik als Training zählen.
   return w.status === 'done' && !w.is_rest;
 }

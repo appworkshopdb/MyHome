@@ -1010,3 +1010,54 @@ button.cl-row-btn { cursor: pointer; }
 .wiz-mode--mini { flex-direction: row; min-height: 48px; padding: 0 12px; gap: 8px; font-size: 13px; }
 .wiz-mode--mini .wiz-mode-icon { width: 20px; height: 20px; flex: none; }
 .wiz-mode--mini .wiz-mode-title { font-size: 13px; font-weight: 800; text-align: left; }
+
+/* ── Sport · Dauerplan (aktiver Trainingsplan) ─────────────────────────────
+   Karte "Aktiver Plan", Bestätigungs-Sheets, Streifen in der Übersicht und
+   der Hinweis im Tagesdetail. Nur Tokens der Modulfamilie (--m-*).         */
+.sd-btn:disabled { opacity: 0.4; cursor: default; }
+.sd-planhint { margin-top: 8px; padding: 8px 10px; border-radius: 12px; background: var(--surface-sunken); font-size: 12px; font-weight: 700; color: var(--text-muted); }
+
+.pl-active { background: var(--m-tint); color: var(--m-ink); border-radius: var(--r-hero); padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 2px; }
+.pl-eb { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.78; }
+.pl-bd { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--m-ac); color: var(--m-on); }
+.pl-name { display: block; margin-top: 6px; font-size: 18px; font-weight: 900; letter-spacing: -0.01em; }
+.pl-line { display: block; font-size: 12.5px; font-weight: 700; opacity: 0.8; }
+.pl-line--mt { margin-top: 8px; }
+.pl-prog { display: flex; gap: 4px; margin-top: 10px; }
+.pl-prog i { flex: 1; height: 6px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--m-ac) 28%, transparent); }
+.pl-prog i.on { background: var(--m-ac); }
+.pl-prog i.cur { background: var(--m-deep); }
+.pl-prog--bar { display: block; height: 6px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--m-ac) 28%, transparent); overflow: hidden; }
+.pl-prog--bar i { display: block; height: 100%; background: var(--m-ac); }
+.pl-row { display: flex; gap: 8px; margin-top: 12px; }
+.pl-noact { padding: 14px; margin-bottom: 14px; border: 1.5px dashed var(--border-strong); border-radius: var(--r-hero); }
+.pl-noact b { display: block; font-size: 15px; font-weight: 900; }
+.pl-noact span { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+
+.pl-sheet { display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 4px; }
+.pl-sub { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.pl-seg { display: flex; gap: 4px; padding: 4px; background: var(--surface-sunken); border-radius: var(--r-pill); }
+.pl-seg button { flex: 1; padding: 9px 0; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.pl-seg button.is-on { background: var(--m-ac); color: var(--m-on); }
+.pl-select { width: 100%; min-height: 46px; padding: 10px 12px; border: 1.5px solid var(--border-hairline); border-radius: 14px; background: var(--surface-sunken); color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 700; }
+.pl-prev { border: 1px solid var(--border-hairline); border-radius: 16px; overflow: hidden; }
+.pl-prev div { display: flex; justify-content: space-between; gap: 8px; padding: 7px 12px; font-size: 13px; border-top: 1px solid var(--border-hairline); }
+.pl-prev div:first-child { border-top: 0; }
+.pl-prev span { color: var(--text-muted); font-weight: 700; }
+.pl-prev b { font-weight: 800; text-align: right; }
+.pl-prev .is-train { background: var(--m-tint); }
+.pl-prev .is-rest b { font-weight: 600; color: var(--text-muted); }
+.pl-facts { display: flex; flex-direction: column; gap: 6px; }
+.pl-facts div { display: flex; gap: 8px; font-size: 13px; font-weight: 700; }
+.pl-facts i { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--m-ac); }
+.pl-facts .is-ok i { background: var(--status-positive); }
+.pl-foot { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.pl-foot .btn { width: 100%; min-height: 48px; }
+
+.spo-planstrip { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 16px; padding: 12px 14px; border: 0; border-radius: 20px; background: var(--m-tint); color: var(--m-ink); font: inherit; text-align: left; cursor: pointer; }
+.spo-planstrip-bd { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--m-ac); color: var(--m-on); }
+.spo-planstrip-tx { display: flex; flex-direction: column; min-width: 0; }
+.spo-planstrip-tx b { font-size: 14.5px; font-weight: 900; }
+.spo-planstrip-tx span { font-size: 12px; font-weight: 700; opacity: 0.78; }
+.spo-planstrip-chev { margin-left: auto; font-size: 18px; font-weight: 800; opacity: 0.5; }
+.spo-planstrip:focus-visible { outline: 2px solid var(--m-ac); outline-offset: 2px; }

@@ -1,13 +1,26 @@
 import { formatRelativeDate } from '../../../core/lib/format';
 import { resolveTypeLabel } from '../lib/typeLabel';
 import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
+import { planDayFor } from '../../../core/lib/sportPlanSync';
+import { todayIso } from '../../../core/lib/wizardDates';
 
 // Zeigt alle Einheiten des gewählten Tages. Das Abhaken passiert direkt
 // hier über die Checkbox (Konzept-Entscheidung) — ein Klick genügt,
 // kein Umweg über das Formular. Der DB-Trigger übernimmt daraufhin die
 // Auswertungs-Kennzahlen.
-export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit, onDelete, onPlanNew, onPickPlan }) {
+// activePlan = { start_date, plan } oder null (Dauerplan). Eigene Einträge haben
+// Vorrang vor dem Plan; Plan-Einträge lassen sich bearbeiten, aber nicht löschen
+// (auslassen = "+ Ruhetag" eintragen).
+export default function DayDetail({ date, workouts, plans, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest }) {
   const dayWorkouts = workouts.filter((w) => w.occurred_on === date);
+
+  // Steht an diesem Tag nur ein eigener Eintrag, ruht die Plan-Einheit darunter.
+  // Löscht man den Eintrag, gilt sie wieder (nur heute und später, Vergangenes
+  // wird nie nachgetragen).
+  const hasAuto = dayWorkouts.some((w) => w.auto_planned);
+  const hiddenPlanDay = activePlan && dayWorkouts.length > 0 && !hasAuto && date >= todayIso()
+    ? planDayFor(activePlan.plan.items, activePlan.start_date, date)
+    : null;
 
   // "Tag X von Y" nur berechenbar, wenn plan_day_index gesetzt ist
   // (erst seit dieser Migration) UND der zugehörige Plan noch existiert
@@ -17,7 +30,7 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
     if (w.plan_id == null || w.plan_day_index == null) return null;
     const plan = plans?.find((p) => p.id === w.plan_id);
     if (!plan) return null;
-    return `Tag ${w.plan_day_index + 1} von ${plan.items.length} · ${plan.title}`;
+    return `${w.auto_planned ? 'Aus Plan · ' : ''}Tag ${w.plan_day_index + 1} von ${plan.items.length} · ${plan.title}`;
   }
 
   return (
@@ -41,7 +54,7 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
                   {planProgress(w) && <div className="sd-meta">{planProgress(w)}</div>}
                 </div>
                 <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
-                <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
+                {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
               </div>
             );
           }
@@ -69,18 +82,24 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
               </div>
 
               <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
-              <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
+              {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
             </div>
           );
         })
+      )}
+
+      {hiddenPlanDay && (
+        <div className="sd-planhint">
+          Plan-Einheit „{hiddenPlanDay.item.is_rest ? 'Ruhetag' : hiddenPlanDay.item.title}“ ruht, solange dieser Eintrag besteht. Löschst du ihn, gilt sie wieder.
+        </div>
       )}
 
       <div className="sd-actions">
         <button className="sd-btn sd-btn--out" onClick={() => onPlanNew(date)}>
           + Einzelne Einheit
         </button>
-        <button className="sd-btn sd-btn--fill" onClick={() => onPickPlan(date)}>
-          + Trainingsplan
+        <button className="sd-btn sd-btn--fill" onClick={() => onAddRest(date)} disabled={dayWorkouts.some((w) => w.is_rest)}>
+          + Ruhetag
         </button>
       </div>
     </div>

@@ -15,7 +15,7 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 // entstehen (PlanEditor "+ Ruhetag"), jetzt auch direkt für einen
 // einzelnen Kalendertag. Intern bleibt ein Ruhetag weiterhin
 // status='done' + is_rest=true (dieselbe Kodierung wie beim Anwenden
-// eines Plans, siehe spoData.js applyPlan).
+// eines Plans, siehe core/lib/sportPlanSync.js buildPlanRows).
 export default function WorkoutForm({ onSave, onCancel, showToast, initialValues, userSports = [], units = [] }) {
   const iv = initialValues ?? {};
   const isEdit = Boolean(iv.id);
