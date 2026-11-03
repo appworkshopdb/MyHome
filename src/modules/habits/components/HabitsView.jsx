@@ -609,7 +609,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
         <div className="hab-section">
           <div className="hab-section-label">
             Aktiv
-            <span className="hab-section-label-hint"> · ziehen zum Sortieren</span>
           </div>
           <DndContext
             sensors={sensors}

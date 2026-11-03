@@ -1364,14 +1364,6 @@
   outline: 1.5px dashed var(--action-primary);
 }
 
-.hab-section-label-hint {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-}
-
 /* ═══════════════════════════════════════════════════════════
    ERINNERUNGS-UI
    ═══════════════════════════════════════════════════════════ */
