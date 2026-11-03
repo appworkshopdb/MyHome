@@ -1,5 +1,6 @@
 import { PREDEFINED_UNITS } from './data/predefinedUnits';
 import { getMuscleVisual } from './data/muscleGroups';
+import { SPORT_TYPE_PREFIX } from '../../../core/lib/sportsData';
 
 // Muskelgruppen eines Plan-Tags. spo_plan_items hat KEINE muscle_groups-Spalte,
 // deshalb werden sie in dieser Reihenfolge aufgelöst:
@@ -33,4 +34,14 @@ export function planCounts(items) {
   const rest = items.filter((i) => i.is_rest).length;
   const train = items.length - rest;
   return `${items.length} Tage · ${train} Einheiten${rest ? ` · ${rest} Ruhetage` : ''}`;
+}
+
+// Platzhalter-Symbol für Einheiten ohne Muskelbilder (Ausdauer, Beweglichkeit,
+// Sportarten), bis es feste Bilder je Einheit gibt.
+export function resolvePlanIcon(item) {
+  if (item.icon) return item.icon;
+  const predefined = PREDEFINED_UNITS.find((u) => u.title === item.title);
+  if (predefined?.icon) return predefined.icon;
+  if (item.type_key?.startsWith(SPORT_TYPE_PREFIX)) return '🏅';
+  return '';
 }

@@ -117,7 +117,7 @@ export const TRAINING_TYPES = [
     muscle_groups: ['beine', 'herz_kreislauf'], level: 'fortgeschritten',
   },
   {
-    key: 'endurance.hiit', label: 'HIIT / Zirkeltraining', group: 'Ausdauer',
+    key: 'endurance.hiit', label: 'HIIT / Zirkel', group: 'Ausdauer',
     stimulus: 'ausdauer', goals: ['abnehmen', 'halten', 'muskel'],
     intensity: 'hoch', typical_duration_min: 30,
     muscle_groups: ['ganzkoerper', 'herz_kreislauf'], level: 'alle',

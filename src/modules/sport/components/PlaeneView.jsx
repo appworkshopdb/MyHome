@@ -2,11 +2,11 @@ import { useState } from 'react';
 import PlanSuggestions from './PlanSuggestions';
 import PlanEditor from './PlanEditor';
 import RestBadge from './RestBadge';
-import { MusclePreview } from './EinheitenListShared';
+import UnitVisual from './UnitVisual';
 import { ActivatePlanSheet, EndPlanSheet, EditPlanConfirmSheet, DeletePlanSheet, PickPlanSheet } from './PlanSheets';
 import { addDaysIso, diffDays, planDayFor, planImpact } from '../../../core/lib/sportPlanSync';
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
-import { muscleLabels, planCounts, resolvePlanMuscleGroups } from '../lib/planMuscles';
+import { muscleLabels, planCounts, resolvePlanIcon, resolvePlanMuscleGroups } from '../lib/planMuscles';
 import { resolveTypeLabel } from '../lib/typeLabel';
 
 // Seite "Pläne" in drei Stufen, oben immer EINE Karte:
@@ -28,7 +28,8 @@ const itemTitle = (item) => (item.is_rest ? 'Ruhetag' : item.title);
 
 function unitSubline(item, units) {
   const labels = muscleLabels(resolvePlanMuscleGroups(item, units));
-  return labels || resolveTypeLabel(item.type_key) || '';
+  const text = labels || resolveTypeLabel(item.type_key) || '';
+  return text === item.title ? '' : text; // nichts doppelt ("Lauf" / "Lauf")
 }
 
 function Icon({ d, size = 16 }) {
@@ -91,9 +92,10 @@ function PlanHero({ active, units, onEdit, onEnd }) {
   }
 
   const muscles = day && !day.item.is_rest ? resolvePlanMuscleGroups(day.item, units) : [];
+  const icon = day && !day.item.is_rest ? resolvePlanIcon(day.item) : '';
   let picture = null;
   if (day?.item.is_rest) picture = <RestBadge size={62} />;
-  else if (muscles.length) picture = <MusclePreview tags={muscles} size={52} />;
+  else if (muscles.length || icon) picture = <UnitVisual tags={muscles} icon={icon} size={52} />;
 
   const lineA = pending ? `${plan.title} · startet ${fmtShort(active.start_date)}` : `${plan.title} · seit ${fmtDM(active.start_date)}`;
   const lineB = pending ? `${inDays(diffDays(today, active.start_date))} · bis auf weiteres` : 'bis auf weiteres';
@@ -159,7 +161,7 @@ function PlanRow({ plan, units, onActivate, onEdit, onMore }) {
                   {sub && <small>{sub}</small>}
                 </span>
                 <span className="pl-tl-v">
-                  {item.is_rest ? <RestBadge size={34} /> : tags.length > 0 && <MusclePreview tags={tags} size={34} />}
+                  {item.is_rest ? <RestBadge size={34} /> : <UnitVisual tags={tags} icon={resolvePlanIcon(item)} size={34} />}
                 </span>
               </div>
             );
@@ -208,6 +210,7 @@ export default function PlaeneView({
         <PlanEditor
           initialPlan={editing.id ? editing : null}
           units={units}
+          userSports={userSports}
           isActive={Boolean(active && editing.id === active.plan_id)}
           onSave={(plan, items) => {
             // Änderung am aktiven Plan wirkt ab heute auf den Kalender: erst bestätigen lassen
