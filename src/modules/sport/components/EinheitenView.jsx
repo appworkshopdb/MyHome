@@ -35,7 +35,7 @@ export default function EinheitenView({ units, loading }) {
             <EinheitRow
               key={unit.id}
               title={unit.title}
-              subtitle={[resolveTypeLabel(unit.type_key) ?? 'Kein Typ', unit.duration_min ? `${unit.duration_min} Min.` : null].filter(Boolean).join(' · ')}
+              subtitle={resolveTypeLabel(unit.type_key) ?? 'Kein Typ'}
               tags={unit.muscle_groups}
               isLast={i === units.length - 1}
             />

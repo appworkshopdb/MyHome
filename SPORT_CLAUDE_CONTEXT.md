@@ -247,17 +247,17 @@ Der Vergleich berücksichtigt:
 
 Der frühere Fehler mit `muscle_groups` wurde behoben. Nicht wieder einführen.
 
-## 9. Plan anwenden
+## 9. Aktiver Plan (Dauerplan)
 
-`applyPlan(session, plan, startDate)` in `spoData.js`:
-- nimmt den gewählten Starttag
-- verschiebt jeden Plan-Tag um dessen `day_index`
-- erzeugt daraus `spo_workouts`
-- Trainingstage erhalten `status='planned'`
-- Ruhetage werden mit `is_rest=true` und `status='done'` angelegt
-- `plan_id` und `plan_day_index` werden am Workout gespeichert
+Ein Plan wird im Bereich „Pläne“ **aktiviert** (Start: heute, nächster Montag oder Datum) und füllt den Kalender danach selbst auf, bis er gewechselt, geändert oder beendet wird. Ein Plan ist freiwillig. Das frühere „Eintragen“ (`applyPlan`) und „+ Trainingsplan“ im Tagesdetail gibt es nicht mehr.
 
-Die Anzahl der erzeugten Einträge wird zurückgegeben.
+Logik in `core/lib/sportPlanSync.js` (core, weil der Hub sie vor seiner Heute-Abfrage aufruft):
+- Tabelle `spo_active_plan` (eine Zeile pro Person: `plan_id`, `start_date` = Tag 1 des Zyklus), Spalte `spo_workouts.auto_planned` — Migration `supabase/spo_active_plan_migration.sql`. Ohne Migration bleibt alles still (`getActivePlan()` → null).
+- Der Plan-Tag ergibt sich aus `(Datum − start_date) mod Anzahl Tage`. Pläne haben beliebig viele Tage und sind nicht an Wochentage gebunden.
+- `syncActivePlan(session)` legt 28 Tage im Voraus echte `spo_workouts`-Zeilen an (`auto_planned = true`, `plan_id`, `plan_day_index`, Ruhetage wie früher `is_rest` + `status='done'`), nie rückwirkend. Aufruf in `SportModule.load()` und `Hub.loadTodaySport()`. Die Zeilen bleiben echt, damit Hub, Überblicke, Auswertung und Push unverändert rechnen.
+- **Eigene Einträge haben Vorrang:** `spoData.saveWorkout` blendet die Plan-Zeile desselben Tages per `deleted_at` aus; wer den eigenen Eintrag löscht, bekommt die Plan-Einheit beim nächsten Laden zurück. Bearbeiten einer Plan-Zeile setzt `auto_planned = false`. Plan-Zeilen haben im Tagesdetail kein Löschen (auslassen = „+ Ruhetag“).
+- Wechseln/Ändern/Beenden gelten ab heute: nur unberührte, offene Plan-Zeilen ab heute werden ersetzt (`clearFutureAutoRows`), Erledigtes, Eigenes und Vergangenes bleibt. Beim Ändern bleibt `start_date`, der Plan läuft an derselben Stelle im Zyklus weiter (`savePlan` liefert dafür `_itemsChanged`).
+- Teil-Index `spo_workouts_auto_day_uidx` verhindert Doppelte bei zwei Geräten; der Auffüller ignoriert 23505.
 
 ## 10. Planvorschläge
 
@@ -291,10 +291,10 @@ Bei zukünftigen Erweiterungen vorhandene Statistik-Helfer wiederverwenden statt
 
 ## 14. Navigation / Zustände
 
-`SportModule` hält drei wichtige Unterzustände:
+`SportModule` hält zwei wichtige Unterzustände:
 - `formInitial` – Workout-Formular
 - `editingPlan` – Plan-Editor
-- `applyingPlan` – Plan-Anwenden-Dialog
+(Aktivieren/Beenden/Änderung bestätigen sind Bottom-Sheets in `PlaeneView`/`PlanSheets.jsx`.)
 
 `handleBack()` schließt zuerst einen offenen Unterzustand und verlässt erst danach den jeweiligen Detailbereich. Beim Verlassen werden Unterzustände zurückgesetzt.
 

@@ -7,6 +7,8 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
+import { syncActivePlan, activatePlan, endActivePlan, resyncActivePlan } from '../../core/lib/sportPlanSync';
+import { todayIso } from '../../core/lib/wizardDates';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
 import { fb } from '../../core/lib/feedback';
 import OverviewSection from './components/OverviewSection';
@@ -56,6 +58,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   const [workouts, setWorkouts] = useState([]);
   const [units, setUnits] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [activePlan, setActivePlan] = useState(null); // Zeile aus spo_active_plan (Dauerplan) oder null
   const [userSports, setUserSports] = useState([]);
   const [bodyWeight, setBodyWeight] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,11 +68,13 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   // geplanten Trainings ersetzt es dort kurz die Kalenderansicht.
   const [formInitial, setFormInitial] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
-  const [applyingPlan, setApplyingPlan] = useState(null); // Anwenden-Dialog
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // Zuerst den aktiven Plan auffüllen, dann laden: so steht der Kalender
+      // beim Öffnen immer 28 Tage im Voraus (schlägt nie fehl, ohne Plan: null).
+      const active = await syncActivePlan(session);
       const [ws, us, ps, profile] = await Promise.all([
         db.getWorkouts(session),
         db.getUnits(session),
@@ -79,6 +84,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
       setWorkouts(ws);
       setUnits(us);
       setPlans(ps);
+      setActivePlan(active);
       setUserSports(profile.sports ?? []);
       // Gewicht kommt aus demselben body_profile-Aufruf, der ohnehin für
       // die Sportarten läuft — für die Bereichszeile "Gewicht" ist
@@ -109,9 +115,8 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   // konsequent alle Unter-Zustände auf, damit ein späteres Zurückkehren
   // immer bei der Liste startet.
   function handleBack() {
-    if (view === 'plaene' && (editingPlan || applyingPlan)) {
+    if (view === 'plaene' && editingPlan) {
       setEditingPlan(null);
-      setApplyingPlan(null);
       return;
     }
     if (view === 'kalender' && formInitial !== false) {
@@ -120,7 +125,6 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
     setFormInitial(false);
     setEditingPlan(null);
-    setApplyingPlan(null);
     onNavigateView(null);
   }
 
@@ -180,7 +184,11 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
 
   async function handleSavePlan(plan, items) {
     try {
-      await db.savePlan(session, plan, items);
+      const saved = await db.savePlan(session, plan, items);
+      // Änderung am aktiven Plan: ab heute neu erzeugen, Vergangenes bleibt
+      if (activePlan && saved.id === activePlan.plan_id && saved._itemsChanged) {
+        await resyncActivePlan(session);
+      }
       setEditingPlan(null);
       showToast('Plan gespeichert');
       await load();
@@ -192,6 +200,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
 
   async function handleDeletePlan(id) {
     try {
+      if (activePlan && activePlan.plan_id === id) await endActivePlan(session);
       await db.deletePlan(id);
       await load();
     } catch (e) {
@@ -200,18 +209,45 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }
 
-  async function handleApplyPlan(plan, startDate) {
+  // Plan aktivieren oder wechseln — ab startDate, alles davor bleibt.
+  async function handleActivatePlan(plan, startDate) {
     try {
-      const count = await db.applyPlan(session, plan, startDate);
-      setApplyingPlan(null);
-      showToast(`${count} Einheiten eingetragen`);
+      await activatePlan(session, plan.id, startDate);
+      showToast(startDate === todayIso() ? `„${plan.title}“ gilt ab heute` : `„${plan.title}“ startet am ${startDate.split('-').reverse().slice(0, 2).join('.')}.`);
       await load();
-      onNavigateView('kalender');
     } catch (e) {
       console.error(e);
-      showToast('Plan konnte nicht eingetragen werden');
+      showToast(e?.code === 'PGRST205' || e?.code === '42P01' ? 'Dauerplan: Datenbank-Migration fehlt noch' : 'Plan konnte nicht aktiviert werden');
     }
   }
+
+  async function handleEndPlan() {
+    try {
+      await endActivePlan(session);
+      showToast('Plan beendet');
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Plan konnte nicht beendet werden');
+    }
+  }
+
+  // "+ Ruhetag" im Kalender: eigener Eintrag, hat Vorrang vor dem Plan
+  async function handleAddRest(date) {
+    try {
+      await db.saveWorkout(session, { occurred_on: date, type_key: null, title: 'Ruhetag', duration_min: null, status: 'done', is_rest: true });
+      fb.restDay();
+      showToast('Ruhetag eingetragen');
+      await load();
+    } catch (e) {
+      console.error(e);
+      showToast('Speichern fehlgeschlagen');
+    }
+  }
+
+  // Aktiver Plan samt Plan-Daten (null, wenn kein Plan aktiv oder der Plan gelöscht ist)
+  const activePlanObj = activePlan ? plans.find((p) => p.id === activePlan.plan_id) : null;
+  const activeFull = activePlanObj ? { ...activePlan, plan: activePlanObj } : null;
 
   // ── Detail-Screens: ein Bereich pro Screen ──
   if (view && DETAIL_TITLES[view]) {
@@ -225,11 +261,12 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
               plans={plans}
               units={units}
               loading={loading}
+              activePlan={activeFull}
               onToggleDone={handleToggleDone}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onPlanNew={handlePlanNew}
-              onApplyPlan={handleApplyPlan}
+              onAddRest={handleAddRest}
               formInitial={formInitial}
               onOpenForm={setFormInitial}
               onCancelForm={() => setFormInitial(false)}
@@ -249,14 +286,14 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
               loading={loading}
               userSports={userSports}
               editing={editingPlan}
-              applying={applyingPlan}
+              activePlan={activePlan}
+              workouts={workouts}
               onEditPlan={setEditingPlan}
               onDeletePlan={handleDeletePlan}
               onSavePlan={handleSavePlan}
               onCancelEdit={() => setEditingPlan(null)}
-              onOpenApply={setApplyingPlan}
-              onApplyPlan={handleApplyPlan}
-              onCancelApply={() => setApplyingPlan(null)}
+              onActivatePlan={handleActivatePlan}
+              onEndPlan={handleEndPlan}
               onStartFromPlan={startFromPlan}
               showToast={showToast}
             />
@@ -279,11 +316,12 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
           workouts={workouts}
           units={units}
           plans={plans}
+          activePlan={activeFull}
           bodyWeight={bodyWeight}
           loading={loading}
           onToggleDone={handleToggleDone}
           onEdit={handleEdit}
-          onPlanToday={() => handlePlanNew(new Date().toISOString().slice(0, 10))}
+          onPlanToday={() => handlePlanNew(todayIso())}
           onNavigate={onNavigateView}
         />
       </div>

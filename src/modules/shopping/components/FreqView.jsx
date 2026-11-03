@@ -118,7 +118,7 @@ export default function FreqView() {
           <div className="sho-empty-icon">📊</div>
           <div className="sho-empty-title">Noch keine Daten</div>
           <div className="sho-empty-text">
-            Hak Artikel in deinen Listen ab — sie erscheinen hier sobald du mindestens 2 verschiedene Artikel erledigt hast.
+            Hak Artikel in deinen Listen ab — sie erscheinen hier, sobald du sie einmal gekauft hast.
           </div>
         </div>
       )}

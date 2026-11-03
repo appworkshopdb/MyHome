@@ -7,18 +7,18 @@ import { IconTrash } from '../../../core/components/Icons';
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-// + und - bedeuten je nach Ziel etwas anderes: bei "Abnehmen" ist ein
-// Minus der Erfolg (grün), bei "Zunehmen"/"Muskelaufbau" ein Plus.
-// "Halten" bewertet beide Richtungen neutral. Nutzt die bestehenden
-// Signalfarben (--success/--danger) statt neue Farben zu erfinden —
-// Design-Regel "ein Akzent pro Ansicht, sonst nichts Buntes außer den
-// funktionalen Signalfarben".
-function deltaColor(delta, goal) {
-  if (delta === 0 || !goal || goal === 'halten') return 'var(--text-primary)';
+// + und - bedeuten je nach Ziel etwas anderes:
+//   Abnehmen          → Minus gut (grün), Plus schlecht (rot)
+//   Zunehmen / Muskel → Plus gut (grün), Minus schlecht (rot)
+//   Halten            → jede Veränderung schlecht (rot)
+// Ohne Ziel oder bei ±0 bleibt die Angabe neutral. Nutzt die vorhandenen Signalfarben
+// (--status-positive/--status-critical), Klassen .sa-delta--good|bad in design-v2.css.
+function deltaTone(delta, goal) {
+  if (!delta || !goal) return 'neutral';
+  if (goal === 'halten') return 'bad';
   const gainIsGood = goal === 'zunehmen' || goal === 'muskel';
-  const isGain = delta > 0;
-  const good = gainIsGood ? isGain : !isGain;
-  return good ? 'var(--success)' : 'var(--danger)';
+  if (goal !== 'abnehmen' && !gainIsGood) return 'neutral';
+  return (gainIsGood ? delta > 0 : delta < 0) ? 'good' : 'bad';
 }
 
 function formatDelta(delta) {
@@ -84,7 +84,7 @@ export default function WeightTimeline() {
   }
 
   if (loading) {
-    return <div className="card">Lädt…</div>;
+    return <div className="sa-card">Lädt…</div>;
   }
 
   // Deltas chronologisch (älteste zuerst) berechnen — "Vorher" muss der
@@ -97,8 +97,8 @@ export default function WeightTimeline() {
   const display = [...withDelta].reverse();
 
   return (
-    <div className="card">
-      <div className="card-title">Gewichtsverlauf</div>
+    <div className="sa-card">
+      <div className="sa-ch">Gewichtsverlauf</div>
 
       {showForm ? (
         <div style={{ marginBottom: 12 }}>
@@ -118,41 +118,38 @@ export default function WeightTimeline() {
           </div>
         </div>
       ) : (
-        <button className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} onClick={() => { setDate(TODAY()); setShowForm(true); }}>
+        <button className="sa-wbtn" onClick={() => { setDate(TODAY()); setShowForm(true); }}>
           + Gewicht eintragen
         </button>
       )}
 
       {display.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Noch kein Gewicht eingetragen.</p>
+        <p style={{ color: 'var(--text-secondary)', margin: '10px 0 0' }}>Noch kein Gewicht eingetragen.</p>
       ) : (
-        display.map((log, i) => {
-          const isLast = i === display.length - 1;
-          return (
-            <div key={log.id} style={{ display: 'flex', gap: 12 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 12, flexShrink: 0 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--accent)', marginTop: 4 }} />
-                {!isLast && <div style={{ flex: 1, width: 2, background: 'var(--border)' }} />}
+        <div className={`sa-wlist${display.length > 3 ? ' scroll' : ''}`}>
+          {display.map((log, i) => (
+            <div key={log.id} className="sa-wr">
+              <div className="sa-rail" aria-hidden="true">
+                <span className="sa-dot" />
+                {i < display.length - 1 && <span className="sa-line" />}
               </div>
-              <div style={{ flex: 1, paddingBottom: 16, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 600 }}>{Number(log.weight).toFixed(1)} kg</span>
-                  <button className="btn btn-secondary" onClick={() => handleDelete(log.id)} aria-label="Löschen" style={{ padding: '2px 8px' }}>
-                    <IconTrash />
-                  </button>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div className="sa-wbody">
+                <div className="sa-wv">{Number(log.weight).toFixed(1)} kg</div>
+                <div className="sa-wd">
                   {new Date(`${log.logged_on}T00:00:00`).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  {log.delta !== null && (
+                    <span className={`sa-delta sa-delta--${deltaTone(log.delta, goal)}`}>
+                      {formatDelta(log.delta)}
+                    </span>
+                  )}
                 </div>
-                {log.delta !== null && (
-                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: deltaColor(log.delta, goal), marginTop: 2 }}>
-                    {formatDelta(log.delta)} zum vorherigen Eintrag
-                  </div>
-                )}
               </div>
+              <button className="sa-del" onClick={() => handleDelete(log.id)} aria-label="Löschen">
+                <IconTrash />
+              </button>
             </div>
-          );
-        })
+          ))}
+        </div>
       )}
     </div>
   );

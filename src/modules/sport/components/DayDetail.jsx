@@ -1,13 +1,26 @@
 import { formatRelativeDate } from '../../../core/lib/format';
 import { resolveTypeLabel } from '../lib/typeLabel';
 import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
+import { planDayFor } from '../../../core/lib/sportPlanSync';
+import { todayIso } from '../../../core/lib/wizardDates';
 
 // Zeigt alle Einheiten des gewählten Tages. Das Abhaken passiert direkt
 // hier über die Checkbox (Konzept-Entscheidung) — ein Klick genügt,
 // kein Umweg über das Formular. Der DB-Trigger übernimmt daraufhin die
 // Auswertungs-Kennzahlen.
-export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit, onDelete, onPlanNew, onPickPlan }) {
+// activePlan = { start_date, plan } oder null (Dauerplan). Eigene Einträge haben
+// Vorrang vor dem Plan; Plan-Einträge lassen sich bearbeiten, aber nicht löschen
+// (auslassen = "+ Ruhetag" eintragen).
+export default function DayDetail({ date, workouts, plans, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest }) {
   const dayWorkouts = workouts.filter((w) => w.occurred_on === date);
+
+  // Steht an diesem Tag nur ein eigener Eintrag, ruht die Plan-Einheit darunter.
+  // Löscht man den Eintrag, gilt sie wieder (nur heute und später, Vergangenes
+  // wird nie nachgetragen).
+  const hasAuto = dayWorkouts.some((w) => w.auto_planned);
+  const hiddenPlanDay = activePlan && dayWorkouts.length > 0 && !hasAuto && date >= todayIso()
+    ? planDayFor(activePlan.plan.items, activePlan.start_date, date)
+    : null;
 
   // "Tag X von Y" nur berechenbar, wenn plan_day_index gesetzt ist
   // (erst seit dieser Migration) UND der zugehörige Plan noch existiert
@@ -17,15 +30,15 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
     if (w.plan_id == null || w.plan_day_index == null) return null;
     const plan = plans?.find((p) => p.id === w.plan_id);
     if (!plan) return null;
-    return `Tag ${w.plan_day_index + 1} von ${plan.items.length} · ${plan.title}`;
+    return `${w.auto_planned ? 'Aus Plan · ' : ''}Tag ${w.plan_day_index + 1} von ${plan.items.length} · ${plan.title}`;
   }
 
   return (
-    <div className="card">
-      <div className="card-title">{formatRelativeDate(date)}</div>
+    <div className="sd">
+      <div className="sd-eyebrow">{formatRelativeDate(date)}</div>
 
       {dayWorkouts.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>Keine Einheit an diesem Tag.</p>
+        <p className="sd-empty">Keine Einheit an diesem Tag.</p>
       ) : (
         dayWorkouts.map((w) => {
           // Ruhetag: eigene, bewusst ruhigere Darstellung — kein
@@ -34,26 +47,14 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
           // Einzeleintragen auch is_rest korrekt, siehe WorkoutForm.jsx).
           if (w.is_rest) {
             return (
-              <div
-                key={w.id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 0', borderBottom: '1px solid var(--border)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                <div style={{
-                  width: 26, height: 26, flexShrink: 0, borderRadius: 'var(--radius-xs)',
-                  background: 'var(--border-strong)',
-                }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600 }}>{w.title}</div>
-                  {planProgress(w) && (
-                    <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>{planProgress(w)}</div>
-                  )}
+              <div key={w.id} className="sd-row sd-row--rest">
+                <span className="sd-check sd-check--rest" aria-hidden="true" />
+                <div className="sd-body">
+                  <div className="sd-title">{w.title}</div>
+                  {planProgress(w) && <div className="sd-meta">{planProgress(w)}</div>}
                 </div>
-                <button className="btn btn-secondary" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
-                <button className="btn btn-secondary" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
+                <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
+                {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
               </div>
             );
           }
@@ -61,56 +62,44 @@ export default function DayDetail({ date, workouts, plans, onToggleDone, onEdit,
           const done = w.status === 'done';
           const typeLabel = resolveTypeLabel(w.type_key);
           return (
-            <div
-              key={w.id}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 0', borderBottom: '1px solid var(--border)',
-              }}
-            >
+            <div key={w.id} className="sd-row">
               <button
+                className={`sd-check ${done ? 'on' : ''}`}
                 onClick={() => onToggleDone(w)}
                 aria-label={done ? 'Als offen markieren' : 'Als erledigt markieren'}
-                style={{
-                  width: 26, height: 26, flexShrink: 0, cursor: 'pointer',
-                  borderRadius: 'var(--radius-xs)', padding: 0,
-                  border: done ? 'none' : '2px solid var(--border-strong)',
-                  background: done ? 'var(--accent)' : 'transparent',
-                  color: 'var(--on-accent)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
               >
                 {done && <IconCheck />}
               </button>
 
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, textDecoration: done ? 'none' : 'none' }}>{w.title}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <div className="sd-body">
+                <div className="sd-title">{w.title}</div>
+                <div className="sd-meta">
                   {done ? 'Erledigt' : 'Geplant'}
-                  {w.duration_min ? ` · ${w.duration_min} Min.` : ''}
                   {typeLabel ? ` · ${typeLabel}` : ''}
                 </div>
-                {w.notes && (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{w.notes}</div>
-                )}
-                {planProgress(w) && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{planProgress(w)}</div>
-                )}
+                {w.notes && <div className="sd-meta sd-notes">{w.notes}</div>}
+                {planProgress(w) && <div className="sd-meta sd-notes">{planProgress(w)}</div>}
               </div>
 
-              <button className="btn btn-secondary" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
-              <button className="btn btn-secondary" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>
+              <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
+              {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
             </div>
           );
         })
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => onPlanNew(date)}>
+      {hiddenPlanDay && (
+        <div className="sd-planhint">
+          Plan-Einheit „{hiddenPlanDay.item.is_rest ? 'Ruhetag' : hiddenPlanDay.item.title}“ ruht, solange dieser Eintrag besteht. Löschst du ihn, gilt sie wieder.
+        </div>
+      )}
+
+      <div className="sd-actions">
+        <button className="sd-btn sd-btn--out" onClick={() => onPlanNew(date)}>
           + Einzelne Einheit
         </button>
-        <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onPickPlan(date)}>
-          + Trainingsplan
+        <button className="sd-btn sd-btn--fill" onClick={() => onAddRest(date)} disabled={dayWorkouts.some((w) => w.is_rest)}>
+          + Ruhetag
         </button>
       </div>
     </div>

@@ -64,8 +64,8 @@
   --mod-food-tint:  #17301F; --mod-food-ink:  #CFEBD8; --mod-food-ac:  #6FCB8E; --mod-food-on:  #0A2314; --mod-food-deep:  #6FCB8E;
   --mod-food-hero:  linear-gradient(150deg, #245C3B 0%, #173D27 100%); --mod-food-hero-ink: #E3F5E9; --mod-food-pill: #173D27;
 
-  --mod-sport-tint: #3F2420; --mod-sport-ink: #FADDD4; --mod-sport-ac: #F0837C; --mod-sport-on: #3B1510; --mod-sport-deep: #F0837C;
-  --mod-sport-hero: linear-gradient(150deg, #9A4237 0%, #6B2A24 100%); --mod-sport-hero-ink: #FFE9E4; --mod-sport-pill: #6B2A24;
+  --mod-sport-tint: #3A2824; --mod-sport-ink: #F5DDD5; --mod-sport-ac: #CF8D7E; --mod-sport-on: #2E140E; --mod-sport-deep: #D79A8B;
+  --mod-sport-hero: linear-gradient(150deg, #7A4034 0%, #5A2E26 100%); --mod-sport-hero-ink: #FBEAE4; --mod-sport-pill: #5A2E26;
 
   --mod-hab-tint:   #3A3118; --mod-hab-ink:   #F8E7B2; --mod-hab-ac:   #F2B94B; --mod-hab-on:   #3B2A00; --mod-hab-deep:   #F2B94B;
   --mod-hab-hero:   linear-gradient(150deg, #7D5F10 0%, #6B510C 100%); --mod-hab-hero-ink: #FFF1C8; --mod-hab-pill: #6B510C;

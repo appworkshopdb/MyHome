@@ -3,14 +3,17 @@ import Modal from '../../../core/components/Modal';
 import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
+import RecipeToShoppingSheet from '../../../core/components/RecipeToShoppingSheet';
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 
-export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onLogMeal, onClose }) {
+export default function RecipeDetailModal({ recipe, calc, foodsById, currentUserId, isTemplate, onEdit, onDelete, onCopy, onLogMeal, onShoppingAdded, onClose }) {
   // Das Rezept ist für `baseServings` Portionen angelegt: calc und Zutatenmengen
   // gelten dafür. Der Rechner skaliert nur die Anzeige (nichts wird gespeichert).
   const baseServings = Math.max(1, recipe.servings || 1);
   const [portions, setPortions] = useState(baseServings);
+  const [showShop, setShowShop] = useState(false);
+  const [shopCount, setShopCount] = useState(0); // zuletzt auf die Liste gesetzte Zutaten
   const factor = portions / baseServings;
   const perPortion = (v) => v / baseServings;
   const total = (v) => perPortion(v) * portions;
@@ -22,9 +25,22 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
     <Modal title={recipe.name} onClose={onClose}>
       <RecipeCover recipe={recipe} className="recipe-detail-cover" fit="meet" />
 
-      {!isTemplate && onLogMeal && (
-        <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
-      )}
+      {(!isTemplate && onLogMeal) || onShoppingAdded ? (
+        <div className="recipe-top-actions">
+          {!isTemplate && onLogMeal && (
+            <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
+          )}
+          {onShoppingAdded && (
+            <button
+              className={`btn ${shopCount > 0 ? 'btn-secondary' : 'rts-btn'}`}
+              onClick={() => setShowShop(true)}
+              disabled={recipe.ingredients.length === 0}
+            >
+              {shopCount > 0 ? `✓ Auf Liste (${shopCount})` : '🛒 Einkaufsliste'}
+            </button>
+          )}
+        </div>
+      ) : null}
 
       <div style={{ display: 'flex', gap: 8 }}>
         {isTemplate ? (
@@ -114,6 +130,15 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
           <div className="heading" style={{ color: 'var(--warning)' }}>Notiz</div>
           <div style={{ fontSize: '0.85rem' }}>{recipe.note}</div>
         </div>
+      )}
+      {showShop && (
+        <RecipeToShoppingSheet
+          recipe={recipe}
+          foodsById={foodsById}
+          initialPortions={portions}
+          onClose={() => setShowShop(false)}
+          onDone={(info) => { setShopCount(info.count); onShoppingAdded(info, recipe); }}
+        />
       )}
     </Modal>
   );

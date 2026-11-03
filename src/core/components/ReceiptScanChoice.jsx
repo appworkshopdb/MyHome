@@ -23,7 +23,9 @@ function IconCamera() {
 
 const SCAN_STEPS = ['Beleg wird gelesen…', 'Beträge werden erkannt…', 'Angaben werden geprüft…'];
 
-export default function ReceiptScanChoice({ onScanned, onManual }) {
+// allowGallery=false blendet "Foto aus der Galerie wählen" aus (Einkauf). compact zeigt statt der zwei großen
+// Karten zwei schmale Knöpfe in einer Zeile (weitere Belege nach der ersten Zahlung im Einkauf).
+export default function ReceiptScanChoice({ onScanned, onManual, allowGallery = true, compact = false, manualLabel = 'Manuell hinzufügen' }) {
   const { session } = useAuth();
   const cameraRef  = useRef(null);
   const galleryRef = useRef(null);
@@ -79,6 +81,23 @@ export default function ReceiptScanChoice({ onScanned, onManual }) {
       {preview ? (
         <ScanPreview src={preview} steps={SCAN_STEPS} />
       ) : (
+        compact ? (
+          <>
+            <div className="wiz-mode-grid wiz-mode-grid--mini">
+              <button type="button" className="wiz-mode wiz-mode--mini" disabled={busy || limitReached} onClick={() => cameraRef.current?.click()}>
+                <span className="wiz-mode-icon"><IconCamera /></span>
+                <span className="wiz-mode-title">Weiteren Beleg scannen</span>
+              </button>
+              <button type="button" className="wiz-mode wiz-mode--mini" disabled={busy} onClick={onManual}>
+                <span className="wiz-mode-icon"><IconEdit /></span>
+                <span className="wiz-mode-title">{manualLabel}</span>
+              </button>
+            </div>
+            {limitReached && quota && (
+              <div className="wiz-scan-quota t-meta">{`Monatslimit von ${quota.limit} Scans erreicht – manuell eintragen geht weiterhin.`}</div>
+            )}
+          </>
+        ) : (
         <>
           <div className="wiz-mode-grid">
             <button
@@ -104,7 +123,7 @@ export default function ReceiptScanChoice({ onScanned, onManual }) {
             </button>
           </div>
 
-          {!limitReached && (
+          {allowGallery && !limitReached && (
             <button type="button" className="wiz-scan-alt" onClick={() => galleryRef.current?.click()}>
               Foto aus der Galerie wählen
             </button>
@@ -117,6 +136,7 @@ export default function ReceiptScanChoice({ onScanned, onManual }) {
             </div>
           )}
         </>
+        )
       )}
 
       {/* Limit-Fehler nicht doppelt zeigen: der Hinweis oben sagt dasselbe */}
@@ -125,7 +145,7 @@ export default function ReceiptScanChoice({ onScanned, onManual }) {
       )}
 
       <input ref={cameraRef}  type="file" accept="image/*" capture="environment" hidden onChange={handleFile} />
-      <input ref={galleryRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      {allowGallery && <input ref={galleryRef} type="file" accept="image/*" hidden onChange={handleFile} />}
     </div>
   );
 }

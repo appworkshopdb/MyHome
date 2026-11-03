@@ -23,6 +23,7 @@ import TodoSheet from './components/TodoSheet';
 import HubCalendar from './components/HubCalendar'; // ⚠️ von bereich 'kalender' abgelöst durch CalendarView (Tag/Woche/Monat) — Datei bewusst nicht gelöscht, falls die Wochenstreifen-Optik nochmal gebraucht wird (analog ModuleTabs.jsx)
 import CalendarView from './components/CalendarView';
 import { fb } from './lib/feedback';
+import { syncActivePlan } from './lib/sportPlanSync.js';
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 import { awardPoints } from './lib/gamificationData.js';
 import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
@@ -113,7 +114,10 @@ function writeCache(data) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, savedAt: new Date().toISOString() })); } catch { /* egal */ }
 }
 
-async function loadTodaySport() {
+async function loadTodaySport(session) {
+  // Dauerplan: erst auffüllen, damit die Training-Kachel nie leer ist, wenn ein
+  // Plan läuft (schlägt nie fehl, ohne Plan ein einziger kleiner Abruf).
+  await syncActivePlan(session);
   const sb = getSupabase();
   // kein toISOString() für lokale Kalendertage — s. habitsStore.js localDateStr()
   const todayStr = habTodayStr();
@@ -234,7 +238,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         // Habits kommen aus dem gemeinsamen Store (force = frischer Stand)
         loadHabitsData({ force: true }).catch(() => null),
-        loadTodaySport(),
+        loadTodaySport(session),
         loadOpenPosten(),
         getTodos(session),
       ]);

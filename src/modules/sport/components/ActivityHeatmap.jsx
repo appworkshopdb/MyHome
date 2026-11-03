@@ -3,104 +3,89 @@ import { computeWeeklyActivity, formatWeekRange } from '../lib/stats';
 
 const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
-// Transparenzstufen des tatsächlichen Akzents (--accent, Elektroblau
-// laut Design-System) statt mehrerer Farbtöne — passt zur Design-Regel
-// "ein Akzent pro Ansicht, sonst nichts Buntes". color-mix() leitet die
-// Transparenz direkt aus der CSS-Variable ab, dadurch automatisch
-// korrekt in Hell- und Dunkelmodus, ohne einen Hex-Wert zu verdoppeln.
-//
-// BUGFIX: hier stand zuvor eine hartcodierte Limette (rgba(214,255,61,…))
-// aus dem alten, längst abgelösten Lime-Design — sichtbar z.B. in der
-// Legende "Weniger…Mehr", die dadurch gelb-grün statt blau wirkte.
-const LEVEL_COLORS = [
-  'var(--border)',
-  'color-mix(in srgb, var(--accent) 30%, transparent)',
-  'color-mix(in srgb, var(--accent) 60%, transparent)',
-  'color-mix(in srgb, var(--accent) 90%, transparent)',
-];
-
-// Eine Zeile pro Monat statt eines starren Rasters — ein Monat hat nie
-// exakt 4 Wochen, eine Zeile pro Monat macht den Monatsdurchschnitt
-// trotzdem auf einen Blick lesbar (anstelle eines Rechtecks, bei dem
-// Monatsgrenzen mitten durch eine Spalte laufen).
-function groupByMonth(weeks) {
-  const rows = [];
-  let current = null;
-  for (const week of weeks) {
-    const m = week.weekStart.getMonth();
+// Zwölf Spalten, je eine pro Monat; die Wochen stehen darunter (eine Zelle = eine Woche, nach
+// dem Monat ihres Montags). Eine Woche, die noch im Vorjahr beginnt, steht in der Jan-Spalte,
+// eine, die im Folgejahr beginnt, in der Dez-Spalte. So füllt das Raster die ganze Breite und
+// ist nur 5 Zeilen hoch. Die Stufen (data-l 0–3) leiten sich in design-v2.css (.sa-hc) aus der
+// Modulfarbe ab.
+function groupByMonthColumns(weeks, year) {
+  const cols = Array.from({ length: 12 }, () => []);
+  weeks.forEach((week, index) => {
     const y = week.weekStart.getFullYear();
-    if (!current || current.month !== m || current.year !== y) {
-      current = { month: m, year: y, weeks: [] };
-      rows.push(current);
-    }
-    current.weeks.push(week);
+    const m = y < year ? 0 : y > year ? 11 : week.weekStart.getMonth();
+    cols[m].push(index);
+  });
+  return cols;
+}
+
+// Vorauswahl: die aktuelle Woche, sonst (anderes Jahr) die letzte.
+function defaultIndex(weeks, year) {
+  if (year === new Date().getFullYear()) {
+    const i = weeks.findIndex((w) => {
+      const end = new Date(w.weekStart);
+      end.setDate(end.getDate() + 7);
+      return w.weekStart <= new Date() && new Date() < end;
+    });
+    if (i >= 0) return i;
   }
-  return rows;
+  return weeks.length - 1;
 }
 
 export default function ActivityHeatmap({ workouts, year }) {
   const weeks = useMemo(() => computeWeeklyActivity(workouts, year), [workouts, year]);
-  const rows = useMemo(() => groupByMonth(weeks), [weeks]);
+  const cols = useMemo(() => groupByMonthColumns(weeks, year), [weeks, year]);
+  const rowCount = Math.max(...cols.map((c) => c.length));
   // Ausgewählte Zelle zurücksetzen, wenn sich das Jahr ändert — sonst
   // zeigt die Detailkarte nach einem Jahreswechsel kurz einen Index,
   // der im neuen Jahr etwas ganz anderes bedeutet.
-  const [selectedIndex, setSelectedIndex] = useState(weeks.length - 1);
-  useEffect(() => { setSelectedIndex(weeks.length - 1); }, [year]);
+  const [selectedIndex, setSelectedIndex] = useState(() => defaultIndex(weeks, year));
+  useEffect(() => { setSelectedIndex(defaultIndex(weeks, year)); }, [year]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selected = weeks[selectedIndex];
   const prev = weeks[selectedIndex - 1];
   const next = selectedIndex + 1 < weeks.length ? weeks[selectedIndex + 1] : null;
 
   return (
-    <div className="card">
-      <div className="card-title">Aktivität {year}</div>
-
-      {rows.map((row) => (
-        <div key={`${row.year}-${row.month}`} style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-          <div style={{ width: 28, flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            {MONTHS[row.month]}
-          </div>
-          {row.weeks.map((week) => {
-            const globalIndex = weeks.indexOf(week);
-            const isSelected = globalIndex === selectedIndex;
-            return (
-              <button
-                key={week.weekStart.getTime()}
-                onClick={() => setSelectedIndex(globalIndex)}
-                aria-label={`Woche ${formatWeekRange(week.weekStart)}`}
-                style={{
-                  width: 32, height: 32, flexShrink: 0, padding: 0, cursor: 'pointer',
-                  borderRadius: 'var(--radius-xs)',
-                  background: LEVEL_COLORS[week.level],
-                  border: isSelected ? '2px solid var(--text-primary)' : 'none',
-                }}
-              />
-            );
-          })}
+    <div className="sa-card">
+      <div className="sa-heat-head">
+        <div className="sa-ch">Aktivität {year}</div>
+        <div className="sa-heat-legend">
+          <span>Weniger</span>
+          {[0, 1, 2, 3].map((l) => <span key={l} className="sa-hc" data-l={l} />)}
+          <span>Mehr</span>
         </div>
-      ))}
+      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 14px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-        <span>Weniger</span>
-        {LEVEL_COLORS.map((c, i) => (
-          <span key={i} style={{ width: 11, height: 11, borderRadius: 3, background: c }} />
-        ))}
-        <span>Mehr</span>
+      <div className="sa-ga">
+        {MONTHS.map((m) => <span key={m} className="sa-ml" title={m}>{m === 'Mär' ? 'M' : m[0]}</span>)}
+        {Array.from({ length: rowCount }).flatMap((_, r) => cols.map((col, m) => {
+          const index = col[r];
+          if (index === undefined) return <span key={`${r}-${m}`} className="sa-hc sa-hc--empty" aria-hidden="true" />;
+          const week = weeks[index];
+          return (
+            <button
+              key={`${r}-${m}`}
+              className={`sa-hc${index === selectedIndex ? ' sel' : ''}`}
+              data-l={week.level}
+              onClick={() => setSelectedIndex(index)}
+              aria-label={`Woche ${formatWeekRange(week.weekStart)}`}
+              aria-pressed={index === selectedIndex}
+            />
+          );
+        }))}
       </div>
 
       {selected && (
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{formatWeekRange(selected.weekStart)}</div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 4 }}>
+        <div className="sa-heat-sum">
+          <b>{formatWeekRange(selected.weekStart)}</b>
+          <span>
             {selected.doneCount} erledigt{selected.plannedCount > 0 ? `, ${selected.plannedCount} geplant` : ''}
-          </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-            {selected.types.length > 0 ? selected.types.join(', ') : 'Keine Einheit'}
-          </div>
-          <div style={{ display: 'flex', gap: 12, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          </span>
+          <span>{selected.types.length > 0 ? selected.types.join(', ') : 'Keine Einheit'}</span>
+          <span className="sa-heat-diff">
             {prev && <span>Vorwoche: {formatDiff(selected.score - prev.score)}</span>}
             {next && <span>Folgewoche: {formatDiff(selected.score - next.score)}</span>}
-          </div>
+          </span>
         </div>
       )}
     </div>

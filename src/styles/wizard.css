@@ -575,3 +575,80 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
 .wz-part-rest { cursor: default; }
 .wz-part-rm { flex: 0 0 28px; width: 28px; height: 28px; margin-right: -6px; border-radius: 50%; font-size: 20px; line-height: 1; color: var(--text-secondary); background: var(--surface-raised); }
 .wz-part-add { margin-top: 0; }
+
+/* ── Rezept → Einkaufsliste (RecipeToShoppingSheet) ─────────────
+   Violett = Familie des Einkaufs, auch wenn das Sheet aus der Ernährung (grün) geöffnet wird. */
+.rts-portions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rts-muted { font-size: 13px; color: var(--text-muted); padding: 6px 2px; }
+.rts-lists { display: flex; flex-direction: column; gap: 6px; }
+.rts-list {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 12px; background: var(--surface-raised);
+  border: 1.5px solid var(--border-hairline); border-radius: 12px; color: var(--text-primary);
+}
+.rts-list[aria-checked="true"] { border-color: var(--mod-shop-ac); background: var(--mod-shop-tint); color: var(--mod-shop-ink); }
+.rts-ic { font-size: 18px; flex: 0 0 auto; }
+.rts-nm { flex: 1; min-width: 0; display: block; }
+.rts-nm b { display: block; font-size: 14px; font-weight: 700; }
+.rts-nm small { display: block; font-size: 12px; color: var(--text-muted); }
+.rts-list[aria-checked="true"] .rts-nm small { color: var(--mod-shop-ink); }
+.rts-radio { flex: 0 0 18px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); }
+.rts-list[aria-checked="true"] .rts-radio { border-color: var(--mod-shop-ac); background: radial-gradient(var(--mod-shop-ac) 0 45%, transparent 50%); }
+
+.rts-group { background: var(--surface-raised); border: 1px solid var(--border-hairline); border-radius: 14px; overflow: hidden; }
+.rts-pick {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 10px 12px; border: 0; border-bottom: 1px solid var(--border-hairline);
+  background: transparent; color: var(--text-primary);
+}
+.rts-pick:last-child { border-bottom: 0; }
+.rts-box {
+  flex: 0 0 22px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--border-strong);
+  display: grid; place-items: center; background: var(--surface-raised);
+}
+.rts-pick[aria-checked="true"] .rts-box { background: var(--mod-shop-ac); border-color: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.rts-pick .merge { color: var(--mod-shop-deep); font-weight: 700; }
+.rts-am { font-size: 14px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rts-pick[aria-checked="false"] .rts-nm b, .rts-pick[aria-checked="false"] .rts-am { color: var(--text-muted); }
+
+.btn.rts-cta { background: var(--mod-shop-ac); color: var(--mod-shop-on); border: 0; }
+.btn.rts-cta:disabled { opacity: .45; }
+.btn.rts-btn { background: var(--mod-shop-ac); color: var(--mod-shop-on); border: 0; }
+
+/* Rezept-Dialog: "Gegessen eintragen" und "Einkaufsliste" nebeneinander */
+.recipe-top-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+/* Hinweis unten mit Knöpfen (ActionToast): Text in einer Zeile, zwei große Knöpfe darunter, Restzeit-Balken */
+.action-toast {
+  position: fixed; left: 12px; right: 12px; z-index: 300; margin: 0 auto; max-width: 460px; overflow: hidden;
+  bottom: calc(var(--nav-height, 68px) + 16px + env(safe-area-inset-bottom));
+  padding: 14px 14px 16px; background: var(--text-primary); color: var(--surface-page);
+  border-radius: 24px; box-shadow: var(--shadow-float);
+}
+.action-toast-head { display: flex; align-items: center; gap: 10px; }
+.action-toast-head b { font-size: 17px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-toast-ok { flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.action-toast-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.action-toast-btn {
+  min-height: 48px; padding: 0 12px; border-radius: var(--r-pill); font-size: 15px; font-weight: 900; color: inherit;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 60%, transparent);
+}
+.action-toast-btn.primary { background: var(--surface-page); color: var(--text-primary); box-shadow: none; }
+.action-toast-timer {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; transform-origin: left;
+  background: color-mix(in srgb, currentColor 40%, transparent);
+  animation-name: action-toast-shrink; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes action-toast-shrink { to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .action-toast-timer { animation: none; } }
+
+/* Einkaufs-Wizard, Schritt 1: Vorlage wählen */
+.wz-tmpls { display: flex; flex-direction: column; gap: 8px; }
+.wz-tmpl { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; background: var(--surface-sunken); border: 1.5px solid var(--border-hairline); border-radius: 14px; }
+.wz-tmpl-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 4px; text-align: left; background: none; border: 0; color: var(--text-primary); font: inherit; cursor: pointer; }
+.wz-tmpl-main:disabled { opacity: 0.6; }
+.wz-tmpl-ic { flex: none; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--action-quiet-bg); font-size: 21px; }
+.wz-tmpl-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wz-tmpl-t b { font-size: 15px; font-weight: 800; overflow-wrap: anywhere; }
+.wz-tmpl-t small { font-size: 12px; color: var(--text-muted); }
+.wz-tmpl-del { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: none; border: 0; color: var(--text-muted); cursor: pointer; }

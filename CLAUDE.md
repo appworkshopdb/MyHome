@@ -160,6 +160,45 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   bezahlt und verfällt ein Jahr nach Kauf; Auto-Aufladen bewusst aus.
 - Production läuft noch ohne Scan (eigener Key, Compose, Function, Tabelle nötig).
 
+## Rezept → Einkaufsliste
+
+Knopf "Einkaufsliste" im Rezept-Dialog (`RecipeDetailModal`) öffnet `core/components/RecipeToShoppingSheet.jsx`:
+Portionen, Liste (vorgewählt: aktive Liste, sonst "Neue Liste") und Zutaten an-/abwählen. Rechenlogik rein in
+`modules/shopping/lib/recipeImport.js` (Mengen umrechnen, Kategorie, Zusammenführen); Schreiben/Rückgängig in
+`shoData.js` (`applyShoppingPlan`/`undoShoppingPlan`), keine Migration. Zutat steht schon OFFEN auf der Liste (gleicher
+Name, verrechenbare Einheit, g/kg und ml/L) → Menge wird aufgestockt, sonst neue Zeile; abgehakte Artikel zählen nicht.
+Herkunft steht im Feld `note` ("für Linsen-Curry" / "inkl. …"). Basis-Zutaten (Gruppe Gewürze, Salz/Öl/…, `isBasic`) sind
+nicht vorgewählt. Der Hinweis mit "Rückgängig"/"Liste öffnen" (`ActionToast`) liegt im `NutritionModule`; die Übergabe an
+das Einkaufsmodul (einmalige NEU-Markierung, gezielt Liste öffnen) läuft im Speicher über `core/lib/shoppingHandoff.js`.
+Artikelansicht der Einkaufsliste (`ItemsView.jsx`, Styles am Ende von `design-v2.css`): Kopf-Karte mit Fortschritt und
+"Einkauf abschließen", Zahlungen als schmale Karte, Kategorien als Karten, Menge als Chip, schwebende Eingabeleiste.
+Löschen nur im Bearbeiten-Modus der Zeile (Tipp auf die Zeile). Der globale Plus-Knopf ist dort ausgeblendet
+(`data-sho-items` am `<html>`, gesetzt von `ShoppingModule`). Einheiten "Zehe"/"Scheibe" gibt es auch in der
+Einkaufsliste (`UNIT_OPTIONS`).
+"Alle Listen" (`ListView.jsx`, Klassen `.sho-lseg`/`.sho-lrow*`/`.sho-lsheet*` in `design-v2.css`): oben `FocusCard` (Liste "Im Einkauf",
+sonst nächster Termin, "Weiter einkaufen"), Filter Offen/Erledigt/Alle; in "Offen" nach Zeit gruppiert (Überfällig/Heute/Diese Woche/
+Später/Ohne Datum), Zeile = Symbol, Name, Fortschritts-Ring, "•••". "•••" öffnet ein Sheet: Status (Wiederöffnen einer gebuchten Liste
+storniert die Buchung), Fällig (Schnellwahl + Datum + Tageszeit), Name, Löschen (zweistufig). `saveList` schreibt beim Update nur
+übergebene Felder (sonst löschte Umbenennen Symbol und Datum). Entwürfe: `design/mockup-alle-listen.html`.
+Neue Liste NUR über den globalen Plus-Knopf (`ShoppingQuickSheet`, 3 Schritte): 1 Auswahl "Aus Vorlage"/"Manuelle Eingabe" (wie im
+Finanz-Wizard; ohne Vorlagen ist die Karte ausgegraut; "Aus Vorlage" zeigt erst die Vorlagen, die gewählte füllt Schritt 2 und 3 vor,
+Vorlagen lassen sich dort löschen), 2 Name/Symbol/Laden/Datum, 3 Artikel. Nach dem Speichern meldet der Wizard (liegt in core) per
+`notifyShoppingChanged()` (`core/lib/shoppingHandoff.js`) window-Event, `ShoppingModule` lädt die Listen neu.
+Abschluss (`CompleteListSheet.jsx`, Kopf-Knopf "Einkauf abschließen"): 1 "Alles gefunden?" (Tipp stellt "Noch offen"/"Im Warenkorb" um),
+2 "Nicht gefunden" (nur wenn Artikel offen sind: ALLE gemeinsam auf eine andere Liste, eine neue Liste oder "Verwerfen" = löschen;
+`planTransfer`/`transferHint` in `recipeImport.js` stocken auf wie beim Rezept-Import), 3 Bezahlung (mehrere Zahlungen; `ReceiptScanChoice` "Beleg scannen / Manuelle Eingabe" steht direkt im Schritt, ohne Galerie-Option
+(`allowGallery={false}`); nach der ersten Zahlung nur noch zwei schmale Knöpfe (`compact`), "Gesamt" und Buchungsbezeichnung erst ab dann; ein Scan füllt Betrag, Zahlungsart, Laden und Notiz "Beleg vom …" nur VOR, gespeichert wird erst mit "Zahlung speichern";
+das Scan-Kontingent ist dasselbe wie in Finanzen; Laden per `WheelPicker`; "Buchen & abschließen" bzw. "Ohne Buchung abschließen"; Schalter "Als Vorlage speichern" mit Namensfeld und
+"Artikel ansehen" (Fenster, Eimer entfernt einen Artikel NUR aus der Vorlage; ohne Artikel keine Vorlage), speichert die gekauften
+Artikel über `saveListAsTemplate(listId, name, icon, excludeIds)`, Fehler blockieren den Abschluss nicht; Buchungen landen immer in
+"Sonstige Ausgaben", ein Hinweis erscheint nur bei offenen Zahlungsarten). Optik: offene Artikel getönt in Schritt 2, "Neue Liste" in
+Modulfarbe, "Verwerfen" rot, "Gesamt" als eigene Karte (`.cl-*` in `design-v2.css`). Geschrieben wird erst am Ende, Reihenfolge:
+Markierungen → Artikel übertragen/verwerfen → Vorlage → Zahlungen (`sho_payments`) → Buchung (Bar/Gutschein bezahlt, Rest offen,
+vorhandene Buchung wird ersetzt) → Status "erledigt". Zahlungsbereich, "erledigte löschen" und "Als Vorlage speichern"
+gibt es in der Liste selbst nicht mehr (`clearDoneItems` in `shoData.js` ist ungenutzt; Vorlagen entstehen im Abschluss und werden im
+Anlege-Wizard über "Aus Vorlage" genutzt). `saveItem` schreibt beim Update nur
+übergebene Felder (sonst würden Kategorie/Notiz beim Mengenändern gelöscht).
+
 ## Wochen- und Monatsüberblick (Hub → Statistiken)
 
 Im Hub steht unter dem Kalender EIN Bereich "Statistiken" → `core/Statistiken.jsx` (Auswahl
@@ -218,6 +257,10 @@ Sortierung im Bottom-Sheet `RecipeFilterSheet` (Knopf im Suchfeld, gewählte Fil
 Rezeptbild) und die Suche (Name > Zutaten > Tags/Notiz, Umlaut-unabhängig, alle Wörter
 müssen passen) werden abgeleitet. Rezept-Dialog: Portionsrechner rechnet Zutatenmengen und
 Nährwerte nur in der Ansicht um (`servings` = Portionen, für die die Mengen angelegt sind).
+Tab "Vorlagen" zeigt zuerst Kategorien (`TemplateCategories.jsx`, Regeln in `lib/templateCategories.js`: 4 Mahlzeiten + Schnell & einfach
+(≤ 4 Zutaten), Süßes, Sportlich (≥ 30 g Eiweiß), Vegetarisch & vegan, Meal Prep, Leicht (< 300 kcal), Fisch & Meer, Low Carb; alles aus
+den Rezeptdaten abgeleitet, ein Rezept kann in mehreren stehen). Tipp öffnet die Liste (Zurück-Pfeil, Suche/Filter/Sortierung wie sonst,
+auf die Kategorie begrenzt); Suche oder Filter in der Übersicht zeigen direkt die Gesamtliste. Karte: zwei Infokästchen rechts (Portionen, Zutaten).
 
 ## Finanz-Auswertung (Dashboard)
 
@@ -302,6 +345,22 @@ eigenen kleinen Liste über der übrigen. Das Auge in der Saldo-Karte blendet Be
 `components/Money.jsx` zeigt statt des Betrags einen weichgezeichneten Platzhalter, der echte Wert steckt dann nicht im DOM; je Nutzer in `body_profile.hide_amounts`, Migration `supabase/hide_amounts_migration.sql`, ohne sie nur lokal).
 Die Saldo-Karte zeigt unter Ein/Aus auch "Spar" (Sparschwein-Stand, `core/lib/savingsBalance.js`, Regeln aus `finance.js` dupliziert). Bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
 innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch in der Ernährungs-Hero-Karte. Im Hub gibt es keinen Plus-Knopf (`GlobalFab`), Aufgaben legt der Knopf "Neue Aufgabe" in der Aufgaben-Karte an.
+
+Sport zeigt und fragt KEINE Dauer mehr (weder Einheiten, Hub, Auswertung noch Anlegen-Dialoge); die Spalten `duration_min`
+bleiben in der DB und werden nur durchgereicht, nichts anzeigen oder neu abfragen. Auswertung (`AuswertungView`, `BadgesCard`,
+`SportIcons.jsx`, Klassen `.sa-*` in `design-v2.css`): Zahlen auf ruhigen Kacheln, Erfolge als Medaillen mit Symbol je Badge-Schlüssel. Aktivität = 12 Monatsspalten mit Wochenzellen, vorgewählt ist immer die aktuelle Woche.
+
+## Sport: aktiver Trainingsplan (Dauerplan)
+
+Ein Plan wird in „Pläne“ aktiviert und füllt den Kalender selbst auf (28 Tage im Voraus, nie
+rückwirkend), bis er gewechselt/geändert/beendet wird; ein Plan ist freiwillig. Logik in
+`core/lib/sportPlanSync.js` (Hub und Sport rufen `syncActivePlan` auf), Tabelle `spo_active_plan`
++ Spalte `spo_workouts.auto_planned` (`supabase/spo_active_plan_migration.sql`, per `docker exec ... psql`
+einspielen, VOR dem Ausrollen der App; vorher `\d spo_workouts` live prüfen, für `spo_*` gibt es im Repo
+keine Migration). Einheiten bleiben echte `spo_workouts`-Zeilen, damit Hub, Überblicke, Auswertung
+und Push unverändert rechnen. Eigene Einträge haben Vorrang vor der Plan-Zeile (wird ausgeblendet,
+beim Löschen des eigenen Eintrags kommt sie zurück); Wechseln/Ändern/Beenden gelten nur ab heute.
+Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 
 ## Geheimnisse
 

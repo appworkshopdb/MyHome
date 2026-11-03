@@ -12,8 +12,8 @@
 // Fokuskarte als auch die Listen-Zeilen in "Bereiche" direkt dorthin,
 // nicht über onNavigateView.
 //
-// Der Listenname steht in der Artikelansicht als Inhalts-Überschrift in
-// der Seite (.page-header) — die TopBar zeigt dort weiterhin keinen
+// Der Listenname steht in der Artikelansicht als Überschrift in der Kopf-Karte
+// von ItemsView (mit Fortschritt) — die TopBar zeigt dort weiterhin keinen
 // Titel, weil sie den Drill-down nicht kennt.
 
 import { useState, useEffect, useCallback } from 'react';
@@ -25,6 +25,7 @@ import ItemsView   from './components/ItemsView.jsx';
 import FreqView    from './components/FreqView.jsx';
 
 import { loadLists } from './lib/shoData.js';
+import { takeOpenListRequest, SHOPPING_CHANGED } from '../../core/lib/shoppingHandoff.js';
 
 import './shopping.css';
 
@@ -52,6 +53,32 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     fetchLists().finally(() => setLoading(false));
   }, [fetchLists]);
 
+  // Neue Liste über den globalen Plus-Knopf (außerhalb des Moduls): Listen neu laden
+  useEffect(() => {
+    window.addEventListener(SHOPPING_CHANGED, fetchLists);
+    return () => window.removeEventListener(SHOPPING_CHANGED, fetchLists);
+  }, [fetchLists]);
+
+  // In der Artikelansicht hat die Eingabeleiste ein eigenes Plus: der globale Plus-Knopf
+  // würde darauf liegen und wird per Attribut am <html> ausgeblendet (design-v2.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (openList) root.setAttribute('data-sho-items', '');
+    else root.removeAttribute('data-sho-items');
+    return () => root.removeAttribute('data-sho-items');
+  }, [openList]);
+
+  // "Liste öffnen" aus dem Hinweis nach Rezept → Einkaufsliste: gezielt diese Liste zeigen.
+  // Die Anfrage wird nur einmal gelesen und danach verworfen.
+  useEffect(() => {
+    const id = takeOpenListRequest();
+    if (!id) return;
+    loadLists().then((all) => {
+      const hit = all.find((l) => l.id === id);
+      if (hit) setOpenList(hit);
+    }).catch(() => {});
+  }, []);
+
   function backToOverview() { onNavigateView(null); }
 
   if (loading) {
@@ -73,9 +100,6 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
       <>
         <ModuleTopBar onBack={handleBack} hasWarnings={hasWarnings} />
         <div className="sho-module-content sho-detail-content with-topbar-space">
-          <div className="page-header">
-            <h1>{openList.name}</h1>
-          </div>
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>
           )}

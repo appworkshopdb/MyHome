@@ -1,5 +1,6 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { track } from '../../../core/lib/analytics';
+import { hideAutoRowsOn, isPlanFeatureAvailable } from '../../../core/lib/sportPlanSync';
 
 function ownerId(session) {
   return session.user.id;
@@ -28,8 +29,19 @@ export async function saveWorkout(session, workout) {
     owner_id: ownerId(session),
     status: workout.status ?? 'done',
   };
+  // Wer eine Plan-Einheit bearbeitet, macht daraus einen eigenen Eintrag.
+  // Nur setzen, wenn die Zeile das Flag schon kennt (Migration eingespielt).
+  if ('auto_planned' in payload) payload.auto_planned = false;
   const { data, error } = await getSupabase().from('spo_workouts').upsert(payload).select().single();
   if (error) throw error;
+
+  // Eigene Einträge haben Vorrang vor dem Plan: die Plan-Zeile desselben
+  // Tages wird ausgeblendet. Löscht man den eigenen Eintrag wieder, legt der
+  // Auffüller sie beim nächsten Laden neu an (core/lib/sportPlanSync.js).
+  if (isPlanFeatureAvailable() !== false) {
+    try { await hideAutoRowsOn(session, data.occurred_on, data.id); }
+    catch (e) { console.warn('[spoData] Plan-Zeile ausblenden fehlgeschlagen:', e); }
+  }
   track('workout_saved', { status: payload.status });
   return data;
 }
@@ -166,7 +178,7 @@ export async function savePlan(session, plan, items) {
 
   // Reine Namens-/Notizänderungen müssen die Plan-Tage nicht anfassen.
   if (plan.id && samePlanItems(existingItems, items)) {
-    return savedPlan;
+    return { ...savedPlan, _itemsChanged: false };
   }
 
   const { error: delError } = await supabase
@@ -192,7 +204,7 @@ export async function savePlan(session, plan, items) {
     if (itemError) throw itemError;
   }
 
-  return savedPlan;
+  return { ...savedPlan, _itemsChanged: true };
 }
 
 export async function deletePlan(id) {
@@ -203,28 +215,5 @@ export async function deletePlan(id) {
   if (error) throw error;
 }
 
-export async function applyPlan(session, plan, startDate) {
-  const start = new Date(`${startDate}T00:00:00`);
-  const rows = plan.items.map((item) => {
-    const date = new Date(start);
-    date.setDate(date.getDate() + item.day_index);
-    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    return {
-      owner_id: ownerId(session),
-      occurred_on: iso,
-      status: item.is_rest ? 'done' : 'planned',
-      is_rest: item.is_rest,
-      type_key: item.is_rest ? null : (item.type_key || 'sonstiges'),
-      title: item.title,
-      duration_min: item.duration_min ?? null,
-      notes: item.notes ?? null,
-      plan_id: plan.id,
-      plan_day_index: item.day_index,
-    };
-  });
-
-  if (rows.length === 0) return 0;
-  const { error } = await getSupabase().from('spo_workouts').insert(rows);
-  if (error) throw error;
-  return rows.length;
-}
+// Aktiver Plan (Dauerplan): Aktivieren, Wechseln, Beenden und das Auffüllen
+// des Kalenders liegen in core/lib/sportPlanSync.js, weil der Hub es ebenfalls braucht.

@@ -823,3 +823,91 @@
 }
 .ing-add:active { background: var(--surface-sunken); }
 .ing-add svg { display: block; width: 16px; height: 16px; flex: none; }
+
+/* ═══ Lexikon — neues Design (Grün-Familie über --m-*) ═══════════ */
+.lex-view .nut-search { margin: 2px 0 0; }
+.lex-view .nut-search > svg { left: 18px; width: 20px; height: 20px; }
+.lex-view .nut-search input {
+  width: 100%; min-height: 48px; padding: 0 18px 0 46px; border: 0; border-radius: var(--r-pill);
+  background: var(--surface-raised); box-shadow: var(--shadow-card); font-weight: 600;
+}
+.lex-view .chip-row { gap: 8px; margin: 14px 0 !important; }
+.lex-view .chip {
+  padding: 8px 18px; font-size: 0.875rem; font-weight: 800;
+  background: var(--surface-raised); color: var(--text-primary); border: 1.5px solid var(--border-hairline);
+}
+.lex-view .chip.active { background: var(--m-ac); border-color: var(--m-ac); color: var(--m-on); }
+.lex-view .lex-card {
+  background: var(--surface-raised); border: 0; border-radius: 22px; padding: 14px; box-shadow: var(--shadow-card);
+}
+.lex-view .lex-card .cat-badge { background: var(--m-tint); color: var(--m-ink); padding: 2px 9px; font-size: 0.7rem; font-weight: 800; margin-bottom: 0; }
+.lex-view .lex-card .term { font-size: 1rem; font-weight: 800; line-height: 1.25; margin: 8px 0 4px; }
+.lex-view .lex-card .short { font-size: 0.8125rem; font-weight: 600; }
+.lex-detail-head { display: flex; align-items: center; gap: 12px; margin: 2px 0 6px; }
+.lex-detail-head h2 { flex: 1; margin: 0; font-size: 1.375rem; font-weight: 900; letter-spacing: -0.01em; }
+.lex-back {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--surface-raised); box-shadow: var(--shadow-card); color: var(--m-deep); cursor: pointer;
+}
+.lex-back svg { width: 20px; height: 20px; }
+.lex-cat { flex: none; padding: 3px 10px; border-radius: var(--r-pill); background: var(--m-tint); color: var(--m-ink); font-size: 0.75rem; font-weight: 800; }
+.lex-detail-short { font-size: 1rem; font-weight: 800; line-height: 1.4; margin: 10px 2px 4px; }
+.lex-view .lex-detail-block { background: var(--surface-raised); border-radius: 22px; padding: 14px 16px; margin: 10px 0 0; box-shadow: var(--shadow-card); }
+.lex-view .lex-detail-block .heading { font-weight: 800; letter-spacing: 0.09em; color: var(--m-deep); margin: 0; }
+.lex-view .lex-detail-block p { margin: 5px 0 0; font-size: 0.875rem; line-height: 1.5; font-weight: 600; color: var(--text-primary); }
+.lex-view .lex-detail-block.need { background: var(--m-tint); color: var(--m-ink); box-shadow: none; }
+.lex-view .lex-detail-block.need .heading, .lex-view .lex-detail-block.need p { color: var(--m-ink); }
+.lex-view .lex-detail-block.pro { background: color-mix(in srgb, var(--m-ac) 14%, var(--surface-raised)); }
+.lex-view .lex-detail-block.con { background: color-mix(in srgb, var(--status-critical) 11%, var(--surface-raised)); }
+.lex-view .lex-detail-block.con .heading { color: var(--status-critical); }
+
+/* Rezeptkarte: zwei Infokästchen (Portionen, Zutaten) über die volle Kartenhöhe */
+.recipe-card .head { align-items: stretch; }
+.recipe-side { display: flex; flex-direction: column; gap: 6px; flex: none; width: 54px; }
+.recipe-box {
+  flex: 1; min-height: 34px; border-radius: 10px; background: var(--surface-sunken); color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 14px; font-weight: 800; line-height: 1;
+}
+.recipe-box svg { width: 16px; height: 16px; flex: none; color: var(--action-primary); }
+
+/* Rezeptvorlagen nach Kategorien (Übersicht + geöffnete Kategorie) */
+.tpl-sec { font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); margin: 14px 2px 8px; }
+.tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tpl-tile {
+  display: block; width: 100%; text-align: left; font: inherit; cursor: pointer;
+  background: var(--surface-raised); color: var(--text-primary);
+  border: 1px solid var(--border-hairline); border-radius: 18px; padding: 8px 8px 11px;
+  box-shadow: 0 1px 3px rgba(19,26,40,.1);
+}
+.tpl-art { display: flex; align-items: center; justify-content: center; height: 70px; border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+.tpl-art .tpl-cover { width: 120px; height: 51px; }
+.tpl-art .tpl-cover svg { width: 120px; height: 51px; }
+.tpl-tile-t { display: block; font-size: 15px; font-weight: 800; padding: 0 4px; line-height: 1.2; }
+.tpl-tile-s { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); padding: 2px 4px 0; line-height: 1.3; }
+.tpl-tile2 { padding: 11px; }
+.tpl-tile2 .tpl-tile-t, .tpl-tile2 .tpl-tile-s { padding-left: 0; padding-right: 0; }
+.tpl-ico { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; margin-bottom: 8px; color: #1B2A4A; }
+.tpl-ico svg { width: 19px; height: 19px; display: block; }
+.tpl-tone-ochre { background: #F7EEDC; }
+.tpl-tone-rot   { background: #FBE7E4; }
+.tpl-tone-gruen { background: #DFF3EA; }
+.tpl-tone-blau  { background: #E7EBF3; }
+.tpl-tone-lila  { background: #ECE7F5; }
+.tpl-tone-grau  { background: #EEF1F6; }
+.dark .tpl-tone-ochre { background: #3A2F18; }
+.dark .tpl-tone-rot   { background: #3B2220; }
+.dark .tpl-tone-gruen { background: #1A3329; }
+.dark .tpl-tone-blau  { background: #243049; }
+.dark .tpl-tone-lila  { background: #30294A; }
+.dark .tpl-tone-grau  { background: #2A3345; }
+.dark .tpl-ico { color: #E6ECF8; }
+.tpl-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tpl-back {
+  flex: none; width: 40px; height: 40px; border-radius: var(--r-md); padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-sunken); color: var(--text-primary); border: 1.5px solid var(--border-hairline);
+}
+.tpl-back svg { width: 20px; height: 20px; display: block; }
+.tpl-top-t { font-size: 20px; font-weight: 800; line-height: 1.15; }
+.tpl-top-s { font-size: 12px; font-weight: 600; color: var(--text-muted); }

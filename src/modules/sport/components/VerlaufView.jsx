@@ -5,18 +5,16 @@ import WorkoutCalendar from './WorkoutCalendar';
 import WorkoutWeekView from './WorkoutWeekView';
 import CalendarLegend from './CalendarLegend';
 import DayDetail from './DayDetail';
-import PlanPicker from './PlanPicker';
-import ApplyPlanDialog from './ApplyPlanDialog';
 import WorkoutForm from './WorkoutForm';
+import { todayIso } from '../../../core/lib/wizardDates';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// Lokales Kalenderdatum (toISOString würde zwischen 0 und 2 Uhr den Vortag liefern)
+const TODAY = todayIso;
 
 // Der frühere Verlauf (einfache Liste) ist jetzt der Kalender — Planen,
-// Abhaken und Bearbeiten passieren alle hier. pickingDate/chosenPlan
-// sind reine Navigationszustände (welcher Schritt der Plan-Auswahl
-// gerade läuft) und bleiben deshalb lokal — nur onApplyPlan verlässt
-// diese Komponente, weil das eigentliche Anlegen der Einheiten in
-// SportModule passiert (dort liegen auch workouts/plans).
+// Abhaken und Bearbeiten passieren alle hier. Pläne werden nicht mehr
+// von hier aus eingetragen: ein Plan wird im Bereich "Pläne" aktiviert
+// und füllt den Kalender selbst auf (core/lib/sportPlanSync.js).
 //
 // formInitial/onOpenForm/onCancelForm/onSaveForm kommen von SportModule:
 // seit der Einheiten-Bibliothek gibt es keinen eigenen "Training"-Tab
@@ -28,7 +26,7 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 // Wochenansicht irgendein Tag der sichtbaren Woche — CalendarHeader
 // rechnet je nach viewMode unterschiedlich damit weiter.
 export default function VerlaufView({
-  workouts, plans, units, loading, onToggleDone, onEdit, onDelete, onPlanNew, onApplyPlan,
+  workouts, plans, units, loading, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest,
   formInitial, onOpenForm, onCancelForm, onSaveForm, userSports, showToast,
 }) {
   const [viewMode, setViewMode] = useState('month');
@@ -37,8 +35,6 @@ export default function VerlaufView({
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState(TODAY);
-  const [pickingDate, setPickingDate] = useState(false); // Tag, für den gerade ein Plan gesucht wird
-  const [chosenPlan, setChosenPlan] = useState(null);    // gewählter Plan, wartet auf Startdatum-Bestätigung
 
   if (loading) {
     return <div className="page"><div className="card">Lädt…</div></div>;
@@ -60,16 +56,6 @@ export default function VerlaufView({
     if (mode === 'month') {
       setReferenceDate(new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1));
     }
-  }
-
-  function cancelPicking() {
-    setPickingDate(false);
-    setChosenPlan(null);
-  }
-
-  async function handleApply(plan, startDate) {
-    await onApplyPlan(plan, startDate);
-    cancelPicking();
   }
 
   return (
@@ -101,22 +87,17 @@ export default function VerlaufView({
         <CalendarLegend />
       </div>
 
-      {chosenPlan ? (
-        <ApplyPlanDialog plan={chosenPlan} defaultDate={pickingDate} onApply={handleApply} onCancel={cancelPicking} />
-      ) : pickingDate ? (
-        <PlanPicker plans={plans} onChoose={setChosenPlan} onCancel={cancelPicking} />
-      ) : (
-        <DayDetail
-          date={selectedDate}
-          workouts={workouts}
-          plans={plans}
-          onToggleDone={onToggleDone}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onPlanNew={onPlanNew}
-          onPickPlan={setPickingDate}
-        />
-      )}
+      <DayDetail
+        date={selectedDate}
+        workouts={workouts}
+        plans={plans}
+        activePlan={activePlan}
+        onToggleDone={onToggleDone}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onPlanNew={onPlanNew}
+        onAddRest={onAddRest}
+      />
     </div>
   );
 }

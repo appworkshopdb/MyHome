@@ -58,11 +58,13 @@ export function recipeFacts(recipe, calc, foodsById, mealLabel = '') {
   const servings = Math.max(1, Number(recipe.servings) || 1);
   let meat = false, fish = false, animalOther = false, veg = false, unknown = false, known = 0;
   const ingredientNames = [];
+  const groups = new Set();
   for (const ing of recipe.ingredients || []) {
     const food = foodsById[ing.foodId];
     if (!food) { unknown = true; continue; }
     known += 1;
     ingredientNames.push(food.name);
+    groups.add(food.group);
     if (food.group === 'Fleisch & Geflügel') meat = true;
     else if (food.group === 'Fisch & Meeresfrüchte') fish = true;
     else if (food.diet === 'animal') animalOther = true;
@@ -82,6 +84,9 @@ export function recipeFacts(recipe, calc, foodsById, mealLabel = '') {
     meat,
     fish,
     artKey: art.key,
+    servings,
+    ingCount: (recipe.ingredients || []).length,
+    groups,
     // Suchtexte in drei Gewichten: Name > Zutaten > Rest
     name: normText(recipe.name),
     ingredients: normText(ingredientNames.join(' ')),

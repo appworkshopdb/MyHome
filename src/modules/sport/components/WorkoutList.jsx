@@ -30,7 +30,6 @@ export default function WorkoutList({ workouts, onDelete }) {
               <div style={{ fontWeight: 600 }}>{w.title}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 {formatRelativeDate(w.occurred_on)}
-                {w.duration_min ? ` · ${w.duration_min} Min.` : ''}
                 {type ? ` · ${type.label}` : ''}
               </div>
               {w.notes && (

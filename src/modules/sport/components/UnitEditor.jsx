@@ -66,10 +66,6 @@ export default function UnitEditor({ initialUnit, userSports = [], onSave, onCan
           <label>Bezeichnung</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z.B. Arme, Legday..." />
         </div>
-        <div className="form-group">
-          <label>Dauer (Min., optional)</label>
-          <input type="number" value={durationMin} onChange={(e) => setDurationMin(e.target.value)} min="0" max="1440" placeholder="z.B. 60" />
-        </div>
       </div>
 
       <MuscleGroupSelect value={muscleGroups} onChange={setMuscleGroups} />
