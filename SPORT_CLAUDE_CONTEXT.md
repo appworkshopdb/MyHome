@@ -192,38 +192,27 @@ Buttons:
 
 Die Dauer-Eingabe wurde aus der sichtbaren Plan-Bearbeitungsansicht entfernt, weil sie dort nicht benötigt wird. Die bestehende Dauer kann intern weiterhin aus der Einheit übernommen/gespeichert werden.
 
-## 7. Planübersicht – aktueller UI-Stand
+## 7. Planübersicht und Plan-Editor – aktueller UI-Stand
 
-Datei: `src/modules/sport/components/PlaeneView.jsx`
+Datei: `src/modules/sport/components/PlaeneView.jsx` (+ `PlanSheets.jsx`, `PlanEditor.jsx`, `RestBadge.jsx`, `lib/planMuscles.js`).
 
-Die eigenen Pläne werden als Karten dargestellt.
+**Muskelbilder gibt es nur an zwei Stellen:** in der Heute-Karte des aktiven Plans (nur für den heutigen Tag, bis zu 3 Muskeln + „+N“ über `MusclePreview`; an einem Ruhetag das gezeichnete Ruhetag-Symbol `RestBadge`) und im Plan-Editor. „Deine Pläne“ und „Vorschläge für dich“ zeigen bewusst keine Bilder.
 
-Aktuelles Muster:
+Aufbau von oben nach unten:
+- **Aktiver Plan** (`PlanHero`, Klassen `.pl-hero*`): „Aktiver Plan“ | „Tag x von N“ bzw. „Ab Mo 09.11.“ bei späterem Start, heutige Einheit des PLANS (nicht der Kalenderzeile, ein eigener Eintrag ändert die Karte nicht), Fortschritt (Segmente, ab 11 Tagen ein Balken), die nächsten zwei Tage nur als Text, „Plan · seit dd.mm. · bis auf weiteres“ (bei späterem Start nur „Bis auf weiteres“, kein „Seit“), Bearbeiten/Beenden. Ohne aktiven Plan, aber mit Plänen: dezenter Hinweis „Kein aktiver Plan“; ohne Pläne nur der Hinweis, dass ein Plan freiwillig ist.
+- **Deine Pläne** (`PlanRow`, `<details>`): nur nicht aktive Pläne. Zeile = Name, „7 Tage · 5 Einheiten · 2 Ruhetage“, Ablaufzeile als Text; aufgeklappt Tag für Tag (Einheit + Muskeln als Text), Aktivieren / Bearbeiten / „⋯“ (öffnet die Bestätigung „Plan löschen?“, gelöscht wird nicht mehr direkt).
+- **Vorschläge für dich** (`PlanSuggestions`, unverändert).
 
-```text
-Name
-7 Tage - 5 Einheiten
+Der Tag im Plan heißt „Tag 1 … Tag N“, Pläne sind nicht an Wochentage gebunden (früher stand „Mo., Di.“ über den Bildern).
 
-Mo.   Di.   Mi.   Do.   Fr.
-Bild  Bild  Bild  Bild  Bild
+**Plan-Editor** (`PlanEditor.jsx`, Klassen `.pe-*`): Name (Notiz hinter „+ Notiz hinzufügen“), darunter der Plan als Kachelraster (4 Spalten, je Tag Bilder der Muskeln, Ruhetage gestreift, „+ Tag“-Kachel). Ein Tipp wählt den Tag; das Feld darunter bearbeitet ihn: Einheit (Name einmal, Typ nur wenn er sich unterscheidet), Schalter „Ruhetag“, „← Früher“ / „Später →“, Entfernen (mindestens ein Tag bleibt). Bei einem aktiven Plan steht oben „Aktiv · Änderungen gelten ab heute“, das Speichern fragt dann über `EditPlanConfirmSheet` nach. `onSave(plan, items)` ist unverändert. Die Muskelgruppen eines Tages löst `resolvePlanMuscleGroups` auf (Reihenfolge s. u.); `PlanDaysEditor` bleibt für den Anlege-Wizard (`SportQuickSheet`).
 
-Eintragen   Bearbeiten   X
-```
-
-Die Trainingseinheiten werden:
-- nicht mehr als lange Liste „Tag X – Name“ angezeigt
-- nebeneinander dargestellt
-- nach `day_index` sortiert
-- mit Kürzeln `Mo.`, `Di.`, `Mi.`, `Do.`, `Fr.`, `Sa.`, `So.` beschriftet
-- nur für Trainingstage angezeigt
-- Ruhetage werden in dieser kompakten Bildzeile bewusst weggelassen, weil es dafür keine Muskelbilder gibt
-
-Die Darstellung nutzt `MusclePreview` aus `EinheitenListShared` und löst die Muskelgruppen in dieser Reihenfolge auf:
+Die Muskelgruppen werden in dieser Reihenfolge aufgelöst:
 1. `item.muscle_groups`, falls vorhanden
 2. zugehörige persönliche Einheit über `unit_id`
 3. vordefinierte Einheit anhand des Titels
 
-Wichtig: `spo_plan_items` besitzt **keine** `muscle_groups`-Spalte. Deshalb darf `muscle_groups` nicht beim DB-Insert in `spo_plan_items` geschrieben werden.
+Wichtig: `spo_plan_items` besitzt **keine** `muscle_groups`-Spalte. Deshalb darf `muscle_groups` nicht beim DB-Insert in `spo_plan_items` geschrieben werden. Das Rot in den Muskelbildern ist in die Bilddateien eingebrannt.
 
 ## 8. Plan-Speicherung – wichtiger aktueller Stand
 

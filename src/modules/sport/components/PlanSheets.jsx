@@ -126,3 +126,25 @@ export function EditPlanConfirmSheet({ title, impact, onConfirm, onClose, busy }
     </SheetShell>
   );
 }
+
+export function DeletePlanSheet({ plan, onConfirm, onClose, busy }) {
+  return (
+    <SheetShell onClose={onClose} labelledBy="pl-del-title">
+      <div className="sheet-header">
+        <span className="sheet-title" id="pl-del-title">Plan löschen?</span>
+      </div>
+      <div className="pl-sheet">
+        <p className="pl-sub">„{plan.title}“ wird gelöscht.</p>
+        <Facts>
+          <Fact ok>Bereits eingetragene Einheiten bleiben im Kalender.</Fact>
+        </Facts>
+        <div className="pl-foot">
+          <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
+            {busy ? 'Einen Moment …' : 'Plan löschen'}
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
+        </div>
+      </div>
+    </SheetShell>
+  );
+}

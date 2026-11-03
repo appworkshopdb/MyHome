@@ -1,129 +1,128 @@
 import { useState } from 'react';
 import PlanSuggestions from './PlanSuggestions';
 import PlanEditor from './PlanEditor';
-import { ActivatePlanSheet, EndPlanSheet, EditPlanConfirmSheet } from './PlanSheets';
-import { planDayFor, planImpact } from '../../../core/lib/sportPlanSync';
-import { parseIso, todayIso } from '../../../core/lib/wizardDates';
+import RestBadge from './RestBadge';
 import { MusclePreview } from './EinheitenListShared';
-import { PREDEFINED_UNITS } from '../lib/data/predefinedUnits';
+import { ActivatePlanSheet, EndPlanSheet, EditPlanConfirmSheet, DeletePlanSheet } from './PlanSheets';
+import { addDaysIso, planDayFor, planImpact } from '../../../core/lib/sportPlanSync';
+import { parseIso, todayIso } from '../../../core/lib/wizardDates';
+import { muscleLabels, planCounts, resolvePlanMuscleGroups } from '../lib/planMuscles';
+import { resolveTypeLabel } from '../lib/typeLabel';
 
-function resolvePlanMuscleGroups(item, units) {
-  if (item.muscle_groups?.length) return item.muscle_groups;
+// Seite "Pläne": oben der aktive Plan als Heute-Karte (nur dort Muskelbilder, nur
+// für den heutigen Tag; an einem Ruhetag das Ruhetag-Bild), darunter die übrigen
+// Pläne als strukturierte Zeilen ohne Bilder. Die Bilder gibt es beim Bearbeiten.
 
-  if (item.unit_id) {
-    const unit = units.find((u) => u.id === item.unit_id);
-    if (unit?.muscle_groups?.length) return unit.muscle_groups;
-  }
-
-  const predefined = PREDEFINED_UNITS.find((u) => u.title === item.title);
-  return predefined?.muscle_groups ?? [];
-}
-
-const DAY_LABELS = ['Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.', 'So.'];
-
-function PlanUnitImages({ items, units }) {
-  const trainingItems = items
-    .filter((item) => !item.is_rest)
-    .sort((a, b) => (a.day_index ?? 0) - (b.day_index ?? 0));
-
-  if (trainingItems.length === 0) return null;
-
-  return (
-    <div
-      aria-label={`${trainingItems.length} Trainingseinheiten`}
-      style={{
-        display: 'flex',
-        gap: 14,
-        alignItems: 'flex-start',
-        overflowX: 'auto',
-        padding: '2px 2px 8px',
-        scrollbarWidth: 'none',
-      }}
-    >
-      {trainingItems.map((item, i) => {
-        const tags = resolvePlanMuscleGroups(item, units);
-        if (!tags.length) return null;
-
-        const dayIndex = Number.isInteger(item.day_index) ? item.day_index : i;
-        const dayLabel = DAY_LABELS[dayIndex] ?? `Tag ${dayIndex + 1}`;
-
-        return (
-          <div
-            key={item.id ?? `${item.day_index ?? i}-${item.title}`}
-            title={item.title}
-            aria-label={`${item.title}, ${dayLabel}`}
-            style={{
-              flexShrink: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 3,
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.68rem',
-                lineHeight: 1,
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              {dayLabel}
-            </span>
-            <MusclePreview tags={tags} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
+const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const fmtDM = (iso) => { const d = parseIso(iso); return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`; };
-const fmtShort = (iso) => `${['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][parseIso(iso).getDay()]} ${fmtDM(iso)}`;
+const fmtShort = (iso) => `${WD[parseIso(iso).getDay()]} ${fmtDM(iso)}`;
 
-function LoopIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 12a7 7 0 0 1 12-5l3 3M20 12a7 7 0 0 1-12 5l-3-3M19 5v5h-5M5 19v-5h5" />
-    </svg>
-  );
+const itemTitle = (item) => (item.is_rest ? 'Ruhetag' : item.title);
+
+function unitSubline(item, units) {
+  const labels = muscleLabels(resolvePlanMuscleGroups(item, units));
+  return labels || resolveTypeLabel(item.type_key) || '';
 }
 
-// Karte "Aktiver Plan": nur hier steht der aktive Plan, nicht noch einmal
-// in "Deine Pläne".
-function ActivePlanCard({ active, onEdit, onEnd }) {
+function PlanHero({ active, units, onEdit, onEnd }) {
   const { plan } = active;
   const today = todayIso();
   const running = active.start_date <= today;
   const day = running ? planDayFor(plan.items, active.start_date, today) : null;
+  const count = plan.items.length;
 
   let progress = null;
+  let next = null;
   if (day) {
-    progress = day.count <= 10
+    progress = count <= 10
       ? (
-        <div className="pl-prog" aria-hidden="true">
-          {Array.from({ length: day.count }, (_, i) => <i key={i} className={i < day.index ? 'on' : i === day.index ? 'cur' : ''} />)}
+        <div className="pl-seg7" aria-hidden="true">
+          {Array.from({ length: count }, (_, i) => <i key={i} className={i < day.index ? 'on' : i === day.index ? 'cur' : ''} />)}
         </div>
       )
-      : <div className="pl-prog pl-prog--bar" aria-hidden="true"><i style={{ width: `${Math.round(((day.index + 1) / day.count) * 100)}%` }} /></div>;
+      : <div className="pl-seg7 pl-seg7--bar" aria-hidden="true"><i style={{ width: `${Math.round(((day.index + 1) / count) * 100)}%` }} /></div>;
+    next = [1, 2].map((k) => planDayFor(plan.items, active.start_date, addDaysIso(today, k))).filter(Boolean);
   }
 
+  const muscles = day && !day.item.is_rest ? resolvePlanMuscleGroups(day.item, units) : [];
+  let picture = null;
+  if (day?.item.is_rest) picture = <RestBadge size={62} />;
+  else if (muscles.length) picture = <MusclePreview tags={muscles} size={52} />;
+
   return (
-    <div className="pl-active">
-      <div className="pl-eb"><span className="pl-bd"><LoopIcon /></span>Aktiver Plan</div>
-      <b className="pl-name">{plan.title} · {plan.items.length} Tage</b>
-      <span className="pl-line">
-        {running
-          ? (day ? `Heute: Tag ${day.index + 1} von ${day.count} · ${day.item.is_rest ? 'Ruhetag' : day.item.title}` : '')
-          : `Startet am ${fmtShort(active.start_date)}`}
-      </span>
+    <div className="pl-hero">
+      <div className="pl-hero-ey">
+        <span>Aktiver Plan</span>
+        <span>{running ? `Tag ${day.index + 1} von ${count}` : `Ab ${fmtShort(active.start_date)}`}</span>
+      </div>
+      <div className="pl-hero-mid">
+        <div className="pl-hero-tx">
+          <div className="pl-hero-ft">{day ? itemTitle(day.item) : plan.title}</div>
+          <div className="pl-hero-fm">
+            {day ? (day.item.is_rest ? 'Erholung eingeplant' : unitSubline(day.item, units)) : planCounts(plan.items)}
+          </div>
+        </div>
+        {picture}
+      </div>
       {progress}
-      <span className="pl-line pl-line--mt">Seit {fmtDM(active.start_date)} · bis auf weiteres</span>
-      <div className="pl-row">
-        <button type="button" className="btn btn-secondary" onClick={() => onEdit(plan)}>Bearbeiten</button>
-        <button type="button" className="btn btn-ghost" onClick={onEnd}>Beenden</button>
+      {next && next.length > 0 && (
+        <div className="pl-hero-next">
+          {next.map((n) => (
+            <div key={n.index}><span>Tag {n.index + 1}</span><b>{itemTitle(n.item)}</b></div>
+          ))}
+        </div>
+      )}
+      <div className="pl-hero-since">
+        {running ? `${plan.title} · seit ${fmtDM(active.start_date)} · bis auf weiteres` : 'Bis auf weiteres'}
+      </div>
+      <div className="pl-hero-row">
+        <button type="button" className="pl-hero-btn pl-hero-btn--o" onClick={() => onEdit(plan)}>Bearbeiten</button>
+        <button type="button" className="pl-hero-btn" onClick={onEnd}>Beenden</button>
       </div>
     </div>
+  );
+}
+
+function ChevronDown() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function PlanRow({ plan, units, onActivate, onEdit, onMore }) {
+  return (
+    <details className="pl-plan">
+      <summary>
+        <span className="pl-plan-tx">
+          <b>{plan.title}</b>
+          <small>{planCounts(plan.items)}</small>
+          <span className="pl-plan-seq">{plan.items.map(itemTitle).join(' · ')}</span>
+        </span>
+        <span className="pl-plan-chev"><ChevronDown /></span>
+      </summary>
+      <div className="pl-days">
+        {plan.items.map((item, i) => (
+          <div key={item.id ?? i} className={`pl-day${item.is_rest ? ' is-rest' : ''}`}>
+            <span className="pl-day-n">Tag {i + 1}</span>
+            <span>
+              <b>{itemTitle(item)}</b>
+              {!item.is_rest && unitSubline(item, units) && <small>{unitSubline(item, units)}</small>}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="pl-plan-acts">
+        <button type="button" className="btn btn-primary" onClick={() => onActivate(plan)}>Aktivieren</button>
+        <button type="button" className="btn btn-secondary" onClick={() => onEdit(plan)}>Bearbeiten</button>
+        <button type="button" className="btn btn-secondary pl-more" onClick={() => onMore(plan)} aria-label={`Mehr zu ${plan.title}`}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
+          </svg>
+        </button>
+      </div>
+    </details>
   );
 }
 
@@ -134,7 +133,8 @@ export default function PlaeneView({
   onActivatePlan, onEndPlan,
   onStartFromPlan, showToast,
 }) {
-  const [sheet, setSheet] = useState(null); // { type: 'activate', plan } | { type: 'end' } | { type: 'editConfirm', plan, items }
+  // { type: 'activate', plan } | { type: 'end' } | { type: 'delete', plan } | { type: 'editConfirm', plan, items }
+  const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
 
   // activePlan = Zeile aus spo_active_plan; nur anzeigen, wenn der Plan noch existiert
@@ -152,6 +152,7 @@ export default function PlaeneView({
         <PlanEditor
           initialPlan={editing.id ? editing : null}
           units={units}
+          isActive={Boolean(active && editing.id === active.plan_id)}
           onSave={(plan, items) => {
             // Änderung am aktiven Plan wirkt ab heute auf den Kalender: erst bestätigen lassen
             if (active && plan.id === active.plan_id) setSheet({ type: 'editConfirm', plan, items });
@@ -178,7 +179,7 @@ export default function PlaeneView({
   return (
     <div className="page">
       {active ? (
-        <ActivePlanCard active={active} onEdit={onEditPlan} onEnd={() => setSheet({ type: 'end' })} />
+        <PlanHero active={active} units={units} onEdit={onEditPlan} onEnd={() => setSheet({ type: 'end' })} />
       ) : plans.length > 0 ? (
         <div className="pl-noact">
           <b>Kein aktiver Plan</b>
@@ -200,27 +201,16 @@ export default function PlaeneView({
             Weitere Pläne erscheinen hier. Mit dem ＋-Button unten rechts legst du einen neuen an.
           </p>
         ) : (
-          others.map((plan) => {
-            const trainingDays = plan.items.filter((i) => !i.is_rest).length;
-            return (
-              <div key={plan.id} style={{ marginBottom: 16, paddingBottom: 4, borderBottom: '1px solid var(--border)' }}>
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 600 }}>{plan.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {plan.items.length} Tage - {trainingDays} Einheiten
-                  </div>
-                </div>
-
-                <PlanUnitImages items={plan.items} units={units} />
-
-                <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                  <button className="btn btn-primary" onClick={() => setSheet({ type: 'activate', plan })}>Aktivieren</button>
-                  <button className="btn btn-secondary" onClick={() => onEditPlan(plan)}>Bearbeiten</button>
-                  <button className="btn btn-secondary" onClick={() => onDeletePlan(plan.id)} aria-label="Plan löschen">X</button>
-                </div>
-              </div>
-            );
-          })
+          others.map((plan) => (
+            <PlanRow
+              key={plan.id}
+              plan={plan}
+              units={units}
+              onActivate={(p) => setSheet({ type: 'activate', plan: p })}
+              onEdit={onEditPlan}
+              onMore={(p) => setSheet({ type: 'delete', plan: p })}
+            />
+          ))
         )}
       </div>
 
@@ -242,6 +232,14 @@ export default function PlaeneView({
           busy={busy}
           onClose={() => setSheet(null)}
           onConfirm={() => run(() => onEndPlan())}
+        />
+      )}
+      {sheet?.type === 'delete' && (
+        <DeletePlanSheet
+          plan={sheet.plan}
+          busy={busy}
+          onClose={() => setSheet(null)}
+          onConfirm={() => run(() => onDeletePlan(sheet.plan.id))}
         />
       )}
     </div>
