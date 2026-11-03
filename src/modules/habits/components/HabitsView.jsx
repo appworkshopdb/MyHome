@@ -441,7 +441,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
         {error && <div className="toast toast-error" style={{ margin: 0 }}>{error}</div>}
 
-        {/* Grundlagen */}
+        {/* Grundlagen (die Beschreibung wird nicht mehr abgefragt; vorhandene Werte bleiben beim Speichern erhalten) */}
         <div className="hab-ef-card">
           <div className="hab-ef-ct">Grundlagen</div>
           <div className="hab-ef-namerow">
@@ -480,17 +480,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
               ))}
             </div>
           )}
-          <div className="hab-ef-field">
-            <label htmlFor="hab-ef-desc">Beschreibung (optional)</label>
-            <input
-              id="hab-ef-desc"
-              className="hab-ef-in"
-              placeholder="Kurze Notiz zu dieser Gewohnheit"
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-              maxLength={120}
-            />
-          </div>
         </div>
 
         {/* Rhythmus */}
