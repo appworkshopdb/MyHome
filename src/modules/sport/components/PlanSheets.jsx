@@ -2,6 +2,7 @@ import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import { addDaysIso, planDayFor } from '../../../core/lib/sportPlanSync';
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
+import { planCounts } from '../lib/planMuscles';
 
 // Bottom-Sheets des Dauerplans: aktivieren/wechseln, beenden, Änderung am
 // aktiven Plan bestätigen. Texte bewusst knapp, nur das, was der Nutzer vor
@@ -24,10 +25,10 @@ function Fact({ ok, children }) {
   return <div className={ok ? 'is-ok' : ''}><i aria-hidden="true" /><span>{children}</span></div>;
 }
 
-function Foot({ confirmLabel, onConfirm, onClose, busy }) {
+function Foot({ confirmLabel, onConfirm, onClose, busy, disabled }) {
   return (
     <div className="pl-foot">
-      <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy}>
+      <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy || disabled}>
         {busy ? 'Einen Moment …' : confirmLabel}
       </button>
       <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
@@ -144,6 +145,50 @@ export function DeletePlanSheet({ plan, onConfirm, onClose, busy }) {
           </button>
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
         </div>
+      </div>
+    </SheetShell>
+  );
+}
+
+// Stufe "Kein Plan ausgewählt": Plan aus den eigenen Plänen auswählen, danach
+// folgt der Start (ActivatePlanSheet).
+export function PickPlanSheet({ plans, onPick, onNew, onClose }) {
+  const [sel, setSel] = useState(null);
+  const chosen = plans.find((p) => p.id === sel);
+  return (
+    <SheetShell onClose={onClose} labelledBy="pl-pick-title">
+      <div className="sheet-header">
+        <span className="sheet-title" id="pl-pick-title">Plan auswählen</span>
+      </div>
+      <div className="pl-sheet">
+        <p className="pl-sub">Der Plan füllt deinen Kalender automatisch, bis du ihn wechselst oder beendest.</p>
+        <div className="pl-pks" role="radiogroup" aria-label="Plan">
+          {plans.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="radio"
+              aria-checked={sel === p.id}
+              className={`pl-pk${sel === p.id ? ' is-on' : ''}`}
+              onClick={() => setSel(p.id)}
+            >
+              <span className="pl-rd" aria-hidden="true" />
+              <span className="pl-pk-t">
+                <b>{p.title}</b>
+                <small>{planCounts(p.items)}</small>
+                <em>{p.items.map((i) => (i.is_rest ? 'Ruhetag' : i.title)).join(' · ')}</em>
+              </span>
+            </button>
+          ))}
+          <button type="button" className="pl-pk pl-pk--new" onClick={onNew}>
+            <span className="pl-rd pl-rd--plus" aria-hidden="true">+</span>
+            <span className="pl-pk-t">
+              <b>Neuen Plan anlegen</b>
+              <small>Eigene Einheiten zu einem Plan zusammenstellen</small>
+            </span>
+          </button>
+        </div>
+        <Foot confirmLabel="Weiter" onConfirm={() => chosen && onPick(chosen)} onClose={onClose} disabled={!chosen} />
       </div>
     </SheetShell>
   );

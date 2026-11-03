@@ -196,12 +196,14 @@ Die Dauer-Eingabe wurde aus der sichtbaren Plan-Bearbeitungsansicht entfernt, we
 
 Datei: `src/modules/sport/components/PlaeneView.jsx` (+ `PlanSheets.jsx`, `PlanEditor.jsx`, `RestBadge.jsx`, `lib/planMuscles.js`).
 
-**Muskelbilder gibt es nur an zwei Stellen:** in der Heute-Karte des aktiven Plans (nur für den heutigen Tag, bis zu 3 Muskeln + „+N“ über `MusclePreview`; an einem Ruhetag das gezeichnete Ruhetag-Symbol `RestBadge`) und im Plan-Editor. „Deine Pläne“ und „Vorschläge für dich“ zeigen bewusst keine Bilder.
+**Muskelbilder gibt es nur an drei Stellen:** in der Karte oben (nur für die Einheit des Tages, bis zu 3 Muskeln + „+N“ über `MusclePreview`; an einem Ruhetag das gezeichnete Ruhetag-Symbol `RestBadge`, Zzz), in den aufgeklappten Plänen („Deine Pläne“, rechts je Tageszeile) und im Plan-Editor. Die Zeile „Vorschläge für dich“ und die zugeklappten Pläne zeigen keine Bilder.
 
-Aufbau von oben nach unten:
-- **Aktiver Plan** (`PlanHero`, Klassen `.pl-hero*`): „Aktiver Plan“ | „Tag x von N“ bzw. „Ab Mo 09.11.“ bei späterem Start, heutige Einheit des PLANS (nicht der Kalenderzeile, ein eigener Eintrag ändert die Karte nicht), Fortschritt (Segmente, ab 11 Tagen ein Balken), die nächsten zwei Tage nur als Text, „Plan · seit dd.mm. · bis auf weiteres“ (bei späterem Start nur „Bis auf weiteres“, kein „Seit“), Bearbeiten/Beenden. Ohne aktiven Plan, aber mit Plänen: dezenter Hinweis „Kein aktiver Plan“; ohne Pläne nur der Hinweis, dass ein Plan freiwillig ist.
-- **Deine Pläne** (`PlanRow`, `<details>`): nur nicht aktive Pläne. Zeile = Name, „7 Tage · 5 Einheiten · 2 Ruhetage“, Ablaufzeile als Text; aufgeklappt Tag für Tag (Einheit + Muskeln als Text), Aktivieren / Bearbeiten / „⋯“ (öffnet die Bestätigung „Plan löschen?“, gelöscht wird nicht mehr direkt).
-- **Vorschläge für dich** (`PlanSuggestions`, unverändert).
+Die Karte oben hat drei Stufen (`PlaeneView.jsx`):
+1. **Kein Plan ausgewählt** (`PlanEmpty`, gestrichelt): „Plan auswählen“ öffnet `PickPlanSheet` (Pläne als Auswahl, „Neuen Plan anlegen“, „Weiter“), danach `ActivatePlanSheet` (Start Heute/Montag/Datum). „Neuer Plan“ öffnet den Editor (`onEditPlan({})`). Ohne Pläne nur „Neuer Plan“. Ein Plan ist freiwillig.
+2. **Plan ausstehend** (`spo_active_plan.start_date` in der Zukunft) und
+3. **Plan aktiv**: dieselbe Heute-Karte (`PlanHero`, Klassen `.pl-hero*`), gleicher Aufbau: „Aktiver Plan“ bzw. Plakette „Noch nicht aktiv“ | „Tag x von N“, Einheit mit Bildern, Fortschritt (Segmente, ab 11 Tagen ein Balken), die nächsten zwei Tage als Text, zwei Statuszeilen („Plan · seit dd.mm.“ / „bis auf weiteres“ bzw. „Plan · startet Mo 09.11.“ / „in 5 Tagen · bis auf weiteres“), Bearbeiten/Beenden. Ausstehend zeigt Tag 1 und die zwei danach, die Segmente sind leer. Gezeigt wird die Einheit des PLANS, nicht der Kalenderzeile (ein eigener Eintrag ändert die Karte nicht).
+
+**Deine Pläne** (`PlanRow`, `<details>`): nur Pläne, die nicht oben stehen. Zugeklappt: Name, „7 Tage · 5 Einheiten · 2 Ruhetage“, Ablaufzeile als Text. Aufgeklappt: Zeitleiste (Klassen `.pl-tl*`): Tagesnummer als Punkt (Training gefüllt, Ruhetag hohl gestrichelt), Titel + Muskeln als Text, rechts die Bilder bzw. das Ruhetag-Symbol, darunter Aktivieren / Bearbeiten / „⋯“ (öffnet „Plan löschen?“, gelöscht wird nicht mehr direkt). **Vorschläge für dich** (`PlanSuggestions`) unverändert.
 
 Der Tag im Plan heißt „Tag 1 … Tag N“, Pläne sind nicht an Wochentage gebunden (früher stand „Mo., Di.“ über den Bildern).
 
