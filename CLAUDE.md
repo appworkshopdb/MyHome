@@ -362,6 +362,11 @@ und Push unverändert rechnen. Eigene Einträge haben Vorrang vor der Plan-Zeile
 beim Löschen des eigenen Eintrags kommt sie zurück); Wechseln/Ändern/Beenden gelten nur ab heute.
 Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 
+## Skills (`.claude/skills/`)
+
+`nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite
+bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind).
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
