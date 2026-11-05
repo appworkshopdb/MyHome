@@ -37,6 +37,8 @@ Gemeinsame Bausteine, die schon da sind: `FocusCard` (Fokuskarte), `AreaList`/`A
 
 ## Stand (zuletzt gepflegt: November 2026, bei Änderungen hier nachziehen)
 
+Die Liste wird von Hand gepflegt und kann hinter dem Code zurückliegen (andere Sitzungen bauen parallel). **Vor Arbeitsbeginn `git log --oneline -30` lesen** und die betroffene Seite einmal im Testlauf ansehen. Die Zeilen mit "laut Commit" sind aus Commit-Titeln übernommen und nicht von mir geprüft.
+
 **Hauptseiten**
 - Fertig: Hub, Finanzen-, Ernährung-, Sport-, Gewohnheiten-, Einkauf-Startseite.
 - Offen: Profil (`#/profile`), Einstellungen-Menü (Zahnrad).
@@ -46,6 +48,9 @@ Gemeinsame Bausteine, die schon da sind: `FocusCard` (Fokuskarte), `AreaList`/`A
 - Sport · Auswertung und Gewicht (Kacheln, Medaillen, Gewichtsverlauf mit Farbe nach Ziel, Aktivität mit Monatsspalten).
 - Gewohnheiten · Meine Gewohnheiten.
 - Ernährung · Lexikon (inklusive behobenem Kategorie-Schlüssel).
+- Gewohnheiten · Anlegen/Bearbeiten-Formular (laut Commit: Karten Grundlagen, Rhythmus, Ziel, Kategorien).
+- Sport · Pläne mit Plan-Editor, Plan-Wizard (drei Stufen), Plan-Auswahl und aktivem Dauerplan; Einheiten-Galerie und erweiterter Katalog (laut Commits).
+- Einkauf · Abschluss einer Liste (Zahlungsschritt mit Beleg-Scan, "Als Vorlage speichern") in neuer Optik (laut Commits).
 
 **Entwurf vorhanden, vom Nutzer noch nicht bestätigt** (Mockup neu zeigen oder nachfragen):
 - Finanzen · Buchungen (und Offene Posten): blaue Saldo-Karte, Kategorien als Kacheln mit Anteilsbalken.
@@ -55,7 +60,7 @@ Gemeinsame Bausteine, die schon da sind: `FocusCard` (Fokuskarte), `AreaList`/`A
 **Noch ohne Entwurf**
 - Finanzen: Verträge, Auswertung, Einstellungen, Sparschwein-Sheet, Posten-Detail.
 - Ernährung: Rezepte, Ampel, Tipps, Rezept-Dialog, Mahlzeit-Scan.
-- Sport: Einheiten, Pläne, Monats- und Wochenkalender.
+- Sport: Monats- und Wochenkalender (Einheiten-Galerie siehe oben, Zustand prüfen).
 - Gewohnheiten: Statistik.
 - Einkauf: Artikelliste einer Liste, Häufig.
 - Hub-Unterseiten: Aufgaben, Kalender, Gewohnheiten heute, Statistiken (Woche und Monat).
