@@ -367,6 +367,19 @@ Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 `nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite
 bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind).
 
+## Datenbank-Sicherheit (Stand 2026-11-05, auf Staging UND Prod eingespielt)
+
+Live geprüft: alle `public`-Tabellen haben RLS, Policies prüfen `auth.uid() = owner_id`, alle `SECURITY DEFINER`-Funktionen
+haben festen `search_path`. Härtung: `supabase/security_hardening_migration.sql` — `anon` hat KEINE Rechte auf `public` (Standard-
+rechte für neue Tabellen von `postgres` ebenfalls entzogen), `households`/`household_members` sind für Clients nur lesbar (Haushalte
+legt man per Service-Role/psql an; die App schreibt dort nie), `nut_foods`/`nut_recipes` setzen `household_id` nur für Mitglieder,
+Trigger-/Aufräum-Funktionen (`log_body_weight`, `handle_new_user`, `cleanup_old_oauth_states`) sind nicht per RPC aufrufbar.
+Regeln für neue Tabellen/Funktionen: RLS an + Policy auf `authenticated`; Funktionen mit `revoke execute … from public, anon, authenticated`
+und nur bei Bedarf gezielt freigeben (EXECUTE kommt sonst über PUBLIC). Nach JEDER neuen Tabelle auf dem Server prüfen (muss 0 bleiben,
+Tabellen anderer DB-Benutzer als `postgres` bekommen Standardrechte für `anon` zurück):
+`select count(*) from information_schema.role_table_grants where table_schema='public' and grantee='anon';`
+Ein Dauer-SSH-Zugang für Claude ist bewusst nicht eingerichtet (Staging und Prod teilen ein Backend); Prüfabfragen laufen von Hand per `docker exec`.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo
