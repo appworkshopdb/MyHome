@@ -1,6 +1,6 @@
 ---
 name: nestua-backlog
-description: Nestua-Backlog in Linear (Team "Nestua", Kürzel NES) lesen und pflegen. IMMER nutzen, bevor an einem Feature, Bug, Design-Umbau oder einer Sicherheitsfrage gearbeitet wird, und wenn der Nutzer beiläufig eine Idee, einen Bug, eine Auffälligkeit, einen Änderungswunsch oder ein Ziel nennt ("mir ist aufgefallen", "wir sollten", "Idee:", "merk dir", "das ist kaputt"). Auch bei "was steht an", "was ist offen", "wie ist der Stand" und nach Abschluss einer Aufgabe, um das passende Issue zu aktualisieren.
+description: Nestua-Backlog in Linear (Team "Nestua", Kürzel NES) lesen und pflegen. IMMER nutzen, bevor an einem Feature, Bug, Design-Umbau, einer Struktur-/Klarheits-Frage (Aufbau, Zahlen, Abläufe) oder einer Sicherheitsfrage (RLS, Rechte, Secrets, Datenschutz) gearbeitet wird, bei Fragen zu den Zielen der Entwicklungsphase, und wenn der Nutzer beiläufig eine Idee, einen Bug, eine Auffälligkeit, einen Änderungswunsch oder ein Ziel nennt ("mir ist aufgefallen", "wir sollten", "Idee:", "merk dir", "das ist kaputt"). Auch bei "was steht an", "was ist offen", "wie ist der Stand" und nach Abschluss einer Aufgabe, um das passende Issue zu aktualisieren.
 ---
 
 # Nestua-Backlog (Linear)
