@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../core/lib/AuthContext';
 import { useUi } from '../../core/lib/UiContext';
 import { useEntrySheet } from '../../core/lib/EntrySheetContext';
@@ -7,7 +7,8 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
-import { syncActivePlan, activatePlan, endActivePlan, resyncActivePlan } from '../../core/lib/sportPlanSync';
+import { getActivePlan, fillActivePlan, activatePlan, endActivePlan, resyncActivePlan } from '../../core/lib/sportPlanSync';
+import { snapshotGet, snapshotSet } from '../../core/lib/snapshotCache';
 import { todayIso } from '../../core/lib/wizardDates';
 import ModuleTopBar from '../../core/components/ModuleTopBar';
 import { fb } from '../../core/lib/feedback';
@@ -55,13 +56,20 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   // dasselbe etablierte Muster wie bei Finanzen (EntrySheetContext).
   const { version } = useEntrySheet();
 
-  const [workouts, setWorkouts] = useState([]);
-  const [units, setUnits] = useState([]);
-  const [plans, setPlans] = useState([]);
-  const [activePlan, setActivePlan] = useState(null); // Zeile aus spo_active_plan (Dauerplan) oder null
-  const [userSports, setUserSports] = useState([]);
-  const [bodyWeight, setBodyWeight] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Beim Wiederbetreten sofort den zuletzt gesehenen Stand zeigen
+  // (core/lib/snapshotCache.js) und danach im Hintergrund aktualisieren.
+  const uid = session?.user?.id;
+  const snap = snapshotGet(uid, 'sport');
+
+  const [workouts, setWorkouts] = useState(snap?.workouts ?? []);
+  const [units, setUnits] = useState(snap?.units ?? []);
+  const [plans, setPlans] = useState(snap?.plans ?? []);
+  const [activePlan, setActivePlan] = useState(snap?.activePlan ?? null); // Zeile aus spo_active_plan (Dauerplan) oder null
+  const [userSports, setUserSports] = useState(snap?.userSports ?? []);
+  const [bodyWeight, setBodyWeight] = useState(snap?.bodyWeight ?? null);
+  const [loading, setLoading] = useState(!snap);
+  const hasData = useRef(Boolean(snap)); // schon etwas anzuzeigen → kein Ladezustand beim Aktualisieren
+  const loadSeq = useRef(0);             // nur die jüngste Ladung darf den Zustand setzen
 
   // formInitial steuert das Formular INNERHALB des Kalender-Screens
   // (VerlaufView) — beim Bearbeiten eines Workouts oder Anlegen eines
@@ -70,31 +78,56 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
   const [editingPlan, setEditingPlan] = useState(null);   // Plan-Editor
 
   const load = useCallback(async () => {
-    setLoading(true);
+    const seq = ++loadSeq.current;
+    if (!hasData.current) setLoading(true);
     try {
-      // Zuerst den aktiven Plan auffüllen, dann laden: so steht der Kalender
-      // beim Öffnen immer 28 Tage im Voraus (schlägt nie fehl, ohne Plan: null).
-      const active = await syncActivePlan(session);
-      const [ws, us, ps, profile] = await Promise.all([
+      // Alles in EINER Runde laden (vorher: erst den Plan auffüllen, dann laden —
+      // die Wartezeiten addierten sich). Der aktive Plan kommt gleich mit.
+      const [ws, us, ps, profile, active] = await Promise.all([
         db.getWorkouts(session),
         db.getUnits(session),
         db.getPlans(session),
         getBodyProfile(session),
+        getActivePlan(session).catch(() => null), // ohne Plan/Migration: null
       ]);
-      setWorkouts(ws);
-      setUnits(us);
-      setPlans(ps);
-      setActivePlan(active);
-      setUserSports(profile.sports ?? []);
-      // Gewicht kommt aus demselben body_profile-Aufruf, der ohnehin für
-      // die Sportarten läuft — für die Bereichszeile "Gewicht" ist
-      // deshalb kein zusätzlicher Request nötig.
-      setBodyWeight(profile.weight || null);
+      if (seq !== loadSeq.current) return; // neuere Ladung läuft schon
+      const data = {
+        workouts: ws,
+        units: us,
+        plans: ps,
+        activePlan: active,
+        userSports: profile.sports ?? [],
+        // Gewicht kommt aus demselben body_profile-Aufruf, der ohnehin für
+        // die Sportarten läuft — für die Bereichszeile "Gewicht" ist
+        // deshalb kein zusätzlicher Request nötig.
+        bodyWeight: profile.weight || null,
+      };
+      setWorkouts(data.workouts);
+      setUnits(data.units);
+      setPlans(data.plans);
+      setActivePlan(data.activePlan);
+      setUserSports(data.userSports);
+      setBodyWeight(data.bodyWeight);
+      hasData.current = true;
+      snapshotSet(session?.user?.id, 'sport', data);
+
+      // Den aktiven Plan auf 28 Tage im Voraus auffüllen: im Hintergrund, ohne
+      // die Anzeige aufzuhalten. Nur wenn Zeilen entstanden sind (selten, etwa
+      // einmal pro Tag), werden die Einheiten noch einmal geladen.
+      fillActivePlan(session, active)
+        .then(async (added) => {
+          if (!added || seq !== loadSeq.current) return;
+          const fresh = await db.getWorkouts(session);
+          if (seq !== loadSeq.current) return;
+          setWorkouts(fresh);
+          snapshotSet(session?.user?.id, 'sport', { ...data, workouts: fresh });
+        })
+        .catch(() => { /* Auffüllen schlägt nie die Anzeige */ });
     } catch (e) {
       console.error(e);
       showToast('Daten konnten nicht geladen werden');
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [session, showToast]);
 

@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import { snapshotGet, snapshotSet } from '../../../core/lib/snapshotCache';
 import * as db from '../lib/finData';
 import {
   MONTHS_DE,
@@ -39,28 +40,41 @@ export default function OverviewSection({ onNavigate }) {
   const year  = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [entries,   setEntries]   = useState([]);
-  const [templates, setTemplates] = useState([]);
-  const [contracts, setContracts] = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  // Beim Wiederbetreten des Moduls sofort den zuletzt gesehenen Stand zeigen
+  // (core/lib/snapshotCache.js) und danach im Hintergrund aktualisieren.
+  const uid  = session?.user?.id;
+  const snap = snapshotGet(uid, `fin:overview:${year}-${month}`);
+
+  const [entries,   setEntries]   = useState(snap?.entries ?? []);
+  const [templates, setTemplates] = useState(snap?.templates ?? []);
+  const [contracts, setContracts] = useState(snap?.contracts ?? []);
+  const [loading,   setLoading]   = useState(!snap);
+  const hasData = useRef(Boolean(snap)); // schon etwas anzuzeigen → kein Ladezustand beim Aktualisieren
 
   // useRef-Muster: session-Objekt ändert sich nicht pro Render → load bleibt stabil
   const sessionRef = useRef(session);
   useEffect(() => { sessionRef.current = session; }, [session]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!hasData.current) setLoading(true);
     try {
       const s = sessionRef.current;
-      await db.applyMissingFixTemplates(s, year, month);
-      const [es, ts, cs] = await Promise.all([
+      // Alles in EINER Runde laden. Fehlende Fixkosten-Vorlagen werden danach aus
+      // diesen Daten berechnet (vorher: zwei zusätzliche Abfragen davor); nur wenn
+      // etwas angelegt wurde (selten, z. B. erster Aufruf im Monat), lädt es die
+      // Posten noch einmal neu.
+      const [es0, ts, cs] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
         db.getContracts(s),
       ]);
+      const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
+      const es = added > 0 ? await db.getEntriesByMonth(s, year, month) : es0;
       setEntries(es);
       setTemplates(ts);
       setContracts(cs);
+      hasData.current = true;
+      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, templates: ts, contracts: cs });
     } catch (e) {
       console.error(e);
     } finally {

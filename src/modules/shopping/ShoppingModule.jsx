@@ -26,6 +26,8 @@ import FreqView    from './components/FreqView.jsx';
 
 import { loadLists } from './lib/shoData.js';
 import { takeOpenListRequest, SHOPPING_CHANGED } from '../../core/lib/shoppingHandoff.js';
+import { useAuth } from '../../core/lib/AuthContext';
+import { snapshotGet, snapshotSet } from '../../core/lib/snapshotCache';
 
 import './shopping.css';
 
@@ -35,8 +37,14 @@ const DETAIL_TITLES = {
 };
 
 export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
-  const [lists,    setLists]    = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  // Beim Wiederbetreten sofort den zuletzt gesehenen Stand zeigen
+  // (core/lib/snapshotCache.js) und danach im Hintergrund aktualisieren.
+  const { session } = useAuth();
+  const uid  = session?.user?.id;
+  const snap = snapshotGet(uid, 'shopping:lists');
+
+  const [lists,    setLists]    = useState(snap ?? []);
+  const [loading,  setLoading]  = useState(!snap);
   const [error,    setError]    = useState(null);
   const [openList, setOpenList] = useState(null); // wenn gesetzt → ItemsView
 
@@ -44,10 +52,11 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     try {
       const data = await loadLists();
       setLists(data);
+      snapshotSet(uid, 'shopping:lists', data);
     } catch (e) {
       setError('Listen konnten nicht geladen werden.');
     }
-  }, []);
+  }, [uid]);
 
   useEffect(() => {
     fetchLists().finally(() => setLoading(false));

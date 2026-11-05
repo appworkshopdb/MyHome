@@ -343,6 +343,13 @@ export async function applyMissingFixTemplates(session, year, month) {
     getFixTemplates(session),
     getEntriesByMonth(session, year, month),
   ]);
+  return applyMissingFixTemplatesWith(session, year, month, templates, monthEntries);
+}
+
+// Wie applyMissingFixTemplates, aber mit bereits geladenen Vorlagen und Posten
+// des Monats — spart dem Aufrufer zwei Abfragen. Gibt zurück, wie viele Posten
+// neu angelegt wurden (bei > 0 die Posten des Monats neu laden).
+export async function applyMissingFixTemplatesWith(session, year, month, templates, monthEntries) {
   let added = 0;
   for (const t of templates) {
     if (!templateAppliesTo(t, year, month)) continue;

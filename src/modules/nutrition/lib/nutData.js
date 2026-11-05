@@ -57,6 +57,13 @@ function writeFoodsCache(session, rows) {
   }
 }
 
+// Zuletzt geladene Lebensmittel sofort (ohne Netz), oder null. Das Modul zeigt
+// sie beim Öffnen gleich an und aktualisiert danach über getFoods().
+export function getFoodsCached(session) {
+  const rows = readFoodsCache(session);
+  return rows ? mergeFoods(rows, ownerId(session)) : null;
+}
+
 // Lädt Katalog + eigene/geteilte Zeilen und liefert die fertige Liste im
 // UI-Format (siehe toFoodShape).
 export async function getFoods(session) {
@@ -168,6 +175,19 @@ export async function deleteFood(rowId) {
 // Rezepte — geteilt im Haushalt, gleiches Prinzip wie oben.
 // ---------------------------------------------------------------------
 
+// Wie bei den Lebensmittel: letzter geladener Stand je Nutzer:in, damit das Modul
+// beim Öffnen sofort Rezepte zeigen kann, bevor die Antwort vom Server da ist.
+const RECIPES_CACHE_KEY = 'nestua:nut_recipes:';
+
+export function getRecipesCached(session) {
+  try {
+    const raw = localStorage.getItem(RECIPES_CACHE_KEY + ownerId(session));
+    return raw ? JSON.parse(raw).map(fromRecipeRow) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getRecipes(session) {
   const { data, error } = await getSupabase()
     .from('nut_recipes')
@@ -175,6 +195,11 @@ export async function getRecipes(session) {
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
   if (error) throw error;
+  try {
+    localStorage.setItem(RECIPES_CACHE_KEY + ownerId(session), JSON.stringify(data));
+  } catch {
+    // Speicher voll/gesperrt: kein Cache, App läuft trotzdem.
+  }
   return data.map(fromRecipeRow);
 }
 
