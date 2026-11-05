@@ -14,6 +14,12 @@ Repo): `HOSTING.md`, `SERVER-SETUP.md`, `Design-System.md`, `Gamification.md`,
 Infra/Deploy/Design-Tokens dort nachlesen statt zu raten — diese Datei hier
 ist bewusst kurz und ersetzt sie nicht.
 
+## Schreibperspektive
+
+Alle Texte, die ich im Namen des Projekts schreibe (Content, Social-Media-Posts, Videos, Beschreibungen, Release-Notes, Store-Texte),
+stehen IMMER in der Ich-Perspektive eines einzelnen Vibe Coders: "mein", "ich baue" — nie "wir"/"unser"/"unsere".
+Nicht gemeint sind die Texte in der App selbst (UI): dort bleibt die bestehende Ansprache.
+
 ## Architektur-Grundregel
 
 `core/` darf NICHT aus `modules/` importieren. Umgekehrt schon. Gemeinsame
