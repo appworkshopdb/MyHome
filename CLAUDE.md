@@ -365,7 +365,14 @@ Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 ## Skills (`.claude/skills/`)
 
 `nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite
-bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind).
+bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind),
+`nestua-backlog` (Backlog in Linear).
+
+**Backlog = Linear, Team "Nestua" (`NES`).** Vor jeder Feature-, Bug-, Design- oder Sicherheitsarbeit den Skill `nestua-backlog` nutzen:
+offene Issues zum Bereich prüfen, beiläufig genannte Ideen/Bugs dort eintragen, nach der Arbeit kommentieren (Done nur nach Bestätigung des
+Nutzers). Bereiche wie im alten Sheet (Hub, Gewohnheiten, Finanzen, Sport, Ernährung, Einkauf, Generelles). Ziele der Entwicklungsphase
+(Projekte): Sicherheit, Klarheit & Struktur, Intuitives einheitliches Design; "Play Store (später)" ist das oberste, aber noch nicht aktuelle Ziel.
+Keine Geheimnisse oder Nutzerdaten in Issues. Das Sheet "Entwicklung/Ideen" ist nur noch Archiv der erledigten Einträge.
 
 ## Datenbank-Sicherheit (Stand 2026-11-05, auf Staging UND Prod eingespielt)
 
