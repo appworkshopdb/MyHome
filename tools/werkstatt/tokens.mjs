@@ -1,5 +1,5 @@
 // Tokens der Design-Werkstatt: Datei design/tokens.json (Quelle der Wahrheit) und daraus erzeugtes design/tokens.css.
-// tokens.css ist ZUR ZEIT nicht in der App eingebunden. Erst wenn die App auf Tokens umgestellt wird, importiert sie die Datei.
+// tokens.css wird von der App importiert (src/main.jsx, vor base.css). Neue Variablen ändern nichts, bis Komponenten sie nutzen.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +25,7 @@ export function sanitize(input, base) {
   for (const k of Object.keys(base.space)) out.space[k] = num(input?.space?.[k], base.space[k], 0, 96);
   for (const k of Object.keys(base.radius)) out.radius[k] = num(input?.radius?.[k], base.radius[k], 0, 64);
   for (const k of Object.keys(base.size)) out.size[k] = num(input?.size?.[k], base.size[k], 24, 96);
+  out.shadow = base.shadow; // Schatten sind (noch) nicht in der Werkstatt editierbar
   out.colors = { light: {}, dark: {} };
   for (const theme of ['light', 'dark']) {
     for (const [group, vals] of Object.entries(input?.colors?.[theme] ?? {})) {
@@ -45,7 +46,11 @@ export function toCss(t) {
   }
   for (const [k, v] of Object.entries(t.space)) lines.push(`  --sp-${k}: ${v}px;`);
   for (const [k, v] of Object.entries(t.radius)) lines.push(`  --rad-${k}: ${v}px;`);
-  lines.push(`  --hit-min: ${t.size.hit}px; --ctl-h: ${t.size.control}px; --ctl-h-sm: ${t.size.controlSm}px;`, '}', '');
+  lines.push(`  --hit-min: ${t.size.hit}px; --ctl-h: ${t.size.control}px; --ctl-h-sm: ${t.size.controlSm}px;`);
+  for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.light};`);
+  lines.push('}', '', '/* Dunkelmodus: Klasse .dark auf <html> (core/lib/theme.js) */', '.dark {');
+  for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.dark};`);
+  lines.push('}', '');
   const overrides = JSON.stringify(t.colors);
   lines.push(`/* Farb-Abweichungen (noch nicht ausgegeben, siehe tokens.json): ${overrides} */`, '');
   return lines.join('\n');
