@@ -241,6 +241,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
       await deleteHabit(habitId, { hideFromStats });
       await onHabitsChange();
       setLocalOrder(null);
+      if (showForm) cancel();
     } catch (e) {
       setError('Löschen fehlgeschlagen.');
     } finally {
@@ -299,6 +300,54 @@ export default function HabitsView({ habits, onHabitsChange }) {
       setRestoringId(null);
     }
   }
+
+  const deleteSheet = deleteTarget && (
+    <SheetShell onClose={() => setDeleteTarget(null)} labelledBy="hab-del-title">
+      <div className="hab-cp-sheet">
+        <div className="hab-cp-sheet-head">
+          <h2 id="hab-del-title">„{deleteTarget.name}" löschen?</h2>
+        </div>
+        <div className="hab-cp-note">
+          Soll die Gewohnheit auch aus den Statistiken verschwinden, oder sollen die
+          bisherigen Werte dort erhalten bleiben?
+        </div>
+
+        <div role="radiogroup" aria-label="Löschen" className="hab-del-opts">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!deleteHideStats}
+            className={`hab-del-opt${!deleteHideStats ? ' on' : ''}`}
+            onClick={() => setDeleteHideStats(false)}
+          >
+            <span className="hab-del-radio" />
+            <b>Nur aus der Liste löschen</b>
+            <span className="hab-del-desc">Die Werte bleiben in der Statistik erhalten.</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={deleteHideStats}
+            className={`hab-del-opt danger${deleteHideStats ? ' on' : ''}`}
+            onClick={() => setDeleteHideStats(true)}
+          >
+            <span className="hab-del-radio" />
+            <b>Auch aus der Statistik löschen</b>
+            <span className="hab-del-desc">Die Gewohnheit zählt in keinem Verlauf mehr.</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
+          onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
+        >
+          {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
+        </button>
+        <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+      </div>
+    </SheetShell>
+  );
 
   // ─── Archiv ──────────────────────────────────────────────
   if (showArchive) {
@@ -369,32 +418,47 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
   // ─── Formular ────────────────────────────────────────────
   if (showForm) {
+    const isCounter = form.unit !== '';
+    const freqOptions = [
+      { key: 'daily',    label: 'Täglich' },
+      { key: 'weekdays', label: 'Mo–Fr' },
+      { key: 'custom',   label: 'Eigene Tage' },
+    ];
+    const dayOn = (i) => form.frequency === 'daily'
+      || (form.frequency === 'weekdays' ? i < 5 : (form.frequency_days ?? []).includes(i));
+    const units = UNIT_OPTIONS.filter((o) => o.value !== '');
+
     return (
-      <div className="hab-form-wrap">
-        <div className="hab-form-header">
-          <button className="hab-back-btn" onClick={cancel}>← Zurück</button>
-          <h2 className="hab-form-title">
-            {editHabit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}
-          </h2>
+      <div className="hab-ef">
+        <div className="hab-tl-top">
+          <button type="button" className="hab-tl-back" onClick={cancel} aria-label="Zurück">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
+          </button>
+          <h2>{editHabit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}</h2>
         </div>
 
-        {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+        {error && <div className="toast toast-error" style={{ margin: 0 }}>{error}</div>}
 
-        <div className="hab-form">
-          {/* Icon + Name */}
-          <div className="hab-form-row">
+        {/* Grundlagen (die Beschreibung wird nicht mehr abgefragt; vorhandene Werte bleiben beim Speichern erhalten) */}
+        <div className="hab-ef-card">
+          <div className="hab-ef-ct">Grundlagen</div>
+          <div className="hab-ef-namerow">
             <button
-              className="hab-icon-btn"
-              onClick={() => setIconPicker((v) => !v)}
               type="button"
-              title="Icon wählen"
+              className="hab-ef-iconbtn"
+              onClick={() => setIconPicker((v) => !v)}
+              aria-label="Symbol wählen"
+              aria-expanded={iconPicker}
             >
               {form.icon}
             </button>
-            <div className="hab-form-field" style={{ flex: 1 }}>
-              <label className="form-label">Name *</label>
+            <div className="hab-ef-field">
+              <label htmlFor="hab-ef-name">Name *</label>
               <input
-                className="form-input"
+                id="hab-ef-name"
+                className="hab-ef-in"
                 placeholder="z.B. 30 Min spazieren"
                 value={form.name}
                 onChange={(e) => setField('name', e.target.value)}
@@ -402,174 +466,175 @@ export default function HabitsView({ habits, onHabitsChange }) {
               />
             </div>
           </div>
-
           {iconPicker && (
-            <div className="hab-icon-picker">
+            <div className="hab-ef-emojis">
               {HABIT_ICONS.map((ic) => (
                 <button
                   key={ic}
-                  className={`hab-icon-option ${form.icon === ic ? 'selected' : ''}`}
-                  onClick={() => { setField('icon', ic); setIconPicker(false); }}
                   type="button"
+                  className={form.icon === ic ? 'on' : ''}
+                  onClick={() => { setField('icon', ic); setIconPicker(false); }}
                 >
                   {ic}
                 </button>
               ))}
             </div>
           )}
+        </div>
 
-          {/* Beschreibung */}
-          <div className="hab-form-field">
-            <label className="form-label">Beschreibung (optional)</label>
-            <input
-              className="form-input"
-              placeholder="Kurze Notiz zu dieser Gewohnheit"
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-              maxLength={120}
-            />
+        {/* Rhythmus */}
+        <div className="hab-ef-card">
+          <div className="hab-ef-ct">Rhythmus</div>
+          <div className="hab-ef-seg" role="group" aria-label="Häufigkeit">
+            {freqOptions.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                className={form.frequency === f.key ? 'on' : ''}
+                aria-pressed={form.frequency === f.key}
+                onClick={() => setField('frequency', f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className={`hab-ef-days${form.frequency === 'custom' ? '' : ' is-off'}`} role="group" aria-label="Tage">
+            {DAY_LABELS.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                className={dayOn(i) ? 'on' : ''}
+                disabled={form.frequency !== 'custom'}
+                aria-pressed={dayOn(i)}
+                onClick={() => toggleDay(i)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Kategorien — Multi-Select Tags */}
-          <div className="hab-form-field">
-            <label className="form-label">Kategorien</label>
-            <div className="hwiz-cat-grid">
-              {HABIT_CATEGORIES.map((cat) => (
+          <div className="hab-ef-ct" style={{ marginTop: 2 }}>Wann</div>
+          <div className="hab-ef-chips" role="group" aria-label="Tageszeit">
+            {TIME_SLOTS.map((slot) => (
+              <button
+                key={slot.value}
+                type="button"
+                className={`hab-ef-chip${form.time_slot === slot.value ? ' on' : ''}`}
+                aria-pressed={form.time_slot === slot.value}
+                onClick={() => setField('time_slot', slot.value)}
+              >
+                {slot.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="hab-ef-row">
+            <div>
+              <b>Erinnerung</b>
+              <small>{form.reminder_time ? `um ${form.reminder_time} Uhr` : 'Keine Erinnerung'}</small>
+            </div>
+            <div className="hab-ef-time">
+              <input
+                type="time"
+                value={form.reminder_time}
+                onChange={(e) => setField('reminder_time', e.target.value)}
+                aria-label="Erinnerungszeit"
+              />
+              {form.reminder_time && (
+                <button type="button" className="hab-ef-link" onClick={() => setField('reminder_time', '')}>
+                  Entfernen
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Ziel */}
+        <div className="hab-ef-card">
+          <div className="hab-ef-ct">Ziel</div>
+          <div className="hab-ef-seg" role="group" aria-label="Art">
+            <button
+              type="button"
+              className={!isCounter ? 'on' : ''}
+              aria-pressed={!isCounter}
+              onClick={() => { setField('unit', ''); setField('target_count', 1); }}
+            >
+              Ja / Nein
+            </button>
+            <button
+              type="button"
+              className={isCounter ? 'on' : ''}
+              aria-pressed={isCounter}
+              onClick={() => { if (!isCounter) setField('unit', '×'); }}
+            >
+              Zähler
+            </button>
+          </div>
+          {isCounter ? (
+            <>
+              <div className="hab-ef-row">
+                <div>
+                  <b>Ziel pro Tag</b>
+                  <small>{form.target_count} {form.unit}</small>
+                </div>
+                <div className="hab-ef-step">
+                  <button type="button" aria-label="Weniger"
+                    onClick={() => setField('target_count', Math.max(1, Number(form.target_count) - 1))}>−</button>
+                  <output>{form.target_count}</output>
+                  <button type="button" aria-label="Mehr"
+                    onClick={() => setField('target_count', Math.min(100, Number(form.target_count) + 1))}>+</button>
+                </div>
+              </div>
+              <div className="hab-ef-units" role="group" aria-label="Einheit">
+                {units.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    title={o.label}
+                    className={`hab-ef-chip${form.unit === o.value ? ' on' : ''}`}
+                    aria-pressed={form.unit === o.value}
+                    onClick={() => setField('unit', o.value)}
+                  >
+                    {o.value}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="hab-ef-hint">Einfach abhaken, ohne Menge.</div>
+          )}
+        </div>
+
+        {/* Kategorien */}
+        <div className="hab-ef-card">
+          <div className="hab-ef-ct">Kategorien <span>mehrere möglich</span></div>
+          <div className="hab-ef-chips" role="group" aria-label="Kategorien">
+            {HABIT_CATEGORIES.map((cat) => {
+              const on = (form.categories ?? []).includes(cat);
+              return (
                 <button
                   key={cat}
                   type="button"
-                  className={`hwiz-cat-tag ${(form.categories ?? []).includes(cat) ? 'active' : ''}`}
+                  className={`hab-ef-chip${on ? ' on' : ''}`}
+                  aria-pressed={on}
                   onClick={() => toggleCategory(cat)}
                 >
                   {cat}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-
-          {/* Frequenz */}
-          <div className="hab-form-field">
-            <label className="form-label">Häufigkeit</label>
-            <div className="hab-freq-tabs">
-              {Object.entries(FREQ_LABELS).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`hab-freq-tab ${form.frequency === key ? 'active' : ''}`}
-                  onClick={() => setField('frequency', key)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {form.frequency === 'custom' && (
-              <div className="hab-day-picker">
-                {DAY_LABELS.map((label, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`hab-day-btn ${(form.frequency_days ?? []).includes(i) ? 'active' : ''}`}
-                    onClick={() => toggleDay(i)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Ziel-Anzahl / Einheit */}
-          <div className="hab-form-row" style={{ gap: 12 }}>
-            {form.unit !== '' && (
-            <div className="hab-form-field" style={{ flex: 1 }}>
-              <label className="form-label">Ziel-Anzahl</label>
-              <input
-                className="form-input"
-                type="number"
-                min={1}
-                max={100}
-                value={form.target_count}
-                onChange={(e) => setField('target_count', e.target.value)}
-              />
-            </div>
-            )}
-            <div className="hab-form-field" style={{ flex: 2 }}>
-              <label className="form-label">Einheit</label>
-              <select
-                className="form-input"
-                value={form.unit}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setField('unit', val);
-                  // Bei Ja/Nein: Ziel-Anzahl auf 1 zurücksetzen
-                  if (val === '') setField('target_count', 1);
-                }}
-              >
-                {UNIT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Erinnerung */}
-          <div className="hab-form-field">
-            <label className="form-label">
-              Erinnerung <span className="hab-form-label-hint">(optional)</span>
-            </label>
-            <div className="hab-reminder-wrap">
-              <input
-                className="form-input"
-                type="time"
-                value={form.reminder_time}
-                onChange={(e) => setField('reminder_time', e.target.value)}
-                style={{ flex: 1 }}
-              />
-              {form.reminder_time && (
-                <button
-                  type="button"
-                  className="hab-reminder-clear"
-                  onClick={() => setField('reminder_time', '')}
-                  title="Erinnerung entfernen"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-            {form.reminder_time && (
-              <div className="hab-reminder-hint">
-                ⏰ Erinnerung um {form.reminder_time} Uhr gespeichert.
-                Push-Benachrichtigungen kommen in einem späteren Update.
-              </div>
-            )}
-          </div>
-
-          {/* Tageszeit-Slot */}
-          <div className="hab-form-field">
-            <label className="form-label">Wann</label>
-            <div className="hab-slot-tabs">
-              {TIME_SLOTS.map((slot) => (
-                <button
-                  key={slot.value}
-                  type="button"
-                  className={`hab-slot-tab ${form.time_slot === slot.value ? 'active' : ''}`}
-                  onClick={() => setField('time_slot', slot.value)}
-                >
-                  {slot.emoji} {slot.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            className="btn btn-primary"
-            style={{ marginTop: 8 }}
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Wird gespeichert …' : editHabit ? 'Speichern' : 'Gewohnheit anlegen'}
-          </button>
         </div>
+
+        <button type="button" className="hab-ef-save" onClick={handleSave} disabled={saving}>
+          {saving ? 'Wird gespeichert …' : editHabit ? 'Speichern' : 'Gewohnheit anlegen'}
+        </button>
+        {editHabit && (
+          <button type="button" className="hab-ef-delete" onClick={() => openDelete(editHabit)}>
+            Gewohnheit löschen
+          </button>
+        )}
+        {deleteSheet}
       </div>
     );
   }
@@ -609,7 +674,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
         <div className="hab-section">
           <div className="hab-section-label">
             Aktiv
-            <span className="hab-section-label-hint"> · ziehen zum Sortieren</span>
           </div>
           <DndContext
             sensors={sensors}
@@ -637,53 +701,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
         </div>
       )}
 
-      {deleteTarget && (
-        <SheetShell onClose={() => setDeleteTarget(null)} labelledBy="hab-del-title">
-          <div className="hab-cp-sheet">
-            <div className="hab-cp-sheet-head">
-              <h2 id="hab-del-title">„{deleteTarget.name}" löschen?</h2>
-            </div>
-            <div className="hab-cp-note">
-              Soll die Gewohnheit auch aus den Statistiken verschwinden, oder sollen die
-              bisherigen Werte dort erhalten bleiben?
-            </div>
-
-            <div role="radiogroup" aria-label="Löschen" className="hab-del-opts">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!deleteHideStats}
-                className={`hab-del-opt${!deleteHideStats ? ' on' : ''}`}
-                onClick={() => setDeleteHideStats(false)}
-              >
-                <span className="hab-del-radio" />
-                <b>Nur aus der Liste löschen</b>
-                <span className="hab-del-desc">Die Werte bleiben in der Statistik erhalten.</span>
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={deleteHideStats}
-                className={`hab-del-opt danger${deleteHideStats ? ' on' : ''}`}
-                onClick={() => setDeleteHideStats(true)}
-              >
-                <span className="hab-del-radio" />
-                <b>Auch aus der Statistik löschen</b>
-                <span className="hab-del-desc">Die Gewohnheit zählt in keinem Verlauf mehr.</span>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
-              onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
-            >
-              {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
-            </button>
-            <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
-          </div>
-        </SheetShell>
-      )}
+      {deleteSheet}
 
       {/* Pausierte Habits */}
       {inactiveHabits.length > 0 && (

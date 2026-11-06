@@ -18,6 +18,7 @@ export default function EinheitenView({ units, loading }) {
             title={preset.title}
             subtitle={resolveTypeLabel(preset.type_key) ?? 'Kein Typ'}
             tags={preset.muscle_groups}
+            icon={preset.icon}
             isLast={i === PREDEFINED_UNITS.length - 1}
           />
         ))}

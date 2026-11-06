@@ -92,6 +92,36 @@ export const PREDEFINED_UNITS = [
     key: 'pre.beine-bauch', title: 'Beine & Bauch', type_key: null,
     muscle_groups: ['beine-ganz', 'bauch-ganz'],
   },
+  // Aus den Trainingstypen übernommen, damit auch diese Kombinationen im Plan wählbar sind
+  {
+    key: 'pre.schultern-arme', title: 'Schultern & Arme', type_key: 'strength.shoulders_arms',
+    muscle_groups: ['schultern-ganz', 'arme-ganz'],
+  },
+  {
+    key: 'pre.gesaess-beinrueckseite', title: 'Gesäß & Beinrückseite', type_key: 'strength.glutes',
+    muscle_groups: ['gluteus', 'hamstrings'],
+  },
+  {
+    key: 'pre.rumpf-bauch', title: 'Rumpf & Bauch', type_key: 'strength.core',
+    muscle_groups: ['bauch-ganz', 'ruecken-unten'],
+  },
+
+  // --- Ausdauer, Beweglichkeit & Erholung — aus den Trainingstypen ------
+  // Noch ohne Muskelbilder: `icon` ist ein Platzhalter (Emoji) bis es feste Bilder
+  // je Einheit gibt. Titel NIE ändern: gespeicherte Plan-Tage finden Bild und Icon
+  // über den Titel.
+  { key: 'pre.lauf', title: 'Lauf', type_key: 'endurance.run', muscle_groups: [], icon: '🏃' },
+  { key: 'pre.langer-lauf', title: 'Langer Lauf', type_key: 'endurance.long', muscle_groups: [], icon: '🏃' },
+  { key: 'pre.intervalle', title: 'Intervalltraining', type_key: 'endurance.intervals', muscle_groups: [], icon: '⏱️' },
+  { key: 'pre.hiit', title: 'HIIT / Zirkel', type_key: 'endurance.hiit', muscle_groups: [], icon: '🔥' },
+  { key: 'pre.rad', title: 'Radfahren', type_key: 'endurance.bike', muscle_groups: [], icon: '🚴' },
+  { key: 'pre.schwimmen', title: 'Schwimmen', type_key: 'endurance.swim', muscle_groups: [], icon: '🏊' },
+  { key: 'pre.rudern', title: 'Rudern / Ergometer', type_key: 'endurance.row', muscle_groups: [], icon: '🚣' },
+  { key: 'pre.walking', title: 'Walking', type_key: 'endurance.walk', muscle_groups: [], icon: '🚶' },
+  { key: 'pre.mobilitaet', title: 'Mobilität', type_key: 'mobility.general', muscle_groups: [], icon: '🤸' },
+  { key: 'pre.dehnen', title: 'Dehnen', type_key: 'mobility.stretching', muscle_groups: [], icon: '🧎' },
+  { key: 'pre.yoga', title: 'Yoga', type_key: 'mobility.yoga', muscle_groups: [], icon: '🧘' },
+  { key: 'pre.erholung', title: 'Aktive Erholung', type_key: 'recovery.active', muscle_groups: [], icon: '🌿' },
 ];
 
 export function getPredefinedUnit(key) {

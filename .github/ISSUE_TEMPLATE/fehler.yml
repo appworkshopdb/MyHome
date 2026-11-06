@@ -1,0 +1,86 @@
+name: Fehler melden
+description: Etwas funktioniert nicht oder sieht falsch aus
+title: "Fehler: "
+labels: ["fehler"]
+body:
+  - type: dropdown
+    id: bereich
+    attributes:
+      label: Wo tritt der Fehler auf?
+      options:
+        - Hub
+        - Finanzen
+        - Ernährung
+        - Sport
+        - Gewohnheiten
+        - Einkauf
+        - Profil
+        - Einstellungen (Menü am Zahnrad)
+        - Anmeldung und Registrierung
+        - Benachrichtigungen (Push)
+        - Anderes
+    validations:
+      required: true
+  - type: input
+    id: seite
+    attributes:
+      label: Genaue Seite oder Schritt
+      description: Zum Beispiel "Sport, Auswertung" oder "Einkauf abschließen, Schritt 3".
+    validations:
+      required: true
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte bis zum Fehler
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Was sollte passieren?
+    validations:
+      required: true
+  - type: textarea
+    id: tatsaechlich
+    attributes:
+      label: Was passiert stattdessen?
+    validations:
+      required: true
+  - type: input
+    id: geraet
+    attributes:
+      label: Gerät und Android-Version
+      description: Zum Beispiel "Pixel 8, Android 15, Chrome" oder "Emulator Pixel 6a".
+    validations:
+      required: true
+  - type: dropdown
+    id: darstellung
+    attributes:
+      label: Darstellung
+      options:
+        - Hell
+        - Dunkel
+        - Beide
+        - Weiß ich nicht
+  - type: dropdown
+    id: stand
+    attributes:
+      label: Welche Version der App?
+      options:
+        - Staging
+        - Produktion (main)
+        - Weiß ich nicht
+  - type: textarea
+    id: bilder
+    attributes:
+      label: Screenshot oder Bildschirmaufnahme
+      description: Bild hierher ziehen oder einfügen. Bei Beträgen oder persönlichen Daten bitte schwärzen.
+  - type: textarea
+    id: weiteres
+    attributes:
+      label: Sonstiges
+      description: Tritt es immer auf oder nur manchmal? Seit wann? Gibt es eine Fehlermeldung?

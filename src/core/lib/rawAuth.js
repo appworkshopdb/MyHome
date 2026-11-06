@@ -1,4 +1,5 @@
 import { supabaseUrl, supabaseAnonKey, setAccessToken } from './supabaseClient';
+import { snapshotClear } from './snapshotCache';
 
 // Der Schlüssel, unter dem die Sitzung im localStorage liegt. Wird von
 // mehreren Modulen gelesen, die den owner_id-Claim aus dem Token ziehen
@@ -116,6 +117,7 @@ export async function refreshSession(refreshToken) {
 
 export function signOut() {
   persist(null);
+  snapshotClear(); // zuletzt gesehene Modul-Stände (Speicher) verwerfen
 }
 
 // Passwort ändern — läuft über PUT /auth/v1/user (GoTrue REST-API),

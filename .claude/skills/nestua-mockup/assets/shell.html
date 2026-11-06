@@ -1,0 +1,48 @@
+<title>Nestua Entwurf</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap">
+__STYLE__
+<main>
+<h1>__TITEL__</h1>
+<p class="lead">__EINLEITUNG__</p>
+<div class="bar">
+  <div class="seg" role="group" aria-label="Stand"><button id="bN" aria-pressed="true">Neu</button><button id="bJ" aria-pressed="false">Jetzt</button></div>
+  <div class="seg" role="group" aria-label="Darstellung"><button id="bL" aria-pressed="true">Hell</button><button id="bD" aria-pressed="false">Dunkel</button></div>
+</div>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,372px),420px));justify-content:center">
+<section class="col">
+  <div class="cap"><b>Modul · Muster</b><span>Seitenname</span></div>
+  <div class="fr"><div class="scr">
+    <!-- Ist-Stand: lange Bilder scrollbar halten -->
+    <div class="jsc" id="j-a" hidden><img id="ji-a" alt="Aktueller Stand"></div>
+    <!-- Entwurf: .ph mit data-mod und data-th, Inhalt = Kopfleiste + Karten + <div class="dock">…</div> -->
+    <div class="neu ph" id="n-a" data-mod="sport" data-th="light">
+      __PHONE__
+    </div>
+  </div></div>
+  <ul class="note">
+    <li><b>Was neu ist</b> in einem Satz.</li>
+    <li>Zweiter Punkt.</li>
+  </ul>
+</section>
+</div>
+<p class="same"><b>Was gleich bleibt:</b> Daten, Logik, Texte und Verlinkungen. __ABWEICHUNGEN__</p>
+</main>
+<script>
+const J = __JIMGS__;            // { "a-l": "data:image/webp;base64,…", "a-d": "…" }
+let neu = true, th = 'l';
+const KEYS = ['a'];
+function render() {
+  KEYS.forEach((k) => {
+    const n = document.getElementById('n-' + k), j = document.getElementById('j-' + k);
+    n.hidden = !neu; j.hidden = neu;
+    n.setAttribute('data-th', th === 'l' ? 'light' : 'dark');
+    if (!neu) document.getElementById('ji-' + k).src = J[k + '-' + th];
+  });
+  bN.setAttribute('aria-pressed', neu); bJ.setAttribute('aria-pressed', !neu);
+  bL.setAttribute('aria-pressed', th === 'l'); bD.setAttribute('aria-pressed', th === 'd');
+}
+bN.onclick = () => { neu = true; render(); }; bJ.onclick = () => { neu = false; render(); };
+bL.onclick = () => { th = 'l'; render(); }; bD.onclick = () => { th = 'd'; render(); };
+render();
+</script>

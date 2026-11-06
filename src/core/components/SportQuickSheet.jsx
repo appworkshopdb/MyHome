@@ -4,7 +4,11 @@ import { useEntrySheet } from '../lib/EntrySheetContext';
 import * as db from '../../modules/sport/lib/spoData';
 import { TRAINING_TYPES } from '../../modules/sport/lib/data/trainingTypes';
 import { PREDEFINED_UNITS } from '../../modules/sport/lib/data/predefinedUnits';
-import PlanDaysEditor from '../../modules/sport/components/PlanDaysEditor';
+import PlanDaysBoard, { DayTile } from '../../modules/sport/components/PlanDaysBoard';
+import UnitPicker from '../../modules/sport/components/UnitPicker';
+import { buildCatalog } from '../../modules/sport/lib/unitCatalog';
+import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../../modules/sport/lib/planDays';
+import { getBodyProfile } from '../lib/bodyProfileData';
 import { fmtDate, todayIso } from '../lib/wizardDates';
 import SheetShell from './SheetShell';
 import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
@@ -15,7 +19,7 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame,
 //   Trainingsplan (p1 Name, p2 Trainingstage, p3 Prüfen) → spo_plans
 //   Ruhetag       (r1) → spo_workouts mit is_rest
 // "Eigene Einheiten verwalten" (Vorlagen anlegen, bearbeiten, löschen) bleibt wie bisher.
-// Was bei Einheiten gewählt werden kann und was wo angelegt wird, wird separat geklärt.
+// Plan: Tage als Kachelraster (PlanDaysBoard), Einheit über die Galerie (UnitPicker, Screen p2pick).
 
 const GROUP_ICON = { Kraft: '💪', Ausdauer: '🏃', Beweglichkeit: '🧘' };
 const GROUPS = [...new Set(TRAINING_TYPES.map((t) => t.group))];
@@ -106,15 +110,22 @@ export default function SportQuickSheet({ onClose }) {
   const [planTitle, setPlanTitle] = useState('');
   const [planNotes, setPlanNotes] = useState('');
   const [planMore,  setPlanMore]  = useState(false);
-  const [planDays,  setPlanDays]  = useState([{ unit_id: '', title: '', type_key: '', duration_min: '', muscle_groups: [], is_rest: false }]);
+  const [planDays,  setPlanDays]  = useState([emptyDay()]);
+  const [planSel,   setPlanSel]   = useState(0);
   const [myUnits,   setMyUnits]   = useState([]);
+  const [mySports,  setMySports]  = useState([]);
+  const planDataLoaded = useRef(false);
 
+  // Eigene Einheiten und Profil-Sportarten für die Auswahl, einmal beim ersten Tage-Schritt
   useEffect(() => {
-    if (screen !== 'p2') return;
+    if (screen !== 'p2' || planDataLoaded.current) return;
+    planDataLoaded.current = true;
     db.getUnits(session).then(setMyUnits).catch(() => {});
+    getBodyProfile(session).then((p) => setMySports(p.sports ?? [])).catch(() => {});
   }, [screen, session]);
+  const planCatalog = useMemo(() => buildCatalog({ units: myUnits, userSports: mySports }), [myUnits, mySports]);
 
-  const planDaysOk = planDays.length > 0 && !planDays.some((d) => !d.is_rest && !d.unit_id && !d._selectedUnitKey);
+  const planDaysOk = daysAreComplete(planDays);
   const planHint = planDays.length === 0
     ? 'Der Plan braucht mindestens einen Tag'
     : (planDaysOk ? '' : 'Bitte jedem Trainingstag eine Einheit zuweisen');
@@ -125,14 +136,7 @@ export default function SportQuickSheet({ onClose }) {
       await db.savePlan(
         session,
         { title: planTitle.trim(), notes: planNotes.trim() || null },
-        planDays.map((d) => ({
-          unit_id: d.is_rest ? null : (d.unit_id || null),
-          title: d.is_rest ? (d.title.trim() || 'Ruhetag') : d.title,
-          type_key: d.is_rest ? null : (d.type_key || null),
-          duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
-          muscle_groups: d.is_rest ? [] : (d.muscle_groups ?? []),
-          is_rest: d.is_rest,
-        })),
+        itemsFromDays(planDays),
       );
       notifySaved();
       onClose();
@@ -212,7 +216,6 @@ export default function SportQuickSheet({ onClose }) {
     finally { setSaving(false); }
   }
 
-  const planReview = useMemo(() => planDays.map((d, i) => ({ n: i + 1, text: d.is_rest ? 'Ruhetag' : (d.title || '—') })), [planDays]);
   const errorEl = error ? <p className="wz-hint err" role="alert">{error}</p> : null;
   const wrap = (props, children) => (
     <SheetShell onClose={onClose} wizard labelledBy="sport-sheet-title">
@@ -350,7 +353,7 @@ export default function SportQuickSheet({ onClose }) {
           autoComplete="off"
           onKeyDown={(e) => e.key === 'Enter' && ok && go('p2')}
         />
-        <p className="wz-hint">Das Startdatum legst du später beim Eintragen im Kalender fest. Hier geht es nur um den Aufbau des Plans.</p>
+        <p className="wz-hint">Danach legst du Tag für Tag eine Einheit oder einen Ruhetag an. Die Länge des Plans ergibt sich aus den Tagen. Aktivieren kannst du den Plan anschließend unter „Pläne“.</p>
       </>
     ));
   }
@@ -366,15 +369,29 @@ export default function SportQuickSheet({ onClose }) {
         </WizardFoot>
       ),
     }, (
-      <>
-        <PlanDaysEditor days={planDays} onChange={setPlanDays} units={myUnits} />
+      <div className="pe pe--wz">
+        <PlanDaysBoard days={planDays} setDays={setPlanDays} sel={planSel} setSel={setPlanSel} onChoose={() => go('p2pick')} />
         {planMore && (
           <>
-            <label className="wz-lbl" htmlFor="wz-plan-note" style={{ marginTop: 16 }}>Notiz <span className="opt">optional</span></label>
+            <label className="wz-lbl" htmlFor="wz-plan-note" style={{ marginTop: 4 }}>Notiz <span className="opt">optional</span></label>
             <textarea id="wz-plan-note" className="wz-input" value={planNotes} onChange={(e) => setPlanNotes(e.target.value)} placeholder="z. B. für Einsteiger, 3× pro Woche" />
           </>
         )}
-      </>
+      </div>
+    ));
+  }
+  // Einheit für den gewählten Tag aus der Galerie wählen, danach zurück zu den Tagen
+  if (screen === 'p2pick') {
+    return wrap({
+      title: 'Einheit wählen',
+      sub: `Für Tag ${planSel + 1}`,
+      step: 2, total: 3, onBack: back,
+    }, (
+      <UnitPicker
+        catalog={planCatalog}
+        selectedKey={planDays[planSel]?._selectedUnitKey}
+        onPick={(entry) => { setPlanDays((list) => list.map((d, i) => (i === planSel ? dayFromEntry(entry) : d))); back(); }}
+      />
     ));
   }
   if (screen === 'p3') {
@@ -389,14 +406,19 @@ export default function SportQuickSheet({ onClose }) {
         </WizardFoot>
       ),
     }, (
-      <>
-        <div className="wz-review">
-          <div className="wz-rv-top"><small>Trainingsplan</small><b style={{ fontSize: 24 }}>{planTitle.trim()}</b></div>
-          {planReview.map((d) => <div className="wz-rv-row" key={d.n}><span>Tag {d.n}</span><span>{d.text}</span></div>)}
-          <div className="wz-rv-row"><span>Notiz</span><span>{planNotes.trim() || '—'}</span></div>
+      <div className="pe pe--wz">
+        <div className="pe-rv">
+          <small>Trainingsplan</small>
+          <b>{planTitle.trim()}</b>
+          <span>{daysSummary(planDays)}</span>
         </div>
+        <div className="pe-grid">
+          {planDays.map((d, i) => <DayTile key={i} day={d} index={i} />)}
+        </div>
+        <div className="pe-rvrow"><span>Notiz</span><span>{planNotes.trim() || '—'}</span></div>
+        <p className="wz-hint">Nach dem Speichern findest du den Plan unter „Pläne“ und kannst ihn dort aktivieren.</p>
         {errorEl}
-      </>
+      </div>
     ));
   }
 

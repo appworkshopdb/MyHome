@@ -1364,14 +1364,6 @@
   outline: 1.5px dashed var(--action-primary);
 }
 
-.hab-section-label-hint {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-}
-
 /* ═══════════════════════════════════════════════════════════
    ERINNERUNGS-UI
    ═══════════════════════════════════════════════════════════ */
@@ -3441,3 +3433,208 @@
   background: var(--m-tint, var(--action-quiet-bg));
   box-shadow: inset 0 0 0 1.5px var(--m-ac, var(--action-primary));
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Formular Gewohnheit anlegen/bearbeiten (HabitsView)
+   ═══════════════════════════════════════════════════════════════ */
+
+.hab-ef {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  /* Platz für die Bottom-Nav und den Plus-Knopf */
+  padding-bottom: calc(var(--nav-height, 64px) + 90px + env(safe-area-inset-bottom));
+}
+.hab-ef-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+}
+.hab-ef-ct {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.hab-ef-ct span { letter-spacing: 0; text-transform: none; font-weight: 700; }
+.hab-ef-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hab-ef-field label { font-size: 0.74rem; font-weight: 800; color: var(--text-muted); }
+.hab-ef-in {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.hab-ef-in::placeholder { color: var(--text-muted); font-weight: 400; }
+.hab-ef-namerow { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: end; }
+.hab-ef-iconbtn {
+  width: 56px;
+  height: 44px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--m-tint, var(--surface-sunken));
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.hab-ef-emojis { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.hab-ef-emojis button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+.hab-ef-emojis button.on { background: var(--m-tint, var(--action-quiet-bg)); box-shadow: inset 0 0 0 1.5px var(--m-ac, var(--action-primary)); }
+
+.hab-ef-seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+.hab-ef-seg button {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hab-ef-seg button.on { background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); }
+
+.hab-ef-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.hab-ef-days button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hab-ef-days button.on { background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); box-shadow: none; }
+.hab-ef-days.is-off button { opacity: 0.45; cursor: default; }
+
+.hab-ef-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hab-ef-units { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.hab-ef-units::-webkit-scrollbar { display: none; }
+.hab-ef-units .hab-ef-chip { flex: none; }
+.hab-ef-chip {
+  min-height: 34px;
+  padding: 0 13px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hab-ef-chip.on { background: var(--m-tint, var(--action-quiet-bg)); box-shadow: inset 0 0 0 1.5px var(--m-ac, var(--action-primary)); }
+
+.hab-ef-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hab-ef-row b { display: block; font-size: 0.86rem; font-weight: 800; }
+.hab-ef-row small { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+.hab-ef-hint { font-size: 0.8rem; color: var(--text-muted); }
+.hab-ef-time { display: flex; align-items: center; gap: 4px; }
+.hab-ef-time input {
+  width: 110px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+}
+.hab-ef-link {
+  padding: 6px;
+  border: none;
+  background: none;
+  color: var(--action-primary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hab-ef-step { display: flex; align-items: center; gap: 10px; }
+.hab-ef-step button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--m-tint, var(--action-quiet-bg));
+  color: var(--action-primary);
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+.hab-ef-step output { min-width: 34px; text-align: center; font-size: 1.2rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+.hab-ef-save {
+  min-height: 50px;
+  border: none;
+  border-radius: 16px;
+  background: var(--m-ac, var(--action-primary));
+  color: var(--m-on, var(--text-on-accent));
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+.hab-ef-save:disabled { opacity: 0.6; cursor: default; }
+.hab-ef-delete {
+  align-self: center;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: var(--status-critical);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hab-ef-iconbtn:focus-visible,
+.hab-ef-in:focus-visible,
+.hab-ef-seg button:focus-visible,
+.hab-ef-days button:focus-visible,
+.hab-ef-chip:focus-visible,
+.hab-ef-step button:focus-visible,
+.hab-ef-save:focus-visible,
+.hab-ef-time input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }

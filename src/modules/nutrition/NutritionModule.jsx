@@ -84,7 +84,18 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
   }, [foods]);
 
   const loadAll = useCallback(async () => {
-    setLoading(true);
+    // Zuletzt geladenen Stand sofort zeigen (kein leerer Bildschirm beim
+    // Wiederbetreten) und danach im Hintergrund aktualisieren.
+    const cachedFoods = db.getFoodsCached(session);
+    const cachedRecipes = db.getRecipesCached(session);
+    const hasCache = Boolean(cachedFoods && cachedRecipes);
+    if (hasCache) {
+      setFoods(cachedFoods);
+      setRecipes(cachedRecipes);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
       const [foodRows, recipeRows] = await Promise.all([
         db.getFoods(session),
@@ -94,7 +105,8 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
       setRecipes(recipeRows);
     } catch (e) {
       console.error(e);
-      showToast('Daten konnten nicht geladen werden');
+      // Mit angezeigtem Stand kein Fehler-Hinweis: der Stand ist nur nicht ganz frisch.
+      if (!hasCache) showToast('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
     }

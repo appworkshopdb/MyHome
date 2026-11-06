@@ -52,7 +52,7 @@ export const SPORTS = [
   { key: 'calisthenics', label: 'Calisthenics', group: 'Kraft & Fitness' },
   { key: 'powerlifting', label: 'Powerlifting', group: 'Kraft & Fitness' },
   { key: 'gewichtheben', label: 'Gewichtheben', group: 'Kraft & Fitness' },
-  { key: 'hiit', label: 'HIIT / Zirkeltraining', group: 'Kraft & Fitness' },
+  { key: 'hiit', label: 'HIIT / Zirkel', group: 'Kraft & Fitness' },
 
   // Kampfsport
   { key: 'boxen', label: 'Boxen', group: 'Kampfsport' },

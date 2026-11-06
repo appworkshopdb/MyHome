@@ -172,58 +172,35 @@ Der Planeditor enthält:
 - Tage
 - Speichern/Abbrechen
 
-### PlanDaysEditor
+### Plan-Tage und Einheiten-Auswahl (Editor und Wizard)
 
-Datei: `src/modules/sport/components/PlanDaysEditor.jsx`
+Die Tage eines Plans bearbeitet `PlanDaysBoard.jsx` (Kachelraster + Detailfeld), gemeinsam für den Plan-Editor (`PlanEditor.jsx`) und den Plan-Wizard (`core/components/SportQuickSheet.jsx`: p1 Name, p2 Trainingstage, `p2pick` Einheit wählen, p3 Prüfen). Die Länge eines Plans wird nicht vorab festgelegt, sie ergibt sich aus den Tagen (neuer Plan startet mit einem leeren Tag, „+ Tag“ hängt einen an). Ein Tag ist ein Ruhetag oder eine Einheit; „Einheit wählen/ändern“ öffnet die Galerie `UnitPicker.jsx` (im Wizard als eigener Screen, im Editor als Sheet): Suche (umlautunabhängig, über alle Kategorien), Reiter Kraft · Ausdauer · Beweglichkeit · Sport · Eigene, bei Kraft die Unterkategorien Splits · Muskeln · Kombinationen, darunter die Einheiten als Karten mit ihren Bildern; ein Tipp wählt, „Auswählen“ übernimmt. Die ehemalige `PlanDaysEditor.jsx` (Zeilenliste mit ↑ ↓ ×, native Auswahlbox) gibt es nicht mehr.
 
-Jeder Tag ist entweder:
-- Trainingstag mit ausgewählter Einheit
-- Ruhetag
+Der Katalog (`lib/unitCatalog.js`, `buildCatalog`) vereint vier Quellen: die vordefinierten Einheiten (`data/predefinedUnits.js`: 6 Splits, 5 Einzelmuskeln, 12 Kombinationen, 8 Ausdauer, 4 Beweglichkeit/Erholung, alle mit Typ), die im Profil gewählten Sportarten (`sport.<key>`, `core/lib/sportsData.js`), die eigenen Einheiten (`spo_units`) und damit zusammen die Kategorien split/muskel/kombi/aus/beweg/sport/eigen. Ausdauer, Beweglichkeit und Sportarten haben noch keine Muskelbilder: `icon` (Emoji) ist ein Platzhalter bis zu festen Bildern je Einheit (`UnitVisual.jsx`, `resolvePlanIcon`). Plan-Tage speichern weiter nur `unit_id` (nur eigene Einheiten), `title`, `type_key`; Bilder und Icon werden über den TITEL aufgelöst: Titel vordefinierter Einheiten daher nie ändern, neue nur ergänzen. „Eigene Einheit zusammenstellen“ (Muskeln wählen) folgt mit den festen Bildern je Einheit; bis dahin legt man eigene Einheiten über „Eigene Einheiten verwalten“ an. Hilfsfunktionen für die Tage: `lib/planDays.js`.
 
-Pro Tag gibt es:
-- Tag-Nummer
-- Hoch-/Runter-Sortierung
-- Löschen
-- Auswahl einer Einheit
+## 7. Planübersicht und Plan-Editor – aktueller UI-Stand
 
-Buttons:
-- `+ Trainingstag`
-- `+ Ruhetag`
+Datei: `src/modules/sport/components/PlaeneView.jsx` (+ `PlanSheets.jsx`, `PlanEditor.jsx`, `RestBadge.jsx`, `lib/planMuscles.js`).
 
-Die Dauer-Eingabe wurde aus der sichtbaren Plan-Bearbeitungsansicht entfernt, weil sie dort nicht benötigt wird. Die bestehende Dauer kann intern weiterhin aus der Einheit übernommen/gespeichert werden.
+**Muskelbilder gibt es nur an drei Stellen:** in der Karte oben (nur für die Einheit des Tages, bis zu 3 Muskeln + „+N“ über `MusclePreview`; an einem Ruhetag das gezeichnete Ruhetag-Symbol `RestBadge`, Zzz), in den aufgeklappten Plänen („Deine Pläne“, rechts je Tageszeile) und im Plan-Editor. Die Zeile „Vorschläge für dich“ und die zugeklappten Pläne zeigen keine Bilder.
 
-## 7. Planübersicht – aktueller UI-Stand
+Die Karte oben hat drei Stufen (`PlaeneView.jsx`):
+1. **Kein Plan ausgewählt** (`PlanEmpty`, gestrichelt): „Plan auswählen“ öffnet `PickPlanSheet` (Pläne als Auswahl, „Neuen Plan anlegen“, „Weiter“), danach `ActivatePlanSheet` (Start Heute/Montag/Datum). „Neuer Plan“ öffnet den Editor (`onEditPlan({})`). Ohne Pläne nur „Neuer Plan“. Ein Plan ist freiwillig.
+2. **Plan ausstehend** (`spo_active_plan.start_date` in der Zukunft) und
+3. **Plan aktiv**: dieselbe Heute-Karte (`PlanHero`, Klassen `.pl-hero*`), gleicher Aufbau: „Aktiver Plan“ bzw. Plakette „Noch nicht aktiv“ | „Tag x von N“, Einheit mit Bildern, Fortschritt (Segmente, ab 11 Tagen ein Balken), die nächsten zwei Tage als Text, zwei Statuszeilen („Plan · seit dd.mm.“ / „bis auf weiteres“ bzw. „Plan · startet Mo 09.11.“ / „in 5 Tagen · bis auf weiteres“), Bearbeiten/Beenden. Ausstehend zeigt Tag 1 und die zwei danach, die Segmente sind leer. Gezeigt wird die Einheit des PLANS, nicht der Kalenderzeile (ein eigener Eintrag ändert die Karte nicht).
 
-Datei: `src/modules/sport/components/PlaeneView.jsx`
+**Deine Pläne** (`PlanRow`, `<details>`): nur Pläne, die nicht oben stehen. Zugeklappt: Name, „7 Tage · 5 Einheiten · 2 Ruhetage“, Ablaufzeile als Text. Aufgeklappt: Zeitleiste (Klassen `.pl-tl*`): Tagesnummer als Punkt (Training gefüllt, Ruhetag hohl gestrichelt), Titel + Muskeln als Text, rechts die Bilder bzw. das Ruhetag-Symbol, darunter Aktivieren / Bearbeiten / „⋯“ (öffnet „Plan löschen?“, gelöscht wird nicht mehr direkt). **Vorschläge für dich** (`PlanSuggestions`) unverändert.
 
-Die eigenen Pläne werden als Karten dargestellt.
+Der Tag im Plan heißt „Tag 1 … Tag N“, Pläne sind nicht an Wochentage gebunden (früher stand „Mo., Di.“ über den Bildern).
 
-Aktuelles Muster:
+**Plan-Editor** (`PlanEditor.jsx`, Klassen `.pe-*`): Name (Notiz hinter „+ Notiz hinzufügen“), darunter der Plan als Kachelraster (4 Spalten, je Tag Bilder der Muskeln, Ruhetage gestreift, „+ Tag“-Kachel). Ein Tipp wählt den Tag; das Feld darunter bearbeitet ihn: Einheit (Name einmal, Typ nur wenn er sich unterscheidet), Schalter „Ruhetag“, „← Früher“ / „Später →“, Entfernen (mindestens ein Tag bleibt). Bei einem aktiven Plan steht oben „Aktiv · Änderungen gelten ab heute“, das Speichern fragt dann über `EditPlanConfirmSheet` nach. `onSave(plan, items)` ist unverändert. Die Muskelgruppen eines Tages löst `resolvePlanMuscleGroups` auf (Reihenfolge s. u.); Die Einheit wählt man in der Galerie `UnitPicker` (s. o.).
 
-```text
-Name
-7 Tage - 5 Einheiten
-
-Mo.   Di.   Mi.   Do.   Fr.
-Bild  Bild  Bild  Bild  Bild
-
-Eintragen   Bearbeiten   X
-```
-
-Die Trainingseinheiten werden:
-- nicht mehr als lange Liste „Tag X – Name“ angezeigt
-- nebeneinander dargestellt
-- nach `day_index` sortiert
-- mit Kürzeln `Mo.`, `Di.`, `Mi.`, `Do.`, `Fr.`, `Sa.`, `So.` beschriftet
-- nur für Trainingstage angezeigt
-- Ruhetage werden in dieser kompakten Bildzeile bewusst weggelassen, weil es dafür keine Muskelbilder gibt
-
-Die Darstellung nutzt `MusclePreview` aus `EinheitenListShared` und löst die Muskelgruppen in dieser Reihenfolge auf:
+Die Muskelgruppen werden in dieser Reihenfolge aufgelöst:
 1. `item.muscle_groups`, falls vorhanden
 2. zugehörige persönliche Einheit über `unit_id`
 3. vordefinierte Einheit anhand des Titels
 
-Wichtig: `spo_plan_items` besitzt **keine** `muscle_groups`-Spalte. Deshalb darf `muscle_groups` nicht beim DB-Insert in `spo_plan_items` geschrieben werden.
+Wichtig: `spo_plan_items` besitzt **keine** `muscle_groups`-Spalte. Deshalb darf `muscle_groups` nicht beim DB-Insert in `spo_plan_items` geschrieben werden. Das Rot in den Muskelbildern ist in die Bilddateien eingebrannt.
 
 ## 8. Plan-Speicherung – wichtiger aktueller Stand
 
@@ -348,7 +325,9 @@ src/modules/sport/
 │   ├── EinheitenListShared.jsx
 │   ├── PlaeneView.jsx
 │   ├── PlanEditor.jsx
-│   ├── PlanDaysEditor.jsx
+│   ├── PlanDaysBoard.jsx
+│   ├── UnitPicker.jsx
+│   ├── UnitVisual.jsx
 │   ├── PlanSuggestions.jsx
 │   ├── PlanPicker.jsx
 │   ├── ApplyPlanDialog.jsx
@@ -377,7 +356,7 @@ src/modules/sport/
 
 Vor Änderungen am Sport-Modul immer zuerst den aktuellen Stand auf `staging` prüfen. Bestehende Datenmodell-Entscheidungen und UX-Entscheidungen aus diesem Dokument nicht ohne Grund zurückbauen.
 
-Bei Änderungen an Plänen insbesondere zuerst `PlanEditor.jsx`, `PlanDaysEditor.jsx`, `PlaeneView.jsx` und `spoData.js` gemeinsam betrachten.
+Bei Änderungen an Plänen insbesondere zuerst `PlanEditor.jsx`, `PlanDaysBoard.jsx`, `PlaeneView.jsx` und `spoData.js` gemeinsam betrachten.
 
 Bei Änderungen an Workout-/Kalenderlogik mindestens `SportModule.jsx`, `VerlaufView.jsx`, `WorkoutForm.jsx` und `spoData.js` gemeinsam betrachten.
 

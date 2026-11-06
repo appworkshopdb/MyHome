@@ -1,0 +1,41 @@
+name: Build-Prüfung
+
+# Prüft bei jedem Pull Request gegen main, dass die App baut. Läuft ohne Geheimnisse
+# (Platzhalterwerte), deployt nichts und ist damit auch für fremde Änderungen unbedenklich.
+# In den Repo-Einstellungen unter Branches/Rulesets als "erforderliche Prüfung" für main wählbar.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Build erstellen
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://platzhalter.example.invalid
+          VITE_SUPABASE_ANON_KEY: platzhalter

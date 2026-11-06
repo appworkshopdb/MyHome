@@ -7,3 +7,9 @@ dist
 # fuer "npm run images:optimize". Ausgeliefert werden die WebP-Varianten
 # unter public/images/muscles/thumb/ (und ggf. full/).
 public/images/muscles/_original/
+
+# Lokale Testkonfiguration (Skill nestua-visual-check) — nie committen
+.env.local
+
+# Obsidian-Vault (eigenes privates Repo appworkshopdb/nestua-notes) — nie ins App-Repo
+Nestua/

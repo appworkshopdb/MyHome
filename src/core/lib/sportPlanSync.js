@@ -153,6 +153,20 @@ async function fillHorizon(session, active) {
   return error ? 0 : rows.length;
 }
 
+// Wie syncActivePlan, aber für einen BEREITS geladenen aktiven Plan: füllt auf und
+// gibt zurück, wie viele Zeilen neu entstanden sind (0 = nichts geändert). So kann
+// das Sport-Modul seine Daten sofort zeigen und das Auffüllen im Hintergrund
+// erledigen. Schlägt nie fehl.
+export async function fillActivePlan(session, active) {
+  if (!active) return 0;
+  try {
+    return await fillHorizon(session, active);
+  } catch (e) {
+    console.warn('[sportPlanSync] Auffüllen fehlgeschlagen:', e);
+    return 0;
+  }
+}
+
 // Füllt den aktiven Plan auf 28 Tage im Voraus auf (nur heute und später, nie
 // rückwirkend). Gibt den aktiven Plan zurück (oder null). Schlägt nie fehl:
 // Aufrufer wie der Hub dürfen daran nicht scheitern.

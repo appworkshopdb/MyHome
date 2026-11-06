@@ -208,8 +208,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     setLoading(true);
     try {
       const s = sessionRef.current;
-      await db.applyMissingFixTemplates(s, year, month);
-      setEntries(await db.getEntriesByMonth(s, year, month));
+      // Posten und Vorlagen in einer Runde laden, fehlende Vorlagen daraus
+      // berechnen; nur wenn etwas angelegt wurde, die Posten neu laden.
+      const [es0, ts] = await Promise.all([
+        db.getEntriesByMonth(s, year, month),
+        db.getFixTemplates(s),
+      ]);
+      const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
+      setEntries(added > 0 ? await db.getEntriesByMonth(s, year, month) : es0);
     } catch (e) {
       showToast('Laden fehlgeschlagen');
       console.error(e);
