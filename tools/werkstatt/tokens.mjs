@@ -46,7 +46,7 @@ export function toCss(t) {
   }
   for (const [k, v] of Object.entries(t.space)) lines.push(`  --sp-${k}: ${v}px;`);
   for (const [k, v] of Object.entries(t.radius)) lines.push(`  --rad-${k}: ${v}px;`);
-  lines.push(`  --hit-min: ${t.size.hit}px; --ctl-h: ${t.size.control}px; --ctl-h-sm: ${t.size.controlSm}px;`);
+  lines.push(`  --hit-min: ${t.size.hit}px; --ctl-h: ${t.size.control}px; --ctl-h-sm: ${t.size.controlSm}px; --bd-hair: ${t.size.hair}px;`);
   for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.light};`);
   lines.push('}', '', '/* Dunkelmodus: Klasse .dark auf <html> (core/lib/theme.js) */', '.dark {');
   for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.dark};`);

@@ -14,12 +14,12 @@
   --sp-5: 24px;
   --sp-6: 32px;
   --sp-7: 48px;
-  --rad-sm: 8px;
-  --rad-md: 12px;
-  --rad-lg: 16px;
-  --rad-xl: 24px;
-  --rad-hero: 28px;
-  --hit-min: 48px; --ctl-h: 48px; --ctl-h-sm: 36px;
+  --rad-sm: 6px;
+  --rad-md: 8px;
+  --rad-lg: 12px;
+  --rad-xl: 16px;
+  --rad-hero: 20px;
+  --hit-min: 48px; --ctl-h: 48px; --ctl-h-sm: 36px; --bd-hair: 1px;
   --sh-sm: 0 2px 8px rgba(70, 50, 30, 0.08);
   --sh-md: 0 6px 18px rgba(70, 50, 30, 0.12);
   --sh-lg: 0 12px 32px rgba(19, 26, 40, 0.20);
