@@ -91,6 +91,7 @@ export default function VerlaufView({
         date={selectedDate}
         workouts={workouts}
         plans={plans}
+        units={units}
         activePlan={activePlan}
         onToggleDone={onToggleDone}
         onEdit={onEdit}

@@ -176,7 +176,7 @@ Der Planeditor enthält:
 
 Die Tage eines Plans bearbeitet `PlanDaysBoard.jsx` (Kachelraster + Detailfeld), gemeinsam für den Plan-Editor (`PlanEditor.jsx`) und den Plan-Wizard (`core/components/SportQuickSheet.jsx`: p1 Name, p2 Trainingstage, `p2pick` Einheit wählen, p3 Prüfen). Die Länge eines Plans wird nicht vorab festgelegt, sie ergibt sich aus den Tagen (neuer Plan startet mit einem leeren Tag, „+ Tag“ hängt einen an). Ein Tag ist ein Ruhetag oder eine Einheit; „Einheit wählen/ändern“ öffnet die Galerie `UnitPicker.jsx` (im Wizard als eigener Screen, im Editor als Sheet): Suche (umlautunabhängig, über alle Kategorien), Reiter Kraft · Ausdauer · Beweglichkeit · Sport · Eigene, bei Kraft die Unterkategorien Splits · Muskeln · Kombinationen, darunter die Einheiten als Karten mit ihren Bildern; ein Tipp wählt, „Auswählen“ übernimmt. Die ehemalige `PlanDaysEditor.jsx` (Zeilenliste mit ↑ ↓ ×, native Auswahlbox) gibt es nicht mehr.
 
-Der Katalog (`lib/unitCatalog.js`, `buildCatalog`) vereint vier Quellen: die vordefinierten Einheiten (`data/predefinedUnits.js`: 6 Splits, 5 Einzelmuskeln, 12 Kombinationen, 8 Ausdauer, 4 Beweglichkeit/Erholung, alle mit Typ), die im Profil gewählten Sportarten (`sport.<key>`, `core/lib/sportsData.js`), die eigenen Einheiten (`spo_units`) und damit zusammen die Kategorien split/muskel/kombi/aus/beweg/sport/eigen. Ausdauer, Beweglichkeit und Sportarten haben noch keine Muskelbilder: `icon` (Emoji) ist ein Platzhalter bis zu festen Bildern je Einheit (`UnitVisual.jsx`, `resolvePlanIcon`). Plan-Tage speichern weiter nur `unit_id` (nur eigene Einheiten), `title`, `type_key`; Bilder und Icon werden über den TITEL aufgelöst: Titel vordefinierter Einheiten daher nie ändern, neue nur ergänzen. „Eigene Einheit zusammenstellen“ (Muskeln wählen) folgt mit den festen Bildern je Einheit; bis dahin legt man eigene Einheiten über „Eigene Einheiten verwalten“ an. Hilfsfunktionen für die Tage: `lib/planDays.js`.
+Der Katalog (`lib/unitCatalog.js`, `buildCatalog`) vereint vier Quellen: die vordefinierten Einheiten (`data/predefinedUnits.js`: 6 Splits, 5 Einzelmuskeln, 12 Kombinationen, 8 Ausdauer, 4 Beweglichkeit/Erholung, alle mit Typ), die im Profil gewählten Sportarten (`sport.<key>`, `core/lib/sportsData.js`), die eigenen Einheiten (`spo_units`) und damit zusammen die Kategorien split/muskel/kombi/aus/beweg/sport/eigen. Ausdauer, Beweglichkeit und Sportarten haben noch keine Muskelbilder: `icon` (Emoji) ist ein Platzhalter bis zu festen Bildern je Einheit (`UnitVisual.jsx`, `resolvePlanIcon`). Plan-Tage speichern `unit_id` (nur eigene Einheiten), `title`, `type_key` und die Muskelgruppen (s. §7). Titel vordefinierter Einheiten trotzdem nie ändern: ältere Zeilen finden Bild und Icon als Rückfall noch über den Titel. Hilfsfunktionen für die Tage: `lib/planDays.js`.
 
 ## 7. Planübersicht und Plan-Editor – aktueller UI-Stand
 
@@ -195,12 +195,9 @@ Der Tag im Plan heißt „Tag 1 … Tag N“, Pläne sind nicht an Wochentage ge
 
 **Plan-Editor** (`PlanEditor.jsx`, Klassen `.pe-*`): Name (Notiz hinter „+ Notiz hinzufügen“), darunter der Plan als Kachelraster (4 Spalten, je Tag Bilder der Muskeln, Ruhetage gestreift, „+ Tag“-Kachel). Ein Tipp wählt den Tag; das Feld darunter bearbeitet ihn: Einheit (Name einmal, Typ nur wenn er sich unterscheidet), Schalter „Ruhetag“, „← Früher“ / „Später →“, Entfernen (mindestens ein Tag bleibt). Bei einem aktiven Plan steht oben „Aktiv · Änderungen gelten ab heute“, das Speichern fragt dann über `EditPlanConfirmSheet` nach. `onSave(plan, items)` ist unverändert. Die Muskelgruppen eines Tages löst `resolvePlanMuscleGroups` auf (Reihenfolge s. u.); Die Einheit wählt man in der Galerie `UnitPicker` (s. o.).
 
-Die Muskelgruppen werden in dieser Reihenfolge aufgelöst:
-1. `item.muscle_groups`, falls vorhanden
-2. zugehörige persönliche Einheit über `unit_id`
-3. vordefinierte Einheit anhand des Titels
+**Feste Bilder je Einheit:** `spo_plan_items.muscle_groups` und `spo_workouts.muscle_groups` (Migration `supabase/spo_muscle_groups_migration.sql`, `text[]`, Schlüssel aus `muscleGroups.js`) tragen die Muskelgruppen selbst. Gesetzt werden sie beim Speichern: Plan-Tage aus der gewählten Einheit (`itemsFromDays`), Kalender-Einheiten aus dem Trainingstyp (`spoData.saveWorkout` → `muscleGroupsForType`) oder ausdrücklich (gewählte eigene Einheit im `WorkoutForm`, Dauerplan-Zeilen kopieren sie vom Plan-Tag, `buildPlanRows`). Ruhetage haben keine. Fehlt die Spalte noch (Migration nicht eingespielt) oder ist sie leer (ältere Zeilen), löst `planMuscles.js` weiter auf, in dieser Reihenfolge: 1. `row.muscle_groups`, 2. persönliche Einheit über `unit_id`, 3. vordefinierte Einheit über den Titel, 4. vordefinierte Einheit über den Typ (jeder Typ gehört zu genau einer). Ohne Muskeln steht das Platzhalter-Symbol (`resolvePlanIcon`, über Titel/Typ, Sportarten 🏅). `spoData.saveWorkout`/`savePlan` und `sportPlanSync` wiederholen den Schreibvorgang ohne die Spalte, wenn sie fehlt (Fehler 42703/PGRST204). Angezeigt werden die Bilder in Heute-Karte und Plan-Liste (Pläne), Editor, Wizard, Galerie, im Tagesdetail (rechts je Einheit) und in der Fokuskarte der Sport-Übersicht (`UnitVisual`, `resolveUnitVisual`). Das Rot in den Muskelbildern ist in die Bilddateien eingebrannt.
 
-Wichtig: `spo_plan_items` besitzt **keine** `muscle_groups`-Spalte. Deshalb darf `muscle_groups` nicht beim DB-Insert in `spo_plan_items` geschrieben werden. Das Rot in den Muskelbildern ist in die Bilddateien eingebrannt.
+**Eigene Einheit zusammenstellen** (`UnitPicker` → `OwnUnitForm`, Muskelwahl `MusclePicker.jsx`): im Wizard und Editor wählt man Muskelgruppen (auf Wunsch einzelne Muskeln), der Name folgt der Auswahl („Brust + Beine“) bis man ihn ändert; „Speichern und wählen“ legt über `spoData.createOwnUnit` eine `spo_units`-Zeile an und trägt sie gleich im Tag ein. Die Bilder ergeben sich aus den Muskeln, die Reihenfolge der Auswahl bleibt erhalten.
 
 ## 8. Plan-Speicherung – wichtiger aktueller Stand
 
@@ -222,7 +219,7 @@ Der Vergleich berücksichtigt:
 - `is_rest`
 - `notes`
 
-Der frühere Fehler mit `muscle_groups` wurde behoben. Nicht wieder einführen.
+`muscle_groups` wird nur geschrieben, wenn die Spalte existiert (siehe §7, Wiederholung ohne Spalte); der frühere Absturz ohne Spalte darf nicht zurückkommen.
 
 ## 9. Aktiver Plan (Dauerplan)
 
@@ -299,10 +296,10 @@ Diese Punkte sind als aktueller Stand zu erhalten:
 
 ## 16. Bekannte technische Stolpersteine
 
-1. **`spo_plan_items.muscle_groups` existiert nicht.** Muskelgruppen kommen aus der Einheit bzw. aus den vordefinierten Daten.
+1. **`muscle_groups` gibt es in `spo_plan_items`/`spo_workouts` erst nach `spo_muscle_groups_migration.sql`.** Code muss ohne die Spalte weiterlaufen (Wiederholung ohne Spalte, Auflösung als Rückfall).
 2. Plan-Name/Notiz-Änderungen sollen nicht unnötig Plan-Items löschen und neu anlegen.
 3. `unit_id` kann bei vordefinierten Einheiten `null` sein; deren Auswahl wird über `_selectedUnitKey` bzw. `pre.*` identifiziert.
-4. Ein Ruhetag ist ein eigener Plan-Tag, aber in der kompakten Planübersicht wird dafür kein Bild gerendert.
+4. Ein Ruhetag ist ein eigener Plan-Tag und zeigt das Ruhetag-Symbol (`RestBadge`), nie Muskelbilder.
 5. Trainingstypen und Sportarten teilen sich `spo_workouts.type_key`; Sportarten verwenden `sport.<key>`.
 6. Beim Ändern der Sport-Navigation keine alten Scroll-/Anchor-Lösungen wieder einführen: „Starten“ aus einem Plan navigiert direkt zum Kalenderformular.
 7. Nach erfolgreichem globalem FAB-Speichern wird der Sport-Modulzustand über `EntrySheetContext.version` neu geladen.

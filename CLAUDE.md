@@ -368,6 +368,11 @@ und Push unverändert rechnen. Eigene Einträge haben Vorrang vor der Plan-Zeile
 beim Löschen des eigenen Eintrags kommt sie zurück); Wechseln/Ändern/Beenden gelten nur ab heute.
 Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 
+Feste Bilder je Einheit: `spo_workouts`/`spo_plan_items` tragen ihre Muskelgruppen selbst (`muscle_groups`,
+Migration `supabase/spo_muscle_groups_migration.sql`, vor dem Ausrollen einspielen; die App läuft auch ohne
+die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Eigene Kombinationen entstehen im
+Plan-Wizard/Editor über „Eigene Einheit zusammenstellen“. Details: `SPORT_CLAUDE_CONTEXT.md` §7.
+
 ## Skills (`.claude/skills/`)
 
 `nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite

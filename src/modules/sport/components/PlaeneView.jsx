@@ -208,6 +208,7 @@ export default function PlaeneView({
     return (
       <div className="page">
         <PlanEditor
+          session={session}
           initialPlan={editing.id ? editing : null}
           units={units}
           userSports={userSports}

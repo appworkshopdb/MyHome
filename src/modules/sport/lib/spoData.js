@@ -1,6 +1,13 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { track } from '../../../core/lib/analytics';
 import { hideAutoRowsOn, isPlanFeatureAvailable } from '../../../core/lib/sportPlanSync';
+import { muscleGroupsForType } from './planMuscles';
+
+// Die Spalte muscle_groups gibt es erst nach spo_muscle_groups_migration.sql.
+// Fehlt sie noch, schreibt die App ohne sie (Bilder werden dann wie bisher aufgelöst).
+const isMissingMuscleColumn = (error) =>
+  Boolean(error) && (error.code === '42703' || error.code === 'PGRST204') && /muscle_groups/.test(error.message ?? '');
+const withoutMuscles = ({ muscle_groups: _drop, ...rest }) => rest;
 
 function ownerId(session) {
   return session.user.id;
@@ -32,7 +39,14 @@ export async function saveWorkout(session, workout) {
   // Wer eine Plan-Einheit bearbeitet, macht daraus einen eigenen Eintrag.
   // Nur setzen, wenn die Zeile das Flag schon kennt (Migration eingespielt).
   if ('auto_planned' in payload) payload.auto_planned = false;
-  const { data, error } = await getSupabase().from('spo_workouts').upsert(payload).select().single();
+  // Feste Bilder: ohne ausdrückliche Muskelgruppen aus dem Trainingstyp ableiten
+  if (!payload.is_rest && !('muscle_groups' in payload)) {
+    const groups = muscleGroupsForType(payload.type_key);
+    if (groups.length) payload.muscle_groups = groups;
+  }
+  const save = (row) => getSupabase().from('spo_workouts').upsert(row).select().single();
+  let { data, error } = await save(payload);
+  if (isMissingMuscleColumn(error)) ({ data, error } = await save(withoutMuscles(payload)));
   if (error) throw error;
 
   // Eigene Einträge haben Vorrang vor dem Plan: die Plan-Zeile desselben
@@ -94,6 +108,12 @@ export async function saveUnit(session, unit) {
   return data;
 }
 
+// Eigene Einheit aus gewählten Muskeln ("Brust + Beine"): Name und Muskelgruppen,
+// die Bilder ergeben sich aus den Muskeln. Gibt die gespeicherte Zeile zurück.
+export async function createOwnUnit(session, { title, muscle_groups }) {
+  return saveUnit(session, { title, type_key: null, duration_min: null, muscle_groups });
+}
+
 export async function deleteUnit(id) {
   const { error } = await getSupabase()
     .from('spo_units')
@@ -136,6 +156,7 @@ function planItemComparable(item) {
     duration_min: item.duration_min ?? null,
     is_rest: item.is_rest ?? false,
     notes: item.notes ?? null,
+    muscle_groups: item.muscle_groups ?? [],
   };
 }
 
@@ -188,19 +209,20 @@ export async function savePlan(session, plan, items) {
   if (delError) throw delError;
 
   if (items.length > 0) {
-    const { error: itemError } = await supabase
-      .from('spo_plan_items')
-      .insert(items.map((item, index) => ({
-        owner_id: owner,
-        plan_id: savedPlan.id,
-        day_index: index,
-        unit_id: item.unit_id ?? null,
-        title: item.title,
-        type_key: item.type_key ?? null,
-        duration_min: item.duration_min ?? null,
-        is_rest: item.is_rest ?? false,
-        notes: item.notes ?? null,
-      })));
+    const rows = items.map((item, index) => ({
+      owner_id: owner,
+      plan_id: savedPlan.id,
+      day_index: index,
+      unit_id: item.unit_id ?? null,
+      title: item.title,
+      type_key: item.type_key ?? null,
+      duration_min: item.duration_min ?? null,
+      is_rest: item.is_rest ?? false,
+      notes: item.notes ?? null,
+      muscle_groups: item.is_rest ? [] : (item.muscle_groups ?? []),
+    }));
+    let { error: itemError } = await supabase.from('spo_plan_items').insert(rows);
+    if (isMissingMuscleColumn(itemError)) ({ error: itemError } = await supabase.from('spo_plan_items').insert(rows.map(withoutMuscles)));
     if (itemError) throw itemError;
   }
 

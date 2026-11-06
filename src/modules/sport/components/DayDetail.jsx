@@ -2,6 +2,9 @@ import { formatRelativeDate } from '../../../core/lib/format';
 import { resolveTypeLabel } from '../lib/typeLabel';
 import { IconCheck, IconEdit, IconTrash } from '../../../core/components/Icons';
 import { planDayFor } from '../../../core/lib/sportPlanSync';
+import RestBadge from './RestBadge';
+import UnitVisual from './UnitVisual';
+import { resolveUnitVisual } from '../lib/planMuscles';
 import { todayIso } from '../../../core/lib/wizardDates';
 
 // Zeigt alle Einheiten des gewählten Tages. Das Abhaken passiert direkt
@@ -11,7 +14,7 @@ import { todayIso } from '../../../core/lib/wizardDates';
 // activePlan = { start_date, plan } oder null (Dauerplan). Eigene Einträge haben
 // Vorrang vor dem Plan; Plan-Einträge lassen sich bearbeiten, aber nicht löschen
 // (auslassen = "+ Ruhetag" eintragen).
-export default function DayDetail({ date, workouts, plans, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest }) {
+export default function DayDetail({ date, workouts, plans, units = [], activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest }) {
   const dayWorkouts = workouts.filter((w) => w.occurred_on === date);
 
   // Steht an diesem Tag nur ein eigener Eintrag, ruht die Plan-Einheit darunter.
@@ -53,6 +56,7 @@ export default function DayDetail({ date, workouts, plans, activePlan, onToggleD
                   <div className="sd-title">{w.title}</div>
                   {planProgress(w) && <div className="sd-meta">{planProgress(w)}</div>}
                 </div>
+                <span className="sd-vis"><RestBadge size={34} /></span>
                 <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
                 {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
               </div>
@@ -81,6 +85,7 @@ export default function DayDetail({ date, workouts, plans, activePlan, onToggleD
                 {planProgress(w) && <div className="sd-meta sd-notes">{planProgress(w)}</div>}
               </div>
 
+              <span className="sd-vis"><UnitVisual {...resolveUnitVisual(w, units)} size={34} /></span>
               <button className="sd-ghost" onClick={() => onEdit(w)} aria-label="Bearbeiten"><IconEdit /></button>
               {!w.auto_planned && <button className="sd-ghost" onClick={() => onDelete(w.id)} aria-label="Löschen"><IconTrash /></button>}
             </div>

@@ -25,6 +25,9 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
   const [title, setTitle] = useState(iv.title ?? '');
   const [notes, setNotes] = useState(iv.notes ?? '');
   const [mode, setMode] = useState(iv.is_rest ? 'rest' : (iv.status ?? 'done'));
+  // Feste Bilder: Muskelgruppen der Einheit. null = aus dem Trainingstyp ableiten (spoData.saveWorkout),
+  // ein Array = ausdrücklich gesetzt (vorhandene Einheit oder gewählte eigene Einheit).
+  const [muscles, setMuscles] = useState(iv.muscle_groups?.length ? iv.muscle_groups : null);
 
   function handleTypeChange(key) {
     // "unit:<id>" markiert die Auswahl einer selbst angelegten Einheit
@@ -35,10 +38,12 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       if (unit) {
         setTypeKey(unit.type_key ?? '');
         setTitle(unit.title);
+        setMuscles(unit.muscle_groups ?? []);
         return;
       }
     }
     setTypeKey(key);
+    setMuscles(null);
     // Titel nur vorbelegen, wenn er noch nicht gesetzt ist — sonst
     // überschreibt eine spätere Typ-Auswahl einen eigenen Titel.
     if (!title) {
@@ -72,6 +77,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       notes: notes.trim() || null,
       status: mode,
       is_rest: false,
+      ...(muscles ? { muscle_groups: muscles } : {}),
     });
   }
 

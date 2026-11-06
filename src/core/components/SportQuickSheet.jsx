@@ -124,6 +124,12 @@ export default function SportQuickSheet({ onClose }) {
     getBodyProfile(session).then((p) => setMySports(p.sports ?? [])).catch(() => {});
   }, [screen, session]);
   const planCatalog = useMemo(() => buildCatalog({ units: myUnits, userSports: mySports }), [myUnits, mySports]);
+  // Eigene Einheit aus Muskeln anlegen ("Eigene Einheit zusammenstellen") und gleich als Eintrag zurückgeben
+  async function createOwnUnitEntry(draft) {
+    const row = await db.createOwnUnit(session, draft);
+    setMyUnits((list) => [...list, row]);
+    return buildCatalog({ units: [row] }).find((e) => e.own);
+  }
 
   const planDaysOk = daysAreComplete(planDays);
   const planHint = planDays.length === 0
@@ -390,6 +396,7 @@ export default function SportQuickSheet({ onClose }) {
       <UnitPicker
         catalog={planCatalog}
         selectedKey={planDays[planSel]?._selectedUnitKey}
+        onCreateOwn={createOwnUnitEntry}
         onPick={(entry) => { setPlanDays((list) => list.map((d, i) => (i === planSel ? dayFromEntry(entry) : d))); back(); }}
       />
     ));
