@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } from '../lib/habUtils.js';
+import { goalText } from '../../../core/lib/habitCatalog.js';
 import { toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
 import { fb } from '../../../core/lib/feedback.js';
 
@@ -224,8 +225,8 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                       {streak === 0 && protected_ && (
                         <span className="hab-streak-shield-only" title="Streak-Schutz aktiv">🛡 Schutz aktiv</span>
                       )}
-                      {habit.target_count > 1 && (
-                        <span className="hab-count-label">{habit.target_count} {habit.unit}</span>
+                      {goalText(habit) && (
+                        <span className="hab-count-label">{goalText(habit)}</span>
                       )}
                     </div>
                   </div>

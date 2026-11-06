@@ -6,6 +6,7 @@
 import { useState, useMemo } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import { HABIT_LIBRARY, HABIT_CATEGORIES, TIME_SLOTS } from '../lib/habUtils.js';
+import { goalKind, goalText } from '../../../core/lib/habitCatalog.js';
 
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -15,8 +16,9 @@ const FREQ_FILTERS = [
   { value: 'custom',   label: 'Bestimmte Tage' },
 ];
 const KIND_FILTERS = [
-  { value: 'yn',    label: 'Ja / Nein' },
+  { value: 'check', label: 'Ja / Nein' },
   { value: 'count', label: 'Mit Zähler' },
+  { value: 'time',  label: 'Mit Uhrzeit' },
 ];
 
 // Einfache Vorschläge für Neulinge
@@ -37,8 +39,7 @@ function freqLabel(t) {
 
 function metaLine(t) {
   const slot = TIME_SLOTS.find((s) => s.value === (t.time_slot ?? 'anytime'))?.label;
-  const count = t.unit ? `${t.target_count} ${t.unit}` : null;
-  return [freqLabel(t), slot, count].filter(Boolean).join(' · ');
+  return [freqLabel(t), slot, goalText(t) || null].filter(Boolean).join(' · ');
 }
 
 function matchesQuery(t, q) {
@@ -72,7 +73,7 @@ export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
       && matchesQuery(t, q)
       && (!slots.length || slots.includes(t.time_slot ?? 'anytime'))
       && (!freqs.length || freqs.includes(t.frequency))
-      && (!kinds.length || kinds.includes(t.unit ? 'count' : 'yn'));
+      && (!kinds.length || kinds.includes(goalKind(t)));
   }
 
   const items = inList ? HABIT_LIBRARY.filter(passes) : [];

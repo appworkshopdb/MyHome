@@ -407,6 +407,18 @@ erzeugtes `design/tokens.css`. Die Seite "Design Tokens" bearbeitet sie live und
 Die App importiert `tokens.css` (`src/main.jsx`, vor `base.css`; zusätzlich 3 Schatten `--sh-sm|md|lg`), nutzt die Variablen aber noch nicht (bestehende `--space-*`/`--r-*`/`.t-*` bleiben bis zur Umstellung); Farb-Abweichungen stehen nur in der JSON. Plan und Designrichtung (schärfer, dünnere Linien, wenig Text): `design/UMBAUPLAN.md`.
 Reihenfolge (beschlossen): 1 Nutzer nimmt die Token-Werte in der Werkstatt ab, 2 `tokens.css` einbinden + `design/DESIGN.md` (Regeln, Stand der Umstellung) + Skill `nestua-design-system` (nur Ablauf, keine Zahlen; Werte stehen allein in `tokens.json`), 3 Prüfskript `npm run design:check` (Hex/Schriftgrößen/Inline-Styles dürfen nur sinken, in `build-check.yml`), 4 gemeinsame Bausteine, dann Seite für Seite umstellen. Skill und DESIGN.md erst NACH Abnahme der Tokens anlegen.
 
+## Gewohnheiten-Katalog
+
+Alle Vorlagen stehen in `core/lib/habitCatalog.js` (27 Einträge, Kategorie + Häufigkeit + Ziel fest); die
+Vorlagen-Auswahl (`HABIT_LIBRARY`, `HabitTemplateLibrary.jsx`) und die Tour (`HABIT_AREAS`) leiten sich daraus ab.
+EINE Kategorie pro Gewohnheit (9 feste, `HABIT_CATEGORIES`), Einheiten fest (`HABIT_UNITS`). Ziel-Arten: Ja/Nein,
+Zähler (Einheit + Zielwert, Liter in 0,5-Schritten) und Uhrzeit (`hab_habits.goal_time`, Schritt 10/30 Min je Vorlage).
+Abgehakt wird immer mit EINEM Tipp (setzt den vollen Zielwert); der Zähler ist nur das Ziel. Vorlagen-Gewohnheiten
+erkennt die App am Namen (`catalogEntryByName`): im Formular sind Kategorie und Ziel-Art dann gesperrt, änderbar
+bleiben Liter (Wasser) und die Uhrzeiten. Eigene Gewohnheiten sind frei. Statistik rechnet über `isDueHistoric`
+(archivierte/pausierte zählen für ihre aktiven Tage; `stats_hidden` blendet gelöschte aus). Migrationen:
+`hab_stats_hidden_migration.sql`, `hab_catalog_migration.sql` (vor dem Ausrollen einspielen, idempotent).
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo

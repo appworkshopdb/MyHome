@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { saveHabit } from '../../modules/habits/lib/habData';
-import { HABIT_CATEGORIES, HABIT_ICONS, TIME_SLOTS } from '../../modules/habits/lib/habUtils';
+import { HABIT_CATEGORIES, HABIT_ICONS, HABIT_UNITS, TIME_SLOTS } from '../../modules/habits/lib/habUtils';
 import { loadHabitsData } from '../lib/habitsStore';
 import SheetShell from './SheetShell';
 import { ChipGroup, IconDropdown, SegGroup, Stepper, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
@@ -19,7 +19,7 @@ const FREQ_OPTIONS = [
 const DAY_OPTIONS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d, i) => ({ value: i, label: d }));
 const SLOT_OPTIONS = TIME_SLOTS.map((s) => ({ value: s.value, label: `${s.emoji} ${s.label}` }));
 // "×" = einfach abhaken (keine Einheit gespeichert)
-const UNITS = ['×', 'Min', 'Std', 'L', 'Gläser', 'Seiten', 'km', 'Schritte', 'Portionen'];
+const UNITS = ['×', ...HABIT_UNITS];
 
 export default function HabitQuickSheet({ onClose, onSaved }) {
   const [step, setStep]           = useState(1);

@@ -35,6 +35,14 @@ export async function loadHabits() {
   return data ?? [];
 }
 
+// Uhrzeit-Ziel (Spalte goal_time, siehe hab_catalog_migration.sql): nur mitschicken,
+// wenn gesetzt oder ausdrücklich zu löschen — so geht Speichern auch vor der Migration.
+function goalTimePatch(habit) {
+  if (habit.goal_time) return { goal_time: habit.goal_time };
+  if (habit.clear_goal_time) return { goal_time: null };
+  return {};
+}
+
 export async function saveHabit(habit) {
   const sb = getSupabase();
   if (habit.id) {
@@ -44,7 +52,7 @@ export async function saveHabit(habit) {
         name:           habit.name,
         description:    habit.description ?? null,
         category:       habit.category,
-        categories:     habit.categories ?? [],
+        categories:     habit.categories ?? (habit.category ? [habit.category] : []),
         icon:           habit.icon,
         frequency:      habit.frequency,
         frequency_days: habit.frequency_days ?? null,
@@ -54,6 +62,7 @@ export async function saveHabit(habit) {
         time_slot:      habit.time_slot ?? 'anytime',
         active:         habit.active ?? true,
         sort_order:     habit.sort_order ?? 0,
+        ...goalTimePatch(habit),
       })
       .eq('id', habit.id)
       .select()
@@ -69,7 +78,7 @@ export async function saveHabit(habit) {
         name:           habit.name,
         description:    habit.description ?? null,
         category:       habit.category,
-        categories:     habit.categories ?? [],
+        categories:     habit.categories ?? (habit.category ? [habit.category] : []),
         icon:           habit.icon,
         frequency:      habit.frequency ?? 'daily',
         frequency_days: habit.frequency_days ?? null,
@@ -79,6 +88,7 @@ export async function saveHabit(habit) {
         time_slot:      habit.time_slot ?? 'anytime',
         active:         true,
         sort_order:     habit.sort_order ?? 0,
+        ...goalTimePatch(habit),
       })
       .select()
       .single();

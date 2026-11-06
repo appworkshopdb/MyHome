@@ -1,6 +1,8 @@
 // modules/habits/lib/habUtils.js
 // Berechnungen für Streaks, Completion-Rates, Heatmaps, Badges
 
+import { HABIT_CATALOG, catalogToHabit } from '../../../core/lib/habitCatalog.js';
+
 // ─── Datumshelfer ─────────────────────────────────────────
 // toDateStr, dateRange, weekdayMon, matchesFrequency, habitEndDate und
 // isDueHistoric liegen in core/lib/habitStatsMath.js, weil der Wochenrückblick
@@ -306,40 +308,11 @@ export function groupBySlot(habits) {
 
 // ─── Bibliothek (Vorlagen) ────────────────────────────────
 
-export const HABIT_LIBRARY = [
-  // Gesundheit & Bewegung
-  { name: '30 Min bewegen',              category: 'Bewegung',      icon: '🏃', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
-  { name: 'Spazieren gehen',             category: 'Bewegung',      icon: '🚶', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
-  { name: 'Sport / Gym',                 category: 'Bewegung',      icon: '💪', frequency: 'custom',   frequency_days: [0,2,4], target_count: 1, unit: null, time_slot: 'midday' },
-  { name: 'Dehnen & Stretching',         category: 'Bewegung',      icon: '🧘', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
-  { name: 'Treppe statt Aufzug',         category: 'Bewegung',      icon: '🪜', frequency: 'weekdays', target_count: 1,  unit: null, time_slot: 'anytime' },
-  // Ernährung
-  { name: 'Wasser trinken',              category: 'Ernährung',     icon: '💧', frequency: 'daily',    target_count: 2,  unit: 'L',  time_slot: 'anytime' },
-  { name: 'Gemüse essen',                category: 'Ernährung',     icon: '🥦', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'anytime' },
-  { name: 'Kein Zucker',                 category: 'Ernährung',     icon: '🚫', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'anytime' },
-  { name: 'Zu Hause kochen',             category: 'Ernährung',     icon: '🍳', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'midday'  },
-  // Schlaf
-  { name: 'Vor 23 Uhr ins Bett',         category: 'Schlaf',        icon: '😴', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
-  { name: 'Kein Handy vor dem Schlafen', category: 'Schlaf',        icon: '📵', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
-  { name: 'Feste Aufstehzeit',           category: 'Schlaf',        icon: '⏰', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
-  // Mental & Achtsamkeit
-  { name: 'Meditieren',                  category: 'Mental',        icon: '🧠', frequency: 'daily',    target_count: 10, unit: 'Min', time_slot: 'morning' },
-  { name: 'Dankbarkeit notieren',        category: 'Mental',        icon: '🙏', frequency: 'daily',    target_count: 3,  unit: 'Ding', time_slot: 'evening' },
-  { name: 'Journaling',                  category: 'Mental',        icon: '📓', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
-  { name: 'Digitale Pause',              category: 'Mental',        icon: '🌿', frequency: 'daily',    target_count: 30, unit: 'Min', time_slot: 'evening' },
-  // Produktivität
-  { name: 'Tagesplanung machen',         category: 'Produktivität', icon: '📋', frequency: 'weekdays', target_count: 1,  unit: null, time_slot: 'morning' },
-  { name: 'Kein Handy morgens',          category: 'Produktivität', icon: '📱', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'morning' },
-  // Lernen
-  { name: 'Lesen',                       category: 'Lernen',        icon: '📚', frequency: 'daily',    target_count: 1,  unit: null, time_slot: 'evening' },
-  // Haushalt
-  { name: 'Bett machen',                 category: 'Haushalt',      icon: '🛏️', frequency: 'daily',   target_count: 1,  unit: null, time_slot: 'morning' },
-];
+// Vorlagen-Bibliothek: aus dem zentralen Katalog (core/lib/habitCatalog.js) abgeleitet,
+// Kategorie und Ziel stehen dort pro Gewohnheit fest.
+export const HABIT_LIBRARY = HABIT_CATALOG.map(catalogToHabit);
 
-export const HABIT_CATEGORIES = [
-  'Gesundheit', 'Bewegung', 'Schlaf', 'Ernährung',
-  'Mental', 'Produktivität', 'Lernen', 'Soziales', 'Haushalt', 'Sonstiges',
-];
+export { HABIT_CATEGORIES, HABIT_UNITS } from '../../../core/lib/habitCatalog.js';
 
 export const HABIT_ICONS = [
   '⭐','🏃','🚶','💪','🧘','🛏️','💧','🥦','🍳','📚','📓',
