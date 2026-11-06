@@ -15,6 +15,37 @@ Ablauf je Seite, immer gleich: **Ist-Stand ansehen → Mockup (Neu/Jetzt, Hell/D
 7. **Leere, Laden, Fehler** sind eigene Zustände und werden mit entworfen, nicht nachgereicht.
 8. **Fachwörter und Beschriftungen vereinheitlichen** (gleiche Aktion heißt überall gleich: Speichern, Abbrechen, Löschen, Hinzufügen).
 9. Keine neuen Pixelwerte oder Hex-Farben: nur Tokens (`design/tokens.json`).
+10. **Weniger Text, schärfere Formen, dünnere Linien** (siehe Abschnitt "Designrichtung").
+
+## Designrichtung (vom Nutzer anhand von Referenzbildern festgelegt)
+
+Referenzen: moderne Finanz-/Dashboard-Apps (Karten auf ruhigem Grund, klare Listen, Pillen als Wertanzeige). Wir übernehmen **Prinzipien**, keine Kopie; Nestua behält warme Basis und Modulfarben.
+
+**Grundsätze**
+1. **Schärfer**: kleinere Eckenradien als heute, klare Kanten statt weicher Blasen. Pillen nur für Chips, Status und Werte.
+2. **Dünner**: Haarlinien (1 px, ruhiger Ton) statt dicker Rahmen; Flächen trennen eher durch Tönung als durch Linien; Schatten sparsam (`--sh-sm`).
+3. **Weniger Text**: Jede Zeile muss etwas sagen, das man nicht schon sieht.
+   - Titel 1 bis 2 Wörter, keine erklärenden Sätze unter Überschriften.
+   - Nebentext nur mit Informationswert (Datum, Anzahl, Ort), nie Wiederholung des Titels.
+   - Knöpfe: ein Verb oder Verb + Objekt ("Speichern", "Liste anlegen"); Symbol + kurzes Wort statt Satz.
+   - Leerzustand: eine Zeile + eine Aktion.
+   - Hilfetexte nur bei Fehlern oder bei wirklich unklaren Eingaben, sonst weg oder hinter ein kleines Info-Symbol.
+4. **Zahl zuerst**: Kennzahlen groß und fett (`number`/`display`), Beschriftung klein darunter.
+5. **Aufbau je Seitentyp**
+   - *Startseite eines Moduls*: Kopfkarte mit einer Hauptzahl in Modulfarbe, darunter Kacheln (Symbol + ein Wort), darunter Liste.
+   - *Liste*: Zeile = Symbol links, Titel + Nebentext, Wert rechts als Pille (Farbe nach Bedeutung, Symbol bleibt); oben Filter-Chips mit dünnem Rand.
+   - *Auswertung*: Karte je Aussage, Kurven dünn mit sanfter Flächenfüllung, Balken schlank, Legende minimal.
+   - *Formular/Sheet*: ein Gedanke pro Schritt, Hauptknopf unten fest, Felder mit dünnem Rand.
+   - *Seitenkopf*: Zurück/Profil links, Titel mittig, Suche oder Aktion rechts.
+   - *Navigation unten*: Symbole mit sehr kurzem Label, aktive Seite in Modulfarbe.
+
+**Folgen für die Tokens (Vorschlag, vor Phase 1 bestätigen lassen)**
+- Eckenradien runter, z. B. sm 6 · md 8 · lg 12 · xl 16 · hero 20 (heute 8/12/16/24/28).
+- Neues Token `--bd-hair` (1 px, Farbe aus Rollen-Variable) und eine Rahmenregel "Karte = Tönung ODER Haarlinie, nie beides".
+- Schriftgewichte etwas leichter für Fließtext (heute body 600), Zahlen bleiben kräftig; im Mockup an echten Ansichten prüfen.
+- Schatten bleibt, aber nur `sm` auf Karten.
+
+**Text-Inventur (neue Aufgabe in Phase 2)**: Pro Seite alle sichtbaren Texte auflisten (Skript über Komponenten, danach von Hand), jeden prüfen: wegfallen, kürzen, oder bleiben mit Grund. Ergebnis je Seite im Mockup als "Jetzt / Neu"-Vergleich.
 
 ## Phase 0 – Fundament (Stand: erledigt bzw. in Arbeit)
 
