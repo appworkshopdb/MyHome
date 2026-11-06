@@ -37,6 +37,6 @@ export default defineConfig({
   root: here,
   base: './',
   plugins: [tokensApi()],
-  server: { port: 5180, strictPort: false, fs: { allow: [path.resolve(here, '../..')] } },
+  server: { host: '127.0.0.1', port: 5180, strictPort: true, allowedHosts: ['localhost', '127.0.0.1'], fs: { allow: [path.resolve(here, '../..')] } },
   build: { outDir: path.resolve(here, 'generated/dist'), emptyOutDir: true },
 });
