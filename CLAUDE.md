@@ -405,6 +405,7 @@ oder in die APK. Ziel: gemeinsame Tokens (Schrift, Abstände, Ecken) und einheit
 Tokens: `design/tokens.json` (Quelle, aktuell "Vorschlag": 7 Schriftstufen `--fs-caption…display` mit `--fw-`/`--lh-`, Abstände `--sp-1…7` im 4er-Raster, Ecken `--rad-sm…hero`, Tippfläche `--hit-min` 48) und daraus
 erzeugtes `design/tokens.css`. Die Seite "Design Tokens" bearbeitet sie live und speichert über eine lokale Schnittstelle des Werkstatt-Servers (`/api/tokens`, nur Entwicklungsserver).
 Die App importiert `tokens.css` NOCH NICHT (bestehende `--space-*`/`--r-*`/`.t-*` bleiben bis zur Umstellung); Farb-Abweichungen stehen nur in der JSON.
+Reihenfolge (beschlossen): 1 Nutzer nimmt die Token-Werte in der Werkstatt ab, 2 `tokens.css` einbinden + `design/DESIGN.md` (Regeln, Stand der Umstellung) + Skill `nestua-design-system` (nur Ablauf, keine Zahlen; Werte stehen allein in `tokens.json`), 3 Prüfskript `npm run design:check` (Hex/Schriftgrößen/Inline-Styles dürfen nur sinken, in `build-check.yml`), 4 gemeinsame Bausteine, dann Seite für Seite umstellen. Skill und DESIGN.md erst NACH Abnahme der Tokens anlegen.
 
 ## Geheimnisse
 
