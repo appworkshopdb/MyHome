@@ -10,3 +10,6 @@ public/images/muscles/_original/
 
 # Lokale Testkonfiguration (Skill nestua-visual-check) — nie committen
 .env.local
+
+# Obsidian-Vault (eigenes privates Repo appworkshopdb/nestua-notes) — nie ins App-Repo
+Nestua/

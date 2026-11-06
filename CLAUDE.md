@@ -372,13 +372,16 @@ Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 
 `nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite
 bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind),
-`nestua-backlog` (Backlog in Linear).
+`nestua-backlog` (Backlog im Obsidian-Vault).
 
-**Backlog = Linear, Team "Nestua" (`NES`).** Vor jeder Feature-, Bug-, Design- oder Sicherheitsarbeit den Skill `nestua-backlog` nutzen:
-offene Issues zum Bereich prüfen, beiläufig genannte Ideen/Bugs dort eintragen, nach der Arbeit kommentieren (Done nur nach Bestätigung des
-Nutzers). Bereiche wie im alten Sheet (Hub, Gewohnheiten, Finanzen, Sport, Ernährung, Einkauf, Generelles). Ziele der Entwicklungsphase
-(Projekte): Sicherheit, Klarheit & Struktur, Intuitives einheitliches Design; "Play Store (später)" ist das oberste, aber noch nicht aktuelle Ziel.
-Keine Geheimnisse oder Nutzerdaten in Issues. Das Sheet "Entwicklung/Ideen" ist nur noch Archiv der erledigten Einträge.
+**Backlog = Obsidian-Vault im privaten Repo `appworkshopdb/nestua-notes`** (lokal im Ordner `Nestua/`, dort Ordner `Backlog/`, dazu `Entscheidungen/`,
+`Architektur/`, `Ideen/`, `Betrieb/`). Der Ordner steht in `.gitignore` und ist nie Teil dieses Repos. Linear wird nicht mehr genutzt.
+Vor jeder Feature-, Bug-, Design- oder Sicherheitsarbeit den Skill `nestua-backlog` nutzen: offene Notizen zum Bereich prüfen, beiläufig genannte
+Ideen/Bugs als neue Notiz anlegen, nach der Arbeit im Verlauf vermerken (`done` nur nach Bestätigung des Nutzers). Lokale Sessions lesen den Ordner
+`Nestua/` direkt, Cloud-Sessions binden das Repo mit `add_repo` ein (access push). Änderungen im Vault werden committet und nach `main` gepusht.
+Bereiche wie im alten Sheet (Hub, Gewohnheiten, Finanzen, Sport, Ernährung, Einkauf, Generelles). Ziele der Entwicklungsphase (Projekt):
+Sicherheit, Klarheit & Struktur, Intuitives einheitliches Design; "Play Store später" ist das oberste, aber noch nicht aktuelle Ziel.
+Keine Geheimnisse und keine Nutzerdaten in Notizen. Das Sheet "Entwicklung/Ideen" ist nur noch Archiv der erledigten Einträge.
 
 ## Datenbank-Sicherheit (Stand 2026-11-05, auf Staging UND Prod eingespielt)
 
