@@ -7,6 +7,10 @@ description: Eine bestehende Nestua-Seite oder einen Bereich ins neue Design (wa
 
 **Reihenfolge:** Mockup (Skill `nestua-mockup`) → Nutzer bestätigt → hier umbauen → prüfen (Skill `nestua-visual-check`) → committen und auf `staging` pushen. Nie ohne Bestätigung umbauen, nie einen Pull Request ohne Aufforderung.
 
+## Design-Werkstatt und Tokens
+
+Das Design wird gerade vereinheitlicht: erst Interface Inventory (`npm run werkstatt`, Zahlen zu Schrift, Abstand, Ecken, Farben, Buttons), dann Skalen als Tokens, dann gemeinsame Bausteine, dann Seite für Seite umstellen. Neue Seiten nicht mit eigenen Pixelwerten bauen, sondern an die Skalen halten, sobald sie festgelegt sind (`CLAUDE.md`, Abschnitt Design-Werkstatt).
+
 ## Grundregeln
 
 - **Nur Gestaltung ändern.** Daten, Logik, Texte, Verlinkungen, Bilder und Symbole bleiben. Ausnahme sind ausdrückliche Wünsche des Nutzers (zum Beispiel "Dauer entfernen").

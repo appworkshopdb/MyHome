@@ -13,3 +13,6 @@ public/images/muscles/_original/
 
 # Obsidian-Vault (eigenes privates Repo appworkshopdb/nestua-notes) — nie ins App-Repo
 Nestua/
+
+# Design-Werkstatt: erzeugte Zählung und Build (Skript tools/werkstatt/scan.mjs)
+tools/werkstatt/generated/

@@ -1,0 +1,45 @@
+/* Design-Werkstatt: Werkzeugoberfläche, bewusst unabhängig vom App-Design (kein Import aus src/). */
+:root{--bg:#F4F2EE;--panel:#FFFFFF;--sunk:#EFECE6;--fg:#1F2733;--mut:#69707C;--line:#DDD8CE;--ac:#25304A;--onac:#fff;--ok:#1F7A4D;--warn:#B8531A}
+@media (prefers-color-scheme:dark){:root{--bg:#14161A;--panel:#1D2025;--sunk:#262A31;--fg:#E8EAEE;--mut:#9AA1AD;--line:#323741;--ac:#E8EAEE;--onac:#14161A;--ok:#6FCB8E;--warn:#F0A060;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif}
+button{font:inherit;color:inherit}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--sunk);padding:1px 6px;border-radius:5px}
+.top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top h1{font-size:16px;margin:0;font-weight:800;letter-spacing:-.01em}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--sunk);color:var(--mut)}
+.app{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.side{background:var(--panel);border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:4px}
+.grp{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:8px 10px 4px}
+.nav{display:block;border:0;background:transparent;text-align:left;padding:9px 10px;border-radius:9px;cursor:pointer}
+.nav:hover{background:var(--sunk)}
+.nav[aria-current="page"]{background:var(--ac);color:var(--onac);font-weight:700}
+.main{padding:18px 22px 48px;min-width:0;outline:0}
+h2{font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+.lead{color:var(--mut);margin:0 0 16px;max-width:72ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card h3{font-size:12px;margin:0 0 10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;gap:8px}
+.card h3 span{text-transform:none;letter-spacing:0;font-weight:600}
+.stat{font-size:30px;font-weight:900;letter-spacing:-.02em;line-height:1.1}
+.stat small{display:block;font-size:12px;font-weight:600;color:var(--mut);letter-spacing:0;margin-top:2px}
+.stat.bad{color:var(--warn)}.stat.good{color:var(--ok)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:minmax(70px,120px) 1fr 40px;align-items:center;gap:8px;font-size:12px}
+.bar span{font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar i{display:block;height:9px;border-radius:5px;background:var(--ac);opacity:.85}
+.bar em{font-style:normal;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.more{margin-top:8px;border:0;background:none;color:var(--mut);cursor:pointer;text-decoration:underline;padding:0}
+.swatches{display:flex;flex-wrap:wrap;gap:6px}
+.sw{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:3px 8px 3px 4px;font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.sw b{width:18px;height:18px;border-radius:5px;border:1px solid rgba(128,128,128,.4);display:block}
+.sw em{font-style:normal;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);border-top:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+.note{background:color-mix(in srgb,var(--warn) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 30%,var(--line));border-radius:12px;padding:10px 14px;font-size:13px;margin-top:14px;max-width:80ch}
+.soon{max-width:60ch}
+.empty{padding:30px;color:var(--mut)}
+@media (max-width:720px){.app{grid-template-columns:1fr}.side{flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}.grp{display:none}.nav{white-space:nowrap}}

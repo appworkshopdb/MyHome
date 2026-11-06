@@ -396,6 +396,13 @@ Tabellen anderer DB-Benutzer als `postgres` bekommen Standardrechte für `anon` 
 `select count(*) from information_schema.role_table_grants where table_schema='public' and grantee='anon';`
 Ein Dauer-SSH-Zugang für Claude ist bewusst nicht eingerichtet (Staging und Prod teilen ein Backend); Prüfabfragen laufen von Hand per `docker exec`.
 
+## Design-Werkstatt (`tools/werkstatt/`)
+
+Entwicklungswerkzeug zum Vereinheitlichen des Designs (Interface Inventory, später Werkstatt, Design Tokens, Doku). Eigene Vite-Konfiguration,
+startet mit `npm run werkstatt` (Port 5180, zählt vorher das CSS neu: `tools/werkstatt/scan.mjs` → `generated/inventory.json`, nicht im Git).
+Der App-Build kennt den Ordner nicht; `build-check.yml` schlägt fehl, falls "Design-Werkstatt" in `dist/` auftaucht. Nie auf GitHub Pages
+oder in die APK. Ziel: gemeinsame Tokens (Schrift, Abstände, Ecken) und einheitliche Bausteine, dann Seite für Seite umstellen.
+
 ## Geheimnisse
 
 Liegen in `Zugangsdaten.env.md` im Claude-Projekt — NIEMALS in dieses Repo

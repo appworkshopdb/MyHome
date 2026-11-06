@@ -39,3 +39,10 @@ jobs:
         env:
           VITE_SUPABASE_URL: https://platzhalter.example.invalid
           VITE_SUPABASE_ANON_KEY: platzhalter
+
+      - name: Design-Werkstatt darf nicht im Produkt landen
+        run: |
+          if grep -rIl "Design-Werkstatt" dist || [ -e dist/tools ]; then
+            echo "Die Design-Werkstatt (tools/werkstatt) ist im App-Build gelandet." >&2
+            exit 1
+          fi

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Nestua Design-Werkstatt</title>
+  <link rel="stylesheet" href="./werkstatt.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Nestua Design-Werkstatt</h1>
+    <span class="tag">Entwicklungswerkzeug, nicht Teil der App</span>
+  </header>
+  <div class="app">
+    <nav class="side" aria-label="Werkstatt">
+      <div class="grp">Werkstatt</div>
+      <button class="nav" data-v="inv" aria-current="page">Interface Inventory</button>
+      <button class="nav" data-v="wk">Werkstatt</button>
+      <button class="nav" data-v="tok">Design Tokens</button>
+      <button class="nav" data-v="doc">Doku</button>
+    </nav>
+    <main class="main" id="main" tabindex="-1"></main>
+  </div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

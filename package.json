@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "images:optimize": "node scripts/optimize-muscle-images.mjs"
+    "images:optimize": "node scripts/optimize-muscle-images.mjs",
+    "werkstatt:scan": "node tools/werkstatt/scan.mjs",
+    "werkstatt": "node tools/werkstatt/scan.mjs && vite --config tools/werkstatt/vite.config.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
