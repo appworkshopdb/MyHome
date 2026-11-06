@@ -86,7 +86,62 @@ for (const file of jsxFiles) {
 }
 inlineByFile.sort((a, b) => b.count - a.count);
 
+
+// ── Vorhandene Tokens und Farben (aufgelöst, Hell und Dunkel) ─────────────────
+function declarations(text) {
+  const out = {};
+  for (const m of text.matchAll(/(--[\w-]+)\s*:\s*([^;{}]+);/g)) out[m[1]] = m[2].trim();
+  return out;
+}
+function blocks(text, selector) {
+  const res = [];
+  let i = 0;
+  while ((i = text.indexOf(selector + ' {', i)) !== -1) {
+    let depth = 0; let j = text.indexOf('{', i);
+    const start = j;
+    for (; j < text.length; j++) { if (text[j] === '{') depth++; else if (text[j] === '}') { depth--; if (!depth) break; } }
+    res.push(text.slice(start + 1, j)); i = j;
+  }
+  return res;
+}
+const baseCss = fs.readFileSync(path.join(SRC, 'styles/base.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const themeCss = fs.readFileSync(path.join(SRC, 'styles/themes.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const lightMap = declarations(blocks(baseCss, ':root').join('\n'));
+const darkMap = { ...lightMap, ...declarations(blocks(themeCss, '.dark').join('\n')) };
+function resolve(map, v, depth = 0) {
+  if (v == null || depth > 12) return null;
+  const m = /^var\((--[\w-]+)(?:,\s*([^)]+))?\)$/.exec(v.trim());
+  if (m) return resolve(map, map[m[1]] ?? m[2], depth + 1);
+  return v.trim();
+}
+const FAMILIES = [['fin', 'Finanzen'], ['food', 'Ernährung'], ['sport', 'Sport'], ['hab', 'Gewohnheiten'], ['shop', 'Einkauf'], ['n', 'Hub (neutral)']];
+const PARTS = ['tint', 'ink', 'ac', 'on', 'deep', 'pill', 'hero', 'hero-ink'];
+const BASE = ['surface-page', 'surface-raised', 'surface-sunken', 'text-primary', 'text-muted', 'border-hairline', 'status-positive', 'status-critical'];
+function colorSet(map) {
+  const fam = {};
+  for (const [k] of FAMILIES) { fam[k] = {}; for (const p of PARTS) fam[k][p] = resolve(map, map[`--mod-${k}-${p}`]); }
+  const base = {}; for (const b of BASE) base[b] = resolve(map, map[`--${b}`]);
+  return { families: fam, base };
+}
+const legacy = {};
+for (const [key, val] of Object.entries(lightMap)) {
+  if (/^--(space|r|shadow|motion)-/.test(key) || key === '--touch-target') legacy[key.slice(2)] = resolve(lightMap, val);
+}
+const typeRoles = [];
+for (const m of baseCss.matchAll(/\.(t-[a-z-]+)\s*\{([^}]*)\}/g)) {
+  const body = m[2];
+  const size = /font-size:\s*([\d.]+)px/.exec(body); const weight = /font-weight:\s*(\d+)/.exec(body); const lh = /line-height:\s*([\d.]+)/.exec(body);
+  if (size) typeRoles.push({ cls: m[1], size: +size[1], weight: weight ? +weight[1] : null, lh: lh ? +lh[1] : null });
+}
+const tClassUses = {};
+for (const file of jsxFiles) {
+  const txt = fs.readFileSync(file, 'utf8');
+  for (const r of typeRoles) { const n = (txt.match(new RegExp('[\\s"\'`]' + r.cls + '(?![\\w-])', 'g')) ?? []).length; if (n) tClassUses[r.cls] = (tClassUses[r.cls] ?? 0) + n; }
+}
+typeRoles.forEach((r) => { r.uses = tClassUses[r.cls] ?? 0; });
+
 const inventory = {
+  colors: { families: FAMILIES, light: colorSet(lightMap), dark: colorSet(darkMap) }, legacy, typeRoles,
   generated: new Date().toISOString(),
   totals: {
     cssFiles: cssFiles.length, cssLines, jsxFiles: jsxFiles.length, inlineStyles: inlineTotal,

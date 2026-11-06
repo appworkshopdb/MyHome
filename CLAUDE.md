@@ -398,10 +398,13 @@ Ein Dauer-SSH-Zugang für Claude ist bewusst nicht eingerichtet (Staging und Pro
 
 ## Design-Werkstatt (`tools/werkstatt/`)
 
-Entwicklungswerkzeug zum Vereinheitlichen des Designs (Interface Inventory, später Werkstatt, Design Tokens, Doku). Eigene Vite-Konfiguration,
+Entwicklungswerkzeug zum Vereinheitlichen des Designs (Interface Inventory und Design Tokens fertig; Werkstatt und Doku folgen). Eigene Vite-Konfiguration,
 startet mit `npm run werkstatt` (Port 5180, zählt vorher das CSS neu: `tools/werkstatt/scan.mjs` → `generated/inventory.json`, nicht im Git).
 Der App-Build kennt den Ordner nicht; `build-check.yml` schlägt fehl, falls "Design-Werkstatt" in `dist/` auftaucht. Nie auf GitHub Pages
 oder in die APK. Ziel: gemeinsame Tokens (Schrift, Abstände, Ecken) und einheitliche Bausteine, dann Seite für Seite umstellen.
+Tokens: `design/tokens.json` (Quelle, aktuell "Vorschlag": 7 Schriftstufen `--fs-caption…display` mit `--fw-`/`--lh-`, Abstände `--sp-1…7` im 4er-Raster, Ecken `--rad-sm…hero`, Tippfläche `--hit-min` 48) und daraus
+erzeugtes `design/tokens.css`. Die Seite "Design Tokens" bearbeitet sie live und speichert über eine lokale Schnittstelle des Werkstatt-Servers (`/api/tokens`, nur Entwicklungsserver).
+Die App importiert `tokens.css` NOCH NICHT (bestehende `--space-*`/`--r-*`/`.t-*` bleiben bis zur Umstellung); Farb-Abweichungen stehen nur in der JSON.
 
 ## Geheimnisse
 
