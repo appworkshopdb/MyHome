@@ -7,3 +7,6 @@ dist
 # fuer "npm run images:optimize". Ausgeliefert werden die WebP-Varianten
 # unter public/images/muscles/thumb/ (und ggf. full/).
 public/images/muscles/_original/
+
+# Privater Obsidian-Vault (eigenes privates Repo nestua-notes) — nie in dieses Repo
+Nestua/
