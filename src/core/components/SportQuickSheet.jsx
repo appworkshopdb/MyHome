@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useEntrySheet } from '../lib/EntrySheetContext';
 import * as db from '../../modules/sport/lib/spoData';
-import { TRAINING_TYPES } from '../../modules/sport/lib/data/trainingTypes';
-import { PREDEFINED_UNITS } from '../../modules/sport/lib/data/predefinedUnits';
 import PlanDaysBoard, { DayTile } from '../../modules/sport/components/PlanDaysBoard';
 import UnitPicker from '../../modules/sport/components/UnitPicker';
+import UnitSelectCard from '../../modules/sport/components/UnitSelectCard';
+import UnitVisual from '../../modules/sport/components/UnitVisual';
+import OwnUnitForm from '../../modules/sport/components/OwnUnitForm';
+import { resolveTypeLabel } from '../../modules/sport/lib/typeLabel';
+import { resolveUnitVisual } from '../../modules/sport/lib/planMuscles';
 import { buildCatalog } from '../../modules/sport/lib/unitCatalog';
 import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../../modules/sport/lib/planDays';
 import { getBodyProfile } from '../lib/bodyProfileData';
@@ -15,52 +18,15 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame,
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Auswahl zuerst: Neue Einheit · Trainingsplan · Ruhetag.
-//   Neue Einheit  (e1 Eingeben, e2 Prüfen) → spo_workouts (Training mit Datum)
+//   Neue Einheit  (e1 Eingeben, e1pick Einheit wählen, e2 Prüfen) → spo_workouts (Training mit Datum)
 //   Trainingsplan (p1 Name, p2 Trainingstage, p3 Prüfen) → spo_plans
 //   Ruhetag       (r1) → spo_workouts mit is_rest
-// "Eigene Einheiten verwalten" (Vorlagen anlegen, bearbeiten, löschen) bleibt wie bisher.
+// "Eigene Einheiten verwalten" (eigene Einheiten aus Muskeln anlegen, bearbeiten, löschen).
+// Die Einheit wählt man überall in derselben Galerie (UnitPicker): Kraft, Ausdauer,
+// Beweglichkeit, Sport, Eigene, mit Bildern.
 // Plan: Tage als Kachelraster (PlanDaysBoard), Einheit über die Galerie (UnitPicker, Screen p2pick).
 
-const GROUP_ICON = { Kraft: '💪', Ausdauer: '🏃', Beweglichkeit: '🧘' };
-const GROUPS = [...new Set(TRAINING_TYPES.map((t) => t.group))];
 const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
-
-// "Push (Brust, Schultern, Trizeps)" → Titel "Push", Zusatz "Brust, Schultern, Trizeps"
-function splitLabel(t) {
-  const m = /^(.*?)\s*\((.*)\)\s*$/.exec(t.label);
-  if (m) return { title: m[1], sub: m[2] };
-  return { title: t.label, sub: t.group };
-}
-const shortTitle = (t) => splitLabel(t).title;
-
-// Trainingstyp: erst die Gruppe als große Karte, darunter die Typen als Kacheln
-function TypePicker({ typeKey, onSelect }) {
-  const selected = TRAINING_TYPES.find((t) => t.key === typeKey);
-  const [group, setGroup] = useState(selected?.group ?? GROUPS[0]);
-  const types = TRAINING_TYPES.filter((t) => t.group === group);
-  return (
-    <>
-      <div className="wz-tgroups" role="group" aria-label="Typ-Gruppe">
-        {GROUPS.map((g) => (
-          <button key={g} type="button" className={`wz-tg${g === group ? ' on' : ''}`} aria-pressed={g === group} onClick={() => setGroup(g)}>
-            <span>{GROUP_ICON[g] || '🎯'}</span>{g}
-            <small>{TRAINING_TYPES.filter((t) => t.group === g).length} Typen</small>
-          </button>
-        ))}
-      </div>
-      <div className="wz-types" role="group" aria-label={group}>
-        {types.map((t) => {
-          const { title, sub } = splitLabel(t);
-          return (
-            <button key={t.key} type="button" className={`wz-ty${t.key === typeKey ? ' on' : ''}`} aria-pressed={t.key === typeKey} onClick={() => onSelect(t)}>
-              {title}<small>{sub}</small>
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-}
 
 export default function SportQuickSheet({ onClose }) {
   const { session } = useAuth();
@@ -77,17 +43,19 @@ export default function SportQuickSheet({ onClose }) {
   // ── Neue Einheit (Training) ──
   const [typeKey, setTypeKey] = useState('');
   const [title,   setTitle]   = useState('');
+  const [picked,  setPicked]  = useState(null); // gewählter Katalog-Eintrag (Bilder, Name, Typ)
   const titleAuto = useRef(true);
   const [date,    setDate]    = useState(todayIso());
   const [statusPick, setStatusPick] = useState(null); // null = folgt dem Datum
   const [showMore, setShowMore] = useState(false);
 
-  const type = TRAINING_TYPES.find((t) => t.key === typeKey);
   const status = statusPick ?? (date > todayIso() ? 'planned' : 'done');
 
-  function selectType(t) {
-    setTypeKey(t.key);
-    if (titleAuto.current || !title) { setTitle(shortTitle(t)); titleAuto.current = true; }
+  // Einheit aus der Galerie: Typ, Bilder und (solange nicht selbst geändert) der Name
+  function selectUnit(entry) {
+    setPicked(entry);
+    setTypeKey(entry.type_key || 'sonstiges');
+    if (titleAuto.current || !title) { setTitle(entry.title); titleAuto.current = true; }
   }
 
   async function saveWorkout() {
@@ -99,6 +67,8 @@ export default function SportQuickSheet({ onClose }) {
         title: title.trim(),
         status,
         is_rest: false,
+        // Feste Bilder: die Muskeln der gewählten Einheit (leer = aus dem Typ ableiten)
+        ...(picked?.muscle_groups?.length ? { muscle_groups: picked.muscle_groups } : {}),
       });
       notifySaved();
       onClose();
@@ -116,14 +86,14 @@ export default function SportQuickSheet({ onClose }) {
   const [mySports,  setMySports]  = useState([]);
   const planDataLoaded = useRef(false);
 
-  // Eigene Einheiten und Profil-Sportarten für die Auswahl, einmal beim ersten Tage-Schritt
+  // Eigene Einheiten und Profil-Sportarten für die Auswahl, einmal beim ersten Auswahl-Schritt
   useEffect(() => {
-    if (screen !== 'p2' || planDataLoaded.current) return;
+    if (!['p2', 'e1'].includes(screen) || planDataLoaded.current) return;
     planDataLoaded.current = true;
     db.getUnits(session).then(setMyUnits).catch(() => {});
     getBodyProfile(session).then((p) => setMySports(p.sports ?? [])).catch(() => {});
   }, [screen, session]);
-  const planCatalog = useMemo(() => buildCatalog({ units: myUnits, userSports: mySports }), [myUnits, mySports]);
+  const catalog = useMemo(() => buildCatalog({ units: myUnits, userSports: mySports }), [myUnits, mySports]);
   // Eigene Einheit aus Muskeln anlegen ("Eigene Einheit zusammenstellen") und gleich als Eintrag zurückgeben
   async function createOwnUnitEntry(draft) {
     const row = await db.createOwnUnit(session, draft);
@@ -169,14 +139,10 @@ export default function SportQuickSheet({ onClose }) {
     finally { setSaving(false); }
   }
 
-  // ── Eigene Einheiten verwalten (Vorlagen) ──
+  // ── Eigene Einheiten verwalten ──
   const [manageUnits,   setManageUnits]   = useState([]);
   const [manageLoading, setManageLoading] = useState(false);
-  const [selectedId,    setSelectedId]    = useState(null);
-  const [unitTitle,     setUnitTitle]     = useState('');
-  const [unitTypeKey,   setUnitTypeKey]   = useState('');
-  const [unitDuration,  setUnitDuration]  = useState('');
-  const [showPresets,   setShowPresets]   = useState(false);
+  const [selectedUnit,  setSelectedUnit]  = useState(null); // null = neue eigene Einheit
 
   useEffect(() => {
     if (screen !== 'manage') return;
@@ -184,42 +150,23 @@ export default function SportQuickSheet({ onClose }) {
     db.getUnits(session).then(setManageUnits).catch(() => setError('Einheiten konnten nicht geladen werden')).finally(() => setManageLoading(false));
   }, [screen, session]);
 
-  function openTemplate(u) {
-    setSelectedId(u?.id ?? null);
-    setUnitTitle(u?.title ?? '');
-    setUnitTypeKey(u?.type_key ?? '');
-    setUnitDuration(u?.duration_min != null ? String(u.duration_min) : '');
-    setShowPresets(false);
-    go('tpl');
+  function openUnit(u) { setSelectedUnit(u); go('tpl'); }
+  // Name und Muskeln; Typ und Dauer einer vorhandenen Einheit bleiben unverändert
+  async function saveOwnUnit(draft) {
+    await db.saveUnit(session, {
+      ...(selectedUnit ? { id: selectedUnit.id } : {}),
+      title: draft.title,
+      type_key: selectedUnit?.type_key ?? null,
+      duration_min: selectedUnit?.duration_min ?? null,
+      muscle_groups: draft.muscle_groups,
+    });
+    notifySaved();
+    onClose();
   }
-  function adoptPreset(preset) {
-    setUnitTypeKey(preset.type_key ?? '');
-    setUnitTitle(preset.title);
-    setShowPresets(false);
-  }
-  async function saveTemplate() {
-    if (!unitTitle.trim()) return setError('Bitte Bezeichnung eingeben');
-    setSaving(true); setError('');
-    try {
-      await db.saveUnit(session, {
-        ...(selectedId ? { id: selectedId } : {}),
-        title: unitTitle.trim(),
-        type_key: unitTypeKey || null,
-        duration_min: unitDuration ? parseInt(unitDuration, 10) : null,
-      });
-      notifySaved();
-      onClose();
-    } catch { setError('Speichern fehlgeschlagen'); }
-    finally { setSaving(false); }
-  }
-  async function deleteTemplate() {
-    setSaving(true);
-    try {
-      await db.deleteUnit(selectedId);
-      notifySaved();
-      onClose();
-    } catch { setError('Löschen fehlgeschlagen'); }
-    finally { setSaving(false); }
+  async function deleteOwnUnit() {
+    await db.deleteUnit(selectedUnit.id);
+    notifySaved();
+    onClose();
   }
 
   const errorEl = error ? <p className="wz-hint err" role="alert">{error}</p> : null;
@@ -258,21 +205,27 @@ export default function SportQuickSheet({ onClose }) {
   // ── Neue Einheit: Eingeben ──
   if (screen === 'e1') {
     const nameOk = Boolean(title.trim());
-    const ready = Boolean(typeKey) && nameOk && Boolean(date);
+    const ready = Boolean(picked) && nameOk && Boolean(date);
     return wrap({
       title: 'Neue Einheit',
       sub: 'Schritt 1 von 2 · Eingeben',
       step: 1, total: 2, onBack: back,
       footer: (
-        <WizardFoot hint={ready ? '' : missingHint([['Trainingstyp', !typeKey], ['Name', !nameOk], ['Datum', !date]])}>
+        <WizardFoot hint={ready ? '' : missingHint([['Einheit', !picked], ['Name', !nameOk], ['Datum', !date]])}>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
           <button type="button" className="btn btn-primary" disabled={!ready} onClick={() => go('e2')}>Weiter</button>
         </WizardFoot>
       ),
     }, (
       <>
-        <div className="wz-lbl">Trainingstyp</div>
-        <TypePicker typeKey={typeKey} onSelect={selectType} />
+        <div className="wz-lbl">Einheit</div>
+        <UnitSelectCard
+          chosen={Boolean(picked)}
+          title={picked?.title}
+          subtitle={resolveTypeLabel(typeKey)}
+          {...(picked ? resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits) : {})}
+          onClick={() => go('e1pick')}
+        />
 
         <label className="wz-lbl" htmlFor="wz-sport-name" style={{ marginTop: 18 }}>Name</label>
         <input
@@ -307,6 +260,21 @@ export default function SportQuickSheet({ onClose }) {
       </>
     ));
   }
+  // Einheit für die neue Einheit aus der Galerie wählen, danach zurück
+  if (screen === 'e1pick') {
+    return wrap({
+      title: 'Einheit wählen',
+      sub: 'Schritt 1 von 2',
+      step: 1, total: 2, onBack: back,
+    }, (
+      <UnitPicker
+        catalog={catalog}
+        selectedKey={picked?.key}
+        onPick={(entry) => { selectUnit(entry); back(); }}
+        onCreateOwn={createOwnUnitEntry}
+      />
+    ));
+  }
 
   // ── Neue Einheit: Prüfen ──
   if (screen === 'e2') {
@@ -323,8 +291,14 @@ export default function SportQuickSheet({ onClose }) {
     }, (
       <>
         <div className="wz-review">
-          <div className="wz-rv-top"><small>Einheit</small><b style={{ fontSize: 24 }}>{title.trim()}</b></div>
-          <div className="wz-rv-row"><span>Trainingstyp</span><span>{type ? `${shortTitle(type)} · ${type.group}` : '—'}</span></div>
+          <div className="wz-rv-top">
+            <small>Einheit</small>
+            <div className="ep-rv-top">
+              <b style={{ fontSize: 24 }}>{title.trim()}</b>
+              {picked && <UnitVisual {...resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits)} size={44} max={3} />}
+            </div>
+          </div>
+          <div className="wz-rv-row"><span>Typ</span><span>{resolveTypeLabel(typeKey) ?? '—'}</span></div>
           <div className="wz-rv-row"><span>Datum</span><span>{fmtDate(date)}</span></div>
           <div className="wz-rv-row"><span>Status</span><span>{status === 'planned' ? 'Geplant' : 'Erledigt'}</span></div>
         </div>
@@ -394,7 +368,7 @@ export default function SportQuickSheet({ onClose }) {
       step: 2, total: 3, onBack: back,
     }, (
       <UnitPicker
-        catalog={planCatalog}
+        catalog={catalog}
         selectedKey={planDays[planSel]?._selectedUnitKey}
         onCreateOwn={createOwnUnitEntry}
         onPick={(entry) => { setPlanDays((list) => list.map((d, i) => (i === planSel ? dayFromEntry(entry) : d))); back(); }}
@@ -452,19 +426,20 @@ export default function SportQuickSheet({ onClose }) {
 
   // ── Eigene Einheiten verwalten: Liste ──
   if (screen === 'manage') {
-    return wrap({ title: 'Eigene Einheiten', sub: 'Vorlagen verwalten', onBack: back }, (
+    return wrap({ title: 'Eigene Einheiten', sub: 'Aus Muskeln zusammengestellt', onBack: back }, (
       <>
-        <button type="button" className="btn btn-secondary btn-block" style={{ marginBottom: 12 }} onClick={() => openTemplate(null)}>
-          ＋ Neue Einheiten-Vorlage
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginBottom: 12 }} onClick={() => openUnit(null)}>
+          ＋ Neue eigene Einheit
         </button>
         {manageLoading ? (
           <p className="wz-hint">Lädt…</p>
         ) : manageUnits.length === 0 ? (
-          <p className="wz-hint">Noch keine eigene Einheit angelegt.</p>
+          <p className="wz-hint">Noch keine eigene Einheit angelegt. Wähle Muskeln aus, die Bilder ergeben sich daraus.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {manageUnits.map((u) => (
-              <button key={u.id} type="button" className="wz-gbtn" style={{ textAlign: 'left', padding: '12px 14px' }} onClick={() => openTemplate(u)}>
+              <button key={u.id} type="button" className="ep-row" onClick={() => openUnit(u)}>
+                <span className="ep-vis"><UnitVisual {...resolveUnitVisual(u, manageUnits)} size={34} max={3} /></span>
                 {u.title}
               </button>
             ))}
@@ -475,45 +450,20 @@ export default function SportQuickSheet({ onClose }) {
     ));
   }
 
-  // ── Einheiten-Vorlage anlegen / bearbeiten ──
+  // ── Eigene Einheit anlegen / bearbeiten ──
   return wrap({
-    title: selectedId ? 'Vorlage bearbeiten' : 'Neue Vorlage',
+    title: selectedUnit ? 'Einheit bearbeiten' : 'Neue eigene Einheit',
     sub: 'Eigene Einheit',
     onBack: back,
-    footer: (
-      <WizardFoot one hint={unitTitle.trim() ? '' : missingHint([['Name', true]])}>
-        <button type="button" className="btn btn-primary" disabled={saving || !unitTitle.trim()} onClick={saveTemplate}>{saving ? 'Speichert…' : 'Speichern'}</button>
-      </WizardFoot>
-    ),
   }, (
-    <>
-      {!selectedId && (
-        <>
-          <button type="button" className="btn btn-secondary btn-block" onClick={() => setShowPresets((o) => !o)}>
-            {showPresets ? 'Vorlagen ausblenden' : 'Aus Vorlage übernehmen'}
-          </button>
-          {showPresets && (
-            <div className="wz-chips" style={{ margin: '10px 0', maxHeight: 160, overflowY: 'auto' }}>
-              {PREDEFINED_UNITS.map((preset) => (
-                <button key={preset.key} type="button" className="wz-chip" onClick={() => adoptPreset(preset)}>{preset.title}</button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-      <div className="wz-lbl">Trainingstyp</div>
-      <TypePicker
-        typeKey={unitTypeKey}
-        onSelect={(t) => { setUnitTypeKey(t.key); if (!unitTitle) setUnitTitle(shortTitle(t)); }}
-      />
-      <label className="wz-lbl" htmlFor="wz-tpl-name" style={{ marginTop: 18 }}>Name</label>
-      <input id="wz-tpl-name" className="wz-input hero" type="text" value={unitTitle} onChange={(e) => setUnitTitle(e.target.value)} placeholder="z. B. Legday, Arme" autoComplete="off" />
-      {selectedId && (
-        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14, color: 'var(--danger)', borderColor: 'var(--danger)' }} disabled={saving} onClick={deleteTemplate}>
-          Diese Einheit löschen
-        </button>
-      )}
-      {errorEl}
-    </>
+    <OwnUnitForm
+      key={selectedUnit?.id ?? 'neu'}
+      initial={selectedUnit}
+      onSave={saveOwnUnit}
+      onCancel={back}
+      saveLabel="Speichern"
+      cancelLabel="Abbrechen"
+      onDelete={selectedUnit ? deleteOwnUnit : undefined}
+    />
   ));
 }

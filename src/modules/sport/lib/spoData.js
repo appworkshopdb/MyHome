@@ -101,8 +101,9 @@ export async function saveUnit(session, unit) {
     title: unit.title,
     type_key: unit.type_key || null,
     duration_min: unit.duration_min ?? null,
-    muscle_groups: unit.muscle_groups ?? [],
   };
+  // Beim Bearbeiten ohne Muskelangabe die vorhandenen nicht überschreiben
+  if (unit.muscle_groups !== undefined || !unit.id) payload.muscle_groups = unit.muscle_groups ?? [];
   const { data, error } = await getSupabase().from('spo_units').upsert(payload).select().single();
   if (error) throw error;
   return data;

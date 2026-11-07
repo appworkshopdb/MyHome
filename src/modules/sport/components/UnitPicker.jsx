@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import UnitVisual from './UnitVisual';
-import MusclePicker from './MusclePicker';
-import { muscleLabel } from '../lib/planMuscles';
+import OwnUnitForm from './OwnUnitForm';
 import { KRAFT_SUBS, UNIT_TABS, searchCatalog, tabOf } from '../lib/unitCatalog';
 
 // Einheit wählen (Galerie): Suche, Reiter (Kraft, Ausdauer, Beweglichkeit, Sport,
@@ -15,48 +14,6 @@ const EMPTY = {
   sport: 'Du hast im Profil noch keine Sportarten gewählt. Dort kannst du sie hinzufügen.',
   eigen: 'Noch keine eigene Einheit. Eigene Einheiten legst du über „Eigene Einheiten verwalten“ an.',
 };
-
-// Eigene Einheit aus gewählten Muskeln. Der Name folgt der Auswahl
-// ("Brust + Beine"), solange man ihn nicht selbst ändert.
-function OwnUnitForm({ onCreate, onCancel }) {
-  const [muscles, setMuscles] = useState([]);
-  const [name, setName] = useState('');
-  const [touched, setTouched] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
-  const shown = touched ? name : muscles.map(muscleLabel).join(' + ');
-
-  async function save() {
-    if (muscles.length === 0) return setError('Bitte mindestens einen Muskel wählen.');
-    if (!shown.trim()) return setError('Bitte einen Namen eingeben.');
-    setBusy(true); setError('');
-    try { await onCreate({ title: shown.trim(), muscle_groups: muscles }); }
-    catch { setError('Speichern fehlgeschlagen.'); setBusy(false); }
-  }
-
-  return (
-    <div className="up">
-      <div className="up-own-h">
-        <UnitVisual tags={muscles} size={44} max={3} />
-        <div>
-          <small>Eigene Einheit</small>
-          <b>{shown.trim() || 'Muskeln wählen'}</b>
-        </div>
-      </div>
-      <div className="form-group" style={{ margin: 0 }}>
-        <label htmlFor="up-own-name">Name</label>
-        <input id="up-own-name" type="text" value={shown} onChange={(e) => { setName(e.target.value); setTouched(true); }} placeholder="z. B. Brust + Beine" />
-      </div>
-      <MusclePicker value={muscles} onChange={setMuscles} />
-      {error && <p className="up-error" role="alert">{error}</p>}
-      <div className="up-foot up-foot--two">
-        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>Zurück</button>
-        <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>{busy ? 'Speichert…' : 'Speichern und wählen'}</button>
-      </div>
-    </div>
-  );
-}
 
 export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }) {
   const current = catalog.find((e) => e.key === selectedKey);
@@ -76,7 +33,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
 
   const chosen = catalog.find((e) => e.key === sel);
 
-  if (own) return <OwnUnitForm onCreate={async (draft) => onPick(await onCreateOwn(draft))} onCancel={() => setOwn(false)} />;
+  if (own) return <OwnUnitForm onSave={async (draft) => onPick(await onCreateOwn(draft))} onCancel={() => setOwn(false)} />;
 
   return (
     <div className="up">

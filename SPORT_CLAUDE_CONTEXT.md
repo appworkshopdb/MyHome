@@ -199,6 +199,8 @@ Der Tag im Plan heißt „Tag 1 … Tag N“, Pläne sind nicht an Wochentage ge
 
 **Eigene Einheit zusammenstellen** (`UnitPicker` → `OwnUnitForm`, Muskelwahl `MusclePicker.jsx`): im Wizard und Editor wählt man Muskelgruppen (auf Wunsch einzelne Muskeln), der Name folgt der Auswahl („Brust + Beine“) bis man ihn ändert; „Speichern und wählen“ legt über `spoData.createOwnUnit` eine `spo_units`-Zeile an und trägt sie gleich im Tag ein. Die Bilder ergeben sich aus den Muskeln, die Reihenfolge der Auswahl bleibt erhalten.
 
+**Einzelne Einheit eintragen (ohne Plan):** Plus-Knopf „Neue Einheit“ (`core/components/SportQuickSheet.jsx`) und Kalender-Formular (`WorkoutForm.jsx`) nutzen dieselbe Galerie wie der Plan-Wizard: Feld „Einheit wählen“ (`UnitSelectCard`) → `UnitPicker` (Schritt `e1pick`), die alte Typ-Liste (Kraft/Ausdauer/Beweglichkeit) und „Aus Vorlage übernehmen“ gibt es nicht mehr, eigene Einheiten stehen in der Galerie. Die gewählte Galerie-Einheit liefert Typ (`type_key`, bei eigenen „sonstiges“), Namen und `muscle_groups` (werden mit gespeichert → feste Bilder im Kalender). „Eigene Einheiten verwalten“ ist eine Liste mit Bildern (`.ep-row`), Bearbeiten/Neu über `OwnUnitForm`; `saveUnit` behält beim Bearbeiten `type_key`/`duration_min` und überschreibt `muscle_groups` nur bei ausdrücklicher Angabe.
+
 ## 8. Plan-Speicherung – wichtiger aktueller Stand
 
 Datei: `src/modules/sport/lib/spoData.js`

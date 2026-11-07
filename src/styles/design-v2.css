@@ -1221,3 +1221,19 @@ button.cl-row-btn { cursor: pointer; }
 .mp-card.is-on { border-color: var(--m-ac); background: var(--m-tint); }
 .mp-card:focus-visible, .mp-more:focus-visible { outline: 2px solid var(--m-ac); outline-offset: 2px; }
 .mp-more { align-self: flex-start; padding: 4px 0; border: 0; background: none; color: var(--m-deep); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+
+/* ── Sport · Einheit wählen (Eintrag einzelner Einheiten, eigene Einheiten verwalten) ── */
+.ep-pick { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: 16px; background: transparent; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.ep-pick.has { border: 1.5px solid var(--m-ac); border-style: solid; background: var(--m-tint); color: var(--m-ink); }
+.ep-pick:focus-visible { outline: 2px solid var(--m-ac); outline-offset: 2px; }
+.ep-vis { display: flex; flex: none; align-items: center; min-width: 40px; }
+.ep-tx { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ep-tx b { font-size: 15px; font-weight: 900; line-height: 1.2; }
+.ep-tx small { font-size: 12px; font-weight: 600; opacity: 0.75; }
+.ep-chg { flex: none; font-size: 13px; font-weight: 800; color: var(--m-deep); }
+.ep-chev { flex: none; font-size: 20px; font-weight: 800; opacity: 0.5; }
+.ep-plus { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border: 1.5px solid var(--m-ac); border-radius: 50%; color: var(--m-deep); font-size: 22px; font-weight: 700; line-height: 1; }
+.ep-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-hairline); border-radius: 14px; background: var(--surface-sunken); color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 800; text-align: left; cursor: pointer; }
+.ep-row:focus-visible { outline: 2px solid var(--m-ac); outline-offset: 2px; }
+.up-delete { align-self: flex-start; padding: 6px 0; border: 0; background: none; color: var(--status-critical); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.ep-rv-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

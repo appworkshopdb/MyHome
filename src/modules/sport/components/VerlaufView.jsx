@@ -26,7 +26,7 @@ const TODAY = todayIso;
 // Wochenansicht irgendein Tag der sichtbaren Woche — CalendarHeader
 // rechnet je nach viewMode unterschiedlich damit weiter.
 export default function VerlaufView({
-  workouts, plans, units, loading, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest,
+  workouts, plans, units, loading, activePlan, onToggleDone, onEdit, onDelete, onPlanNew, onAddRest, onCreateOwn,
   formInitial, onOpenForm, onCancelForm, onSaveForm, userSports, showToast,
 }) {
   const [viewMode, setViewMode] = useState('month');
@@ -43,7 +43,7 @@ export default function VerlaufView({
   if (formInitial !== false) {
     return (
       <div className="page">
-        <WorkoutForm onSave={onSaveForm} onCancel={onCancelForm} showToast={showToast} initialValues={formInitial} userSports={userSports} units={units} />
+        <WorkoutForm onSave={onSaveForm} onCancel={onCancelForm} showToast={showToast} initialValues={formInitial} userSports={userSports} units={units} onCreateOwn={onCreateOwn} />
       </div>
     );
   }
