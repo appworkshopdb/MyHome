@@ -375,7 +375,7 @@ Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 Feste Bilder je Einheit: `spo_workouts`/`spo_plan_items` tragen ihre Muskelgruppen selbst (`muscle_groups`,
 Migration `supabase/spo_muscle_groups_migration.sql`, vor dem Ausrollen einspielen; die App läuft auch ohne
 die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Eigene Kombinationen entstehen im
-Plan-Wizard/Editor über „Eigene Einheit zusammenstellen“. Details: `SPORT_CLAUDE_CONTEXT.md` §7.
+Galerie „Einheit wählen“ (Kraft › Muskeln, Mehrfachwahl aller Muskeln). Details: `SPORT_CLAUDE_CONTEXT.md` §7.
 
 ## Skills (`.claude/skills/`)
 
