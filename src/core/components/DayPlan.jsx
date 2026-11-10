@@ -1,5 +1,5 @@
 import Money from './Money';
-import Ring from './Ring';
+import MacroDial, { hasMacroDial } from './MacroDial';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
 // Handler aus dem Hub — hier wird nur dargestellt.
@@ -29,26 +29,25 @@ function Row({ done, onToggle, icon, title, sub, critical, family, tag }) {
 const fmtNum = (n) => Math.round(n).toLocaleString('de-DE');
 
 // Ernährungsstand des Tages: kein Haken, zählt nicht bei "x / y erledigt".
-// Block antippen → Mahlzeiten (Verlauf + Eintragen), "Ernährung ›" → Modul.
+// Ring und Mahlzeit-Marker antippen → Mahlzeiten (Verlauf + Eintragen), "Ernährung ›" → Modul;
+// die vier Werte (MacroDial) wählen, was der Ring zeigt.
 // Wird auch oben auf der Ernährungs-Seite gezeigt (label="Heute", hideOpen: der
 // Link ins Modul entfällt dort, variant="hero": große Fokuskarte in Grün).
 export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = false, variant = 'tile' }) {
-  const { kcal, goal, macros, slots, count, hasEstimate, eaten, overKcal } = data;
+  const { kcal, goal, slots, count, hasEstimate, eaten, overKcal } = data;
   const approx = hasEstimate ? '≈ ' : '';
   const over = overKcal > 0;
-  const MACROS = [['protein', 'Eiweiß'], ['carbs', 'Kohlenh.'], ['fat', 'Fett']];
+  const openMeals = () => onOpen?.('nutrition/mahlzeiten');
+  // Ring + vier Werte nur mit Tagesziel; sonst (kein Körperprofil) wie bisher eine Textzeile
+  const dial = goal && hasMacroDial(data);
 
-  let main;
-  let side = null;
-  if (!kcal) {
-    main = count > 0 ? <>{approx}{fmtNum(eaten.kcal)} <small>kcal gegessen</small></> : <>Noch nichts eingetragen</>;
-  } else if (over) {
-    main = <>{approx}{fmtNum(overKcal)} kcal drüber</>;
-    side = `${approx}${fmtNum(kcal.eaten)} / ${fmtNum(kcal.goal)}`;
-  } else {
-    main = <>Noch {hasEstimate ? '≈ ' : ''}{fmtNum(kcal.open)} <small>kcal offen</small></>;
-    side = `${approx}${fmtNum(kcal.eaten)} / ${fmtNum(kcal.goal)}`;
+  let main = null;
+  if (!dial) {
+    if (!kcal) main = count > 0 ? <>{approx}{fmtNum(eaten.kcal)} <small>kcal gegessen</small></> : <>Noch nichts eingetragen</>;
+    else if (over) main = <>{approx}{fmtNum(overKcal)} kcal drüber</>;
+    else main = <>Noch {hasEstimate ? '≈ ' : ''}{fmtNum(kcal.open)} <small>kcal offen</small></>;
   }
+  const side = !dial && kcal ? `${approx}${fmtNum(kcal.eaten)} / ${fmtNum(kcal.goal)}` : null;
 
   return (
     <div className={`dp-nut tone-food dp-nut--${variant} ${over ? 'over' : ''}`}>
@@ -56,42 +55,30 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
         <div className="dp-nut-label">{label}</div>
         {!hideOpen && <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung ›</button>}
       </div>
-      <button className="dp-nut-btn" onClick={() => onOpen?.('nutrition/mahlzeiten')}>
-        <div className="dp-nut-top">
-          {kcal && (
-            <Ring size={variant === 'hero' ? 84 : 72} stroke={variant === 'hero' ? 9 : 8} value={kcal.pct / 100} className="dp-nut-ring">
-              <b>{Math.round(kcal.pct)} %</b>
-            </Ring>
-          )}
-          <div className="dp-nut-text">
-            <div className="dp-nut-main">{main}</div>
-            {side && <div className="dp-nut-side">{side} ›</div>}
+      {dial ? (
+        <MacroDial data={data} approx={hasEstimate} onOpenMeals={openMeals} />
+      ) : (
+        <button className="dp-nut-btn" onClick={openMeals}>
+          <div className="dp-nut-top">
+            <div className="dp-nut-text">
+              <div className="dp-nut-main">{main}</div>
+              {side && <div className="dp-nut-side">{side} ›</div>}
+            </div>
           </div>
-        </div>
-        {goal && (
-          <div className="dp-macros">
-            {MACROS.map(([key, label]) => macros[key] && (
-              <div key={key} className="dp-macro">
-                <b>{fmtNum(macros[key].open)} g</b>
-                <span>{label}</span>
-                <i><em style={{ width: `${macros[key].pct}%` }} /></i>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="dp-meals">
-          {slots.map((s) => (
-            <span key={s.key} className={`dp-meal ${s.logged ? 'on' : ''} ${s.next ? 'next' : ''}`}>
-              <span aria-hidden="true">{s.emoji}</span>
-              <span className="dp-sr">{s.label}{s.logged ? ' eingetragen' : ''}</span>
-              {s.logged && <span aria-hidden="true">✓</span>}
-            </span>
-          ))}
-        </div>
-        {count === 0 && variant === 'hero' && <div className="dp-cta">＋ Mahlzeit eintragen</div>}
-        {!goal && <div className="dp-hint">Trage im Körperprofil Größe, Gewicht und Alter ein, dann zeigt dir der Plan, wie viel noch offen ist.</div>}
-        {hasEstimate && count > 0 && <div className="dp-hint">≈ enthält Foto-Schätzungen.</div>}
+        </button>
+      )}
+      <button className="dp-meals" onClick={openMeals} aria-label="Mahlzeiten öffnen">
+        {slots.map((s) => (
+          <span key={s.key} className={`dp-meal ${s.logged ? 'on' : ''} ${s.next ? 'next' : ''}`}>
+            <span aria-hidden="true">{s.emoji}</span>
+            <span className="dp-sr">{s.label}{s.logged ? ' eingetragen' : ''}</span>
+            {s.logged && <span aria-hidden="true">✓</span>}
+          </span>
+        ))}
       </button>
+      {count === 0 && variant === 'hero' && <div className="dp-cta">＋ Mahlzeit eintragen</div>}
+      {!goal && <div className="dp-hint">Trage im Körperprofil Größe, Gewicht und Alter ein, dann zeigt dir der Plan, wie viel noch offen ist.</div>}
+      {hasEstimate && count > 0 && <div className="dp-hint">≈ enthält Foto-Schätzungen.</div>}
     </div>
   );
 }

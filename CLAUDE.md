@@ -133,7 +133,11 @@ einer Seite, die manuelle Eingabe behält die 3 Schritte.
   (ohne Haken, zählt nicht bei "x / y erledigt"): offene kcal/Makros vs. Tagesziel,
   vier Mahlzeit-Marker. Daten über `core/lib/nutritionDay.js` (eigene Abfrage auf
   `nut_meals` + `computeBody`; Typen dort dupliziert, weil core nicht aus modules
-  importieren darf). Block → `#/nutrition/mahlzeiten`, "Ernährung ›" → Modul.
+  importieren darf). "Ernährung ›" → Modul. Mit Tagesziel zeigt der Block `MacroDial.jsx` (Ring in der Mitte, links Eiweiß + Kohlenh.,
+  rechts Fett + Kcal, je ein antippbarer Wert, Einzelauswahl nur lokal: Ring + Mitte zeigen dann diesen Wert, sonst Ø in %,
+  Flug-Animation per Web Animations API, mit "Bewegung reduzieren" aus; unter ~270 px Breite Ring oben, Werte 2 × 2). Ring und
+  Mahlzeit-Marker → `#/nutrition/mahlzeiten` (die Werte selbst öffnen nichts). Ohne Ziel wie bisher Textzeile + Hinweis.
+  Styles `.dp-dial*`/`.dp-tile*` in `design-v2.css`; Entwurf: Claude Design "Makro-Zähler".
   Fehler beim Laden blenden nur den Block aus.
 - Morgen-Push "Tagesplan" (Kategorie `daily_plan`, 06:00 Europe/Berlin, Function `send-notifications`):
   fasst Termine/Training/Aufgaben/Gewohnheiten/fällige Zahlungen zusammen; Regeln dupliziert aus

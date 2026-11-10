@@ -4068,13 +4068,7 @@
 .dp-nut-fill { height: 100%; border-radius: var(--r-pill); background: var(--action-primary); transition: width var(--motion-calm); }
 .dp-nut.over .dp-nut-fill { background: var(--status-caution); }
 .dp-nut.over .dp-nut-main { color: var(--status-caution); }
-.dp-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-.dp-macro { background: var(--surface-sunken); border-radius: 12px; padding: 7px 10px; }
-.dp-macro b { display: block; font-size: 14px; font-weight: 800; color: var(--text-primary); }
-.dp-macro span { white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-.dp-macro i { display: block; height: 3px; border-radius: var(--r-pill); background: var(--data-track); margin-top: 5px; overflow: hidden; }
-.dp-macro i em { display: block; height: 100%; background: var(--action-primary); border-radius: var(--r-pill); }
-.dp-meals { display: flex; gap: 6px; margin-top: 10px; }
+.dp-meals { display: flex; width: 100%; gap: 6px; margin-top: 10px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
 .dp-meal {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
   border-radius: var(--r-pill); padding: 5px 0; font-size: 12px; font-weight: 800;

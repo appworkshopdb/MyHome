@@ -399,7 +399,7 @@
   text-transform: uppercase;
   color:          color-mix(in srgb, var(--t-ink) 72%, transparent);
 }
-.dp-nut-open  { color: var(--t-ink); font-weight: 800; opacity: 0.8; }
+.dp-nut-open  { flex: none; white-space: nowrap; color: var(--t-ink); font-size: 13px; font-weight: 800; opacity: 0.8; }
 .dp-nut-top   { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
 .dp-nut-text  { min-width: 0; }
 .dp-nut-main  { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.15; color: var(--t-ink); }
@@ -409,18 +409,14 @@
 .dp-nut-ring b { font-size: 15px; }
 .dp-nut.over .dp-nut-main { color: var(--status-caution); }
 .dp-nut.over .dp-nut-ring { --ring-ac: var(--status-caution); }
-.dp-macros { margin-top: 12px; }
-.dp-macro  { background: color-mix(in srgb, var(--surface-raised) 72%, transparent); border-radius: 14px; padding: 8px 10px; }
-.dp-macro b { color: var(--t-ink); }
-.dp-macro span { color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
-.dp-macro i  { background: color-mix(in srgb, var(--t-ink) 14%, transparent); }
-.dp-macro i em { background: var(--t-ac); }
-.dp-meal { background: color-mix(in srgb, var(--surface-raised) 72%, transparent); color: var(--t-ink); }
+.dp-meal { height: 28px; padding: 0; font-size: 13px; background: color-mix(in srgb, var(--surface-raised) 72%, transparent); color: var(--t-ink); }
+.dp-meals { margin-top: 12px; gap: 6px; }
 .dp-meal.on { background: var(--t-ac); color: var(--t-on); }
 .dp-meal.next { outline: 1.5px solid var(--t-ac); }
-.dp-cta  { color: var(--t-ink); font-weight: 800; }
+.dp-cta  { color: var(--t-ink); font-size: 14px; font-weight: 800; margin-top: 12px; }
 .dp-hint { color: color-mix(in srgb, var(--t-ink) 72%, transparent); }
 
+.dp-nut--hero .dp-meals { margin-top: 14px; }
 .dp-nut--hero {
   padding:       18px;
   border-radius: var(--r-hero);
@@ -431,20 +427,208 @@
 .dp-nut--hero .dp-nut-label,
 .dp-nut--hero .dp-nut-side,
 .dp-nut--hero .dp-nut-main small,
-.dp-nut--hero .dp-macro span,
 .dp-nut--hero .dp-hint { color: color-mix(in srgb, var(--t-hero-ink) 80%, transparent); }
 .dp-nut--hero .dp-nut-main,
 .dp-nut--hero .dp-nut-open,
-.dp-nut--hero .dp-macro b,
 .dp-nut--hero .dp-cta { color: var(--t-hero-ink); }
 .dp-nut--hero .dp-nut-ring { --ring-ac: var(--t-hero-ink); color: var(--t-hero-ink); }
-.dp-nut--hero .dp-macro { background: color-mix(in srgb, var(--t-hero-ink) 16%, transparent); }
-.dp-nut--hero .dp-macro i { background: color-mix(in srgb, var(--t-hero-ink) 25%, transparent); }
-.dp-nut--hero .dp-macro i em { background: var(--t-hero-ink); }
 .dp-nut--hero .dp-meal { background: color-mix(in srgb, var(--t-hero-ink) 16%, transparent); color: var(--t-hero-ink); }
 .dp-nut--hero .dp-meal.on { background: var(--t-hero-ink); color: var(--t-pill); }
 .dp-nut--hero .dp-meal.next { outline-color: var(--t-hero-ink); }
 .dp-nut--hero.over .dp-nut-main { color: var(--t-hero-ink); }
+
+/* Makro-Zähler (MacroDial): Ring in der Mitte, vier Werte als Kacheln.
+   Hub (.dp-nut--tile): helle Kachel in der Familie food; Modul (.dp-nut--hero): grüne Fokuskarte.
+   Alle Farben über --t-* (Hell und Dunkel). Entwurf: Claude Design "Makro-Zähler". */
+.dp-nut { container-type: inline-size; }
+.dp-dial {
+  --dial:       clamp(108px, 40cqi, 132px);
+  display:      grid;
+  grid-template-columns: minmax(0, 1fr) var(--dial) minmax(0, 1fr);
+  gap:          8px;
+  align-items:  stretch;
+  margin-top:   12px;
+}
+.dp-dial-col { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; min-width: 0; }
+
+/* Kachel */
+.dp-tile {
+  --tile-bg:    color-mix(in srgb, var(--surface-raised) 42%, transparent);
+  --tile-sel:   var(--surface-raised);
+  --tile-ring:  0 0 0 1.5px var(--t-ac), 0 6px 16px color-mix(in srgb, var(--t-ac) 18%, transparent);
+  --tile-label: color-mix(in srgb, var(--t-ink) 62%, transparent);
+  --tile-val:   var(--t-ink);
+  --tile-track: color-mix(in srgb, var(--t-ink) 9%, transparent);
+  --tile-fill:  color-mix(in srgb, var(--t-ac) 55%, transparent);
+  --tile-fill-on: var(--t-ac);
+  --tile-dot:   color-mix(in srgb, var(--t-ink) 20%, transparent);
+  --tile-over:  var(--status-caution);
+  display:        flex;
+  flex-direction: column;
+  justify-content: center;
+  gap:            4px;
+  min-width:      0;
+  padding:        10px clamp(8px, 3cqi, 12px);
+  border:         0;
+  border-radius:  16px;
+  background:     var(--tile-bg);
+  color:          var(--tile-val);
+  font:           inherit;
+  cursor:         pointer;
+  text-align:     left;
+  align-items:    flex-start;
+  -webkit-tap-highlight-color: transparent;
+  transition:     background 240ms, box-shadow 240ms, transform 200ms;
+}
+.dp-tile--l { align-items: flex-end; text-align: right; }
+.dp-tile:active { transform: scale(0.97); }
+.dp-tile:focus-visible { outline: 2px solid var(--t-ac); outline-offset: 2px; }
+.dp-tile.is-on { background: var(--tile-sel); box-shadow: var(--tile-ring); }
+.dp-tile-label {
+  display:        flex;
+  align-items:    center;
+  gap:            5px;
+  max-width:      100%;
+  font-size:      9.5px;
+  font-weight:    800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space:    nowrap;
+  color:          var(--tile-label);
+}
+.dp-tile--l .dp-tile-label { flex-direction: row-reverse; }
+.dp-tile-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--tile-dot); transition: background 240ms; }
+.dp-tile.is-on .dp-tile-dot { background: var(--t-ac); }
+.dp-tile-val {
+  font-size:      17px;
+  font-weight:    900;
+  letter-spacing: -0.02em;
+  line-height:    1.1;
+  white-space:    nowrap;
+  font-variant-numeric: tabular-nums;
+  color:          var(--tile-val);
+}
+.dp-tile-bar {
+  display:         flex;
+  justify-content: flex-start;
+  width:           100%;
+  height:          2px;
+  margin-top:      2px;
+  border-radius:   var(--r-pill);
+  background:      var(--tile-track);
+  overflow:        hidden;
+}
+.dp-tile--l .dp-tile-bar { justify-content: flex-end; }   /* links füllt der Balken von rechts */
+.dp-tile-bar em {
+  display:       block;
+  height:        100%;
+  border-radius: var(--r-pill);
+  background:    var(--tile-fill);
+  transition:    width 600ms cubic-bezier(0.2, 0, 0, 1), background 240ms;
+}
+.dp-tile.is-on .dp-tile-bar em { background: var(--tile-fill-on); }
+.dp-tile.is-over .dp-tile-val { color: var(--tile-over); }
+.dp-tile.is-over .dp-tile-bar em,
+.dp-tile.is-over.is-on .dp-tile-bar em { background: var(--tile-over); }
+.dp-tile.is-over .dp-tile-dot,
+.dp-tile.is-over.is-on .dp-tile-dot { background: var(--tile-over); }
+
+/* Ring */
+.dp-dial-ring {
+  position:      relative;
+  width:         var(--dial);
+  height:        var(--dial);
+  align-self:    center;
+  justify-self:  center;
+  padding:       0;
+  border:        0;
+  background:    none;
+  color:         inherit;
+  font:          inherit;
+  cursor:        pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dp-dial-ring:focus-visible { outline: 2px solid var(--t-ac); outline-offset: 2px; border-radius: 50%; }
+.dp-dial-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+.dp-dial-disk  { fill: color-mix(in srgb, var(--surface-raised) 55%, transparent); transition: r 300ms; }
+.dp-dial-track { stroke: color-mix(in srgb, var(--t-ink) 8%, transparent); }
+.dp-dial-arc {
+  stroke:      var(--t-ac);
+  filter:      drop-shadow(0 0 4px color-mix(in srgb, var(--t-ac) 35%, transparent));
+  transition:  stroke-dashoffset 700ms cubic-bezier(0.2, 0, 0, 1), stroke 300ms;
+}
+.dp-dial-arc.is-over { stroke: var(--status-caution); }
+.dp-dial-ghost { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.dp-dial-center {
+  position:        absolute;
+  inset:           0;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  text-align:      center;
+  line-height:     1.05;
+  color:           var(--t-ink);
+}
+.dp-dial-center b { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.dp-dial-center b.is-sm { font-size: 24px; }
+.dp-dial-center b small { font-size: 12px; font-weight: 800; margin-left: 2px; letter-spacing: 0; }
+.dp-dial-center.is-over { color: var(--status-caution); }
+.dp-dial-label {
+  font-size:      10px;
+  font-weight:    800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          color-mix(in srgb, var(--t-ink) 72%, transparent);
+}
+.dp-dial-sub { margin-top: 1px; font-size: 11px; font-weight: 700; color: color-mix(in srgb, var(--t-ink) 72%, transparent); font-variant-numeric: tabular-nums; }
+
+/* Fokuskarte im Modul */
+.dp-nut--hero .dp-tile {
+  --tile-bg:    color-mix(in srgb, var(--t-hero-ink) 8%, transparent);
+  --tile-sel:   color-mix(in srgb, var(--t-hero-ink) 18%, transparent);
+  --tile-ring:  inset 0 0 0 1.5px color-mix(in srgb, var(--t-hero-ink) 90%, transparent), 0 6px 16px rgba(0, 0, 0, 0.12);
+  --tile-label: color-mix(in srgb, var(--t-hero-ink) 72%, transparent);
+  --tile-val:   var(--t-hero-ink);
+  --tile-track: color-mix(in srgb, var(--t-hero-ink) 14%, transparent);
+  --tile-fill:  color-mix(in srgb, var(--t-hero-ink) 60%, transparent);
+  --tile-fill-on: var(--t-hero-ink);
+  --tile-dot:   color-mix(in srgb, var(--t-hero-ink) 30%, transparent);
+  --tile-over:  var(--raw-ochre-300);
+}
+.dp-nut--hero .dp-tile:focus-visible,
+.dp-nut--hero .dp-dial-ring:focus-visible { outline-color: var(--t-hero-ink); }
+.dp-nut--hero .dp-tile.is-on .dp-tile-dot { background: var(--t-hero-ink); }
+.dp-nut--hero .dp-dial-disk  { fill: color-mix(in srgb, var(--t-hero-ink) 7%, transparent); }
+.dp-nut--hero .dp-dial-track { stroke: color-mix(in srgb, var(--t-hero-ink) 13%, transparent); }
+.dp-nut--hero .dp-dial-arc   { stroke: var(--t-hero-ink); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--t-hero-ink) 45%, transparent)); }
+.dp-nut--hero .dp-dial-arc.is-over { stroke: var(--raw-ochre-300); }
+.dp-nut--hero .dp-dial-center { color: var(--t-hero-ink); }
+.dp-nut--hero .dp-dial-center.is-over { color: var(--raw-ochre-300); }
+.dp-nut--hero .dp-dial-label,
+.dp-nut--hero .dp-dial-sub { color: color-mix(in srgb, var(--t-hero-ink) 80%, transparent); }
+
+/* Schmale Geräte: Ring verkleinert sich bis 108 px, die Kacheln rücken enger; unter ~270 px
+   Kartenbreite steht der Ring oben und die vier Werte darunter (2 × 2). */
+@container (max-width: 320px) {
+  .dp-tile-label { letter-spacing: 0.05em; }
+}
+@container (max-width: 270px) {
+  .dp-dial { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); --dial: 120px; }
+  .dp-dial-ring { grid-column: 1 / 3; grid-row: 1; }
+  .dp-dial-col { display: contents; }
+  .dp-tile--l { grid-column: 1; align-items: flex-start; text-align: left; }
+  .dp-tile--r { grid-column: 2; }
+  .dp-tile--l .dp-tile-label { flex-direction: row; }
+  .dp-tile--l .dp-tile-bar { justify-content: flex-start; }
+  .dp-dial-col--l .dp-tile:nth-child(1) { grid-row: 2; }
+  .dp-dial-col--r .dp-tile:nth-child(1) { grid-row: 2; }
+  .dp-dial-col--l .dp-tile:nth-child(2) { grid-row: 3; }
+  .dp-dial-col--r .dp-tile:nth-child(2) { grid-row: 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dp-tile, .dp-tile-dot, .dp-tile-bar em, .dp-dial-arc, .dp-dial-disk { transition: none; }
+}
 
 /* ── Aufgaben-Karte im Hub: Überschrift IN der Karte wie bei den anderen Kacheln ── */
 .hub-task-card { border: none; border-radius: var(--r-tile); }
