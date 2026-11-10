@@ -12,13 +12,13 @@ import { resolveUnitVisual } from '../../modules/sport/lib/planMuscles';
 import { buildCatalog } from '../../modules/sport/lib/unitCatalog';
 import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../../modules/sport/lib/planDays';
 import { getBodyProfile } from '../lib/bodyProfileData';
-import { fmtDate, todayIso } from '../lib/wizardDates';
+import { todayIso } from '../lib/wizardDates';
 import SheetShell from './SheetShell';
 import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Auswahl zuerst: Neue Einheit · Trainingsplan · Ruhetag.
-//   Neue Einheit  (e1 Eingeben, e1pick Einheit wählen, e2 Prüfen) → spo_workouts (Training mit Datum)
+//   Neue Einheit  (e1 alles auf einer Seite, e1pick Einheit wählen) → spo_workouts (Training mit Datum)
 //   Trainingsplan (p1 Name, p2 Trainingstage, p3 Prüfen) → spo_plans
 //   Ruhetag       (r1) → spo_workouts mit is_rest
 // "Eigene Einheiten verwalten" (eigene Einheiten aus Muskeln anlegen, bearbeiten, löschen).
@@ -208,12 +208,12 @@ export default function SportQuickSheet({ onClose }) {
     const ready = Boolean(picked) && nameOk && Boolean(date);
     return wrap({
       title: 'Neue Einheit',
-      sub: 'Schritt 1 von 2 · Eingeben',
-      step: 1, total: 2, onBack: back,
+      sub: 'Einheit, Name und Datum',
+      onBack: back,
       footer: (
         <WizardFoot hint={ready ? '' : missingHint([['Einheit', !picked], ['Name', !nameOk], ['Datum', !date]])}>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
-          <button type="button" className="btn btn-primary" disabled={!ready} onClick={() => go('e2')}>Weiter</button>
+          <button type="button" className="btn btn-primary" disabled={!ready || saving} onClick={saveWorkout}>{saving ? 'Speichert…' : 'Speichern'}</button>
         </WizardFoot>
       ),
     }, (
@@ -264,8 +264,8 @@ export default function SportQuickSheet({ onClose }) {
   if (screen === 'e1pick') {
     return wrap({
       title: 'Einheit wählen',
-      sub: 'Schritt 1 von 2',
-      step: 1, total: 2, onBack: back,
+      sub: 'Kraft, Ausdauer, Beweglichkeit, Sport oder eigene',
+      onBack: back,
     }, (
       <UnitPicker
         catalog={catalog}
@@ -273,37 +273,6 @@ export default function SportQuickSheet({ onClose }) {
         onPick={(entry) => { selectUnit(entry); back(); }}
         onCreateOwn={createOwnUnitEntry}
       />
-    ));
-  }
-
-  // ── Neue Einheit: Prüfen ──
-  if (screen === 'e2') {
-    return wrap({
-      title: 'Einheit prüfen',
-      sub: 'Schritt 2 von 2 · Bitte alles kontrollieren',
-      step: 2, total: 2, onBack: back,
-      footer: (
-        <WizardFoot>
-          <button type="button" className="btn btn-secondary" onClick={back} disabled={saving}>Ändern</button>
-          <button type="button" className="btn btn-primary" onClick={saveWorkout} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
-        </WizardFoot>
-      ),
-    }, (
-      <>
-        <div className="wz-review">
-          <div className="wz-rv-top">
-            <small>Einheit</small>
-            <div className="ep-rv-top">
-              <b style={{ fontSize: 24 }}>{title.trim()}</b>
-              {picked && <UnitVisual {...resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits)} size={44} max={3} />}
-            </div>
-          </div>
-          <div className="wz-rv-row"><span>Typ</span><span>{resolveTypeLabel(typeKey) ?? '—'}</span></div>
-          <div className="wz-rv-row"><span>Datum</span><span>{fmtDate(date)}</span></div>
-          <div className="wz-rv-row"><span>Status</span><span>{status === 'planned' ? 'Geplant' : 'Erledigt'}</span></div>
-        </div>
-        {errorEl}
-      </>
     ));
   }
 

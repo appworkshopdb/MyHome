@@ -5,9 +5,11 @@ import { KRAFT_SUBS, UNIT_TABS, searchCatalog, tabOf } from '../lib/unitCatalog'
 
 // Einheit wählen (Galerie): Suche, Reiter (Kraft, Ausdauer, Beweglichkeit, Sport,
 // Eigene), bei Kraft die Unterkategorien, darunter die Einheiten als Karten mit
-// ihren Bildern. Ein Tipp wählt, "Auswählen" übernimmt. Eigene Einheiten legt man
-// ebenfalls hier an ("Eigene Einheit zusammenstellen": Muskeln wählen, die Bilder
-// ergeben sich daraus), wenn onCreateOwn gegeben ist.
+// ihren Bildern. Ein Tipp wählt, "Auswählen" übernimmt. Im Reiter Kraft > Muskeln
+// wählt man mehrere Muskeln direkt an (Kombination, z. B. "Brust + Rücken"): eine
+// vorhandene Einheit mit denselben Muskeln wird wiederverwendet, sonst legt
+// onCreateOwn eine eigene Einheit an (ohne onCreateOwn entsteht ein Eintrag nur für
+// diese Auswahl). "Eigene Einheit zusammenstellen" bleibt für einzelne Muskeln.
 // Der Inhalt scrollt im umgebenden Sheet/Wizard, die Fußleiste klebt unten.
 
 const EMPTY = {
@@ -20,8 +22,10 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
   const [tab, setTab] = useState(current ? tabOf(current.cat) : 'kraft');
   const [sub, setSub] = useState(current && ['split', 'muskel', 'kombi'].includes(current.cat) ? current.cat : 'split');
   const [q, setQ] = useState('');
-  const [sel, setSel] = useState(selectedKey || null);
+  const [sel, setSel] = useState(selectedKey ? [selectedKey] : []);
   const [own, setOwn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   const searching = q.trim().length > 0;
   const list = useMemo(() => {
@@ -31,7 +35,32 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
     return catalog.filter((e) => cats.includes(e.cat));
   }, [catalog, q, searching, tab, sub]);
 
-  const chosen = catalog.find((e) => e.key === sel);
+  // Mehrfachwahl nur bei den Muskeln (ohne Suche)
+  const multi = !searching && tab === 'kraft' && sub === 'muskel';
+  const chosenList = sel.map((k) => catalog.find((e) => e.key === k)).filter(Boolean);
+  const combo = multi && chosenList.length > 1;
+  const comboTitle = chosenList.map((e) => e.title).join(' + ');
+  const comboMuscles = [...new Set(chosenList.flatMap((e) => e.muscle_groups ?? []))];
+
+  function tap(key) {
+    setError('');
+    setSel((cur) => (!multi ? [key] : cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]));
+  }
+  function changeTab(next) { setTab(next); setSel([]); setError(''); }
+  function changeSub(next) { setSub(next); setSel([]); setError(''); }
+
+  async function confirm() {
+    if (chosenList.length === 0 || busy) return;
+    if (!combo) return onPick(chosenList[0]);
+    // gleiche Muskeln wie eine vorhandene Einheit? Dann diese nehmen
+    const sameSet = (a) => a.length === comboMuscles.length && a.every((m) => comboMuscles.includes(m));
+    const existing = catalog.find((e) => e.cat !== 'sport' && e.muscle_groups?.length && sameSet(e.muscle_groups));
+    if (existing) return onPick(existing);
+    if (!onCreateOwn) return onPick({ key: `combo:${sel.join('+')}`, title: comboTitle, type_key: null, muscle_groups: comboMuscles, icon: '', cat: 'kombi' });
+    setBusy(true); setError('');
+    try { onPick(await onCreateOwn({ title: comboTitle, muscle_groups: comboMuscles })); }
+    catch { setError('Speichern fehlgeschlagen.'); setBusy(false); }
+  }
 
   if (own) return <OwnUnitForm onSave={async (draft) => onPick(await onCreateOwn(draft))} onCancel={() => setOwn(false)} />;
 
@@ -48,13 +77,13 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
         <>
           <div className="up-tabs" role="tablist" aria-label="Kategorie">
             {UNIT_TABS.map((t) => (
-              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'is-on' : ''} onClick={() => setTab(t.key)}>{t.label}</button>
+              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'is-on' : ''} onClick={() => changeTab(t.key)}>{t.label}</button>
             ))}
           </div>
           {tab === 'kraft' && (
             <div className="up-subs" role="group" aria-label="Unterkategorie">
               {KRAFT_SUBS.map((s) => (
-                <button key={s.key} type="button" aria-pressed={sub === s.key} className={sub === s.key ? 'is-on' : ''} onClick={() => setSub(s.key)}>{s.label}</button>
+                <button key={s.key} type="button" aria-pressed={sub === s.key} className={sub === s.key ? 'is-on' : ''} onClick={() => changeSub(s.key)}>{s.label}</button>
               ))}
             </div>
           )}
@@ -65,24 +94,36 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
       {list.length === 0 ? (
         <p className="up-empty">{searching ? 'Nichts gefunden. Probiere einen anderen Begriff.' : EMPTY[tab]}</p>
       ) : (
-        <div className="up-grid" role="radiogroup" aria-label="Einheit">
-          {list.map((e) => (
-            <button key={e.key} type="button" role="radio" aria-checked={sel === e.key} className={`up-card${sel === e.key ? ' is-on' : ''}`} onClick={() => setSel(e.key)}>
-              <span className="up-vis"><UnitVisual tags={e.muscle_groups} icon={e.icon} size={38} max={2} /></span>
-              <b>{e.title}</b>
-            </button>
-          ))}
+        <div className="up-grid" role={multi ? 'group' : 'radiogroup'} aria-label={multi ? 'Muskeln' : 'Einheit'}>
+          {list.map((e) => {
+            const on = sel.includes(e.key);
+            return (
+              <button key={e.key} type="button" role={multi ? 'checkbox' : 'radio'} aria-checked={on} className={`up-card${on ? ' is-on' : ''}${multi ? ' is-multi' : ''}`} onClick={() => tap(e.key)}>
+                <span className="up-vis"><UnitVisual tags={e.muscle_groups} icon={e.icon} size={38} max={2} /></span>
+                <b>{e.title}</b>
+              </button>
+            );
+          })}
         </div>
       )}
 
+      {multi && !combo && <p className="up-hint">Tippe mehrere Muskeln an, z. B. Brust + Rücken.</p>}
+
       <div className="up-foot">
+        {combo && (
+          <div className="up-combo" aria-live="polite">
+            <UnitVisual tags={comboMuscles} size={34} max={3} />
+            <b>{comboTitle}</b>
+          </div>
+        )}
+        {error && <p className="up-error" role="alert">{error}</p>}
         {onCreateOwn && (
           <button type="button" className="up-ownbtn" onClick={() => setOwn(true)}>
             <span className="up-ownic" aria-hidden="true">+</span>
             <span><b>Eigene Einheit zusammenstellen</b><small>Muskeln wählen, z. B. Brust + Beine</small></span>
           </button>
         )}
-        <button type="button" className="btn btn-primary" disabled={!chosen} onClick={() => chosen && onPick(chosen)}>Auswählen</button>
+        <button type="button" className="btn btn-primary" disabled={chosenList.length === 0 || busy} onClick={confirm}>{busy ? 'Speichert…' : 'Auswählen'}</button>
       </div>
     </div>
   );
