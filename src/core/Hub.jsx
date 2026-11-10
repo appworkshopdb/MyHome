@@ -36,7 +36,7 @@ import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
 //
 // Verschoben statt entfernt:
 //   HubCalendar                → Bereich "Kalender"     (über "Kalender ›")
-//   abhakbare Habit-Liste      → Bereich "Gewohnheiten" (über die Kachel)
+//   abhakbare Habit-Liste      → Tagesplan; Kachel "Gewohnheiten" öffnet direkt das Modul
 //   Todo-Filterchips + Liste   → Bereich "Aufgaben"     (über "Alle N ›")
 //   vollständige offene Posten → Finanzen, #/finance/offen (Pille "Ansehen")
 //
@@ -69,7 +69,6 @@ const CACHE_KEY = HUB_CACHE_KEY; // Schlüssel/Version: core/lib/hubCache.js
 const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 const BEREICH_TITEL = {
-  gewohnheiten: 'Gewohnheiten heute',
   aufgaben:     'Aufgaben',
   kalender:     'Diese Woche',
 };
@@ -478,54 +477,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     );
   }
 
-  // ── Bereich: Gewohnheiten heute (abhakbar, vergibt Punkte) ──────
-  if (bereich === 'gewohnheiten') {
-    return (
-      <>
-        <ModuleTopBar onBack={() => setBereich(null)} title={BEREICH_TITEL.gewohnheiten} hasWarnings={hasWarnings} />
-        <div className="hub with-topbar-space">
-          <div className="hub-hab-block">
-            <div className="hub-hab-header">
-              <span className="hub-quick-card-label">Heute fällig</span>
-              <span className="hub-hab-count">{habDone} / {habTotal}</span>
-            </div>
-            <div className="hub-hab-progress">
-              <div
-                className="hub-hab-bar"
-                style={{ width: `${habTotal > 0 ? (habDone / habTotal) * 100 : 0}%` }}
-              />
-            </div>
-            <div className="hub-hab-list">
-              {habHabits.length === 0 && (
-                <div className="hub-todo-empty">Heute ist keine Gewohnheit fällig.</div>
-              )}
-              {habHabits.map((h) => {
-                const erledigt = isDone(habEntries, h.id, habTodayStr(), h.target_count);
-                return (
-                  <button
-                    key={h.id}
-                    className={`hub-hab-row ${erledigt ? 'done' : ''}`}
-                    onClick={() => handleToggleHabit(h)}
-                  >
-                    <span className={`hub-hab-check ${erledigt ? 'checked' : ''}`}>
-                      {erledigt && '✓'}
-                    </span>
-                    <span className="hub-hab-icon">{h.icon}</span>
-                    <span className="hub-hab-name">{h.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <button className="hub-area-link" onClick={() => onOpenModule('habits')}>
-            Alle Gewohnheiten verwalten ›
-          </button>
-        </div>
-      </>
-    );
-  }
-
   // ── Bereich: Kalender (Tag/Woche/Monat, inkl. Google-Kalender-Termine) ──
   if (bereich === 'kalender') {
     return (
@@ -707,7 +658,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   </FocusCard.Footer>
                 )}
               </FocusCard>
-              <HabitTile done={habDone} total={habTotal} streak={streak} onPress={() => setBereich('gewohnheiten')} />
+              <HabitTile done={habDone} total={habTotal} streak={streak} onPress={() => onOpenModule('habits')} />
               <TrainingTile
                 workout={dayPlan.workouts[0] ?? null}
                 rest={dayPlan.restDay}
