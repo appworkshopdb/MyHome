@@ -54,6 +54,13 @@ Logik (z. B. `habitsStore.js`, `calendarData.js`) gehört nach `core/lib/`.
 3. **PostgREST muss auf `v13.0.8` gepinnt sein** (ES256-JWT-Verifizierungsbug
    in neueren Versionen). Siehe HOSTING.md §13a. Nach jedem Stack-Rebuild
    (Staging wie Production) prüfen und ggf. erneut downgraden.
+   Der Healthcheck von `rest` ist in `docker-compose.yml` bewusst mit
+   `disable: true` abgeschaltet: v13.0.8 kennt `postgrest --ready` nicht (erst
+   ab v14), und das Image hat weder Shell noch `curl`. Mit dem Standard-
+   Healthcheck aus dem Supabase-Template würde der Container sonst dauerhaft
+   "unhealthy" gemeldet. Beim Upgrade/Rebuild des Stacks nicht zurückändern.
+   Prüfen, dass `docker inspect -f '{{json .State.Health}}' supabase-rest` `null`
+   liefert.
 
 4. **Vault-Wrapper-Funktionen für Google-Refresh-Tokens sind zwei getrennte
    RPCs**, nicht eine kombinierte:
@@ -71,6 +78,48 @@ Logik (z. B. `habitsStore.js`, `calendarData.js`) gehört nach `core/lib/`.
 
 6. **Fonts sind self-hosted**, nicht über Google Fonts/index.html eingebunden
    (Design-System.md ist an dieser Stelle veraltet).
+
+## Server-Betrieb (Staging, Hetzner)
+
+- **Docker geht ohne sudo** (User `nestua` ist in der docker-Gruppe): `docker ps`,
+  `docker logs`, `docker exec`, `docker rmi` funktionieren direkt.
+- **sudo braucht ein Passwort** und geht nur in einem echten Terminal. Eine
+  Claude-Session ohne TTY (auch `!`-Zeilen) scheitert daran. Weg, der geht:
+  Befehl im Terminal-Panel der Desktop-App per `run_in_terminal` starten, den
+  sudo-Prompt tippt der Nutzer selbst. Jeder neue Tab ist eine eigene
+  sudo-Sitzung (Passwort wird je Tab neu verlangt), deshalb Schritte in
+  möglichst wenigen Zeilen bündeln.
+- `/opt/nestua/` und `/opt/nestua/werkstatt/` gehören `nestua` (ohne sudo
+  beschreibbar). `docker-compose.yml` und `.env` in
+  `/opt/nestua/staging/supabase-project/` gehören root und brauchen sudo.
+- **Compose-Änderungen immer so:** (1) Backup `docker-compose.yml.bak-JJJJMMTT`
+  mit `sudo cp -a`, (2) neue Datei einspielen, (3) `sudo docker compose config -q`
+  muss ohne Fehler durchlaufen, erst dann (4) gezielt neu starten
+  (`sudo docker compose up -d --no-deps <service>`), nie den ganzen Stack. Bei
+  Fehler Backup zurückkopieren.
+- **Nach einem Neustart prüfen:** `docker ps`, `docker logs --tail 15 <service>`,
+  `curl -s -o /dev/null -w '%{http_code}' https://api-staging.nestua.de/rest/v1/`
+  (ohne Key erwartet: 401) und dass `supabase-envoy` keine 502/503 liefert.
+- Der Gateway auf Staging ist `supabase-envoy` (Image `envoyproxy/envoy`), nicht
+  Kong. `/opt/nestua/produktion/` enthält dagegen noch eine `kong.yml` und in
+  der dortigen `docker-compose.yml` steht für `rest` noch `postgrest:v12.2.3`
+  (nicht v13.0.8). Vor jeder Produktions-Änderung klären, ob diese Datei der
+  echte Stand ist.
+
+### Backup-Restore-Test
+
+`/opt/nestua/ops/restore-test.sh` spielt das Tages-Backup
+(`/opt/nestua/backups/nestua_db-postgres_<Datum>.dump.gpg`) in einen
+Wegwerf-Container `postgres:17` ein (`--network none`) und vergleicht die
+Zeilenzahlen von `fin_entries`, `nut_foods`, `spo_workouts` und
+`analytics_events` mit `supabase-db`. Der Container wird am Ende entfernt.
+Fehlermeldungen landen in `/opt/nestua/ops/restore-errors.txt`.
+
+Erwartbare Fehler, die KEIN Datenverlust sind: `pg_cron`, `pg_net` und
+`supabase_vault` fehlen in `postgres:17` (in `supabase/postgres` vorhanden).
+Alle anderen Fehlerzeilen ernst nehmen. Das Skript ist bisher nur kopiert,
+noch nicht regulär ausgeführt/automatisiert. Das Datum im Skript ist fest
+eingetragen und muss pro Lauf angepasst werden.
 
 ## Google-Kalender-Integration (Kurzüberblick)
 
