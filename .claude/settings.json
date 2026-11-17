@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(//opt/nestua/staging/supabase-project/.env)",
+      "Read(//opt/nestua/backup.env)",
+      "Read(//opt/nestua/ops/notify.env)",
+      "Read(//opt/nestua/produktion/.env)",
+      "Read(~/.ssh/github_myhome_deploy)",
+      "Read(~/.ssh/storagebox_key)",
+      "Read(~/.git-credentials)",
+      "Read(**/*.gpg)",
+      "Edit(//opt/nestua/staging/supabase-project/.env)",
+      "Edit(//opt/nestua/backup.env)",
+      "Edit(//opt/nestua/ops/notify.env)",
+      "Edit(//opt/nestua/produktion/.env)",
+      "Edit(~/.ssh/github_myhome_deploy)",
+      "Edit(~/.ssh/storagebox_key)",
+      "Edit(~/.git-credentials)",
+      "Edit(**/*.gpg)",
+      "Bash(docker compose down*)",
+      "Bash(docker volume rm*)",
+      "Bash(docker system prune*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(crontab -r*)"
+    ],
+    "ask": [
+      "Bash(sudo *)",
+      "Bash(git push*)",
+      "Bash(docker compose up*)",
+      "Bash(docker restart*)",
+      "Bash(docker stop*)",
+      "Bash(systemctl restart*)",
+      "Bash(systemctl stop*)",
+      "Bash(crontab -)",
+      "Bash(crontab -e*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-secrets.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

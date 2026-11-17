@@ -160,6 +160,11 @@ const CHECKS = {
     return v === String(c.expect) ? R('ok', 'da', `${c.label}: vorhanden`) : R('bad', 'fehlt', `${c.label}: erwartet ${c.expect}, gefunden ${v}`);
   },
   async file(c) { return (await exists(c.path)) ? R('ok', 'da', c.path) : R('bad', 'fehlt', c.path); },
+  async contains(c) {
+    let txt = '';
+    try { txt = await readFile(c.path, 'utf8'); } catch { return R('bad', 'fehlt', c.path); }
+    return txt.includes(c.text) ? R('ok', 'aktiv', `${c.path} enthält ${c.what || c.text}`) : R('bad', 'fehlt', `${c.path} enthält ${c.what || c.text} nicht`);
+  },
   async cron(c) {
     let tab = '';
     try { tab = await run('crontab', ['-l']); } catch { tab = ''; }
@@ -184,11 +189,12 @@ async function main() {
   const polar = ([deg, r]) => [Math.round(Math.cos(deg * Math.PI / 180) * r), Math.round(Math.sin(deg * Math.PI / 180) * r)];
   const nodes = reg.nodes.map((n) => {
     const o = { ...n, pos: n.pos || polar(n.polar) }; delete o.polar;
-    if (n.kind === 'agent' && n.builds) {
+    if (n.builds) {
       const done = n.builds.filter((b) => checks[b]?.status === 'ok').length;
+      const all = done === n.builds.length;
       o.progress = [done, n.builds.length];
-      o.status = done === n.builds.length ? 'ok' : 'build';
-      o.value = done === n.builds.length ? 'bereit' : `Aufbau ${done}/${n.builds.length}`;
+      if (n.kind === 'agent') { o.status = all ? 'ok' : 'build'; o.value = all ? 'bereit' : `Aufbau ${done}/${n.builds.length}`; }
+      else { o.status = all ? 'ok' : 'warn'; o.value = `${done}/${n.builds.length}`; }
     } else if (n.state === 'plan') { o.status = 'plan'; o.value = n.kind === 'agent' ? (n.id === 'social' ? 'später' : 'geplant') : 'extern'; }
     else if (n.check) { o.status = checks[n.check].status; o.value = checks[n.check].value; }
     return o;
