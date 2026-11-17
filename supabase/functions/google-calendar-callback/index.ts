@@ -73,14 +73,26 @@ Deno.serve(async (req) => {
       .eq('owner_id', oauthState.owner_id)
       .maybeSingle();
 
+    // Live-DB hat zwei getrennte Vault-Wrapper-Funktionen statt einer
+    // kombinierten: store_google_refresh_token(p_owner_id, p_token) legt
+    // ein neues Secret an, update_google_refresh_token(p_secret_id, p_token)
+    // überschreibt ein bestehendes.
     let secretId = existing?.refresh_token_secret_id ?? null;
     if (refreshToken) {
-      const { data, error: secretError } = await supabase.rpc('store_google_refresh_token', {
-        p_secret_id: secretId,
-        p_refresh_token: refreshToken,
-      });
-      if (secretError) throw secretError;
-      secretId = data;
+      if (secretId) {
+        const { error: updateError } = await supabase.rpc('update_google_refresh_token', {
+          p_secret_id: secretId,
+          p_token: refreshToken,
+        });
+        if (updateError) throw updateError;
+      } else {
+        const { data, error: secretError } = await supabase.rpc('store_google_refresh_token', {
+          p_owner_id: oauthState.owner_id,
+          p_token: refreshToken,
+        });
+        if (secretError) throw secretError;
+        secretId = data;
+      }
     }
     if (!secretId) throw new Error('Google hat keinen Refresh-Token geliefert. Bitte die Verbindung bei Google widerrufen und erneut verbinden.');
 
