@@ -20,6 +20,10 @@ Alle Texte, die ich im Namen des Projekts schreibe (Content, Social-Media-Posts,
 stehen IMMER in der Ich-Perspektive eines einzelnen Vibe Coders: "mein", "ich baue" — nie "wir"/"unser"/"unsere".
 Nicht gemeint sind die Texte in der App selbst (UI): dort bleibt die bestehende Ansprache.
 
+## Zeitangaben
+
+Uhrzeiten immer in Berlin-Zeit (Europe/Berlin) angeben und einstellen, auch in Berichten, im Leitstand und bei Zeitplänen. UTC nur, wo ein System nichts anderes kann, dann mit Berlin-Zeit daneben (Winter UTC+1, Sommer UTC+2). Server-Uhr seit 17.11.2026 in Europe/Berlin (crontab von `nestua` also in Berlin-Zeit, Backup 03:30). pg_cron (`cron.timezone = GMT`) und die Docker-Container laufen weiter in UTC.
+
 ## Architektur-Grundregel
 
 `core/` darf NICHT aus `modules/` importieren. Umgekehrt schon. Gemeinsame
