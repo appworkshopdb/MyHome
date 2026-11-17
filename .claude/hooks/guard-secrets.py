@@ -48,10 +48,12 @@ RULES = [
 
 
 def check(cmd: str):
-    if SECRET_FILE.search(cmd) and SHOW_TOOL.search(cmd) and not HASH_ONLY.search(cmd):
-        return ("Befehl würde eine Geheimnis-Datei (.env, backup.env, notify.env, *.gpg, SSH-Schlüssel) lesen "
-                "oder kopieren. Erlaubt: Rechte/Existenz prüfen, Schlüsselnamen ohne Werte, Hash-Vergleich. "
-                "Werte trägt der Nutzer selbst ein.")
+    # Dateiregel je Teilbefehl (Zeile, ;, &&, ||), Pipes bleiben zusammen (cat x | sha256sum ist erlaubt)
+    for seg in (s.strip() for s in re.split(r"\n|;|&&|\|\|", cmd)):
+        if SECRET_FILE.search(seg) and SHOW_TOOL.search(seg) and not HASH_ONLY.search(seg):
+            return ("Befehl würde eine Geheimnis-Datei (.env, backup.env, notify.env, *.gpg, SSH-Schlüssel) lesen "
+                    "oder kopieren. Erlaubt: Rechte/Existenz prüfen, Schlüsselnamen ohne Werte, Hash-Vergleich. "
+                    "Werte trägt der Nutzer selbst ein.")
     for rx, msg in RULES:
         if not rx.search(cmd):
             continue

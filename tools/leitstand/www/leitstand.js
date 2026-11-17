@@ -62,7 +62,7 @@ function nodeHTML(n) {
   if (n.kind === 'system') {
     const s = D.system, ids = s.ids;
     const pillS = s.bad ? 'bad' : s.warn ? 'warn' : 'ok';
-    const pillT = s.bad ? `${s.bad} Fehler` : s.warn ? `${s.warn} Hinweise` : 'alles grün';
+    const pillT = s.bad ? `${s.bad} Fehler` : s.warn ? `${s.warn} ${s.warn === 1 ? 'Hinweis' : 'Hinweise'}` : 'alles grün';
     return `<div class="hd"><span class="ic s-flow">${svg('pulse')}</span><span class="nt">System</span><span class="pill s-${pillS} live" style="margin-left:auto"><i></i>${pillT}</span></div>
       <div class="big s-${s.ok === s.total ? 'ok' : pillS}"><b>${s.ok}/${s.total}</b><span>Prüfungen grün</span></div>
       <div class="bar">${ids.map((id) => `<i class="s-${chk(id).status}"></i>`).join('')}</div>
@@ -112,7 +112,11 @@ function panelBody(n) {
   const deps = linked(n.id).filter((x) => x.n.kind === 'res');
   if (deps.length) h += `<div><div class="sec">Liest und meldet</div>${deps.map((d) => `<div class="dep s-${d.n.status}"><i></i>${esc(d.n.name)}<em>${esc(d.n.value || WORD[d.n.status])}</em></div>`).join('')}</div>`;
   if (n.zust) h += `<div><div class="sec">Zuständig für</div><div class="chips">${n.zust.map((z) => `<span>${esc(z)}</span>`).join('')}</div></div>`;
-  if (n.kind === 'agent' && n.status !== 'plan') h += `<div><div class="sec">Läufe</div><div class="sec">Noch keiner. Berichte erscheinen hier ab Phase 3.</div></div>`;
+  if (n.id === 'server') {
+    const r = D.lastReport;
+    const st = r ? ({ 'grün': 'ok', 'gelb': 'warn', 'rot': 'bad' })[r.status] || 'warn' : 'plan';
+    h += `<div><div class="sec">Letzter Bericht</div>${r ? `<div class="dep s-${st}"><i></i>${esc(r.datum.split('-').reverse().join('.'))}, ${esc(r.zeit)} Uhr<em>${esc(r.status)}</em></div><div class="det">${esc(r.file)}</div>` : '<div class="sec">Noch keiner.</div>'}</div>`;
+  } else if (n.kind === 'agent' && n.status !== 'plan') h += `<div><div class="sec">Läufe</div><div class="sec">Noch keiner.</div></div>`;
   return h;
 }
 

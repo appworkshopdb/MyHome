@@ -29,7 +29,10 @@ ALLOW = [
     "git push origin staging", "echo 'git push origin staging'\nx += [1]", "docker compose ps\necho down",
     "rm -rf /tmp/claude-1000/x", "rm -r ./build", "chgrp nestua /opt/nestua/staging/supabase-project/.env",
     "node /opt/nestua/ops/leitstand/scan.mjs --print", "git status --short", "/usr/bin/env node -v",
+    "python3 - <<'EOF'\nhint = 'HC_PING_URL in /opt/nestua/backup.env eintragen'\nEOF",
+    "cd /x && ls\npython3 -c 'x=1'\necho backup.env",
 ]
+BLOCK += ["ls && cat /opt/nestua/backup.env", "echo x\ngrep KEY .env"]
 
 
 def code(cmd):

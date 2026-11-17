@@ -172,7 +172,8 @@ Diese Abschnitte stehen nicht mehr hier, damit jede Sitzung schnell startet. **V
 
 `nestua-visual-check` (App mit Testdaten starten, Screenshots Hell/Dunkel, Textsuche), `nestua-mockup` (Entwürfe als Mockup-Seite
 bauen), `nestua-design-umbau` (Seite ins neue Design bringen, mit Checkliste und Stand, welche Seiten schon umgebaut sind),
-`nestua-backlog` (Backlog im Obsidian-Vault).
+`nestua-backlog` (Backlog im Obsidian-Vault), `nestua-server-check` (Server prüfen: `/opt/nestua/ops/server-check.sh`,
+Bericht in `/opt/nestua/ops/reports/`, Befunde mit Beleg erklären, nur nach OK ändern).
 
 **Backlog = Obsidian-Vault im privaten Repo `appworkshopdb/nestua-notes`** (lokal im Ordner `Nestua/`, dort Ordner `Backlog/`, dazu `Entscheidungen/`,
 `Architektur/`, `Ideen/`, `Betrieb/`). Der Ordner steht in `.gitignore` und ist nie Teil dieses Repos. Linear wird nicht mehr genutzt.

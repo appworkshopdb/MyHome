@@ -207,6 +207,12 @@ async function main() {
     const src = res || (A.kind === 'core' ? B : A);
     return [a, b, src.status || 'plan'];
   });
+  let lastReport = null;
+  try {
+    const dir = '/opt/nestua/ops/reports';
+    const f = (await readdir(dir)).filter((x) => /^server-.*\.json$/.test(x)).sort().at(-1);
+    if (f) { const r = JSON.parse(await readFile(path.join(dir, f), 'utf8')); lastReport = { datum: r.datum, zeit: r.zeit, status: r.status, file: path.join(dir, f.replace(/\.json$/, '.md')) }; }
+  } catch { /* noch kein Bericht */ }
   const sys = reg.system.map((id) => checks[id]);
   const now = new Date();
   const data = {
@@ -214,14 +220,14 @@ async function main() {
     generatedText: `${fmtDate(now)}, ${fmtTime(now)}`,
     durationMs: Date.now() - t0,
     system: { ids: reg.system, ok: sys.filter((c) => c.status === 'ok').length, warn: sys.filter((c) => c.status === 'warn').length, bad: sys.filter((c) => c.status === 'bad').length, total: sys.length },
-    checks, nodes, edges, tasks
+    checks, nodes, edges, tasks, lastReport
   };
   await mkdir(OUT_DIR, { recursive: true });
   const tmp = path.join(OUT_DIR, `.leitstand.${process.pid}.tmp`);
   await writeFile(tmp, JSON.stringify(data, null, 1));
   await rename(tmp, path.join(OUT_DIR, 'leitstand.json'));
   if (process.argv.includes('--print')) {
-    console.log(`Leitstand-Scan ${data.generatedText} (${data.durationMs} ms): System ${data.system.ok}/${data.system.total} grün, ${data.system.warn} Hinweise, ${data.system.bad} Fehler`);
+    console.log(`Leitstand-Scan ${data.generatedText} (${data.durationMs} ms): System ${data.system.ok}/${data.system.total} grün, ${data.system.warn} ${data.system.warn === 1 ? 'Hinweis' : 'Hinweise'}, ${data.system.bad} Fehler`);
     for (const [id, c] of Object.entries(checks)) console.log(`  ${c.status.padEnd(4)} ${c.label.padEnd(26)} ${String(c.value).padEnd(14)} ${c.detail}`);
   }
 }

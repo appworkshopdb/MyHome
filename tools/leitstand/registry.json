@@ -18,18 +18,21 @@
   "checks": {
     "container": {
       "type": "docker",
-      "label": "Container"
+      "label": "Container",
+      "hint": "docker ps -a prüfen, Logs des betroffenen Dienstes lesen (docker logs --tail 50 <name>), dann gezielt neu starten."
     },
     "backup": {
       "type": "backup",
       "label": "Backup",
       "dir": "/opt/nestua/backups/logs",
-      "maxAgeHours": 26
+      "maxAgeHours": 26,
+      "hint": "Log in /opt/nestua/backups/logs/ lesen; healthchecks.io zeigt den Fehler ebenfalls. Bei Bedarf von Hand starten: /opt/nestua/backup.sh"
     },
     "cronhttp": {
       "type": "cronhttp",
       "label": "Cron",
-      "hours": 3
+      "hours": 3,
+      "hint": "Antworten in net._http_response und Logs der Edge Functions prüfen; Schlüssel kommen aus dem Vault-Secret service_role_key."
     },
     "endpoints": {
       "type": "http",
@@ -59,17 +62,20 @@
             401
           ]
         }
-      ]
+      ],
+      "hint": "Caddy (systemctl status caddy) und den betroffenen Dienst prüfen."
     },
     "fnsync": {
       "type": "fnsync",
       "label": "Functions",
       "repo": "/opt/nestua/werkstatt/supabase/functions",
-      "live": "/opt/nestua/staging/supabase-project/volumes/functions"
+      "live": "/opt/nestua/staging/supabase-project/volumes/functions",
+      "hint": "Abweichung mit tools/deploy-functions.sh <name> --dry-run ansehen; Live-Änderungen zuerst ins Repo holen."
     },
     "rls": {
       "type": "rls",
-      "label": "RLS"
+      "label": "RLS",
+      "hint": "Neue Tabelle ohne RLS oder anon-Rechte: Migration prüfen, RLS einschalten, Policies ergänzen (nur nach OK)."
     },
     "perms": {
       "type": "perms",
@@ -80,7 +86,8 @@
         "/opt/nestua/produktion/.env",
         "/opt/nestua/ops/notify.env"
       ],
-      "noOtherWriteDir": "/opt/nestua/staging/supabase-project/volumes/functions"
+      "noOtherWriteDir": "/opt/nestua/staging/supabase-project/volumes/functions",
+      "hint": "Rechte zurücksetzen (Geheimnis-Dateien 640 root:nestua bzw. 600, Function-Ordner 755)."
     },
     "tls": {
       "type": "tls",
@@ -91,35 +98,41 @@
         "studio.nestua.de",
         "leitstand.nestua.de"
       ],
-      "warnDays": 14
+      "warnDays": 14,
+      "hint": "Caddy erneuert selbst; sonst DNS und Erreichbarkeit von Port 80/443 prüfen."
     },
     "caddy": {
       "type": "same",
       "label": "Caddy",
       "a": "/etc/caddy/Caddyfile",
-      "b": "/opt/nestua/ops/reference/Caddyfile"
+      "b": "/opt/nestua/ops/reference/Caddyfile",
+      "hint": "Unterschied zwischen /etc/caddy/Caddyfile und der Referenzkopie ansehen; gewollte Änderung: Referenzkopie aktualisieren."
     },
     "disk": {
       "type": "disk",
       "label": "Platte",
-      "warnPercent": 80
+      "warnPercent": 80,
+      "hint": "Größte Verbraucher suchen, alte Docker-Images auflisten, nichts ohne OK löschen."
     },
     "hook": {
       "type": "envset",
       "label": "Hook",
       "file": "/opt/nestua/backup.env",
       "key": "HC_PING_URL",
-      "missing": "warn"
+      "missing": "warn",
+      "hint": "HC_PING_URL in der Backup-Konfiguration eintragen (Nutzer)."
     },
     "reboot": {
       "type": "reboot",
-      "label": "Neustart"
+      "label": "Neustart",
+      "hint": "Neustart zu ruhiger Zeit planen (Nutzer, sudo shutdown -r <zeit>)."
     },
     "vault": {
       "type": "sql",
       "label": "Vault-Secret",
       "query": "select count(*) from vault.secrets where name = 'service_role_key'",
-      "expect": "1"
+      "expect": "1",
+      "hint": "Vault-Secret service_role_key fehlt: Cron-Jobs scheitern. Aus der Umgebung der Edge Functions neu anlegen (ohne Ausgabe)."
     },
     "notify": {
       "type": "file",
