@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "about": "Register des Leitstands: Knoten, Verbindungen und Prüfungen. Der Scan (scan.mjs) führt die Prüfungen aus und schreibt www/data/leitstand.json. Keine Geheimnisse hier eintragen; envset prüft nur, ob ein Wert gesetzt ist.",
+
+  "system": ["container", "backup", "cronhttp", "endpoints", "fnsync", "rls", "perms", "tls", "caddy", "disk", "hook", "reboot"],
+
+  "checks": {
+    "container": { "type": "docker", "label": "Container" },
+    "backup":    { "type": "backup", "label": "Backup", "dir": "/opt/nestua/backups/logs", "maxAgeHours": 26 },
+    "cronhttp":  { "type": "cronhttp", "label": "Cron", "hours": 3 },
+    "endpoints": { "type": "http", "label": "Endpunkte", "targets": [
+      { "url": "https://staging.nestua.de/", "expect": [200] },
+      { "url": "https://api-staging.nestua.de/rest/v1/", "expect": [401] },
+      { "url": "https://studio.nestua.de/", "expect": [401] },
+      { "url": "https://leitstand.nestua.de/", "expect": [401] }
+    ] },
+    "fnsync":    { "type": "fnsync", "label": "Functions", "repo": "/opt/nestua/werkstatt/supabase/functions", "live": "/opt/nestua/staging/supabase-project/volumes/functions" },
+    "rls":       { "type": "rls", "label": "RLS" },
+    "perms":     { "type": "perms", "label": "Datei-Rechte",
+      "noOtherRead": ["/opt/nestua/staging/supabase-project/.env", "/opt/nestua/staging/supabase-project/.env.old", "/opt/nestua/staging/supabase-project/.env.bak-2026-10-13", "/opt/nestua/backup.env", "/opt/nestua/produktion/.env", "/opt/nestua/ops/notify.env"],
+      "noOtherWriteDir": "/opt/nestua/staging/supabase-project/volumes/functions" },
+    "tls":       { "type": "tls", "label": "Zertifikate", "hosts": ["staging.nestua.de", "api-staging.nestua.de", "studio.nestua.de", "leitstand.nestua.de"], "warnDays": 14 },
+    "caddy":     { "type": "same", "label": "Caddy", "a": "/etc/caddy/Caddyfile", "b": "/opt/nestua/ops/reference/Caddyfile" },
+    "disk":      { "type": "disk", "label": "Platte", "warnPercent": 80 },
+    "hook":      { "type": "envset", "label": "Hook", "file": "/opt/nestua/backup.env", "key": "HC_PING_URL", "missing": "warn" },
+    "reboot":    { "type": "reboot", "label": "Neustart" },
+
+    "vault":     { "type": "sql", "label": "Vault-Secret", "query": "select count(*) from vault.secrets where name = 'service_role_key'", "expect": "1" },
+    "notify":    { "type": "file", "label": "notify.env", "path": "/opt/nestua/ops/notify.env" },
+    "reports":   { "type": "file", "label": "Berichte", "path": "/opt/nestua/ops/reports" },
+    "srvcheck":  { "type": "file", "label": "server-check.sh", "path": "/opt/nestua/ops/server-check.sh" },
+    "srvskill":  { "type": "file", "label": "Skill nestua-server-check", "path": "/opt/nestua/werkstatt/.claude/skills/nestua-server-check/SKILL.md" },
+    "srvcron":   { "type": "cron", "label": "Cron 06:00", "pattern": "server-check" },
+    "restore":   { "type": "file", "label": "restore-test.sh", "path": "/opt/nestua/ops/restore-test.sh" },
+    "scancron":  { "type": "cron", "label": "Scan alle 5 Minuten", "pattern": "leitstand/scan.mjs" }
+  },
+
+  "nodes": [
+    { "id": "core", "kind": "core", "pos": [0, 0] },
+    { "id": "system", "kind": "system", "pos": [-860, 0] },
+    { "id": "gate", "kind": "gate", "pos": [480, 0] },
+    { "id": "todo", "kind": "todo", "pos": [820, 0] },
+    { "id": "done", "kind": "done", "pos": [1170, 0] },
+
+    { "id": "server", "kind": "agent", "state": "build", "icon": "server", "name": "Server & DB", "sub": "Hetzner, täglich 06:00", "phase": "Phase 2", "polar": [-90, 310],
+      "builds": ["srvcheck", "srvskill", "srvcron", "restore", "reports", "notify", "hook"],
+      "info": [["Auslöser", "täglich 06:00"], ["KI", "nur bei gelb oder rot"], ["Rechte", "lesen, Bericht schreiben"], ["Freiheit", "Stufe 1, nur vorschlagen"], ["Rundenlimit", "15"], ["Meldung", "Google Chat"]],
+      "zust": ["Backup", "Container", "Cron-Jobs", "RLS und Rechte", "Functions", "Caddy", "Neustart"] },
+    { "id": "backup", "kind": "tool", "icon": "db", "name": "Backup", "sub": "täglich 03:30", "check": "backup", "polar": [-138, 310],
+      "info": [["Skript", "/opt/nestua/backup.sh"], ["Aufbewahrung", "7 Tage, 4 Wochen, 6 Monate"]] },
+    { "id": "cron", "kind": "tool", "icon": "clock", "name": "Cron-Jobs", "sub": "4 Jobs in pg_cron", "check": "cronhttp", "polar": [-42, 310],
+      "info": [["send-notifications", "stündlich"], ["google-calendar-sync", "alle 2 Stunden"], ["analytics-rollup", "03:15"], ["cron-history-cleanup", "04:45"]] },
+    { "id": "restore", "kind": "tool", "icon": "box", "name": "Restore-Test", "sub": "vierteljährlich", "check": "restore", "polar": [-160, 310],
+      "info": [["Skript", "/opt/nestua/ops/restore-test.sh"], ["Letzter Test", "17.11.2026, bestanden"], ["Nächster", "Februar 2027"]] },
+    { "id": "scan", "kind": "tool", "icon": "pulse", "name": "Leitstand-Scan", "sub": "alle 5 Minuten", "check": "scancron", "polar": [-18, 310],
+      "info": [["Skript", "/opt/nestua/ops/leitstand/scan.mjs"], ["Schreibt", "www/data/leitstand.json"], ["Rechte", "nur lesen"]] },
+    { "id": "kontext", "kind": "agent", "state": "plan", "icon": "cloud", "name": "Kontext & Status", "sub": "Cloud, montags", "polar": [30, 310],
+      "info": [["Auslöser", "Cloud-Routine, montags"], ["Rechte", "lesen, Vault schreiben"], ["Freiheit", "Stufe 3"]], "zust": ["Backlog", "Wochenübersicht", "Start-Hook"] },
+    { "id": "pruefer", "kind": "agent", "state": "plan", "icon": "git", "name": "Prüfer", "sub": "GitHub, bei jedem PR", "polar": [72, 310],
+      "info": [["Auslöser", "jeder PR gegen main"], ["Rechte", "nur lesen"], ["Vorher", "Regelskript, SQL-Prüfung, Secret-Scan"]], "zust": ["Fehlerliste CLAUDE.md", "Migrationen", "Dependabot"] },
+    { "id": "dsgvo", "kind": "agent", "state": "plan", "icon": "shield", "name": "Datenschutz", "sub": "Cloud, monatlich", "polar": [112, 310],
+      "info": [["Auslöser", "monatlich"], ["Rechte", "nur lesen"], ["Ausgabe", "Notiz im Vault"]], "zust": ["Datenschutzerklärung", "Kontolöschung", "Aufbewahrung"] },
+    { "id": "social", "kind": "agent", "state": "plan", "icon": "chat", "name": "Social Media", "sub": "Cloud, wöchentlich", "polar": [150, 310],
+      "info": [["Auslöser", "wöchentlich"], ["Rechte", "nur Entwurf zur Prüfung"], ["Start", "nach Kontenauswahl"]], "zust": ["Beiträge in Ich-Perspektive"] },
+
+    { "id": "gchat", "kind": "res", "icon": "send", "name": "Google Chat", "where": "/opt/nestua/ops/notify.env", "check": "notify", "note": "Webhook-Adresse trägst du ein", "polar": [-166, 560] },
+    { "id": "reports", "kind": "res", "icon": "folder", "name": "Berichte", "where": "/opt/nestua/ops/reports/", "check": "reports", "polar": [-146, 560] },
+    { "id": "storage", "kind": "res", "icon": "hdd", "name": "Storage Box", "where": "rsync, verschlüsselt (GPG)", "check": "backup", "polar": [-127, 560] },
+    { "id": "docker", "kind": "res", "icon": "box", "name": "Docker", "where": "Container, unless-stopped", "check": "container", "polar": [-108, 560] },
+    { "id": "db", "kind": "res", "icon": "db", "name": "supabase-db", "where": "Postgres 17, RLS, pg_cron", "check": "rls", "polar": [-90, 560] },
+    { "id": "caddy", "kind": "res", "icon": "file", "name": "Caddyfile", "where": "/etc/caddy/Caddyfile", "check": "caddy", "polar": [-72, 560] },
+    { "id": "vault", "kind": "res", "icon": "key", "name": "Vault-Secret", "where": "service_role_key", "check": "vault", "polar": [-54, 560] },
+    { "id": "fn", "kind": "res", "icon": "folder", "name": "Edge Functions", "where": "volumes/functions = Repo", "check": "fnsync", "polar": [-36, 560] },
+    { "id": "hc", "kind": "res", "icon": "pulse", "name": "healthchecks.io", "where": "HC_PING_URL in backup.env", "check": "hook", "note": "trägst du ein", "polar": [-16, 560] },
+    { "id": "notes", "kind": "res", "state": "plan", "icon": "book", "name": "Notiz-Vault", "where": "nestua-notes (Cloud)", "polar": [40, 560] },
+    { "id": "github", "kind": "res", "state": "plan", "icon": "git", "name": "GitHub", "where": "appworkshopdb/MyHome", "polar": [90, 560] },
+    { "id": "metricool", "kind": "res", "state": "plan", "icon": "chat", "name": "Metricool", "where": "nur Entwurf zur Prüfung", "polar": [140, 560] }
+  ],
+
+  "edges": [
+    ["system", "core", "flow"], ["core", "gate", "flow"], ["gate", "todo", "warn"], ["todo", "done", "ok"],
+    ["server", "core"], ["backup", "core"], ["cron", "core"], ["restore", "core"], ["scan", "core"],
+    ["kontext", "core"], ["pruefer", "core"], ["dsgvo", "core"], ["social", "core"],
+    ["docker", "server"], ["db", "server"], ["caddy", "server"], ["fn", "server"],
+    ["server", "reports"], ["server", "gchat"], ["server", "hc"],
+    ["backup", "storage"], ["backup", "hc"], ["db", "backup"],
+    ["vault", "cron"], ["cron", "fn"], ["cron", "db"],
+    ["db", "restore"], ["docker", "restore"],
+    ["docker", "scan"], ["db", "scan"], ["caddy", "scan"], ["fn", "scan"],
+    ["notes", "kontext"], ["github", "kontext"], ["github", "pruefer"],
+    ["github", "dsgvo"], ["notes", "dsgvo"], ["social", "metricool"]
+  ]
+}
