@@ -87,20 +87,26 @@ Logik (z. B. `habitsStore.js`, `calendarData.js`) gehört nach `core/lib/`.
 
 - **Docker geht ohne sudo** (User `nestua` ist in der docker-Gruppe): `docker ps`,
   `docker logs`, `docker exec`, `docker rmi` funktionieren direkt.
-- **sudo braucht ein Passwort** und geht nur in einem echten Terminal. Eine
-  Claude-Session ohne TTY (auch `!`-Zeilen) scheitert daran. Weg, der geht:
-  Befehl im Terminal-Panel der Desktop-App per `run_in_terminal` starten, den
-  sudo-Prompt tippt der Nutzer selbst. Jeder neue Tab ist eine eigene
-  sudo-Sitzung (Passwort wird je Tab neu verlangt), deshalb Schritte in
-  möglichst wenigen Zeilen bündeln.
-- `/opt/nestua/` und `/opt/nestua/werkstatt/` gehören `nestua` (ohne sudo
-  beschreibbar). `docker-compose.yml` und `.env` in
-  `/opt/nestua/staging/supabase-project/` gehören root und brauchen sudo.
-- **Compose-Änderungen immer so:** (1) Backup `docker-compose.yml.bak-JJJJMMTT`
-  mit `sudo cp -a`, (2) neue Datei einspielen, (3) `sudo docker compose config -q`
-  muss ohne Fehler durchlaufen, erst dann (4) gezielt neu starten
-  (`sudo docker compose up -d --no-deps <service>`), nie den ganzen Stack. Bei
-  Fehler Backup zurückkopieren.
+- **sudo braucht ein Passwort** und geht nur in einem echten Terminal (Terminal-Panel
+  der Desktop-App per `run_in_terminal`, der Nutzer tippt das Passwort). Ohne Passwort
+  freigegeben ist nur `sudo systemctl reload caddy` (`/etc/sudoers.d/nestua-ops`,
+  Vorlage `/opt/nestua/ops/reference/sudoers-nestua-ops`). Nicht mehr nötig für:
+  `docker compose` (läuft über die docker-Gruppe, aus dem Projektordner, weil die
+  `.env` `COMPOSE_FILE` relativ setzt) und `caddy validate`.
+- **Rechte (seit 17.11.2026):** `/etc/caddy/Caddyfile` und `docker-compose.yml` gehören
+  `root:nestua` mit `664` (ohne sudo änderbar), `.env` `root:nestua` mit `640`.
+  Die Ordner `/etc/caddy` und `supabase-project/` gehören root: Sicherungen deshalb
+  nach `/opt/nestua/ops/backups/<bereich>/` legen, nicht daneben.
+- **Caddy-Änderungen:** Sicherung nach `ops/backups/caddy/`, Datei ändern,
+  `caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile`, dann
+  `sudo systemctl reload caddy` (nie restart), danach Referenzkopie
+  `install -m 600 /etc/caddy/Caddyfile /opt/nestua/ops/reference/Caddyfile`.
+- **Compose-Änderungen:** Sicherung nach `ops/backups/compose/`, Datei ändern, im
+  Projektordner `docker compose config -q`, dann gezielt
+  `docker compose up -d --no-deps <service>`, nie den ganzen Stack.
+- **GitHub vom Server:** Push über den Deploy-Key `~/.ssh/github_myhome_deploy`
+  (nur `appworkshopdb/MyHome`, Remote `git@github-myhome:appworkshopdb/MyHome.git`).
+  Commits als `Claude <noreply@anthropic.com>`; der Server hat sonst keinen GitHub-Zugang.
 - **Nach einem Neustart prüfen:** `docker ps`, `docker logs --tail 15 <service>`,
   `curl -s -o /dev/null -w '%{http_code}' https://api-staging.nestua.de/rest/v1/`
   (ohne Key erwartet: 401) und dass `supabase-envoy` keine 502/503 liefert.
