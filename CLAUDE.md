@@ -279,6 +279,10 @@ Anrechnung aufs Tageslimit von 2 (sonst würden sie Finanzen/Aufgaben an Montage
 verdrängen); Throttle 6 bzw. 25 Tage. Toggles "Wochenüberblick"/"Monatsüberblick" im Menü
 (`AppMenu.jsx`, Standard an). Test: `?test_owner=<uuid>&test_category=weekly_recap` bzw.
 `monthly_recap` (rechnet mit der letzten vollen Woche/dem letzten vollen Monat).
+Die Function nimmt nur Aufrufe mit `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` an
+(so ruft pg_cron auf), alles andere bekommt 401 — auch Tests mit `test_owner`. Die Edge
+Runtime läuft mit `VERIFY_JWT=false`, die Prüfung steht deshalb in der Function selbst.
+Den Schlüssel nie ausgeben oder in Befehle schreiben, die im Verlauf landen.
 
 ## Lebensmittel-Katalog (Ernährung)
 
