@@ -2,8 +2,8 @@ import { PREDEFINED_UNITS } from './data/predefinedUnits';
 import { getSport, sportTypeKey } from '../../../core/lib/sportsData';
 
 // Ein Katalog für die Einheiten-Auswahl (Plan-Wizard und Plan-Editor).
-// Kategorien: split · muskel · kombi (zusammen "Kraft"), aus, beweg, sport
-// (Sportarten aus dem Profil), eigen (eigene Einheiten).
+// Kategorien: split · muskel · kombi (zusammen "Kraft"), aus, beweg ("Mobility"), sport
+// (Sportarten aus dem Profil) und eigen (eigene Einheiten) — die beiden letzten stehen im Reiter "Eigene".
 //
 // Eintrag: { key, title, type_key, muscle_groups, icon, cat, own?, duration_min? }
 //   key  'pre.*' (vordefiniert), 'sport.<key>' (Sportart) oder die uuid einer eigenen Einheit.
@@ -11,9 +11,9 @@ import { getSport, sportTypeKey } from '../../../core/lib/sportsData';
 export const UNIT_TABS = [
   { key: 'kraft', label: 'Kraft', cats: ['split', 'muskel', 'kombi'] },
   { key: 'aus', label: 'Ausdauer', cats: ['aus'] },
-  { key: 'beweg', label: 'Beweglichkeit', cats: ['beweg'] },
-  { key: 'sport', label: 'Sport', cats: ['sport'] },
-  { key: 'eigen', label: 'Eigene', cats: ['eigen'] },
+  { key: 'beweg', label: 'Mobility', cats: ['beweg'] },
+  // Eigene Einheiten und die Sportarten aus dem Profil (früher eigener Reiter "Sport")
+  { key: 'eigen', label: 'Eigene', cats: ['eigen', 'sport'] },
 ];
 
 export const KRAFT_SUBS = [

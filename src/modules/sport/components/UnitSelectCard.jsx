@@ -15,7 +15,7 @@ export default function UnitSelectCard({ chosen, title, subtitle, tags, icon, on
       ) : (
         <>
           <span className="ep-plus" aria-hidden="true">+</span>
-          <span className="ep-tx"><b>Einheit wählen</b><small>Kraft, Ausdauer, Beweglichkeit, Sport oder eigene</small></span>
+          <span className="ep-tx"><b>Einheit wählen</b><small>Kraft, Ausdauer, Mobility oder eigene</small></span>
           <span className="ep-chev" aria-hidden="true">›</span>
         </>
       )}

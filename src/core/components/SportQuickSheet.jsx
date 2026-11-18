@@ -23,7 +23,7 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame,
 //   Ruhetag       (r1) → spo_workouts mit is_rest
 // "Eigene Einheiten verwalten" (eigene Einheiten aus Muskeln anlegen, bearbeiten, löschen).
 // Die Einheit wählt man überall in derselben Galerie (UnitPicker): Kraft, Ausdauer,
-// Beweglichkeit, Sport, Eigene, mit Bildern.
+// Mobility, Eigene (inkl. Sportarten), mit Bildern.
 // Plan: Tage als Kachelraster (PlanDaysBoard), Einheit über die Galerie (UnitPicker, Screen p2pick).
 
 const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
@@ -264,7 +264,7 @@ export default function SportQuickSheet({ onClose }) {
   if (screen === 'e1pick') {
     return wrap({
       title: 'Einheit wählen',
-      sub: 'Kraft, Ausdauer, Beweglichkeit, Sport oder eigene',
+      sub: 'Kraft, Ausdauer, Mobility oder eigene',
       onBack: back,
     }, (
       <UnitPicker

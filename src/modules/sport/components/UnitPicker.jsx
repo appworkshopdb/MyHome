@@ -4,8 +4,9 @@ import { KRAFT_SUBS, UNIT_TABS, searchCatalog, tabOf } from '../lib/unitCatalog'
 import { MUSCLE_GROUPS, muscleSinglesByRegion } from '../lib/data/muscleGroups';
 import { muscleLabel } from '../lib/planMuscles';
 
-// Einheit wählen (Galerie): Suche, Reiter (Kraft, Ausdauer, Beweglichkeit, Sport,
-// Eigene), bei Kraft die Unterkategorien, darunter die Einheiten als Karten mit
+// Einheit wählen (Galerie): Suche, Kategorien als Kacheln (Kraft, Ausdauer, Mobility,
+// Eigene = eigene Einheiten + Sportarten aus dem Profil), bei Kraft die Unterkategorien
+// (Splits, Muskeln, Kombinationen) als Umschalter, darunter die Einheiten als Karten mit
 // ihren Bildern. Ein Tipp wählt, "Auswählen" übernimmt.
 // Kraft > Muskeln zeigt alle Muskeln direkt (sechs Muskelgruppen, dazu die einzelnen
 // Muskeln vorne und hinten) als Mehrfachauswahl: mehrere Muskeln ergeben eine
@@ -15,8 +16,15 @@ import { muscleLabel } from '../lib/planMuscles';
 // Der Inhalt scrollt im umgebenden Sheet/Wizard, die Fußleiste klebt unten.
 
 const EMPTY = {
-  sport: 'Du hast im Profil noch keine Sportarten gewählt. Dort kannst du sie hinzufügen.',
-  eigen: 'Noch keine eigene Einheit. Wähle unter Kraft › Muskeln mehrere Muskeln, daraus entsteht eine eigene Einheit.',
+  eigen: 'Noch nichts hier. Wähle unter Kraft › Muskeln mehrere Muskeln, daraus entsteht eine eigene Einheit. Sportarten fügst du im Profil hinzu.',
+};
+
+// Symbole der Kategorie-Kacheln
+const TAB_ICONS = {
+  kraft: <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />,
+  aus: <path d="M3 12h4l2-5 4 10 2-5h6" />,
+  beweg: <><circle cx="12" cy="5" r="2" /><path d="M12 8v6m0 0-3 6m3-6 3 6M5 11l7-3 7 3" /></>,
+  eigen: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8 6.8 19.6l1-5.8L3.5 9.7l5.9-.9z" />,
 };
 
 export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }) {
@@ -61,6 +69,23 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
     catch { setError('Speichern fehlgeschlagen.'); setBusy(false); }
   }
 
+  const unitCard = (e) => {
+    const on = sel.includes(e.key);
+    return (
+      <button key={e.key} type="button" role="radio" aria-checked={on} className={`up-card${on ? ' is-on' : ''}`} onClick={() => tap(e.key)}>
+        <span className="up-vis"><UnitVisual tags={e.muscle_groups} icon={e.icon} size={38} max={2} /></span>
+        <b>{e.title}</b>
+      </button>
+    );
+  };
+  // Im Reiter "Eigene" getrennt: eigene Einheiten und Sportarten aus dem Profil
+  const groups = !searching && tab === 'eigen'
+    ? [
+        { key: 'eigen', title: 'Eigene Einheiten', items: list.filter((e) => e.cat === 'eigen') },
+        { key: 'sport', title: 'Meine Sportarten', items: list.filter((e) => e.cat === 'sport') },
+      ].filter((g) => g.items.length > 0)
+    : [{ key: 'all', title: '', items: list }];
+
   const muscleCard = (m) => {
     const on = mus.includes(m.key);
     return (
@@ -82,15 +107,18 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
 
       {!searching && (
         <>
-          <div className="up-tabs" role="tablist" aria-label="Kategorie">
+          <div className="up-cats" role="tablist" aria-label="Kategorie">
             {UNIT_TABS.map((t) => (
-              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'is-on' : ''} onClick={() => changeTab(t.key)}>{t.label}</button>
+              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={tab === t.key ? 'is-on' : ''} onClick={() => changeTab(t.key)}>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{TAB_ICONS[t.key]}</svg>
+                <span>{t.label}</span>
+              </button>
             ))}
           </div>
           {tab === 'kraft' && (
-            <div className="up-subs" role="group" aria-label="Unterkategorie">
+            <div className="up-seg" role="tablist" aria-label="Unterkategorie">
               {KRAFT_SUBS.map((s) => (
-                <button key={s.key} type="button" aria-pressed={sub === s.key} className={sub === s.key ? 'is-on' : ''} onClick={() => changeSub(s.key)}>{s.label}</button>
+                <button key={s.key} type="button" role="tab" aria-selected={sub === s.key} className={sub === s.key ? 'is-on' : ''} onClick={() => changeSub(s.key)}>{s.label}</button>
               ))}
             </div>
           )}
@@ -112,16 +140,13 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
       ) : list.length === 0 ? (
         <p className="up-empty">{searching ? 'Nichts gefunden. Probiere einen anderen Begriff.' : EMPTY[tab]}</p>
       ) : (
-        <div className="up-grid" role="radiogroup" aria-label="Einheit">
-          {list.map((e) => {
-            const on = sel.includes(e.key);
-            return (
-              <button key={e.key} type="button" role="radio" aria-checked={on} className={`up-card${on ? ' is-on' : ''}`} onClick={() => tap(e.key)}>
-                <span className="up-vis"><UnitVisual tags={e.muscle_groups} icon={e.icon} size={38} max={2} /></span>
-                <b>{e.title}</b>
-              </button>
-            );
-          })}
+        <div className="up-groups" role="radiogroup" aria-label="Einheit">
+          {groups.map((g) => (
+            <div key={g.key}>
+              {g.title && <div className="up-sec">{g.title}</div>}
+              <div className="up-grid">{g.items.map(unitCard)}</div>
+            </div>
+          ))}
         </div>
       )}
       {muscleMode && mus.length === 0 && <p className="up-hint">Tippe einen oder mehrere Muskeln an, z. B. Brust + Beine.</p>}
