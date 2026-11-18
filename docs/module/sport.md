@@ -18,3 +18,5 @@ Feste Bilder je Einheit: `spo_workouts`/`spo_plan_items` tragen ihre Muskelgrupp
 Migration `supabase/spo_muscle_groups_migration.sql`, vor dem Ausrollen einspielen; die App läuft auch ohne
 die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Eigene Kombinationen entstehen im
 Galerie „Einheit wählen“ (Kraft › Muskeln, Mehrfachwahl aller Muskeln). Details: `SPORT_CLAUDE_CONTEXT.md` §7.
+
+Gewicht eintragen (`WeightTimeline.jsx`, Sport › Auswertung): Formular mit zwei gleich hohen Feldern (Beschriftung klein im Feld, Raster `.sa-wfields` bricht auf schmalen Geräten untereinander um), „Speichern“ in voller Breite an der Stelle von „+ Gewicht eintragen“, „Abbrechen“ als Text in der Kopfzeile (`.sa-wx`). Das Datum kommt aus `todayIso()` (lokal), nie aus `toISOString()`.

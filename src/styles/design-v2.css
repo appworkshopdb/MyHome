@@ -832,6 +832,17 @@ body::before {
   display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; border: 0;
   border-radius: var(--r-pill); background: var(--m-ac); color: var(--m-on); font: inherit; font-size: 15px; font-weight: 900; cursor: pointer;
 }
+.sa-wx { padding: 4px 0 4px 8px; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--m-deep); cursor: pointer; }
+.sa-wform { display: flex; flex-direction: column; gap: 12px; }
+.sa-wfields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 10px; }
+.sa-wf { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; height: 60px; padding: 0 12px; border: 1.5px solid var(--border-hairline); border-radius: 16px; background: var(--surface-sunken); cursor: text; }
+.sa-wf:focus-within { border-color: var(--m-ac); }
+.sa-wf small { font-size: 11px; font-weight: 800; letter-spacing: 0.02em; line-height: 1.2; color: var(--text-muted); }
+.sa-wf input, .sa-wf input:focus { width: 100%; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; outline: none; font-weight: 800; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.sa-wf input[type="date"]::-webkit-calendar-picker-indicator { margin: 0 0 0 4px; padding: 0; }
+.sa-wfi { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sa-wfi em { flex: none; font-style: normal; font-size: 14px; font-weight: 800; color: var(--text-muted); }
+.sa-wform + .sa-wlist { margin-top: 14px; }
 .sa-wlist { margin-top: 8px; }
 /* Bis zu drei Einträge sichtbar, ab dem vierten scrollt nur dieser Bereich */
 .sa-wlist.scroll { max-height: 228px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
