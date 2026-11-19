@@ -310,6 +310,26 @@
       "label": "Datenbank lesbar",
       "query": "select count(*) > 0 from information_schema.tables where table_schema='public'",
       "expect": "t"
+    },
+    "soc_skript": {
+      "type": "file",
+      "label": "social-cron.sh",
+      "path": "/opt/nestua/ops/agenten/social/social-cron.sh",
+      "hint": "tools/agenten/social/deploy.sh ausführen."
+    },
+    "soc_mcp": {
+      "type": "contains",
+      "label": "Metricool-Zugang eingetragen",
+      "path": "/home/nestua/.claude.json",
+      "text": "\"metricool\"",
+      "what": "den Metricool-Server",
+      "hint": "cd /opt/nestua/ops/agenten/social && claude mcp add --transport http --scope local metricool https://ai.metricool.com/mcp, dann claude mcp login metricool --no-browser (Nutzer). Ob die Anmeldung noch gilt, zeigt der Lauf: Hinweis \"Metricool nicht verbunden\"."
+    },
+    "soc_cron": {
+      "type": "cron",
+      "label": "Cron Mo 09:00",
+      "pattern": "social-cron",
+      "hint": "Cron-Eintrag montags 09:00 ergänzen (nach OK des Nutzers)."
     }
   },
   "nodes": [
@@ -901,10 +921,9 @@
     {
       "id": "social",
       "kind": "agent",
-      "state": "plan",
       "icon": "chat",
       "name": "Social Media",
-      "sub": "Cloud, wöchentlich",
+      "sub": "Hetzner, montags 09:00",
       "polar": [
         150,
         310
@@ -912,41 +931,106 @@
       "info": [
         [
           "Auslöser",
-          "wöchentlich"
+          "Cron, montags 09:00"
+        ],
+        [
+          "KI",
+          "3 Entwürfe pro Woche"
+        ],
+        [
+          "Netzwerke",
+          "Instagram, TikTok, YouTube Shorts"
+        ],
+        [
+          "Themen",
+          "Build in public, Vibe-Coding"
         ],
         [
           "Rechte",
-          "nur Entwurf zur Prüfung"
+          "Metricool nur lesen; Vault nur Betrieb/Social"
         ],
         [
-          "Start",
-          "nach Kontenauswahl"
+          "Freiheit",
+          "Stufe 1, nur Entwurf, nichts veröffentlicht"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #social"
         ]
       ],
       "zust": [
-        "Beiträge in Ich-Perspektive"
+        "Beitragsentwürfe",
+        "Ich-Perspektive",
+        "Beste Postzeiten",
+        "Analytics der letzten Beiträge"
       ],
       "channel": "#social",
       "flow": [
         {
           "g": "in",
-          "name": "Cloud-Routine",
-          "sub": "wöchentlich",
-          "icon": "clock",
-          "plan": true
+          "check": "soc_cron",
+          "name": "Cron Mo 09:00",
+          "sub": "wöchentlich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "liest",
+          "node": "metricool",
+          "sub": "Beiträge, Analytics, beste Zeiten (nur lesen)"
+        },
+        {
+          "g": "liest",
+          "check": "kctx_vault",
+          "name": "Wochennotiz",
+          "sub": "von Kontext & Status, Basis der Themen",
+          "icon": "book"
+        },
+        {
+          "g": "liest",
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "Commits der Vorwoche",
+          "icon": "git"
         },
         {
           "g": "out",
-          "node": "metricool"
+          "check": "kctx_vault",
+          "name": "Entwürfe",
+          "sub": "Betrieb/Social/<Woche>.md, 3 pro Woche",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "social-*.json für den Leitstand"
         },
         {
           "g": "out",
           "check": "notify_social",
           "name": "Discord #social",
-          "sub": "eigener Kanal",
+          "sub": "Kurzfassung am Montag",
           "icon": "send"
         }
-      ]
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "soc_skript",
+        "soc_mcp",
+        "kctx_vault",
+        "soc_cron",
+        "notify_social"
+      ],
+      "runAt": "09:00",
+      "runDays": [
+        1
+      ],
+      "runSince": "2026-11-23",
+      "report": "social",
+      "guard": "leitplanken"
     },
     {
       "id": "discord",
@@ -1086,14 +1170,15 @@
     {
       "id": "metricool",
       "kind": "res",
-      "state": "plan",
       "icon": "chat",
       "name": "Metricool",
-      "where": "nur Entwurf zur Prüfung",
+      "where": "ai.metricool.com/mcp, Anmeldung im Ordner agenten/social",
       "polar": [
         140,
         560
-      ]
+      ],
+      "check": "soc_mcp",
+      "note": "Nur lesender Zugriff durch den Agenten"
     }
   ],
   "edges": [
@@ -1288,6 +1373,14 @@
     [
       "dsgvo",
       "db"
+    ],
+    [
+      "social",
+      "reports"
+    ],
+    [
+      "social",
+      "leitplanken"
     ]
   ]
 }
