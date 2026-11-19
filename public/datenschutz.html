@@ -26,7 +26,7 @@
 <main>
 <article>
   <h1>Datenschutzerklärung</h1>
-  <p class="meta">Nestua – persönliche Haushalts-App · Stand: Oktober 2026</p>
+  <p class="meta">Nestua – persönliche Haushalts-App · Stand: November 2026</p>
 
   <h2>1. Verantwortlicher</h2>
   <p>
@@ -37,8 +37,8 @@
   <h2>2. Worum es geht</h2>
   <p>
     Nestua ist eine App für die persönliche Organisation (Aufgaben, Gewohnheiten, Training,
-    Ernährung, Einkauf, Finanzen und Kalender). Diese Erklärung beschreibt, welche Daten
-    verarbeitet werden – insbesondere bei der optionalen Verbindung mit Google Kalender.
+    Ernährung, Gewicht und Körpermaße, Einkauf, Finanzen und Kalender). Diese Erklärung beschreibt,
+    welche Daten verarbeitet werden, wohin sie gehen und wie lange sie gespeichert bleiben.
   </p>
 
   <h2>3. Verbindung mit Google Kalender</h2>
@@ -69,36 +69,154 @@
   <h2>4. Weitere Daten in der App</h2>
   <p>
     Zum Betrieb der App werden deine Anmeldedaten (E-Mail-Adresse) sowie die Inhalte gespeichert,
-    die du selbst in der App erfasst (z. B. Aufgaben, Trainingsdaten, Einkaufslisten, Finanzeinträge).
-    Die Daten werden auf Servern in Deutschland (Hetzner Online GmbH, Nürnberg) gespeichert und
-    sind nur für dich über dein Konto abrufbar.
+    die du selbst in der App erfasst: Aufgaben, Ziele und Gewohnheiten, Trainingsdaten und
+    Trainingspläne, Ernährung (Mahlzeiten, Lebensmittel, Rezepte), Gewicht und Körpermaße,
+    dein Körperprofil (z. B. Geschlecht, Größe, Sportarten), Einkaufslisten, Finanzeinträge
+    und Verträge sowie Kalendertermine.
   </p>
-
-  <h2>5. Rechtsgrundlage und Speicherdauer</h2>
   <p>
-    Rechtsgrundlage ist die Vertragserfüllung bzw. deine Einwilligung (Art. 6 Abs. 1 lit. a und b DSGVO).
-    Die Daten werden gespeichert, solange dein Konto besteht bzw. bis du sie löschst.
+    Die Daten werden auf Servern in Deutschland (Hetzner Online GmbH, Nürnberg) gespeichert und
+    sind grundsätzlich nur für dich über dein Konto abrufbar. Ausnahmen:
+  </p>
+  <ul>
+    <!-- PRÜFEN: Stimmt die Beschreibung der Haushalte (welche Einträge Mitglieder sehen)? -->
+    <li>Gehörst du einem Haushalt an, sehen die anderen Mitglieder die gemeinsam genutzten
+      Einträge (z. B. Rezepte und Lebensmittel).</li>
+    <li>Nutzt du den Foto-Scan, geht das Foto zur Auswertung an Anthropic in den USA (Abschnitt 6).</li>
+    <li>Aktivierst du Push-Mitteilungen, werden diese über den Push-Dienst deines Browsers
+      zugestellt (Abschnitt 7).</li>
+    <li>Erlaubst du die Nutzungsstatistik, kann der Betreiber diese auswerten (Abschnitt 8).</li>
+  </ul>
+
+  <h2>5. Gesundheitsdaten</h2>
+  <p>
+    Angaben zu Gewicht, Körpermaßen, Körperprofil, Ernährung und Training sind Gesundheitsdaten
+    und damit besonders geschützt (Art. 9 DSGVO). Nestua verarbeitet sie nur, wenn du dafür
+    ausdrücklich eingewilligt hast (Art. 9 Abs. 2 lit. a DSGVO), und nur, um sie dir in der App
+    anzuzeigen und auszuwerten (z. B. Verlauf, Kalorienbilanz, Trainingsstatistik).
+  </p>
+  <p>
+    Du kannst die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen. Dann werden die
+    betroffenen Daten gelöscht und die entsprechenden Bereiche der App lassen sich nicht mehr nutzen.
+    <!-- PRÜFEN: Die Einwilligung muss in der App eingeholt und gespeichert werden, bevor dieser
+         Abschnitt stimmt. Wo und wie der Widerruf geht, hier ergänzen. -->
   </p>
 
-  <h2>6. Verbindung trennen und Daten löschen</h2>
+  <h2>6. Foto-Scan mit KI (Anthropic)</h2>
+  <p>
+    Belege (Finanzen) und Mahlzeiten (Ernährung) kannst du auf Wunsch fotografieren, damit die App
+    Betrag, Händler, Datum und Zahlungsart bzw. Bestandteile und Kalorien einer Mahlzeit vorschlägt.
+    Die Funktion ist freiwillig; alle Einträge lassen sich auch von Hand erfassen.
+  </p>
+  <ul>
+    <li><strong>Empfänger:</strong> Das Foto wird zur Auswertung an Anthropic, PBC (San Francisco, USA)
+      übermittelt, den Anbieter des verwendeten KI-Modells. Anthropic verarbeitet die Daten als
+      Auftragsverarbeiter.</li>
+    <li><strong>Was gespeichert wird:</strong> Nestua speichert das Foto nicht. Gespeichert wird nur,
+      was du nach Prüfung des Vorschlags selbst übernimmst, sowie für das monatliche Kontingent
+      ein Zähler (Zeitpunkt, Art des Scans, Verbrauch). Diese Zähler werden nach drei Monaten gelöscht.</li>
+    <!-- PRÜFEN: Speicherdauer bei Anthropic und Nicht-Nutzung zum Training anhand der aktuellen
+         Bedingungen von Anthropic (kommerzielle API-Bedingungen, Auftragsverarbeitungsvertrag). -->
+    <li><strong>Bei Anthropic:</strong> Nach den Bedingungen von Anthropic werden über die
+      Schnittstelle gesendete Daten nicht zum Training von KI-Modellen genutzt und nur für eine
+      begrenzte Zeit gespeichert.</li>
+    <!-- PRÜFEN: Grundlage der Übermittlung (Zertifizierung unter dem EU-US Data Privacy Framework
+         oder Standardvertragsklauseln) beim Anbieter nachsehen und hier eintragen. -->
+    <li><strong>Übermittlung in die USA:</strong> Die Übermittlung erfolgt auf Grundlage
+      [EU-US Data Privacy Framework (Angemessenheitsbeschluss) / Standardvertragsklauseln].</li>
+    <li><strong>Rechtsgrundlage:</strong> deine Einwilligung durch Nutzung der Funktion
+      (Art. 6 Abs. 1 lit. a DSGVO); bei Mahlzeitfotos zusätzlich Art. 9 Abs. 2 lit. a DSGVO.</li>
+  </ul>
+
+  <h2>7. Push-Mitteilungen</h2>
+  <p>
+    Push-Mitteilungen (z. B. Tagesplan, Wochen- und Monatsüberblick, fällige Zahlungen, offene
+    Aufgaben) erhältst du nur, wenn du sie in der App aktivierst und dein Browser zustimmt.
+  </p>
+  <ul>
+    <li><strong>Zustellung:</strong> Mitteilungen werden über den Push-Dienst des Herstellers deines
+      Browsers bzw. Betriebssystems zugestellt (z. B. Google, Apple, Mozilla), der seinen Sitz auch
+      außerhalb der EU haben kann. Der Inhalt wird dabei verschlüsselt übertragen; der Push-Dienst
+      erhält die technische Empfängeradresse deines Geräts sowie Zeitpunkt und Größe der Mitteilung.</li>
+    <li><strong>Gespeichert</strong> werden die Empfängeradresse deines Geräts, deine Einstellungen
+      zu den Mitteilungsarten sowie ein Protokoll, welche Art von Mitteilung wann gesendet wurde.
+      Das Protokoll wird nach 90 Tagen gelöscht.</li>
+    <li><strong>Abschalten:</strong> jederzeit in der App unter „Benachrichtigungen“ oder in den
+      Einstellungen deines Browsers.</li>
+    <li><strong>Rechtsgrundlage:</strong> deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO,
+      § 25 Abs. 1 TDDDG).</li>
+  </ul>
+
+  <h2>8. Nutzungsstatistik</h2>
+  <p>
+    Um die App zu verbessern, kann Nestua mit deiner Einwilligung erfassen, wie die App genutzt wird.
+    Ohne Einwilligung wird nichts erfasst. Die Erfassung läuft über eine eigene Funktion auf dem
+    Nestua-Server; ein externer Analysedienst wird nicht eingesetzt.
+  </p>
+  <ul>
+    <li><strong>Was erfasst wird:</strong> aufgerufene Bereiche der App, Beginn einer Sitzung,
+      aktive Nutzungsminuten, Klicks auf bestimmte Schaltflächen, technische Fehler, App-Version
+      und Bildschirmbreite, jeweils mit deinem Konto verknüpft. Inhalte wie Beträge, Gewichte,
+      Lebensmittel, Notizen oder Namen werden nicht erfasst.</li>
+    <li><strong>Wer sie sieht:</strong> nur der Betreiber von Nestua.</li>
+    <!-- PRÜFEN: Speicherdauer der aktiven Tage je Konto (analytics_active_days) festlegen;
+         derzeit ohne Frist, d. h. bis zur Kontolöschung oder zum Widerruf. -->
+    <li><strong>Speicherdauer:</strong> Die einzelnen Ereignisse werden nach 90 Tagen gelöscht.
+      Danach bleiben nur tägliche Gesamtzahlen ohne Bezug zu deinem Konto sowie die Tage, an denen
+      dein Konto aktiv war.</li>
+    <li><strong>Einwilligung und Widerruf:</strong> Du entscheidest beim ersten Start; ändern kannst
+      du das jederzeit in der App unter „Nutzungsdaten“ → „Nutzungsstatistik teilen“.</li>
+    <li><strong>Rechtsgrundlage:</strong> deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO,
+      § 25 Abs. 1 TDDDG).</li>
+  </ul>
+
+  <h2>9. Externe Inhalte (jsDelivr)</h2>
+  <p>
+    Für den Excel-Export im Bereich Finanzen lädt die App beim Export eine Programmbibliothek vom
+    Content-Delivery-Netzwerk jsDelivr (<code>cdn.jsdelivr.net</code>). Dabei erhält der Betreiber des
+    Netzwerks deine IP-Adresse und technische Angaben zu deinem Browser; Server können auch außerhalb
+    der EU stehen. Ohne Nutzung des Exports wird nichts geladen. Rechtsgrundlage ist das berechtigte
+    Interesse an der Bereitstellung der Exportfunktion (Art. 6 Abs. 1 lit. f DSGVO).
+  </p>
+
+  <h2>10. Rechtsgrundlage und Speicherdauer</h2>
+  <ul>
+    <li><strong>Konto und Inhalte:</strong> Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO);
+      Gesundheitsdaten nur mit ausdrücklicher Einwilligung (Art. 9 Abs. 2 lit. a DSGVO, Abschnitt 5).</li>
+    <li><strong>Google Kalender, Foto-Scan, Push-Mitteilungen, Nutzungsstatistik:</strong> deine
+      Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), siehe die jeweiligen Abschnitte.</li>
+    <li><strong>Speicherdauer:</strong> Deine Daten werden gespeichert, solange dein Konto besteht
+      bzw. bis du sie löschst. Abweichend davon werden das Mitteilungsprotokoll und einzelne
+      Nutzungsereignisse nach 90 Tagen, die Zähler des Foto-Scans nach drei Monaten gelöscht.</li>
+    <li><strong>Sicherungskopien:</strong> Die Datenbank wird täglich verschlüsselt gesichert.
+      Sicherungen werden bis zu 30 Tage aufbewahrt und danach gelöscht. Gelöschte Daten können
+      bis zu diesem Zeitpunkt noch in Sicherungen enthalten sein.</li>
+  </ul>
+
+  <h2>11. Verbindung trennen und Daten löschen</h2>
   <ul>
     <li>In der App kannst du Google Kalender jederzeit trennen. Dabei werden das gespeicherte
       Zugriffs-Token, die Verbindung und alle aus Google übernommenen Termine in Nestua gelöscht.</li>
     <li>Den Zugriff kannst du zusätzlich in deinem Google-Konto unter
       <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> entziehen.</li>
     <li>Die Löschung deines gesamten Kontos kannst du per E-Mail an
-      <a href="mailto:support@nestua.de">support@nestua.de</a> verlangen.</li>
+      <a href="mailto:support@nestua.de">support@nestua.de</a> verlangen. Dabei werden alle Daten
+      deines Kontos gelöscht, einschließlich einer Google-Verbindung und ihres Zugriffs-Tokens.
+      In Sicherungskopien bleiben sie höchstens 30 Tage erhalten.</li>
   </ul>
 
-  <h2>7. Deine Rechte</h2>
+  <h2>12. Deine Rechte</h2>
   <p>
     Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
     Datenübertragbarkeit und Widerspruch sowie das Recht, eine erteilte Einwilligung jederzeit
-    zu widerrufen. Außerdem kannst du dich bei einer Datenschutzaufsichtsbehörde beschweren.
-    Wende dich dafür an <a href="mailto:support@nestua.de">support@nestua.de</a>.
+    zu widerrufen. Wende dich dafür an <a href="mailto:support@nestua.de">support@nestua.de</a>.
+  </p>
+  <p>
+    Außerdem kannst du dich bei einer Datenschutzaufsichtsbehörde beschweren, zum Beispiel beim
+    Landesbeauftragten für den Datenschutz und die Informationsfreiheit Rheinland-Pfalz.
   </p>
 
-  <h2>8. Änderungen</h2>
+  <h2>13. Änderungen</h2>
   <p>Diese Erklärung wird angepasst, wenn sich die App oder die Rechtslage ändert. Es gilt die jeweils hier veröffentlichte Fassung.</p>
 </article>
 </main>
