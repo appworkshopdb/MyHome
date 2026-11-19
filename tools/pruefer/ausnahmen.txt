@@ -4,3 +4,10 @@
 #         sql-revoke, sql-nicht-additiv, migration-name, functions-deploy, npm-audit
 # Für einzelne Zeilen reicht ein Kommentar "pruefer:ok" am Zeilenende.
 # Jede Ausnahme mit Begründung und Datum darüber.
+
+# 19.11.2026: Die FAB-Schnellerfassung (GlobalFab → *QuickSheet in core/components) braucht
+# Daten und Bausteine der Module. Das Muster gibt es auf main schon (SportQuickSheet,
+# ShoppingQuickSheet, EntrySheet u. a.). Vom Nutzer als Ausnahme freigegeben; sauberer Umbau
+# (Module melden ihre Sheets selbst an, core importiert nichts aus modules/) ist ein eigener Auftrag.
+core-modules src/core/components/SportQuickSheet.jsx
+core-modules src/core/components/HabitQuickSheet.jsx
