@@ -14,7 +14,9 @@ Suche, was ein Regelskript nicht findet:
 - Rechte und RLS in SQL und Edge Functions, Service-Role im Client, fehlende Prüfung von `auth.uid()`
 - Supabase-Aufrufe ohne Fehlerbehandlung, stille Fehlschläge, falsche Spaltennamen
 - Nutzer-Einstellungen nur in localStorage statt am Nutzer
-- Migrationen, die nicht additiv sind (Staging und main teilen ein Backend)
+- Migrationen und Datenänderungen, die nicht additiv sind: Staging und main teilen eine Datenbank, eine Migration trifft sofort auch die Nutzer der main-App
+
+Dass staging weiter ist als main, ist gewollt (main = was Nutzer sehen, staging = Entwicklungsstand) und für sich nie ein Befund.
 - Fixed-Nav-Regel, geleakte Geheimnisse, offensichtliche Logikfehler
 
 Befunde aus `regeln.json` nicht wiederholen, außer du hast Wesentliches zu ergänzen. Keine Stilfragen, keine Geschmacksurteile, nichts erfinden: Was du nicht im Diff oder in `tree/` belegen kannst, schreibst du nicht.
