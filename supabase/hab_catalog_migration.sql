@@ -14,6 +14,14 @@
 -- Bestehende Ziele (Ja/Nein, Zähler, Zielwert) bleiben unverändert; ein Block am Ende
 -- (auskommentiert) stellt Vorlagen-Gewohnheiten optional auf die neuen Ziele um.
 --
+-- STAND: Live schon eingespielt (Commit 06.11.2026, letzte Änderung an hab_habits
+--   06.11.2026, 14:27 Uhr Berlin). Geprüft am 19.11.2026:
+--   goal_time vorhanden, target_count/count sind numeric(6,2), max. Werte 3 bzw. 30,
+--   keine alten Kategorien/Einheiten mehr. NICHT erneut als Ganzes einspielen, solange
+--   main noch die alte Gewohnheiten-App ausliefert (die legt wieder "Gesundheit",
+--   "ml", "Glas" an). Schritte 3 und 4 erst nach dem Merge nach main wiederholen,
+--   vorher id, category, categories, unit, target_count in eine Sicherungstabelle kopieren.
+--
 -- Idempotent: kann mehrfach ausgeführt werden. VOR dem Ausrollen der App einspielen.
 -- Vorher live prüfen (Studio kann auf eine andere DB zeigen):
 --   docker exec -it supabase-db psql -U postgres -d postgres -c "\d public.hab_habits"
@@ -81,6 +89,9 @@ update public.hab_habits set unit = null    where unit = '×' and target_count <
 update public.hab_habits set unit = 'Dinge' where unit = '×' and target_count > 1;
 
 commit;
+
+-- PostgREST-Schema neu laden, damit goal_time sofort über die API beschreibbar ist.
+notify pgrst, 'reload schema';
 
 -- OPTIONAL, einmalig: bestehende Vorlagen-Gewohnheiten auf die neuen Ziele umstellen.
 -- Bereits abgehakte Tage bleiben erledigt (gespeicherte Zahl >= neues Ziel).
