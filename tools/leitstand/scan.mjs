@@ -173,6 +173,40 @@ const CHECKS = {
   }
 };
 
+// Läufe eines Agenten: letzter Bericht (<report>-JJJJ-MM-TT-HHMM.json, dazu -ki.md) und nächster Lauf aus runAt (täglich, Berlin-Zeit).
+// overdue = der letzte geplante Lauf (30 Minuten Puffer) hat keinen Bericht hinterlassen.
+const REPORTS_DIR = '/opt/nestua/ops/reports';
+function berlin(d) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(d).map((x) => [x.type, x.value]));
+  return { day: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
+}
+async function runInfo(n, now) {
+  const run = {};
+  if (n.report) {
+    try {
+      const re = new RegExp(`^${n.report}-\\d{4}-\\d{2}-\\d{2}-\\d{4}\\.json$`);
+      const f = (await readdir(REPORTS_DIR)).filter((x) => re.test(x)).sort().at(-1);
+      if (f) {
+        const r = JSON.parse(await readFile(path.join(REPORTS_DIR, f), 'utf8'));
+        let ki = '';
+        try { ki = (await readFile(path.join(REPORTS_DIR, f.replace(/\.json$/, '-ki.md')), 'utf8')).trim().slice(0, 1500); } catch { /* keine KI-Auswertung */ }
+        const bef = (r.befunde || []).map((b) => ({ label: b.label, value: b.value, status: b.status }));
+        run.last = { datum: r.datum, zeit: r.zeit, status: r.status, befunde: bef.length, befundListe: bef, fazit: r.fazit || '', ki, file: path.join(REPORTS_DIR, f.replace(/\.json$/, '.md')) };
+      }
+    } catch { /* noch kein Bericht */ }
+  }
+  if (n.runAt) {
+    const b = berlin(now), tomorrow = berlin(new Date(now.getTime() + 864e5)), yesterday = berlin(new Date(now.getTime() - 864e5));
+    run.next = { datum: b.hm < n.runAt ? b.day : tomorrow.day, zeit: n.runAt };
+    const [h, m] = n.runAt.split(':').map(Number), g = h * 60 + m + 30;
+    const grace = `${String(Math.floor(g / 60) % 24).padStart(2, '0')}:${String(g % 60).padStart(2, '0')}`;
+    const due = b.hm >= grace ? b.day : yesterday.day;
+    run.overdue = (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
+  }
+  return run;
+}
+
 async function main() {
   const reg = JSON.parse(await readFile(path.join(BASE, 'registry.json'), 'utf8'));
   let tasks = {};
@@ -215,6 +249,7 @@ async function main() {
   } catch { /* noch kein Bericht */ }
   const sys = reg.system.map((id) => checks[id]);
   const now = new Date();
+  await Promise.all(nodes.filter((n) => n.kind === 'agent').map(async (n) => { const r = await runInfo(n, now); if (Object.keys(r).length) n.run = r; }));
   const data = {
     generated: now.toISOString(),
     generatedText: `${fmtDate(now)}, ${fmtTime(now)}`,

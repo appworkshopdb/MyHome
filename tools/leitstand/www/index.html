@@ -7,65 +7,22 @@
 <title>Nestua Leitstand</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="leitstand.css">
+<link rel="stylesheet" href="leitstand.css?v=2">
 </head>
 <body>
-
-<div id="stage" aria-label="Leitstand-Fläche">
-  <div id="world">
-    <svg id="wires" viewBox="-3000 -3000 6000 6000" aria-hidden="true">
-      <defs>
-        <linearGradient id="gFlow" x1="0" x2="1"><stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#38E1FF"/></linearGradient>
-        <radialGradient id="gCore"><stop offset="0" stop-color="#8B7CFF" stop-opacity=".55"/><stop offset=".55" stop-color="#5B4BD6" stop-opacity=".18"/><stop offset="1" stop-color="#5B4BD6" stop-opacity="0"/></radialGradient>
-        <radialGradient id="gDisc"><stop offset="0" stop-color="#1B1840"/><stop offset="1" stop-color="#0C0E22"/></radialGradient>
-        <linearGradient id="gSweep" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8B7CFF" stop-opacity="0"/><stop offset="1" stop-color="#8B7CFF" stop-opacity=".55"/></linearGradient>
-        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <marker id="arw" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L8 5 L1 9" fill="none" stroke="#38E1FF" stroke-width="1.6"/></marker>
-        <path id="loopPath" d="M -132 0 A 132 132 0 1 1 132 0 A 132 132 0 1 1 -132 0"/>
-      </defs>
-      <g id="coreG">
-        <circle r="560" class="ring-guide"/>
-        <circle r="310" class="ring-guide" style="stroke-dasharray:1 5"/>
-        <circle r="250" fill="url(#gCore)"/>
-        <g class="spin" style="--d:90s"><circle r="205" fill="none" stroke="#38E1FF" stroke-opacity=".35" stroke-width="1" stroke-dasharray="40 8 4 8"/></g>
-        <g class="spin rev" style="--d:140s"><circle r="182" fill="none" stroke="#8B7CFF" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="1 4"/></g>
-        <g class="spin" style="--d:48s">
-          <circle r="132" fill="none" stroke="#8B7CFF" stroke-opacity=".5" stroke-width="1.4"/>
-          <path d="M 112 -70 A 132 132 0 0 1 128 32" fill="none" stroke="#38E1FF" stroke-width="1.6" marker-end="url(#arw)"/>
-          <path d="M 70 112 A 132 132 0 0 1 -32 128" fill="none" stroke="#38E1FF" stroke-width="1.6" marker-end="url(#arw)"/>
-          <path d="M -112 70 A 132 132 0 0 1 -128 -32" fill="none" stroke="#38E1FF" stroke-width="1.6" marker-end="url(#arw)"/>
-          <path d="M -70 -112 A 132 132 0 0 1 32 -128" fill="none" stroke="#38E1FF" stroke-width="1.6" marker-end="url(#arw)"/>
-          <text class="ring-txt" dy="-6"><textPath href="#loopPath" startOffset="2%">lesen</textPath></text>
-          <text class="ring-txt" dy="-6"><textPath href="#loopPath" startOffset="27%">prüfen</textPath></text>
-          <text class="ring-txt" dy="-6"><textPath href="#loopPath" startOffset="52%">bewerten</textPath></text>
-          <text class="ring-txt" dy="-6"><textPath href="#loopPath" startOffset="77%">melden</textPath></text>
-        </g>
-        <circle r="96" fill="url(#gDisc)" stroke="#8B7CFF" stroke-opacity=".7" stroke-width="1.2"/>
-        <g class="spin" style="--d:5s"><path d="M0 0 L96 0 A96 96 0 0 0 73.5 -61.7 Z" fill="url(#gSweep)"/></g>
-        <circle r="96" fill="none" stroke="#B9B1FF" stroke-opacity=".25" stroke-width="6" style="filter:blur(4px)"/>
-      </g>
-      <g id="edges"></g>
-      <g id="parts"></g>
-    </svg>
-  </div>
-</div>
-
-<div class="hud brand">
-  <span class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/></svg></span>
-  <span><b>Nestua Leitstand</b><small class="long" id="stand">Lade Daten …</small></span>
+<div class="bg" aria-hidden="true"></div>
+<header class="top">
+  <a class="brand" href="#" aria-label="Zum Agenten-Kern">
+    <span class="logo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/></svg></span>
+    <span><b>Nestua Leitstand</b><small id="stand">Lade Daten …</small></span>
+  </a>
   <span class="clk" id="clk">--:--:--</span>
-</div>
-<div class="hud legend" aria-label="Legende">
-  <span class="s-ok"><i></i>läuft</span><span class="s-warn"><i></i>Hinweis</span><span class="s-bad"><i class="d"></i>fehlt</span><span class="s-build"><i class="d"></i>im Aufbau</span><span class="s-plan"><i class="d"></i>geplant</span>
-</div>
-<div class="hint">Ziehen verschiebt, Rad oder zwei Finger zoomen, Knoten antippen für Details</div>
-<div class="hud zoom" role="group" aria-label="Ansicht">
-  <button id="zOut" aria-label="Verkleinern"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
-  <button id="zFit" aria-label="Alles zeigen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-  <button id="zIn" aria-label="Vergrößern"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
-  <button id="zReset" aria-label="Anordnung zurücksetzen"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-</div>
+</header>
+<main>
+  <section class="view" id="vHome" aria-label="Agenten-Kern"></section>
+  <section class="view" id="vAgent" hidden aria-live="polite"></section>
+</main>
 <div class="state" id="state" hidden></div>
-<script src="leitstand.js"></script>
+<script src="leitstand.js?v=2"></script>
 </body>
 </html>

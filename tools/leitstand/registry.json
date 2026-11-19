@@ -207,6 +207,38 @@
       "type": "file",
       "label": "sudo-Freigabe (Vorlage)",
       "path": "/opt/nestua/ops/reference/sudoers-nestua-ops"
+    },
+    "notify_kontext": {
+      "type": "envset",
+      "label": "Discord #kontext",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_KONTEXT",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_KONTEXT in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_pruefer": {
+      "type": "envset",
+      "label": "Discord #pruefer",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_PRUEFER",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_PRUEFER in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_dsgvo": {
+      "type": "envset",
+      "label": "Discord #datenschutz",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_DSGVO",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_DSGVO in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_social": {
+      "type": "envset",
+      "label": "Discord #social",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_SOCIAL",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_SOCIAL in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
     }
   },
   "nodes": [
@@ -305,6 +337,49 @@
         "Functions",
         "Caddy",
         "Neustart"
+      ],
+      "channel": "#server",
+      "runAt": "06:00",
+      "report": "server",
+      "guard": "leitplanken",
+      "flow": [
+        {
+          "g": "in",
+          "check": "srvcron",
+          "name": "Cron 06:00",
+          "sub": "täglich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "prüft",
+          "node": "docker"
+        },
+        {
+          "g": "prüft",
+          "node": "db"
+        },
+        {
+          "g": "prüft",
+          "node": "caddy"
+        },
+        {
+          "g": "prüft",
+          "node": "fn"
+        },
+        {
+          "g": "prüft",
+          "node": "hc"
+        },
+        {
+          "g": "out",
+          "node": "reports"
+        },
+        {
+          "g": "out",
+          "node": "discord",
+          "name": "Discord #server",
+          "sub": "eine Meldung am Tag"
+        }
       ]
     },
     {
@@ -478,6 +553,31 @@
         "Backlog",
         "Wochenübersicht",
         "Start-Hook"
+      ],
+      "channel": "#kontext",
+      "flow": [
+        {
+          "g": "in",
+          "name": "Cloud-Routine",
+          "sub": "montags",
+          "icon": "clock",
+          "plan": true
+        },
+        {
+          "g": "liest",
+          "node": "github"
+        },
+        {
+          "g": "out",
+          "node": "notes"
+        },
+        {
+          "g": "out",
+          "check": "notify_kontext",
+          "name": "Discord #kontext",
+          "sub": "eigener Kanal",
+          "icon": "send"
+        }
       ]
     },
     {
@@ -509,6 +609,34 @@
         "Fehlerliste CLAUDE.md",
         "Migrationen",
         "Dependabot"
+      ],
+      "channel": "#pruefer",
+      "flow": [
+        {
+          "g": "in",
+          "name": "Pull Request",
+          "sub": "jeder PR gegen main",
+          "icon": "git",
+          "plan": true
+        },
+        {
+          "g": "prüft",
+          "name": "Regelskript",
+          "sub": "SQL-Prüfung, Secret-Scan",
+          "icon": "check",
+          "plan": true
+        },
+        {
+          "g": "liest",
+          "node": "github"
+        },
+        {
+          "g": "out",
+          "check": "notify_pruefer",
+          "name": "Discord #pruefer",
+          "sub": "eigener Kanal",
+          "icon": "send"
+        }
       ]
     },
     {
@@ -540,6 +668,32 @@
         "Datenschutzerklärung",
         "Kontolöschung",
         "Aufbewahrung"
+      ],
+      "channel": "#datenschutz",
+      "flow": [
+        {
+          "g": "in",
+          "name": "Cloud-Routine",
+          "sub": "monatlich",
+          "icon": "clock",
+          "plan": true
+        },
+        {
+          "g": "liest",
+          "node": "github"
+        },
+        {
+          "g": "out",
+          "node": "notes",
+          "sub": "Notiz im Vault"
+        },
+        {
+          "g": "out",
+          "check": "notify_dsgvo",
+          "name": "Discord #datenschutz",
+          "sub": "eigener Kanal",
+          "icon": "send"
+        }
       ]
     },
     {
@@ -569,6 +723,27 @@
       ],
       "zust": [
         "Beiträge in Ich-Perspektive"
+      ],
+      "channel": "#social",
+      "flow": [
+        {
+          "g": "in",
+          "name": "Cloud-Routine",
+          "sub": "wöchentlich",
+          "icon": "clock",
+          "plan": true
+        },
+        {
+          "g": "out",
+          "node": "metricool"
+        },
+        {
+          "g": "out",
+          "check": "notify_social",
+          "name": "Discord #social",
+          "sub": "eigener Kanal",
+          "icon": "send"
+        }
       ]
     },
     {
