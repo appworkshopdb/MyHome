@@ -7,6 +7,7 @@ import { readFile, writeFile, rename, stat, readdir, mkdir, access } from 'node:
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { connect } from 'node:tls';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -142,6 +143,38 @@ const CHECKS = {
   async disk(c) {
     const p = Number((await run('df', ['-P', '/'])).trim().split('\n').pop().split(/\s+/)[4].replace('%', ''));
     return R(p >= c.warnPercent ? 'warn' : 'ok', `${p} %`, `Systemplatte zu ${p} % belegt`);
+  },
+  // RAM: belegt = gesamt minus "verfügbar" (Cache zählt als frei). Bei Warnung die größten Container nennen.
+  async ram(c) {
+    const mib = (s) => { const m = s.match(/([\d.]+)\s*(KiB|MiB|GiB|B)\b/); return m ? Number(m[1]) * { B: 1 / 1048576, KiB: 1 / 1024, MiB: 1, GiB: 1024 }[m[2]] : 0; };
+    const m = Object.fromEntries((await readFile('/proc/meminfo', 'utf8')).split('\n').map((l) => l.match(/^(\w+):\s+(\d+)/)).filter(Boolean).map((x) => [x[1], Number(x[2])]));
+    const gb = (kb) => (kb / 1048576).toFixed(1).replace('.', ',');
+    const used = m.MemTotal - m.MemAvailable, p = Math.round((used / m.MemTotal) * 100);
+    const swapUsed = (m.SwapTotal || 0) - (m.SwapFree || 0);
+    const swap = m.SwapTotal ? `Swap ${gb(swapUsed)} von ${gb(m.SwapTotal)} GB` : 'kein Swap eingerichtet';
+    let st = p >= c.badPercent ? 'bad' : p >= c.warnPercent ? 'warn' : 'ok';
+    if (st === 'ok' && m.SwapTotal && swapUsed / m.SwapTotal > 0.5) st = 'warn';
+    let top = '';
+    if (st !== 'ok') { try { top = '; größte Container: ' + (await run('docker', ['stats', '--no-stream', '--format', '{{.Name}} {{.MemUsage}}'])).trim().split('\n').map((l) => l.replace(/ \/ .*$/, '')).sort((a, b) => mib(b) - mib(a)).slice(0, 3).join(', '); } catch { /* ohne Container-Angaben */ } }
+    return R(st, `${p} %`, `${gb(used)} von ${gb(m.MemTotal)} GB belegt, ${gb(m.MemAvailable)} GB verfügbar (Cache ${gb((m.Buffers || 0) + (m.Cached || 0))} GB); ${swap}${top}`);
+  },
+  // CPU-Last: Durchschnitt der letzten 5 Minuten je Kern (1,0 = alle Kerne voll ausgelastet)
+  async load(c) {
+    const [l1, l5, l15] = (await readFile('/proc/loadavg', 'utf8')).split(' ').slice(0, 3).map(Number);
+    const cores = os.cpus().length, per = l5 / cores, f = (n) => n.toFixed(2).replace('.', ',');
+    const st = per >= c.badPerCore ? 'bad' : per >= c.warnPerCore ? 'warn' : 'ok';
+    return R(st, f(l5), `Last ${f(l1)} / ${f(l5)} / ${f(l15)} (1, 5, 15 Min) bei ${cores} Kernen, aktuell ${Math.round(per * 100)} % je Kern`);
+  },
+  // Datenbank: Größe aller Datenbanken des Clusters im Verhältnis zur Systemplatte, dazu die größten Tabellen
+  async dbsize(c) {
+    const fmt = (n) => (n < 1048576 ? `${Math.round(n / 1024)} kB` : n < 1073741824 ? `${(n / 1048576).toFixed(n < 10485760 ? 1 : 0).replace('.', ',')} MB` : `${(n / 1073741824).toFixed(1).replace('.', ',')} GB`);
+    const dbs = (await psql("select datname || '|' || pg_database_size(datname) from pg_database where not datistemplate order by pg_database_size(datname) desc")).trim().split('\n').filter(Boolean).map((l) => l.split('|'));
+    const tabs = (await psql("select schemaname || '.' || relname || '|' || pg_total_relation_size(relid) from pg_catalog.pg_statio_user_tables order by pg_total_relation_size(relid) desc limit 3")).trim().split('\n').filter(Boolean).map((l) => l.split('|'));
+    const total = dbs.reduce((n, r) => n + Number(r[1]), 0);
+    const disk = Number((await run('df', ['-P', '-B1', '/'])).trim().split('\n').pop().split(/\s+/)[1]);
+    const pct = (total / disk) * 100;
+    const st = pct >= c.badPercent ? 'bad' : pct >= c.warnPercent ? 'warn' : 'ok';
+    return R(st, fmt(total), `${dbs.map((r) => `${r[0]} ${fmt(Number(r[1]))}`).join(', ')} (${pct < 0.1 ? 'unter 0,1' : pct.toFixed(1).replace('.', ',')} % der Systemplatte); größte Tabellen: ${tabs.map((r) => `${r[0]} ${fmt(Number(r[1]))}`).join(', ')}`);
   },
   async envset(c) {
     let txt = '';

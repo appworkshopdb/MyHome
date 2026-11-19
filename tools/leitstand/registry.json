@@ -12,6 +12,9 @@
     "tls",
     "caddy",
     "disk",
+    "ram",
+    "load",
+    "dbsize",
     "hook",
     "reboot"
   ],
@@ -330,6 +333,27 @@
       "label": "Cron Mo 09:00",
       "pattern": "social-cron",
       "hint": "Cron-Eintrag montags 09:00 ergänzen (nach OK des Nutzers)."
+    },
+    "ram": {
+      "type": "ram",
+      "label": "RAM",
+      "warnPercent": 85,
+      "badPercent": 95,
+      "hint": "Größte Verbraucher mit docker stats --no-stream ansehen, Log des auffälligen Containers lesen. Nur einzelne Dienste neu starten (docker compose up -d --no-deps <dienst>), nie den ganzen Stack. Ohne Swap droht bei vollem RAM der Abbruch von Prozessen."
+    },
+    "load": {
+      "type": "load",
+      "label": "CPU-Last",
+      "warnPerCore": 1.0,
+      "badPerCore": 2.0,
+      "hint": "Mit docker stats --no-stream und top die Ursache suchen. Kurze Spitzen um das Backup (03:30) und die Cron-Jobs sind normal, anhaltend hohe Last nicht."
+    },
+    "dbsize": {
+      "type": "dbsize",
+      "label": "Datenbank",
+      "warnPercent": 10,
+      "badPercent": 25,
+      "hint": "Größte Tabellen ansehen (pg_total_relation_size), Aufbewahrung der Protokolltabellen prüfen (Löschfristen in cron.job, Job data-retention). Nichts ohne OK löschen."
     }
   },
   "nodes": [
@@ -427,7 +451,8 @@
         "RLS und Rechte",
         "Functions",
         "Caddy",
-        "Neustart"
+        "Neustart",
+        "RAM, Last, Datenbankgröße"
       ],
       "channel": "#server",
       "runAt": "06:00",
