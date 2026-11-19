@@ -110,7 +110,7 @@ function renderHome() {
         <g class="spin rev" style="--d:120s"><circle r="98" fill="none" stroke="#8B7CFF" stroke-opacity=".45" stroke-dasharray="1 4"/></g>
         ${dots}
         <circle r="70" fill="url(#md)" stroke="${COLOR[worst === 'ok' ? 'build' : worst]}" stroke-opacity=".75" stroke-width="1.3"/>
-        <g class="spin" style="--d:5s"><path d="M0 0 L70 0 A70 70 0 0 0 53.6 -45 Z" fill="url(#ms)"/></g>
+        <g class="spin" style="--d:5s"><circle r="70" fill="none"/><path d="M0 0 L70 0 A70 70 0 0 0 53.6 -45 Z" fill="url(#ms)"/></g>
       </svg><div class="lbl"><b>${m.active.length}/${n}</b><span>Agenten aktiv</span></div></div>
       <div class="sum"><h1>Agenten-Kern</h1><p class="lead">${esc(lead)}</p>
         <div class="facts">

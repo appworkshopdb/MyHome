@@ -239,6 +239,35 @@
       "key": "DISCORD_WEBHOOK_SOCIAL",
       "missing": "warn",
       "hint": "DISCORD_WEBHOOK_SOCIAL in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "kctx_skript": {
+      "type": "file",
+      "label": "kontext-cron.sh",
+      "path": "/opt/nestua/ops/agenten/kontext/kontext-cron.sh",
+      "hint": "tools/agenten/kontext/deploy.sh ausführen."
+    },
+    "kctx_key": {
+      "type": "file",
+      "label": "Deploy-Key nestua-notes",
+      "path": "/home/nestua/.ssh/github_notes_deploy.pub",
+      "hint": "Schlüssel erzeugen (Nutzer) und in GitHub bei nestua-notes als Deploy-Key mit Schreibrecht eintragen."
+    },
+    "kctx_vault": {
+      "type": "file",
+      "label": "Vault-Klon",
+      "path": "/opt/nestua/ops/vault/.git",
+      "hint": "git clone git@github-notes:appworkshopdb/nestua-notes.git /opt/nestua/ops/vault"
+    },
+    "kctx_cron": {
+      "type": "cron",
+      "label": "Cron Mo 07:00",
+      "pattern": "kontext-cron",
+      "hint": "Cron-Eintrag montags 07:00 ergänzen (nach OK des Nutzers)."
+    },
+    "kctx_repo": {
+      "type": "file",
+      "label": "MyHome-Repo",
+      "path": "/opt/nestua/werkstatt/.git"
     }
   },
   "nodes": [
@@ -527,10 +556,9 @@
     {
       "id": "kontext",
       "kind": "agent",
-      "state": "plan",
       "icon": "cloud",
       "name": "Kontext & Status",
-      "sub": "Cloud, montags",
+      "sub": "Hetzner, montags 07:00",
       "polar": [
         30,
         310
@@ -538,47 +566,97 @@
       "info": [
         [
           "Auslöser",
-          "Cloud-Routine, montags"
+          "Cron, montags 07:00"
+        ],
+        [
+          "KI",
+          "Wochennotiz und Index-Abgleich"
         ],
         [
           "Rechte",
-          "lesen, Vault schreiben"
+          "Vault: nur Betrieb/Wochen und Backlog/Index.md"
         ],
         [
           "Freiheit",
-          "Stufe 3"
+          "Stufe 3, schreibt ohne Rückfrage"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #kontext"
         ]
       ],
       "zust": [
-        "Backlog",
         "Wochenübersicht",
-        "Start-Hook"
+        "Backlog-Index",
+        "Backlog-Pflege (nur markieren)"
       ],
       "channel": "#kontext",
       "flow": [
         {
           "g": "in",
-          "name": "Cloud-Routine",
-          "sub": "montags",
-          "icon": "clock",
-          "plan": true
+          "check": "kctx_cron",
+          "name": "Cron Mo 07:00",
+          "sub": "wöchentlich, Berlin-Zeit",
+          "icon": "clock"
         },
         {
           "g": "liest",
-          "node": "github"
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "Commits der Woche (staging, main)",
+          "icon": "git"
+        },
+        {
+          "g": "liest",
+          "node": "notes",
+          "sub": "Backlog und Index"
         },
         {
           "g": "out",
-          "node": "notes"
+          "check": "kctx_vault",
+          "name": "Wochennotiz",
+          "sub": "Betrieb/Wochen/<Woche>.md",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "check": "kctx_vault",
+          "name": "Backlog-Index",
+          "sub": "Backlog/Index.md abgleichen",
+          "icon": "file"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "kontext-*.json für den Leitstand"
         },
         {
           "g": "out",
           "check": "notify_kontext",
           "name": "Discord #kontext",
-          "sub": "eigener Kanal",
+          "sub": "Kurzfassung am Montag",
           "icon": "send"
         }
-      ]
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "kctx_skript",
+        "kctx_key",
+        "kctx_vault",
+        "kctx_cron",
+        "notify_kontext"
+      ],
+      "runAt": "07:00",
+      "runDays": [
+        1
+      ],
+      "runSince": "2026-11-23",
+      "report": "kontext",
+      "guard": "leitplanken"
     },
     {
       "id": "pruefer",
@@ -859,14 +937,15 @@
     {
       "id": "notes",
       "kind": "res",
-      "state": "plan",
       "icon": "book",
       "name": "Notiz-Vault",
-      "where": "nestua-notes (Cloud)",
+      "where": "/opt/nestua/ops/vault (Klon von nestua-notes)",
       "polar": [
         40,
         560
-      ]
+      ],
+      "sub": "Backlog, Wochennotizen",
+      "check": "kctx_vault"
     },
     {
       "id": "github",
@@ -1057,6 +1136,14 @@
     [
       "leitplanken",
       "server"
+    ],
+    [
+      "kontext",
+      "reports"
+    ],
+    [
+      "kontext",
+      "leitplanken"
     ]
   ]
 }

@@ -197,12 +197,16 @@ async function runInfo(n, now) {
     } catch { /* noch kein Bericht */ }
   }
   if (n.runAt) {
-    const b = berlin(now), tomorrow = berlin(new Date(now.getTime() + 864e5)), yesterday = berlin(new Date(now.getTime() - 864e5));
-    run.next = { datum: b.hm < n.runAt ? b.day : tomorrow.day, zeit: n.runAt };
+    // runDays: ISO-Wochentage (1 = Montag); ohne Angabe täglich
+    const days = n.runDays || [1, 2, 3, 4, 5, 6, 7];
     const [h, m] = n.runAt.split(':').map(Number), g = h * 60 + m + 30;
     const grace = `${String(Math.floor(g / 60) % 24).padStart(2, '0')}:${String(g % 60).padStart(2, '0')}`;
-    const due = b.hm >= grace ? b.day : yesterday.day;
-    run.overdue = (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
+    const at = (k) => { const b = berlin(new Date(now.getTime() + k * 864e5)); return { ...b, wd: new Date(`${b.day}T12:00:00Z`).getUTCDay() || 7 }; };
+    const b0 = at(0);
+    for (let k = 0; k <= 7; k++) { const b = at(k); if (days.includes(b.wd) && (k > 0 || b0.hm < n.runAt)) { run.next = { datum: b.day, zeit: n.runAt }; break; } }
+    let due = null;
+    for (let k = 0; k <= 7; k++) { const b = at(-k); if (days.includes(b.wd) && (k > 0 || b0.hm >= grace)) { due = b.day; break; } }
+    run.overdue = !!due && (n.runSince ? due >= n.runSince : true) && (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
   }
   return run;
 }
