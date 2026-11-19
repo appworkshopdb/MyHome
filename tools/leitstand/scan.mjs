@@ -197,15 +197,16 @@ async function runInfo(n, now) {
     } catch { /* noch kein Bericht */ }
   }
   if (n.runAt) {
-    // runDays: ISO-Wochentage (1 = Montag); ohne Angabe täglich
+    // runDays: ISO-Wochentage (1 = Montag); runMonthDays: Tage im Monat (1 = Monatserster); ohne Angabe täglich
     const days = n.runDays || [1, 2, 3, 4, 5, 6, 7];
     const [h, m] = n.runAt.split(':').map(Number), g = h * 60 + m + 30;
     const grace = `${String(Math.floor(g / 60) % 24).padStart(2, '0')}:${String(g % 60).padStart(2, '0')}`;
-    const at = (k) => { const b = berlin(new Date(now.getTime() + k * 864e5)); return { ...b, wd: new Date(`${b.day}T12:00:00Z`).getUTCDay() || 7 }; };
-    const b0 = at(0);
-    for (let k = 0; k <= 7; k++) { const b = at(k); if (days.includes(b.wd) && (k > 0 || b0.hm < n.runAt)) { run.next = { datum: b.day, zeit: n.runAt }; break; } }
+    const at = (k) => { const b = berlin(new Date(now.getTime() + k * 864e5)); return { ...b, wd: new Date(`${b.day}T12:00:00Z`).getUTCDay() || 7, md: Number(b.day.slice(8)) }; };
+    const fits = (b) => (n.runMonthDays ? n.runMonthDays.includes(b.md) : days.includes(b.wd));
+    const span = n.runMonthDays ? 62 : 7, b0 = at(0);
+    for (let k = 0; k <= span; k++) { const b = at(k); if (fits(b) && (k > 0 || b0.hm < n.runAt)) { run.next = { datum: b.day, zeit: n.runAt }; break; } }
     let due = null;
-    for (let k = 0; k <= 7; k++) { const b = at(-k); if (days.includes(b.wd) && (k > 0 || b0.hm >= grace)) { due = b.day; break; } }
+    for (let k = 0; k <= span; k++) { const b = at(-k); if (fits(b) && (k > 0 || b0.hm >= grace)) { due = b.day; break; } }
     run.overdue = !!due && (n.runSince ? due >= n.runSince : true) && (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
   }
   return run;

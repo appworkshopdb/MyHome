@@ -20,6 +20,9 @@ for a in "$@"; do case "$a" in --no-ai) AI=0 ;; --no-push) PUSH=0 ;; --no-send) 
 
 exec 9>"$OPS/.kontext-cron.lock"
 flock -n 9 || { echo "läuft schon"; exit 0; }
+# Kontext & Status und Datenschutz teilen den Vault-Klon: nicht gleichzeitig darin arbeiten
+exec 8>"$OPS/.vault.lock"
+flock -w 900 8 || { echo "Vault seit 15 Minuten belegt"; exit 2; }
 RUN=$K/run; rm -rf "$RUN"; mkdir -p "$RUN"
 STATUS=grün; : > "$RUN/befunde"
 befund() { echo "$1|$2|$3" >> "$RUN/befunde"; if [ "$2" = rot ]; then STATUS=rot; elif [ "$STATUS" = grün ]; then STATUS=gelb; fi; echo "Befund: $1 ($2): $3"; }

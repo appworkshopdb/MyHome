@@ -292,6 +292,24 @@
       "label": "Cron alle 15 Min",
       "pattern": "pruefer-cron",
       "hint": "Cron-Eintrag */15 ergänzen (nach OK des Nutzers)."
+    },
+    "ds_skript": {
+      "type": "file",
+      "label": "datenschutz-cron.sh",
+      "path": "/opt/nestua/ops/agenten/datenschutz/datenschutz-cron.sh",
+      "hint": "tools/agenten/datenschutz/deploy.sh ausführen."
+    },
+    "ds_cron": {
+      "type": "cron",
+      "label": "Cron am 1. um 08:00",
+      "pattern": "datenschutz-cron",
+      "hint": "Cron-Eintrag monatlich ergänzen (nach OK des Nutzers)."
+    },
+    "ds_db": {
+      "type": "sql",
+      "label": "Datenbank lesbar",
+      "query": "select count(*) > 0 from information_schema.tables where table_schema='public'",
+      "expect": "t"
     }
   },
   "nodes": [
@@ -776,10 +794,9 @@
     {
       "id": "dsgvo",
       "kind": "agent",
-      "state": "plan",
       "icon": "shield",
       "name": "Datenschutz",
-      "sub": "Cloud, monatlich",
+      "sub": "Hetzner, monatlich am 1.",
       "polar": [
         112,
         310
@@ -787,48 +804,99 @@
       "info": [
         [
           "Auslöser",
-          "monatlich"
+          "Cron, am 1. jedes Monats 08:00"
+        ],
+        [
+          "KI",
+          "Monatsbericht, nur Einschätzung"
         ],
         [
           "Rechte",
-          "nur lesen"
+          "DB nur Struktur und Zählungen; Vault: nur Betrieb/Datenschutz"
         ],
         [
-          "Ausgabe",
-          "Notiz im Vault"
+          "Freiheit",
+          "Stufe 1, nur vorschlagen"
+        ],
+        [
+          "Rundenlimit",
+          "30"
+        ],
+        [
+          "Meldung",
+          "Discord #datenschutz"
         ]
       ],
       "zust": [
+        "Datenverzeichnis",
         "Datenschutzerklärung",
         "Kontolöschung",
-        "Aufbewahrung"
+        "Aufbewahrung",
+        "Dienste und Datenflüsse"
       ],
       "channel": "#datenschutz",
       "flow": [
         {
           "g": "in",
-          "name": "Cloud-Routine",
-          "sub": "monatlich",
-          "icon": "clock",
-          "plan": true
+          "check": "ds_cron",
+          "name": "Cron am 1. um 08:00",
+          "sub": "monatlich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "prüft",
+          "check": "ds_db",
+          "name": "supabase-db",
+          "sub": "nur Struktur, Löschregeln, Zählungen",
+          "icon": "db"
+        },
+        {
+          "g": "prüft",
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "main (live) und neu in staging",
+          "icon": "git"
         },
         {
           "g": "liest",
-          "node": "github"
+          "node": "notes",
+          "sub": "Backlog Recht und Sicherheit"
         },
         {
           "g": "out",
-          "node": "notes",
-          "sub": "Notiz im Vault"
+          "check": "kctx_vault",
+          "name": "Monatsbericht",
+          "sub": "Betrieb/Datenschutz/<Monat>.md",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "datenschutz-*.json für den Leitstand"
         },
         {
           "g": "out",
           "check": "notify_dsgvo",
           "name": "Discord #datenschutz",
-          "sub": "eigener Kanal",
+          "sub": "Kurzfassung am Monatsersten",
           "icon": "send"
         }
-      ]
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "ds_skript",
+        "kctx_vault",
+        "ds_db",
+        "ds_cron",
+        "notify_dsgvo"
+      ],
+      "runAt": "08:00",
+      "runMonthDays": [
+        1
+      ],
+      "runSince": "2026-12-01",
+      "report": "datenschutz",
+      "guard": "leitplanken"
     },
     {
       "id": "social",
@@ -1208,6 +1276,18 @@
     [
       "pruefer",
       "leitplanken"
+    ],
+    [
+      "dsgvo",
+      "reports"
+    ],
+    [
+      "dsgvo",
+      "leitplanken"
+    ],
+    [
+      "dsgvo",
+      "db"
     ]
   ]
 }
