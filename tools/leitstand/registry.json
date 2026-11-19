@@ -268,6 +268,30 @@
       "type": "file",
       "label": "MyHome-Repo",
       "path": "/opt/nestua/werkstatt/.git"
+    },
+    "pr_workflow": {
+      "type": "file",
+      "label": "Workflow Prüfer",
+      "path": "/opt/nestua/werkstatt/.github/workflows/pruefer.yml",
+      "hint": "Workflow liegt im Repo; Branch-Schutzregel für main mit Pflicht-Check \"Regel-Check\" setzt der Nutzer in GitHub."
+    },
+    "pr_skript": {
+      "type": "file",
+      "label": "pruefer-cron.sh",
+      "path": "/opt/nestua/ops/agenten/pruefer/pruefer-cron.sh",
+      "hint": "tools/agenten/pruefer/deploy.sh ausführen."
+    },
+    "pr_repo": {
+      "type": "file",
+      "label": "PR-Stände (Bare-Repo)",
+      "path": "/opt/nestua/ops/pruefer/MyHome.git/HEAD",
+      "hint": "/opt/nestua/ops/agenten/pruefer/pruefer-cron.sh --seed legt es an."
+    },
+    "pr_cron": {
+      "type": "cron",
+      "label": "Cron alle 15 Min",
+      "pattern": "pruefer-cron",
+      "hint": "Cron-Eintrag */15 ergänzen (nach OK des Nutzers)."
     }
   },
   "nodes": [
@@ -661,10 +685,9 @@
     {
       "id": "pruefer",
       "kind": "agent",
-      "state": "plan",
       "icon": "git",
       "name": "Prüfer",
-      "sub": "GitHub, bei jedem PR",
+      "sub": "GitHub-Check und Server, bei jedem PR",
       "polar": [
         72,
         310
@@ -672,50 +695,83 @@
       "info": [
         [
           "Auslöser",
-          "jeder PR gegen main"
+          "neuer Stand eines PR gegen main"
         ],
         [
-          "Rechte",
-          "nur lesen"
+          "Regel-Check",
+          "GitHub, Fehler blockieren den Merge"
         ],
         [
-          "Vorher",
-          "Regelskript, SQL-Prüfung, Secret-Scan"
+          "KI",
+          "Review auf dem Server, nur lesen"
+        ],
+        [
+          "Freiheit",
+          "Stufe 1, nur vorschlagen"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #pruefer"
         ]
       ],
       "zust": [
         "Fehlerliste CLAUDE.md",
-        "Migrationen",
-        "Dependabot"
+        "SQL-Migrationen und RLS",
+        "Secrets",
+        "Abhängigkeiten (npm audit)",
+        "Edge Functions"
       ],
       "channel": "#pruefer",
       "flow": [
         {
           "g": "in",
-          "name": "Pull Request",
-          "sub": "jeder PR gegen main",
-          "icon": "git",
-          "plan": true
+          "check": "pr_cron",
+          "name": "Neuer PR-Stand",
+          "sub": "gegen main, alle 15 Min nachgesehen",
+          "icon": "git"
         },
         {
           "g": "prüft",
-          "name": "Regelskript",
-          "sub": "SQL-Prüfung, Secret-Scan",
-          "icon": "check",
-          "plan": true
+          "check": "pr_workflow",
+          "name": "Regel-Check (GitHub)",
+          "sub": "Fehlerliste, SQL, Secrets, npm audit",
+          "icon": "check"
         },
         {
           "g": "liest",
-          "node": "github"
+          "check": "pr_repo",
+          "name": "PR-Stände",
+          "sub": "Bare-Repo mit refs/pull",
+          "icon": "git"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "pruefer-*.json für den Leitstand"
         },
         {
           "g": "out",
           "check": "notify_pruefer",
           "name": "Discord #pruefer",
-          "sub": "eigener Kanal",
+          "sub": "eine Meldung je PR-Stand",
           "icon": "send"
         }
-      ]
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "pr_workflow",
+        "pr_skript",
+        "pr_repo",
+        "pr_cron",
+        "notify_pruefer"
+      ],
+      "report": "pruefer",
+      "runText": "bei neuem PR-Stand",
+      "guard": "leitplanken"
     },
     {
       "id": "dsgvo",
@@ -1143,6 +1199,14 @@
     ],
     [
       "kontext",
+      "leitplanken"
+    ],
+    [
+      "pruefer",
+      "reports"
+    ],
+    [
+      "pruefer",
       "leitplanken"
     ]
   ]

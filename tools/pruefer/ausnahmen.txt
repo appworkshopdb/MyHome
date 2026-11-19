@@ -1,0 +1,6 @@
+# Bewusste Ausnahmen für den Prüfer-Regel-Check (tools/pruefer/regeln.mjs).
+# Je Zeile: <regel> <pfad-muster>   (Muster mit * und **; Regel * = alle Regeln)
+# Regeln: datum-utc, core-modules, fonts-extern, fixed-nav, geheimnis, sql-rls, sql-anon, sql-search-path,
+#         sql-revoke, sql-nicht-additiv, migration-name, functions-deploy, npm-audit
+# Für einzelne Zeilen reicht ein Kommentar "pruefer:ok" am Zeilenende.
+# Jede Ausnahme mit Begründung und Datum darüber.

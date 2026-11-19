@@ -50,7 +50,7 @@ function model(D) {
         detail:src && src.status !== 'ok' ? src.detail || '' : '' };
     });
     const guard = n.guard && byId[n.guard] ? { name:byId[n.guard].name, sub:byId[n.guard].sub || '', st:byId[n.guard].status || 'plan', val:byId[n.guard].value || '' } : null;
-    return { id:n.id, name:n.name, sub:n.sub || '', icon:n.icon, phase:n.phase || '', st, state, progress:n.progress || null, last, next:run.next || null, overdue:!!run.overdue,
+    return { id:n.id, name:n.name, sub:n.sub || '', icon:n.icon, phase:n.phase || '', st, state, progress:n.progress || null, last, next:run.next || null, runText:n.runText || '', overdue:!!run.overdue,
       channel:n.channel || '', info:n.info || [], zust:n.zust || [], flow, guard,
       builds:(n.builds || []).map((b) => ({ id:b, ...chk(b) })), tasks:[...du, ...cl].filter((t) => t.agent === n.id) };
   });
@@ -90,7 +90,7 @@ function renderHome() {
     return `<button class="acard s-${a.st}" data-id="${esc(a.id)}" aria-label="${esc(a.name)} öffnen, ${esc(a.state)}">
       <span class="ahd"><span class="ic">${svg(a.icon)}</span><span class="t"><b>${esc(a.name)}</b><span>${esc(a.sub)}</span></span><span class="pill"><i></i>${esc(a.state)}</span></span>
       <dl class="met"><div><dt>Letzter Lauf</dt><dd class="${a.last ? (lastSt === 'ok' ? '' : lastSt) : 'mut'}">${a.last ? runTxt(a.last) : 'noch keiner'}</dd></div>
-        <div><dt>Nächster Lauf</dt><dd class="${a.next ? (a.overdue ? 'warn' : '') : 'mut'}">${a.next ? runTxt(a.next) : 'nicht geplant'}</dd></div>
+        <div><dt>Nächster Lauf</dt><dd class="${a.next ? (a.overdue ? 'warn' : '') : a.runText ? '' : 'mut'}">${a.next ? runTxt(a.next) : esc(a.runText || 'nicht geplant')}</dd></div>
         <div><dt>Befunde</dt><dd class="${a.last ? (a.last.befunde ? lastSt : '') : 'mut'}">${a.last ? a.last.befunde : '–'}</dd></div></dl>
       <span class="build ${a.progress ? (a.progress[0] === a.progress[1] ? 's-ok' : 's-build') : 's-plan'}"><span class="row"><span>Aufbau</span><span>${a.progress ? `${a.progress[0]} von ${a.progress[1]} Bausteinen` : 'noch nicht begonnen'}</span></span>${segs(a.progress ? a.progress[1] : 7, a.progress ? a.progress[0] : 0)}</span>
       <span class="links"><span class="dots">${a.flow.map((l) => `<i class="s-${l.st}"></i>`).join('')}</span><span class="lt">${a.flow.length} Verknüpfungen${a.channel ? ` · Discord ${esc(a.channel)}` : ''}</span><span class="go">Öffnen${svg('arrow')}</span></span>
@@ -150,7 +150,7 @@ function renderAgent(id) {
       <span class="ic">${svg(a.icon)}</span>
       <div><h1>${esc(a.name)}</h1><div class="sub">${esc(a.sub)}${a.phase ? ' · ' + esc(a.phase) : ''} <span class="pill"><i></i>${esc(a.state)}</span></div></div>
       <div class="runs"><div><small>Letzter Lauf</small><b class="${a.last && lastSt !== 'ok' ? lastSt : ''}">${a.last ? runTxt(a.last) : 'noch keiner'}</b></div>
-        <div><small>Nächster Lauf</small><b class="${a.overdue ? 'warn' : ''}">${a.next ? runTxt(a.next) : 'nicht geplant'}</b></div>
+        <div><small>Nächster Lauf</small><b class="${a.overdue ? 'warn' : ''}">${a.next ? runTxt(a.next) : esc(a.runText || 'nicht geplant')}</b></div>
         <div><small>Befunde</small><b class="${a.last && a.last.befunde ? lastSt : ''}">${a.last ? a.last.befunde : '–'}</b></div></div>
     </div>
     <section class="flowbox glass"><div class="bh"><h2 class="h">Verknüpfungen</h2><span>${a.flow.length} insgesamt, Fluss von links nach rechts</span></div>
