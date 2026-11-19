@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '../lib/AuthContext';
-import { useEntrySheet } from '../lib/EntrySheetContext';
-import * as db from '../../modules/sport/lib/spoData';
-import PlanDaysBoard, { DayTile } from '../../modules/sport/components/PlanDaysBoard';
-import UnitPicker from '../../modules/sport/components/UnitPicker';
-import UnitSelectCard from '../../modules/sport/components/UnitSelectCard';
-import UnitVisual from '../../modules/sport/components/UnitVisual';
-import OwnUnitForm from '../../modules/sport/components/OwnUnitForm';
-import { resolveTypeLabel } from '../../modules/sport/lib/typeLabel';
-import { resolveUnitVisual } from '../../modules/sport/lib/planMuscles';
-import { buildCatalog } from '../../modules/sport/lib/unitCatalog';
-import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../../modules/sport/lib/planDays';
-import { getBodyProfile } from '../lib/bodyProfileData';
-import { todayIso } from '../lib/wizardDates';
-import SheetShell from './SheetShell';
-import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
+import { useAuth } from '../../../core/lib/AuthContext';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import * as db from '../lib/spoData';
+import PlanDaysBoard, { DayTile } from './PlanDaysBoard';
+import UnitPicker from './UnitPicker';
+import UnitSelectCard from './UnitSelectCard';
+import UnitVisual from './UnitVisual';
+import OwnUnitForm from './OwnUnitForm';
+import { resolveTypeLabel } from '../lib/typeLabel';
+import { resolveUnitVisual } from '../lib/planMuscles';
+import { buildCatalog } from '../lib/unitCatalog';
+import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../lib/planDays';
+import { getBodyProfile } from '../../../core/lib/bodyProfileData';
+import { todayIso } from '../../../core/lib/wizardDates';
+import SheetShell from '../../../core/components/SheetShell';
+import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Auswahl zuerst: Neue Einheit · Trainingsplan · Ruhetag.

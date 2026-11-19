@@ -1,10 +1,9 @@
 // src/core/lib/financeBridge.js
-// Dünne Brücke von core/ zu modules/finance/, damit andere Module (wie
-// Einkauf) eine Ausgabe im Finanzmodul verbuchen können, ohne selbst aus
-// modules/finance zu importieren (verboten: Module importieren nie
-// voneinander, nur aus core/). core/components/EntrySheet.jsx macht das
-// bereits direkt für den globalen Erfassen-Wizard — diese Datei bündelt
-// dasselbe Muster wiederverwendbar für weitere Module.
+// Dünne Brücke zum Finanzmodul, damit andere Module (wie Einkauf) eine
+// Ausgabe verbuchen können, ohne aus modules/finance zu importieren
+// (verboten: Module importieren nie voneinander, nur aus core/). Gebucht wird
+// über core/lib/finEntries.js, dieselben Funktionen nutzt auch das
+// Finanzmodul selbst.
 //
 // owner_id wird bewusst selbst aus dem JWT gelesen (wie in shoData.js /
 // habData.js), statt eine echte Supabase-Session per useAuth() zu
@@ -12,7 +11,7 @@
 // Windows/Chromium-Hang und hält Einkauf unabhängig vom Auth-Context.
 
 import { SESSION_STORAGE_KEY } from './rawAuth.js';
-import { saveEntry, deleteEntry } from '../../modules/finance/lib/finData.js';
+import { saveEntry, deleteEntry } from './finEntries.js';
 
 function getOwnerIdFromToken() {
   try {

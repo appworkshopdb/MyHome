@@ -4,7 +4,7 @@ Aus `CLAUDE.md` ausgelagert (17.11.2026). Vor Arbeit an diesem Bereich lesen; Ä
 
 ## Rezept → Einkaufsliste
 
-Knopf "Einkaufsliste" im Rezept-Dialog (`RecipeDetailModal`) öffnet `core/components/RecipeToShoppingSheet.jsx`:
+Knopf "Einkaufsliste" im Rezept-Dialog (`RecipeDetailModal`) öffnet `modules/shopping/components/RecipeToShoppingSheet.jsx` (über die Sheet-Registry `core/lib/sheetRegistry.js`, Schlüssel `shopping.fromRecipe`):
 Portionen, Liste (vorgewählt: aktive Liste, sonst "Neue Liste") und Zutaten an-/abwählen. Rechenlogik rein in
 `modules/shopping/lib/recipeImport.js` (Mengen umrechnen, Kategorie, Zusammenführen); Schreiben/Rückgängig in
 `shoData.js` (`applyShoppingPlan`/`undoShoppingPlan`), keine Migration. Zutat steht schon OFFEN auf der Liste (gleicher

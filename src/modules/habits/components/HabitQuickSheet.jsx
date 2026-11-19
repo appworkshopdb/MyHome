@@ -1,15 +1,15 @@
-// core/components/HabitQuickSheet.jsx
+// modules/habits/components/HabitQuickSheet.jsx
 // Neue Gewohnheit (FAB) — 2 Schritte im gemeinsamen Wizard-Rahmen
 // (core/components/wizard/WizardKit.jsx):
 //   Schritt 1: Symbol (Dropdown) + Name + Bereich (Wechselregler)
 //   Schritt 2: Wiederholung, Wochentage, Wann am Tag, Ziel pro Tag + Einheit (Regler)
 
 import { useState } from 'react';
-import { saveHabit } from '../../modules/habits/lib/habData';
-import { HABIT_CATEGORIES, HABIT_ICONS, HABIT_UNITS, TIME_SLOTS } from '../../modules/habits/lib/habUtils';
-import { loadHabitsData } from '../lib/habitsStore';
-import SheetShell from './SheetShell';
-import { ChipGroup, IconDropdown, SegGroup, Stepper, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
+import { saveHabit } from '../lib/habData';
+import { HABIT_CATEGORIES, HABIT_ICONS, HABIT_UNITS, TIME_SLOTS } from '../lib/habUtils';
+import { loadHabitsData } from '../../../core/lib/habitsStore';
+import SheetShell from '../../../core/components/SheetShell';
+import { ChipGroup, IconDropdown, SegGroup, Stepper, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
 const FREQ_OPTIONS = [
   { value: 'daily',    label: 'Täglich' },

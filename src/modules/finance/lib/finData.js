@@ -1,7 +1,7 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { track } from '../../../core/lib/analytics';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
+import { saveEntry, deleteEntry } from '../../../core/lib/finEntries';
+import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
 
 function ownerId(session) {
   return session.user.id;
@@ -120,52 +120,10 @@ export async function getNameSuggestions(session) {
   return Array.from(map.values());
 }
 
-export async function saveEntry(session, entry) {
-  // Bezahlt-Status je Teilzahlung (core/lib/paymentParts.js): Bar, Sparschwein
-  // und Gutschein gelten sofort als bezahlt; sonst zählt das paid-Flag der
-  // Teilzahlung, und ein ausdrücklich übergebenes paid:true der Zeile setzt alle
-  // Teilzahlungen auf bezahlt. `paid` an der Zeile ist dann "alles bezahlt".
-  // Ohne payments-Array gilt ein übergebenes paid unverändert.
-  let resolvedPaid = entry.paid;
-  let resolvedPayments = entry.payments;
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
-    resolvedPayments = entry.payments.map((p) => ({
-      ...p,
-      paid: isInstantMethod(p.method) || entry.paid === true || p.paid === true,
-    }));
-    resolvedPaid = resolvedPayments.every((p) => p.paid);
-  }
-
-  // payment-Feld (alter ENUM) für Abwärtskompatibilität:
-  // Bei payments-Array: erste Zahlungsart eintragen damit alte
-  // Code-Pfade (z.B. PaymentBadge) weiterhin funktionieren.
-  let legacyPayment = entry.payment;
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
-    legacyPayment = entry.payments[0].method;
-  }
-
-  const payload = {
-    ...entry,
-    owner_id: ownerId(session),
-    paid: resolvedPaid,
-    payment: legacyPayment,
-    ...(resolvedPayments !== undefined ? { payments: resolvedPayments } : {}),
-  };
-  const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
-  if (error) throw error;
-  track('finance_entry_saved', { category: String(entry.category ?? '') });
-  invalidateHubCache();
-  return data;
-}
-
-export async function deleteEntry(id) {
-  const { error } = await getSupabase()
-    .from('fin_entries')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
-  if (error) throw error;
-  invalidateHubCache();
-}
+// saveEntry/deleteEntry liegen in core/lib/finEntries.js, damit auch die
+// Brücke für andere Module (core/lib/financeBridge.js) sie nutzen kann, ohne
+// aus modules/ zu importieren. Hier nur weitergereicht.
+export { saveEntry, deleteEntry };
 
 // Ganzen Posten auf bezahlt/offen setzen. `payments` (optional) sind die dazu
 // passend umgesetzten Teilzahlungen (setPartsPaid aus paymentParts.js), damit

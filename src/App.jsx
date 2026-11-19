@@ -36,7 +36,12 @@ import BirdDefs from './core/components/birds/BirdDefs';
 import WelcomeWizard from './core/components/WelcomeWizard';
 import { useGamificationStore } from './core/lib/gamificationStore';
 import RequiredDataToast from './core/components/RequiredDataToast';
-import EntrySheet from './core/components/EntrySheet';
+import EntrySheet from './modules/finance/components/EntrySheet';
+// Module melden ihre Erfassen-Sheets bei der Sheet-Registry an
+// (core/lib/sheetRegistry.js), GlobalFab/ModuleTutorial holen sie dort ab.
+import './modules/habits/sheets';
+import './modules/sport/sheets';
+import './modules/shopping/sheets';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
 import GlobalFab from './core/components/GlobalFab';
 import Hub from './core/Hub';

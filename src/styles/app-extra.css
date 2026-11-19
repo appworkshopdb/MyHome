@@ -785,7 +785,7 @@
   border-radius: 6px;
 }
 
-/* ===== Erfassen-Sheet (core/components/EntrySheet.jsx) ===== */
+/* ===== Erfassen-Sheet (modules/finance/components/EntrySheet.jsx) ===== */
 
 /* ── Bottom-Sheet ──────────────────────────────────────────────────────
    Wird von SheetShell.jsx per Portal an <body> gehängt — nie in einen
@@ -957,7 +957,7 @@
   color: var(--text-muted);
 }
 
-/* ===== Wizard (core/components/EntrySheet.jsx, 3 Stufen) ===== */
+/* ===== Wizard (modules/finance/components/EntrySheet.jsx, 3 Stufen) ===== */
 /* Design-System "Kompakte Tiefe": semantische Tokens, Radien, keine Hex-Werte */
 
 .wiz-progress {

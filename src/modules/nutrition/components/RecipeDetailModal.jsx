@@ -3,7 +3,14 @@ import Modal from '../../../core/components/Modal';
 import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
-import RecipeToShoppingSheet from '../../../core/components/RecipeToShoppingSheet';
+import { getSheet } from '../../../core/lib/sheetRegistry';
+
+// Das Sheet gehört zum Einkauf (modules/shopping/sheets.js); Ernährung und
+// Einkauf importieren sich nicht gegenseitig, deshalb über die Sheet-Registry.
+const RecipeToShoppingSheet = (props) => {
+  const Sheet = getSheet('shopping.fromRecipe');
+  return Sheet ? <Sheet {...props} /> : null;
+};
 
 const UNIT_LABEL = { ml: 'ml', Scheibe: 'Sch.', Stück: 'Stk.', Zehe: 'Zehe', EL: 'EL' };
 

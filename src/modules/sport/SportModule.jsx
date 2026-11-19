@@ -35,7 +35,7 @@ registerRequirement('profile', async (session) => {
 // Screen, auf dem das Formular ohnehin lebt. Kein Scrollen mehr nötig.
 //
 // Einheiten und Pläne neu anlegen läuft weiterhin ausschließlich über
-// den globalen FAB (core/components/GlobalFab.jsx → SportQuickSheet).
+// den globalen FAB (core/components/GlobalFab.jsx → SportQuickSheet über die Sheet-Registry).
 //
 // Hält den gesamten Modul-Zustand: Einheiten (Workouts im Kalender),
 // die Einheiten-Bibliothek, Plan-Vorlagen, die im Profil gewählten

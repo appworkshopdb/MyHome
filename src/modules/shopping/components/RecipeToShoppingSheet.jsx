@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import SheetShell from './SheetShell';
-import { Stepper, WizardFoot, WizardFrame } from './wizard/WizardKit';
+import SheetShell from '../../../core/components/SheetShell';
+import { Stepper, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import {
   loadLists, loadItems, saveList, deleteList, pickActiveList,
   applyShoppingPlan, undoShoppingPlan,
-} from '../../modules/shopping/lib/shoData';
-import { markFreshItems } from '../lib/shoppingHandoff';
-import { recipeRows, planImport, mergeHint, fmtAmount } from '../../modules/shopping/lib/recipeImport';
-import { fb } from '../lib/feedback';
+} from '../lib/shoData';
+import { markFreshItems } from '../../../core/lib/shoppingHandoff';
+import { recipeRows, planImport, mergeHint, fmtAmount } from '../lib/recipeImport';
+import { fb } from '../../../core/lib/feedback';
 
 // „Zutaten auf die Liste“ — Rezept-Zutaten (umgerechnet auf die gewählten
 // Portionen) in eine Einkaufsliste übernehmen. Wird vom Rezept-Dialog der
-// Ernährung geöffnet (Ernährung und Einkauf importieren sich nicht gegenseitig,
-// deshalb liegt das Sheet in core/ — wie ShoppingQuickSheet).
+// Ernährung geöffnet. Ernährung und Einkauf importieren sich nicht gegenseitig:
+// Einkauf meldet das Sheet in modules/shopping/sheets.js bei der Sheet-Registry
+// (core/lib/sheetRegistry.js) an, der Rezept-Dialog holt es dort ab.
 //
 // Ablauf: Liste wählen (vorgewählt: aktive Liste, oder neue Liste) → Zutaten an-
 // und abwählen → hinzufügen. Zutaten, die schon offen auf der Liste stehen,

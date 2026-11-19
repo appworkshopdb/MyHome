@@ -7,7 +7,7 @@ Aus `CLAUDE.md` ausgelagert (17.11.2026). Vor Arbeit an diesem Bereich lesen; Ä
 Kassenbon fotografieren → Betrag/Händler/Datum/Zahlungsart vorbefüllen; der
 Nutzer bestätigt, gespeichert wird nichts automatisch (auch das Foto nicht).
 Einstieg ist die Auswahl "Beleg scannen / Manuelle Eingabe" im `FinanceWizard`
-(`core/components/EntrySheet.jsx`); nach einem Scan erscheinen alle Felder auf
+(`modules/finance/components/EntrySheet.jsx`); nach einem Scan erscheinen alle Felder auf
 einer Seite, die manuelle Eingabe behält die 3 Schritte.
 
 - Frontend: `core/components/ReceiptScanChoice.jsx`, `core/lib/photoScan.js`

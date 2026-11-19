@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { saveItem, saveList, loadItems, loadTemplates, deleteList } from '../../modules/shopping/lib/shoData';
-import { STORES, DAY_PARTS } from '../../modules/shopping/lib/data/stores';
-import { ALL_SUGGESTIONS, UNIT_OPTIONS, getCategory } from '../../modules/shopping/lib/data/items';
-import { notifyShoppingChanged } from '../lib/shoppingHandoff';
-import SheetShell from './SheetShell';
-import { IconEdit, IconTrash } from './Icons';
-import { DateButton, IconDropdown, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
+import { saveItem, saveList, loadItems, loadTemplates, deleteList } from '../lib/shoData';
+import { STORES, DAY_PARTS } from '../lib/data/stores';
+import { ALL_SUGGESTIONS, UNIT_OPTIONS, getCategory } from '../lib/data/items';
+import { notifyShoppingChanged } from '../../../core/lib/shoppingHandoff';
+import SheetShell from '../../../core/components/SheetShell';
+import { IconEdit, IconTrash } from '../../../core/components/Icons';
+import { DateButton, IconDropdown, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
 // „Neue Einkaufsliste“ — 3 Schritte im gemeinsamen Wizard-Rahmen
 // (core/components/wizard/WizardKit.jsx). Der Plus-Knopf (globaler FAB) ist der einzige Weg,

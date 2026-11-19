@@ -1,17 +1,18 @@
-// core/components/HabitTemplatePicker.jsx
+// modules/habits/components/HabitTemplatePicker.jsx
 // Erste Gewohnheiten aus Vorlagen wählen (Mission der Tour „Gewohnheiten“).
 // Zwei Schritte wie der frühere Einrichtungs-Wizard: Bereiche wählen → bis zu
 // drei Vorlagen wählen → „Jetzt starten“ legt sie an. Vorlagen: lib/habitTemplates.js.
 //
-// Hinweis zur Architektur-Regel: wie HabitQuickSheet ruft diese Datei saveHabit()
-// aus modules/habits auf (bekannte Ausnahme, es gibt keine core-Variante).
+// Die Tour (core/components/ModuleTutorial.jsx) holt das Sheet über die
+// Sheet-Registry (core/lib/sheetRegistry.js, Schlüssel 'habits.templates');
+// angemeldet wird es in modules/habits/sheets.js.
 
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
-import { saveHabit } from '../../modules/habits/lib/habData';
-import { loadHabitsData } from '../lib/habitsStore';
-import { HABIT_AREAS, MAX_TEMPLATES, habitMeta } from '../lib/habitTemplates';
-import { ModuleIcon } from './ModuleIcons';
+import { saveHabit } from '../lib/habData';
+import { loadHabitsData } from '../../../core/lib/habitsStore';
+import { HABIT_AREAS, MAX_TEMPLATES, habitMeta } from '../../../core/lib/habitTemplates';
+import { ModuleIcon } from '../../../core/components/ModuleIcons';
 
 export default function HabitTemplatePicker({ onClose, onSaved }) {
   const [step, setStep] = useState(1);

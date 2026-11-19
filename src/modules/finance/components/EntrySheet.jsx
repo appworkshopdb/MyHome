@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useEntrySheet } from '../lib/EntrySheetContext';
-import { useAuth } from '../lib/AuthContext';
-import { useUi } from '../lib/UiContext';
-import { getModule } from '../modules';
-import * as finData from '../../modules/finance/lib/finData';
-import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid, isInstantMethod } from '../../modules/finance/lib/finance';
-import { useFinanceMonth } from '../../modules/finance/lib/FinanceMonthContext';
-import ReceiptScanChoice from './ReceiptScanChoice';
-import { formatReceiptDate } from '../lib/photoScan';
-import { fmtDate, parseNum } from '../lib/wizardDates';
-import SheetShell from './SheetShell';
-import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from './wizard/WizardKit';
+import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
+import { useAuth } from '../../../core/lib/AuthContext';
+import { useUi } from '../../../core/lib/UiContext';
+import { getModule } from '../../../core/modules';
+import * as finData from '../lib/finData';
+import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid, isInstantMethod } from '../lib/finance';
+import { useFinanceMonth } from '../lib/FinanceMonthContext';
+import ReceiptScanChoice from '../../../core/components/ReceiptScanChoice';
+import { formatReceiptDate } from '../../../core/lib/photoScan';
+import { fmtDate, parseNum } from '../../../core/lib/wizardDates';
+import SheetShell from '../../../core/components/SheetShell';
+import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
