@@ -135,9 +135,12 @@
       "hint": "Vault-Secret service_role_key fehlt: Cron-Jobs scheitern. Aus der Umgebung der Edge Functions neu anlegen (ohne Ausgabe)."
     },
     "notify": {
-      "type": "file",
+      "type": "envset",
       "label": "notify.env",
-      "path": "/opt/nestua/ops/notify.env"
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_SERVER",
+      "missing": "bad",
+      "hint": "DISCORD_WEBHOOK_SERVER in /opt/nestua/ops/notify.env eintragen (Nutzer): Discord, Kanal #server, Kanal bearbeiten, Integrationen, Webhooks."
     },
     "reports": {
       "type": "file",
@@ -291,7 +294,7 @@
         ],
         [
           "Meldung",
-          "Google Chat"
+          "Discord"
         ]
       ],
       "zust": [
@@ -569,10 +572,10 @@
       ]
     },
     {
-      "id": "gchat",
+      "id": "discord",
       "kind": "res",
       "icon": "send",
-      "name": "Google Chat",
+      "name": "Discord",
       "where": "/opt/nestua/ops/notify.env",
       "check": "notify",
       "note": "Webhook-Adresse trägst du ein",
@@ -794,7 +797,7 @@
     ],
     [
       "server",
-      "gchat"
+      "discord"
     ],
     [
       "server",

@@ -44,6 +44,8 @@ const fresh = checks.filter((c) => c.status !== 'ok' && prev && !prevMap[c.id]);
 const line = (c) => `- **${c.label}: ${c.value}** (${WORD[c.status]}${c.status === 'bad' ? ', Dringlichkeit hoch' : ', Dringlichkeit mittel'})\n  - Beleg: ${c.detail || 'keiner'}\n  - Vorschlag: ${c.hint || 'prüfen und mit Beleg vorschlagen'}`;
 const sys = d.system;
 const agents = reg.nodes.filter((n) => n.kind === 'agent').map((n) => d.nodes.find((x) => x.id === n.id)).filter(Boolean);
+const fazit = `System ${sys.ok}/${sys.total} grün, ${sys.warn} ${sys.warn === 1 ? 'Hinweis' : 'Hinweise'}, ${sys.bad} Fehler. ${status === 'ok' ? 'Nichts zu tun.' : `Zu klären: ${[...bad, ...warn].filter((c) => reg.system.includes(c.id)).map((c) => c.label).join(', ')}.`}`;
+const diffs = [...changed.map((c) => `${c.label}: ${WORD[prevMap[c.id]]} → ${WORD[c.status]}`), ...fresh.map((c) => `neu: ${c.label} (${WORD[c.status]})`)];
 const md = `---
 agent: server
 datum: ${day}
@@ -54,7 +56,7 @@ status: ${WORD[status]}
 
 ## Kurzfazit
 
-System ${sys.ok}/${sys.total} grün, ${sys.warn} ${sys.warn === 1 ? 'Hinweis' : 'Hinweise'}, ${sys.bad} Fehler. ${status === 'ok' ? 'Nichts zu tun.' : `Zu klären: ${[...bad, ...warn].filter((c) => reg.system.includes(c.id)).map((c) => c.label).join(', ')}.`}
+${fazit}
 
 ## Befunde
 
@@ -62,7 +64,7 @@ ${[...bad, ...warn].length ? [...bad, ...warn].map(line).join('\n') : 'Keine.'}
 
 ## Veränderungen seit dem letzten Bericht
 
-${!prev ? 'Erster Bericht, kein Vergleich.' : (changed.length || fresh.length) ? [...changed.map((c) => `- ${c.label}: ${WORD[prevMap[c.id]]} → ${WORD[c.status]}`), ...fresh.map((c) => `- neu: ${c.label} (${WORD[c.status]})`)].join('\n') : `Keine (letzter Bericht ${prev.datum} ${prev.zeit}).`}
+${!prev ? 'Erster Bericht, kein Vergleich.' : diffs.length ? diffs.map((x) => `- ${x}`).join('\n') : `Keine (letzter Bericht ${prev.datum} ${prev.zeit}).`}
 
 ## Agenten
 
@@ -80,7 +82,7 @@ Quelle: Leitstand-Scan ${d.generatedText} Uhr (${d.durationMs} ms), ${checks.len
 await mkdir(REPORTS, { recursive: true });
 const stem = `server-${day}-${time.replace(':', '')}`;
 await writeFile(path.join(REPORTS, `${stem}.md`), md);
-await writeFile(path.join(REPORTS, `${stem}.json`), JSON.stringify({ agent: 'server', datum: day, zeit: time, status: WORD[status], system: sys, checks: checks.map(({ id, label, status: s, value, detail }) => ({ id, label, status: s, value, detail })) }, null, 1));
+await writeFile(path.join(REPORTS, `${stem}.json`), JSON.stringify({ agent: 'server', datum: day, zeit: time, status: WORD[status], system: sys, fazit, befunde: [...bad, ...warn].map(({ id, label, status: s, value, hint }) => ({ id, label, status: WORD[s], value, hint })), veraenderungen: prev ? diffs : null, quelle: d.generatedText, checks: checks.map(({ id, label, status: s, value, detail }) => ({ id, label, status: s, value, detail })) }, null, 1));
 // Aufbewahrung
 for (const f of await readdir(REPORTS)) {
   const p = path.join(REPORTS, f);

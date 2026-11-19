@@ -31,4 +31,4 @@ Der Server-Check misst mit festen Prüfungen (ohne KI) und schreibt einen Berich
 
 ## Unbeaufsichtigter Lauf (ab Phase 3)
 
-Ein Cron um 06:00 startet `server-check.sh`. Nur bei gelb oder rot wertet `claude -p` mit diesem Skill aus, darf dabei aber nur Berichte lesen und in `/opt/nestua/ops/reports/` schreiben (Stufe 1, nur vorschlagen) und meldet nach Google Chat. Keine Shell, keine Änderungen.
+Ein Cron um 06:00 startet `server-check.sh`. Nur bei gelb oder rot wertet `claude -p` mit diesem Skill aus, darf dabei aber nur Berichte lesen und in `/opt/nestua/ops/reports/` schreiben (Stufe 1, nur vorschlagen) und meldet nach Discord (Kanal des Agenten, `tools/leitstand/notify.mjs --agent <kennung>`). Keine Shell, keine Änderungen.
