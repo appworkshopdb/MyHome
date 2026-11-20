@@ -14,7 +14,7 @@ Ablauf je Seite, immer gleich: **Ist-Stand ansehen → Mockup (Neu/Jetzt, Hell/D
 6. **Rückmeldung bei jeder Aktion** (Toast mit "Rückgängig" statt Rückfrage-Dialog, wo Löschen umkehrbar ist).
 7. **Leere, Laden, Fehler** sind eigene Zustände und werden mit entworfen, nicht nachgereicht.
 8. **Fachwörter und Beschriftungen vereinheitlichen** (gleiche Aktion heißt überall gleich: Speichern, Abbrechen, Löschen, Hinzufügen).
-9. Keine neuen Pixelwerte oder Hex-Farben: nur Tokens (`design/tokens.json`).
+9. Keine neuen Pixelwerte oder Hex-Farben: nur Tokens (`design/tokens.json`, Regeln in `design/DESIGN.md`).
 10. **Weniger Text, schärfere Formen, dünnere Linien** (siehe Abschnitt "Designrichtung").
 
 ## Designrichtung (vom Nutzer anhand von Referenzbildern festgelegt)
@@ -51,8 +51,9 @@ Referenzen: moderne Finanz-/Dashboard-Apps (Karten auf ruhigem Grund, klare List
 
 - [x] Interface Inventory, Tokens (Schrift 7, Abstand 7, Radius 5, Tippfläche, Schatten 3), `tokens.css` eingebunden (ohne optische Änderung).
 - [ ] Nutzer setzt Status "Beschlossen".
-- [ ] `design/DESIGN.md` (Regeln) + Skill `nestua-design-system` (nur Ablauf).
-- [ ] Prüfskript `npm run design:check` (Hex, Schriftgrößen, Inline-Styles dürfen nur sinken) in `build-check.yml`.
+- [x] `design/DESIGN.md` (Regeln) angelegt am 20.11.2026; die Token-Werte stehen dort weiter als Vorschlag, bis der Beschluss oben gesetzt ist.
+- [ ] Skill `nestua-design-system` (nur Ablauf), nach dem Beschluss.
+- [x] Prüfskript (Hex, Schriftgrößen, Radien, Inline-Styles dürfen nur sinken): seit 20.11.2026 als Design-Ratsche im Regel-Check des Prüfers (`tools/pruefer/regeln.mjs`, GitHub-Workflow "Prüfer", lokal `npm run pruefer`) statt eigenem `design:check` in `build-check.yml`. Bestand vor dem Stichtag (`tools/pruefer/design-seit.txt`) zählt nicht.
 
 ## Phase 1 – Gemeinsame Bausteine (vor jeder Seitenumstellung)
 

@@ -290,6 +290,24 @@
       "path": "/opt/nestua/ops/pruefer/MyHome.git/HEAD",
       "hint": "/opt/nestua/ops/agenten/pruefer/pruefer-cron.sh --seed legt es an."
     },
+    "pr_design": {
+      "type": "file",
+      "label": "Design-Regeln (DESIGN.md)",
+      "path": "/opt/nestua/werkstatt/design/DESIGN.md",
+      "hint": "design/DESIGN.md im Repo anlegen: Regelwerk für Design-Ratsche und Design-Review."
+    },
+    "pr_design_seit": {
+      "type": "file",
+      "label": "Stichtag Design-Ratsche",
+      "path": "/opt/nestua/werkstatt/tools/pruefer/design-seit.txt",
+      "hint": "tools/pruefer/design-seit.txt fehlt: dann zählt die Ratsche den ganzen PR, auch alten Bestand."
+    },
+    "pr_design_prompt": {
+      "type": "file",
+      "label": "Design-Prompt",
+      "path": "/opt/nestua/ops/agenten/pruefer/DESIGN-PROMPT.md",
+      "hint": "tools/agenten/pruefer/deploy.sh ausführen."
+    },
     "pr_cron": {
       "type": "cron",
       "label": "Cron alle 15 Min",
@@ -769,6 +787,10 @@
           "Review auf dem Server, nur lesen"
         ],
         [
+          "Design",
+          "Ratsche blockiert, Review nur Empfehlung (bei UI-Änderungen)"
+        ],
+        [
           "Freiheit",
           "Stufe 1, nur vorschlagen"
         ],
@@ -786,7 +808,8 @@
         "SQL-Migrationen und RLS",
         "Secrets",
         "Abhängigkeiten (npm audit)",
-        "Edge Functions"
+        "Edge Functions",
+        "Design-Regeln (design/DESIGN.md)"
       ],
       "channel": "#pruefer",
       "flow": [
@@ -801,8 +824,15 @@
           "g": "prüft",
           "check": "pr_workflow",
           "name": "Regel-Check (GitHub)",
-          "sub": "Fehlerliste, SQL, Secrets, npm audit",
+          "sub": "Fehlerliste, SQL, Secrets, npm audit, Design-Ratsche",
           "icon": "check"
+        },
+        {
+          "g": "liest",
+          "check": "pr_design",
+          "name": "Design-Regeln",
+          "sub": "DESIGN.md, Review nur bei UI-Änderungen",
+          "icon": "book"
         },
         {
           "g": "liest",
@@ -830,6 +860,9 @@
         "pr_skript",
         "pr_repo",
         "pr_cron",
+        "pr_design",
+        "pr_design_seit",
+        "pr_design_prompt",
         "notify_pruefer"
       ],
       "report": "pruefer",

@@ -8,5 +8,6 @@ mkdir -p "$DST" /opt/nestua/ops/pruefer
 install -m 755 "$SRC/pruefer-cron.sh" "$DST/pruefer-cron.sh"
 install -m 644 "$SRC/bericht.mjs" "$DST/bericht.mjs"
 install -m 644 "$SRC/PROMPT.md" "$DST/PROMPT.md"
+install -m 644 "$SRC/DESIGN-PROMPT.md" "$DST/DESIGN-PROMPT.md"
 install -m 644 "$SRC/../../pruefer/regeln.mjs" "$DST/regeln.mjs"
 echo "installiert nach $DST"

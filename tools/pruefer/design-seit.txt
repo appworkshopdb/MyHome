@@ -1,0 +1,3 @@
+# Stichtag der Design-Ratsche (tools/pruefer/regeln.mjs): gezählt werden nur Änderungen nach diesem Commit.
+# Gesetzt am 20.11.2026 auf den Stand von staging vor Einführung der Regel. Den Bestand davor baut der Umbauplan ab.
+4fd60dc53f964b270803f2850d3aa9f748f7f041

@@ -11,6 +11,8 @@ description: Eine bestehende Nestua-Seite oder einen Bereich ins neue Design (wa
 
 Das Design wird gerade vereinheitlicht: erst Interface Inventory (`npm run werkstatt`, Zahlen zu Schrift, Abstand, Ecken, Farben, Buttons), dann Skalen als Tokens, dann gemeinsame Bausteine, dann Seite für Seite umstellen. Neue Seiten nicht mit eigenen Pixelwerten bauen, sondern an die Skalen halten, sobald sie festgelegt sind (`CLAUDE.md`, Abschnitt Design-Werkstatt).
 
+**Regelwerk: `design/DESIGN.md`** (Leitlinien, Designrichtung, Tokens, harte Regeln, Prüfung vor dem Merge). Bei Widersprüchen gilt DESIGN.md. Vor dem Merge zählt die Design-Ratsche im Regel-Check feste Farben, Schriftgrößen, Radien und Inline-Styles: unterm Strich mehr als vorher blockiert den Merge. Lokal prüfen mit `npm run pruefer`; das Design-Review des Prüfer-Agenten meldet zusätzlich Empfehlungen nach Discord #pruefer.
+
 ## Grundregeln
 
 - **Nur Gestaltung ändern.** Daten, Logik, Texte, Verlinkungen, Bilder und Symbole bleiben. Ausnahme sind ausdrückliche Wünsche des Nutzers (zum Beispiel "Dauer entfernen").
@@ -78,6 +80,7 @@ Beträge ausblenden (`Money.jsx`) ist bisher nur im Hub eingebaut. Beim Umbau vo
 - [ ] Hell **und** Dunkel angesehen, auch bei 320 px (Skill `nestua-visual-check`, `W=320`).
 - [ ] Keine Konsolenfehler; Klick-Wege (abhaken, öffnen, löschen) einmal im Testlauf durchgespielt.
 - [ ] Keine festen Hex-Farben, kein `filter`/`transform` an Vorfahren der festen Leisten.
+- [ ] `npm run pruefer` ohne Design-Fehler (Ratsche aus `design/DESIGN.md`, Abschnitt 7).
 - [ ] `npx vite build` läuft durch.
 - [ ] In `CLAUDE.md` nur ergänzen, was künftige Sitzungen wissen müssen (kurz). Stand oben in diesem Skill nachziehen.
 - [ ] `dev.sh stop` ausgeführt, `.env.local` weg, `git status` sauber bis auf die gewollten Dateien.

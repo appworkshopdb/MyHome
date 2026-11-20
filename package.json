@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "images:optimize": "node scripts/optimize-muscle-images.mjs",
     "werkstatt:scan": "node tools/werkstatt/scan.mjs",
-    "werkstatt": "node tools/werkstatt/scan.mjs && vite --config tools/werkstatt/vite.config.js"
+    "werkstatt": "node tools/werkstatt/scan.mjs && vite --config tools/werkstatt/vite.config.js",
+    "pruefer": "node tools/pruefer/regeln.mjs --base origin/main --head HEAD --no-audit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

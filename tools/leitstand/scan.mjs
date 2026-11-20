@@ -207,7 +207,7 @@ const CHECKS = {
   }
 };
 
-// Läufe eines Agenten: letzter Bericht (<report>-JJJJ-MM-TT-HHMM.json, dazu -ki.md) und nächster Lauf aus runAt (täglich, Berlin-Zeit).
+// Läufe eines Agenten: letzter Bericht (<report>-JJJJ-MM-TT-HHMM[SS].json, dazu -ki.md) und nächster Lauf aus runAt (täglich, Berlin-Zeit).
 // overdue = der letzte geplante Lauf (30 Minuten Puffer) hat keinen Bericht hinterlassen.
 const REPORTS_DIR = '/opt/nestua/ops/reports';
 function berlin(d) {
@@ -219,7 +219,7 @@ async function runInfo(n, now) {
   const run = {};
   if (n.report) {
     try {
-      const re = new RegExp(`^${n.report}-\\d{4}-\\d{2}-\\d{2}-\\d{4}\\.json$`);
+      const re = new RegExp(`^${n.report}-\\d{4}-\\d{2}-\\d{2}-\\d{4}(\\d{2})?\\.json$`);
       const f = (await readdir(REPORTS_DIR)).filter((x) => re.test(x)).sort().at(-1);
       if (f) {
         const r = JSON.parse(await readFile(path.join(REPORTS_DIR, f), 'utf8'));

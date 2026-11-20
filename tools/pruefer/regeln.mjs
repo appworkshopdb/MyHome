@@ -28,11 +28,14 @@ try { mb = (await git('merge-base', BASE, HEAD)).trim(); } catch (e) { console.e
 const status = (await git('diff', '--name-status', '-M', mb, HEAD)).trim().split('\n').filter(Boolean).map((l) => { const p = l.split('\t'); return { st: p[0][0], datei: p.at(-1) }; });
 const diff = await git('diff', '-U0', '--no-color', '--no-ext-diff', mb, HEAD);
 const added = {}; // datei -> [{zeile, text}]
-{ let f = null, n = 0;
+const removed = {}; // datei -> [text]  (für die Design-Ratsche: verschobener Code zählt nicht als neu)
+{ let f = null, old = null, n = 0;
   for (const l of diff.split('\n')) {
+    if (l.startsWith('--- ')) { old = l === '--- /dev/null' ? null : l.slice(6); if (old) removed[old] ||= []; continue; }
     if (l.startsWith('+++ ')) { f = l === '+++ /dev/null' ? null : l.slice(6); if (f) added[f] ||= []; continue; }
     const h = l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/); if (h) { n = Number(h[1]); continue; }
     if (f && l.startsWith('+')) { added[f].push({ zeile: n, text: l.slice(1) }); n++; }
+    else if (old && l.startsWith('-')) removed[old].push(l.slice(1));
   } }
 
 let ausnahmen = [];
@@ -68,6 +71,66 @@ for (const d of Object.keys(added).filter((f) => /\.css$/.test(f))) {
     const hit = [...addedLines].find((z) => z >= startLine && z <= endLine);
     if (hit && !frei('fixed-nav', d)) add('hinweis', 'fixed-nav', 'Mögliche Störung der festen Navigation', d, hit, `"${sel.slice(0, 60)}" setzt transform/filter o. ä. Auf Vorfahren von .chrome-top/.bottom-nav bricht das position: fixed.`);
   }
+}
+
+/* ---------- Design-Ratsche (design/DESIGN.md) ----------
+   Feste Werte dürfen unterm Strich nur weniger werden: neue Hex-Farben, feste Schriftgrößen und Eckenradien in px
+   und neue Inline-Styles zählen gegen entfernte. Verschobener Code hebt sich auf. Nur ein Zuwachs ist ein Fehler.
+   Erlaubt bleiben Hex-Werte in den Token-Dateien (base.css, themes.css). Ausnahmen wie überall: pruefer:ok oder ausnahmen.txt. */
+const DESIGN_TOKEN_FILES = /^src\/styles\/(base|themes)\.css$/;
+const DESIGN = [
+  { regel: 'design-farbe', titel: 'Feste Farbe (Hex) statt Token', datei: /^src\/.*\.(css|jsx?|tsx?)$/, skip: DESIGN_TOKEN_FILES,
+    re: /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b(?![\w-])/g,
+    tipp: 'Farbe aus den Tokens nehmen (var(--…) aus themes.css bzw. der Modul-Familie --m-*). Neue Farbe nur als Token in themes.css.' },
+  { regel: 'design-schrift', titel: 'Feste Schriftgröße', datei: /^src\/.*\.(css|jsx?|tsx?)$/,
+    re: /font-size\s*:\s*\d+(?:\.\d+)?px|fontSize\s*:\s*['"`]?\d+(?:\.\d+)?(?:px)?['"`]?(?=\s*[,}])/g,
+    tipp: 'Schriftgröße aus der Skala nehmen: var(--fs-caption|meta|small|body|title|number|display) (design/tokens.css).' },
+  { regel: 'design-radius', titel: 'Fester Eckenradius', datei: /^src\/.*\.(css|jsx?|tsx?)$/,
+    re: /border-radius\s*:\s*\d+(?:\.\d+)?px|borderRadius\s*:\s*['"`]?\d+(?:\.\d+)?(?:px)?['"`]?(?=\s*[,}])/g,
+    tipp: 'Radius aus der Skala nehmen: var(--rad-sm|md|lg|xl|hero); 999px nur für Pillen (Chips, Status, Werte).' },
+  { regel: 'design-inline', titel: 'Neuer Inline-Style', datei: /^src\/.*\.(jsx|tsx)$/,
+    re: /style=\{\{/g,
+    tipp: 'Gestaltung in die CSS-Datei des Bausteins legen. Inline nur für wirklich berechnete Werte (z. B. Breite in %), dann mit pruefer:ok markieren.' }
+];
+// Stichtag: Die Ratsche zählt nur Änderungen nach dem Commit in tools/pruefer/design-seit.txt (Bestand vor der Regel
+// wird im Umbauplan abgebaut, nicht beim nächsten Merge blockiert). Liegt der Stichtag nicht zwischen merge-base und HEAD,
+// zählt der ganze PR.
+let dAdded = added, dRemoved = removed, designSeit = null;
+try {
+  const sha = (await git('show', `${HEAD}:tools/pruefer/design-seit.txt`)).split('\n').map((l) => l.trim()).find((l) => l && !l.startsWith('#'));
+  if (sha) {
+    const between = (await run('git', ['-C', REPO, 'merge-base', '--is-ancestor', mb, sha], { okExit: true })).code === 0
+      && (await run('git', ['-C', REPO, 'merge-base', '--is-ancestor', sha, HEAD], { okExit: true })).code === 0;
+    if (between && sha !== mb) {
+      designSeit = sha; dAdded = {}; dRemoved = {};
+      let f = null, old = null, n = 0;
+      for (const l of (await git('diff', '-U0', '--no-color', '--no-ext-diff', sha, HEAD)).split('\n')) {
+        if (l.startsWith('--- ')) { old = l === '--- /dev/null' ? null : l.slice(6); if (old) dRemoved[old] ||= []; continue; }
+        if (l.startsWith('+++ ')) { f = l === '+++ /dev/null' ? null : l.slice(6); if (f) dAdded[f] ||= []; continue; }
+        const h = l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/); if (h) { n = Number(h[1]); continue; }
+        if (f && l.startsWith('+')) { dAdded[f].push({ zeile: n, text: l.slice(1) }); n++; }
+        else if (old && l.startsWith('-')) dRemoved[old].push(l.slice(1));
+      }
+    }
+  }
+} catch { /* keine Stichtag-Datei: ganzer PR zählt */ }
+const designZiel = { seit: designSeit };
+for (const r of DESIGN) {
+  let plus = 0, minus = 0; const stellen = [];
+  for (const [d, lines] of Object.entries(dAdded)) {
+    if (!r.datei.test(d) || (r.skip && r.skip.test(d))) continue;
+    for (const x of lines) { const n = (x.text.match(r.re) || []).length; if (n && !frei(r.regel, d, x.text)) { plus += n; stellen.push({ d, z: x.zeile }); } }
+  }
+  for (const [d, lines] of Object.entries(dRemoved)) {
+    if (!r.datei.test(d) || (r.skip && r.skip.test(d))) continue;
+    for (const t of lines) minus += (t.match(r.re) || []).length;
+  }
+  designZiel[r.regel] = { neu: plus, entfernt: minus };
+  if (plus > minus) {
+    const s = stellen[0];
+    add('fehler', r.regel, `${r.titel}: +${plus - minus}`, s.d, s.z, `${plus} neu, ${minus} entfernt. ${r.tipp}`);
+    for (const x of stellen.slice(1, 10)) add('hinweis', r.regel, r.titel, x.d, x.z, r.tipp);
+  } else if (minus > plus) add('hinweis', `${r.regel}-weniger`, `${r.titel}: ${minus - plus} weniger`, 'design/DESIGN.md', 1, 'Gut so: weniger feste Werte als vorher.');
 }
 
 /* ---------- Geheimnisse ---------- */
@@ -146,7 +209,7 @@ if (!has('--no-audit')) {
 
 /* ---------- Ausgabe ---------- */
 const zeilen = Object.values(added).reduce((n, a) => n + a.length, 0);
-const R = { base: BASE, head: HEAD, mergeBase: mb, dateien: status.length, zeilen, fehler, hinweise, audit };
+const R = { base: BASE, head: HEAD, mergeBase: mb, dateien: status.length, zeilen, fehler, hinweise, audit, design: designZiel };
 if (arg('--json', '')) await writeFile(arg('--json'), JSON.stringify(R, null, 1));
 const row = (x) => `${x.datei}:${x.zeile}  ${x.titel}`;
 console.log(`Prüfer: ${status.length} Dateien, ${zeilen} neue Zeilen. ${fehler.length} Fehler, ${hinweise.length} Hinweise.`);
