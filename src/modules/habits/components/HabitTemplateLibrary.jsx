@@ -6,7 +6,7 @@
 import { useState, useMemo } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import { HABIT_LIBRARY, HABIT_CATEGORIES, TIME_SLOTS } from '../lib/habUtils.js';
-import { goalKind, goalText } from '../../../core/lib/habitCatalog.js';
+import { goalKind, goalText, catalogEntryByName } from '../../../core/lib/habitCatalog.js';
 
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -58,8 +58,9 @@ export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
   const [kinds, setKinds] = useState([]);
   const [sheet, setSheet] = useState(false);
 
+  // Frühere Namen einer Vorlage (LEGACY_NAMES im Katalog) zählen als dieselbe Vorlage, sonst ließe sie sich doppelt anlegen
   const activeNames = useMemo(
-    () => new Set(habits.filter((h) => !h.deleted_at).map((h) => h.name.trim().toLowerCase())),
+    () => new Set(habits.filter((h) => !h.deleted_at).map((h) => (catalogEntryByName(h.name)?.name ?? h.name).trim().toLowerCase())),
     [habits]
   );
   const isActive = (t) => activeNames.has(t.name.trim().toLowerCase());
