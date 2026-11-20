@@ -13,7 +13,7 @@ const AREA_DEFS = [
     names: ['30 Min bewegen', 'Spazieren gehen', 'Sport / Gym', 'Dehnen & Stretching', 'Wasser trinken'] },
   { key: 'schlaf', label: 'Schlaf & Erholung', icon: '😴',
     desc: 'Besser schlafen, ausgeruhter aufwachen',
-    names: ['Vor 23 Uhr ins Bett', 'Kein Handy vor dem Schlafen', 'Feste Aufstehzeit', 'Digitale Pause', 'Kein Koffein ab Uhrzeit'] },
+    names: ['Vor 23 Uhr ins Bett', 'Kein Handy vor dem Schlafen', 'Feste Aufstehzeit', 'Digitale Pause', 'Koffein senken'] },
   { key: 'mental', label: 'Mental & Achtsamkeit', icon: '🧠',
     desc: 'Mehr Ruhe, Fokus und innere Balance',
     names: ['Meditieren', 'Dankbarkeit notieren', 'Journaling', 'Digitale Pause', 'Atemübungen'] },
