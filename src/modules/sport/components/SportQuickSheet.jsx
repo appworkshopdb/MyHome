@@ -5,11 +5,12 @@ import * as db from '../lib/spoData';
 import PlanDaysBoard, { DayTile } from './PlanDaysBoard';
 import UnitPicker from './UnitPicker';
 import UnitSelectCard from './UnitSelectCard';
-import UnitVisual from './UnitVisual';
+import RestBadge from './RestBadge';
+import SportSymbol from './SportSymbol';
 import OwnUnitForm from './OwnUnitForm';
-import { resolveTypeLabel } from '../lib/typeLabel';
 import { resolveUnitVisual } from '../lib/planMuscles';
-import { buildCatalog } from '../lib/unitCatalog';
+import { buildCatalog, unitKindLabel } from '../lib/unitCatalog';
+import { isSymbol } from '../lib/sportSymbols';
 import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } from '../lib/planDays';
 import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { todayIso } from '../../../core/lib/wizardDates';
@@ -17,13 +18,15 @@ import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
-// Auswahl zuerst: Neue Einheit · Trainingsplan · Ruhetag.
-//   Neue Einheit  (e1 alles auf einer Seite, e1pick Einheit wählen) → spo_workouts (Training mit Datum)
-//   Trainingsplan (p1 Name, p2 Trainingstage, p3 Prüfen) → spo_plans
-//   Ruhetag       (r1) → spo_workouts mit is_rest
-// "Eigene Einheiten verwalten" (eigene Einheiten aus Muskeln anlegen, bearbeiten, löschen).
+// Begriffe: eine EINHEIT ist ein Baustein (fest aus der App oder selbst angelegt), ein
+// TRAINING ist eine Einheit an einem Tag, ein TRAININGSPLAN reiht Einheiten über Tage.
+// Auswahl in zwei Gruppen:
+//   Im Kalender eintragen: Training (e1, e1pick Einheit wählen) · Ruhetag (r1) → spo_workouts
+//   Neu anlegen:           Trainingsplan (p1 Name, p2 Tage, p3 Prüfen) → spo_plans
+//                          Eigene Einheit (own, Formular OwnUnitForm) → spo_units
+// Bearbeiten/Löschen eigener Einheiten: Bereich "Einheiten" im Modul (EinheitenView).
 // Die Einheit wählt man überall in derselben Galerie (UnitPicker): Kraft, Ausdauer,
-// Mobility, Eigene (inkl. Sportarten), mit Bildern.
+// Mobility, Eigene (inkl. Sportarten), mit Bildern bzw. Symbolen.
 // Plan: Tage als Kachelraster (PlanDaysBoard), Einheit über die Galerie (UnitPicker, Screen p2pick).
 
 const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
@@ -67,8 +70,9 @@ export default function SportQuickSheet({ onClose }) {
         title: title.trim(),
         status,
         is_rest: false,
-        // Feste Bilder: die Muskeln der gewählten Einheit (leer = aus dem Typ ableiten)
+        // Feste Bilder: die Muskeln der gewählten Einheit (leer = aus dem Typ ableiten), sonst ihr Symbol
         ...(picked?.muscle_groups?.length ? { muscle_groups: picked.muscle_groups } : {}),
+        ...(!picked?.muscle_groups?.length && isSymbol(picked?.icon) ? { icon: picked.icon } : {}),
       });
       notifySaved();
       onClose();
@@ -139,32 +143,9 @@ export default function SportQuickSheet({ onClose }) {
     finally { setSaving(false); }
   }
 
-  // ── Eigene Einheiten verwalten ──
-  const [manageUnits,   setManageUnits]   = useState([]);
-  const [manageLoading, setManageLoading] = useState(false);
-  const [selectedUnit,  setSelectedUnit]  = useState(null); // null = neue eigene Einheit
-
-  useEffect(() => {
-    if (screen !== 'manage') return;
-    setManageLoading(true);
-    db.getUnits(session).then(setManageUnits).catch(() => setError('Einheiten konnten nicht geladen werden')).finally(() => setManageLoading(false));
-  }, [screen, session]);
-
-  function openUnit(u) { setSelectedUnit(u); go('tpl'); }
-  // Name und Muskeln; Typ und Dauer einer vorhandenen Einheit bleiben unverändert
+  // ── Eigene Einheit anlegen ──
   async function saveOwnUnit(draft) {
-    await db.saveUnit(session, {
-      ...(selectedUnit ? { id: selectedUnit.id } : {}),
-      title: draft.title,
-      type_key: selectedUnit?.type_key ?? null,
-      duration_min: selectedUnit?.duration_min ?? null,
-      muscle_groups: draft.muscle_groups,
-    });
-    notifySaved();
-    onClose();
-  }
-  async function deleteOwnUnit() {
-    await db.deleteUnit(selectedUnit.id);
+    await db.createOwnUnit(session, draft);
     notifySaved();
     onClose();
   }
@@ -178,26 +159,31 @@ export default function SportQuickSheet({ onClose }) {
 
   // ── Auswahl ──
   if (screen === 'choose') {
-    return wrap({ title: 'Sport', sub: 'Was möchtest du anlegen?' }, (
+    return wrap({ title: 'Sport', sub: 'Was möchtest du tun?' }, (
       <>
+        <div className="wz-grp">Im Kalender eintragen</div>
         <button type="button" className="wz-row-btn" onClick={() => go('e1')}>
-          <span className="wz-row-ico">⚡</span>
-          <span>Neue Einheit<small>Training mit Typ und Datum</small></span>
-          <span className="chev" aria-hidden="true">›</span>
-        </button>
-        <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
-          <span className="wz-row-ico">🗓</span>
-          <span>Trainingsplan<small>Mehrere Trainingstage zu einem Plan bündeln</small></span>
+          <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4" /></svg></span>
+          <span>Training eintragen<small>Eine Einheit an einem Tag</small></span>
           <span className="chev" aria-hidden="true">›</span>
         </button>
         <button type="button" className="wz-row-btn" onClick={() => go('r1')}>
-          <span className="wz-row-ico soft">🌙</span>
+          <RestBadge size={40} />
           <span>Ruhetag<small>Erholung im Kalender festhalten</small></span>
           <span className="chev" aria-hidden="true">›</span>
         </button>
-        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14 }} onClick={() => go('manage')}>
-          Eigene Einheiten verwalten
+        <div className="wz-grp">Neu anlegen</div>
+        <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
+          <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="10" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="16" width="10" height="4.5" rx="1.5" /></svg></span>
+          <span>Trainingsplan<small>Mehrere Tage, füllt den Kalender von selbst</small></span>
+          <span className="chev" aria-hidden="true">›</span>
         </button>
+        <button type="button" className="wz-row-btn" onClick={() => go('own')}>
+          <span className="wz-row-ico"><SportSymbol name="stern" size={22} /></span>
+          <span>Eigene Einheit<small>Baustein mit Symbol oder Muskeln</small></span>
+          <span className="chev" aria-hidden="true">›</span>
+        </button>
+        <p className="wz-hint">Ein Training ist eine Einheit an einem bestimmten Tag. Eigene Einheiten bearbeitest du im Bereich „Einheiten“.</p>
       </>
     ));
   }
@@ -207,7 +193,7 @@ export default function SportQuickSheet({ onClose }) {
     const nameOk = Boolean(title.trim());
     const ready = Boolean(picked) && nameOk && Boolean(date);
     return wrap({
-      title: 'Neue Einheit',
+      title: 'Training eintragen',
       sub: 'Einheit, Name und Datum',
       onBack: back,
       footer: (
@@ -222,7 +208,7 @@ export default function SportQuickSheet({ onClose }) {
         <UnitSelectCard
           chosen={Boolean(picked)}
           title={picked?.title}
-          subtitle={resolveTypeLabel(typeKey)}
+          subtitle={unitKindLabel(picked)}
           {...(picked ? resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits) : {})}
           onClick={() => go('e1pick')}
         />
@@ -393,46 +379,8 @@ export default function SportQuickSheet({ onClose }) {
     ));
   }
 
-  // ── Eigene Einheiten verwalten: Liste ──
-  if (screen === 'manage') {
-    return wrap({ title: 'Eigene Einheiten', sub: 'Aus Muskeln zusammengestellt', onBack: back }, (
-      <>
-        <button type="button" className="btn btn-secondary btn-block" style={{ marginBottom: 12 }} onClick={() => openUnit(null)}>
-          ＋ Neue eigene Einheit
-        </button>
-        {manageLoading ? (
-          <p className="wz-hint">Lädt…</p>
-        ) : manageUnits.length === 0 ? (
-          <p className="wz-hint">Noch keine eigene Einheit angelegt. Wähle Muskeln aus, die Bilder ergeben sich daraus.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {manageUnits.map((u) => (
-              <button key={u.id} type="button" className="ep-row" onClick={() => openUnit(u)}>
-                <span className="ep-vis"><UnitVisual {...resolveUnitVisual(u, manageUnits)} size={34} max={3} /></span>
-                {u.title}
-              </button>
-            ))}
-          </div>
-        )}
-        {errorEl}
-      </>
-    ));
-  }
-
-  // ── Eigene Einheit anlegen / bearbeiten ──
-  return wrap({
-    title: selectedUnit ? 'Einheit bearbeiten' : 'Neue eigene Einheit',
-    sub: 'Eigene Einheit',
-    onBack: back,
-  }, (
-    <OwnUnitForm
-      key={selectedUnit?.id ?? 'neu'}
-      initial={selectedUnit}
-      onSave={saveOwnUnit}
-      onCancel={back}
-      saveLabel="Speichern"
-      cancelLabel="Abbrechen"
-      onDelete={selectedUnit ? deleteOwnUnit : undefined}
-    />
+  // ── Eigene Einheit anlegen ──
+  return wrap({ title: 'Eigene Einheit', sub: 'Baustein für Trainings und Pläne', onBack: back }, (
+    <OwnUnitForm onSave={saveOwnUnit} onCancel={back} saveLabel="Speichern" cancelLabel="Abbrechen" />
   ));
 }

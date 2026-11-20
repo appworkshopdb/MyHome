@@ -16,7 +16,14 @@ Details: `SPORT_CLAUDE_CONTEXT.md` §9.
 
 Feste Bilder je Einheit: `spo_workouts`/`spo_plan_items` tragen ihre Muskelgruppen selbst (`muscle_groups`,
 Migration `supabase/spo_muscle_groups_migration.sql`, vor dem Ausrollen einspielen; die App läuft auch ohne
-die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Eigene Kombinationen entstehen im
-Galerie „Einheit wählen“ (Kraft › Muskeln, Mehrfachwahl aller Muskeln). Details: `SPORT_CLAUDE_CONTEXT.md` §7.
+die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Details: `SPORT_CLAUDE_CONTEXT.md` §7.
+
+App-Einheiten und eigene Einheiten (seit 20.11.2026): Einheit = Baustein (fest aus der App oder selbst angelegt),
+Training = Einheit an einem Tag, Trainingsplan = Einheiten über Tage. Plus-Menü in zwei Gruppen (Im Kalender eintragen:
+Training, Ruhetag; Neu anlegen: Trainingsplan, Eigene Einheit). Eigene Einheiten haben ein Symbol (16, `lib/sportSymbols.js`)
+oder Muskeln und eine Kategorie (`type_key` `custom.*`); EIN Formular `OwnUnitForm`. Galerie speichert Muskel-Kombinationen
+nur mit dem Schalter „Als eigene Einheit speichern“. Bearbeiten/Löschen im Bereich „Einheiten“ (App-Einheiten | Eigene).
+Spalte `icon` in `spo_units`/`spo_workouts`/`spo_plan_items`: Migration `supabase/spo_unit_icon_migration.sql` vor dem
+Ausrollen einspielen (die App läuft auch ohne). Details: `SPORT_CLAUDE_CONTEXT.md` §7.
 
 Gewicht eintragen (`WeightTimeline.jsx`, Sport › Auswertung): Formular mit zwei gleich hohen Feldern (Beschriftung klein im Feld, Raster `.sa-wfields` bricht auf schmalen Geräten untereinander um), „Speichern“ in voller Breite an der Stelle von „+ Gewicht eintragen“, „Abbrechen“ als Text in der Kopfzeile (`.sa-wx`). Das Datum kommt aus `todayIso()` (lokal), nie aus `toISOString()`.

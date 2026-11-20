@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import UnitPicker from './UnitPicker';
 import UnitSelectCard from './UnitSelectCard';
-import { buildCatalog } from '../lib/unitCatalog';
+import { buildCatalog, unitKindLabel } from '../lib/unitCatalog';
+import { isSymbol } from '../lib/sportSymbols';
 import { resolveTypeLabel } from '../lib/typeLabel';
 import { resolveUnitVisual } from '../lib/planMuscles';
 import { todayIso } from '../../../core/lib/wizardDates';
@@ -36,7 +37,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
   const [muscles, setMuscles] = useState(iv.muscle_groups?.length ? iv.muscle_groups : null);
 
   // Einheit aus der Galerie (UnitPicker): Typ, Muskeln (Bilder) und, solange der Name
-  // nicht selbst geschrieben wurde, die Bezeichnung.
+  // nicht selbst geschrieben wurde, den Namen.
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState(null);
   const titleAuto = useRef(!iv.title);
@@ -51,7 +52,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
   }
 
   const shownTitle = picked?.title ?? title;
-  const visual = resolveUnitVisual({ muscle_groups: muscles ?? [], icon: picked?.icon, type_key: typeKey, title: shownTitle }, units);
+  const visual = resolveUnitVisual({ muscle_groups: muscles ?? [], icon: picked ? picked.icon : iv.icon, type_key: typeKey, title: shownTitle }, units);
 
   function submit() {
     if (mode === 'rest') {
@@ -68,7 +69,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       return;
     }
 
-    if (!title.trim()) return showToast('Bitte Bezeichnung eingeben, z.B. "Push" oder "Brust/Bizeps"');
+    if (!title.trim()) return showToast('Bitte einen Namen eingeben, z. B. "Push" oder "Brust & Bizeps"');
     onSave({
       ...(isEdit ? { id: iv.id } : {}),
       occurred_on: occurredOn,
@@ -78,6 +79,8 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       status: mode,
       is_rest: false,
       ...(muscles ? { muscle_groups: muscles } : {}),
+      // ohne Muskeln das Symbol der gewählten Einheit (feste Bilder)
+      ...(!muscles && isSymbol(picked?.icon) ? { icon: picked.icon } : {}),
     });
   }
 
@@ -123,7 +126,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
           <UnitSelectCard
             chosen={Boolean(picked) || Boolean(typeKey) || Boolean(iv.title)}
             title={shownTitle || resolveTypeLabel(typeKey)}
-            subtitle={resolveTypeLabel(typeKey)}
+            subtitle={picked ? unitKindLabel(picked) : resolveTypeLabel(typeKey)}
             {...visual}
             onClick={() => setPicking(true)}
           />
@@ -131,10 +134,10 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       )}
 
       <div className="form-group">
-        <label>Bezeichnung{mode === 'rest' ? ' (optional)' : ''}</label>
+        <label>Name{mode === 'rest' ? ' (optional)' : ''}</label>
         <input
           type="text" value={title} onChange={(e) => { titleAuto.current = false; setTitle(e.target.value); }}
-          placeholder={mode === 'rest' ? 'Ruhetag' : 'z.B. Push, Brust/Bizeps, Lauf...'}
+          placeholder={mode === 'rest' ? 'Ruhetag' : 'z. B. Push, Brust & Bizeps, Lauf'}
         />
       </div>
 

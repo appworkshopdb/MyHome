@@ -64,37 +64,3 @@ export function MusclePreview({ tags, size = 40 }) {
     </div>
   );
 }
-
-export function EinheitRow({ title, subtitle, tags, icon, isLast }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0',
-      borderBottom: isLast ? 'none' : '1px solid #EEF1F6',
-    }}>
-      {(tags && tags.length > 0) || !icon
-        ? <MusclePreview tags={tags} />
-        : <span className="pl-emo" style={{ width: 40, height: 40, fontSize: 20 }} aria-hidden="true">{icon}</span>}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#131A28' }}>{title}</div>
-        <div style={{ fontSize: 12, color: '#545C6B', marginTop: 2 }}>{subtitle}</div>
-      </div>
-    </div>
-  );
-}
-
-export function Card({ title, children }) {
-  return (
-    <div style={{
-      background: '#fff', borderRadius: 14, boxShadow: '0 1px 3px rgba(19,26,40,0.07)',
-      padding: 16, marginBottom: 16,
-    }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
-        color: '#545C6B', marginBottom: 8,
-      }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}

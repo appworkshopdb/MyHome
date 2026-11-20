@@ -3,11 +3,28 @@ import { track } from '../../../core/lib/analytics';
 import { hideAutoRowsOn, isPlanFeatureAvailable } from '../../../core/lib/sportPlanSync';
 import { muscleGroupsForType } from './planMuscles';
 
-// Die Spalte muscle_groups gibt es erst nach spo_muscle_groups_migration.sql.
-// Fehlt sie noch, schreibt die App ohne sie (Bilder werden dann wie bisher aufgelöst).
-const isMissingMuscleColumn = (error) =>
-  Boolean(error) && (error.code === '42703' || error.code === 'PGRST204') && /muscle_groups/.test(error.message ?? '');
-const withoutMuscles = ({ muscle_groups: _drop, ...rest }) => rest;
+// Spalten, die erst eine Migration anlegt: muscle_groups (spo_muscle_groups_migration.sql)
+// und icon (spo_unit_icon_migration.sql). Fehlt eine, schreibt die App ohne sie
+// (Bilder und Symbole werden dann wie bisher aus Einheit/Name/Typ aufgelöst).
+const OPTIONAL_COLUMNS = ['muscle_groups', 'icon'];
+function missingColumn(error) {
+  if (!error || (error.code !== '42703' && error.code !== 'PGRST204')) return null;
+  return OPTIONAL_COLUMNS.find((c) => (error.message ?? '').includes(c)) ?? null;
+}
+const without = (row, col) => { const { [col]: _drop, ...rest } = row; return rest; };
+
+// Schreibt und lässt fehlende optionale Spalten nacheinander weg
+async function writeTolerant(write, rows) {
+  let current = rows;
+  let res = await write(current);
+  for (let i = 0; i < OPTIONAL_COLUMNS.length; i += 1) {
+    const col = missingColumn(res.error);
+    if (!col) break;
+    current = Array.isArray(current) ? current.map((r) => without(r, col)) : without(current, col);
+    res = await write(current);
+  }
+  return res;
+}
 
 function ownerId(session) {
   return session.user.id;
@@ -44,9 +61,7 @@ export async function saveWorkout(session, workout) {
     const groups = muscleGroupsForType(payload.type_key);
     if (groups.length) payload.muscle_groups = groups;
   }
-  const save = (row) => getSupabase().from('spo_workouts').upsert(row).select().single();
-  let { data, error } = await save(payload);
-  if (isMissingMuscleColumn(error)) ({ data, error } = await save(withoutMuscles(payload)));
+  const { data, error } = await writeTolerant((row) => getSupabase().from('spo_workouts').upsert(row).select().single(), payload);
   if (error) throw error;
 
   // Eigene Einträge haben Vorrang vor dem Plan: die Plan-Zeile desselben
@@ -102,17 +117,18 @@ export async function saveUnit(session, unit) {
     type_key: unit.type_key || null,
     duration_min: unit.duration_min ?? null,
   };
-  // Beim Bearbeiten ohne Muskelangabe die vorhandenen nicht überschreiben
+  // Beim Bearbeiten ohne Angabe die vorhandenen Muskeln/Symbole nicht überschreiben
   if (unit.muscle_groups !== undefined || !unit.id) payload.muscle_groups = unit.muscle_groups ?? [];
-  const { data, error } = await getSupabase().from('spo_units').upsert(payload).select().single();
+  if (unit.icon !== undefined || !unit.id) payload.icon = unit.icon || null;
+  const { data, error } = await writeTolerant((row) => getSupabase().from('spo_units').upsert(row).select().single(), payload);
   if (error) throw error;
   return data;
 }
 
-// Eigene Einheit aus gewählten Muskeln ("Brust + Beine"): Name und Muskelgruppen,
-// die Bilder ergeben sich aus den Muskeln. Gibt die gespeicherte Zeile zurück.
-export async function createOwnUnit(session, { title, muscle_groups }) {
-  return saveUnit(session, { title, type_key: null, duration_min: null, muscle_groups });
+// Eigene Einheit anlegen (Formular "Eigene Einheit" oder "Als eigene Einheit speichern"
+// in der Galerie): Name, Kategorie (type_key 'custom.*') und Bild = Muskeln ODER Symbol.
+export async function createOwnUnit(session, { title, muscle_groups = [], icon = null, type_key = null }) {
+  return saveUnit(session, { title, type_key, duration_min: null, muscle_groups, icon });
 }
 
 export async function deleteUnit(id) {
@@ -158,6 +174,7 @@ function planItemComparable(item) {
     is_rest: item.is_rest ?? false,
     notes: item.notes ?? null,
     muscle_groups: item.muscle_groups ?? [],
+    icon: item.icon ?? null,
   };
 }
 
@@ -221,9 +238,9 @@ export async function savePlan(session, plan, items) {
       is_rest: item.is_rest ?? false,
       notes: item.notes ?? null,
       muscle_groups: item.is_rest ? [] : (item.muscle_groups ?? []),
+      icon: item.is_rest ? null : (item.icon || null),
     }));
-    let { error: itemError } = await supabase.from('spo_plan_items').insert(rows);
-    if (isMissingMuscleColumn(itemError)) ({ error: itemError } = await supabase.from('spo_plan_items').insert(rows.map(withoutMuscles)));
+    const { error: itemError } = await writeTolerant((r) => supabase.from('spo_plan_items').insert(r), rows);
     if (itemError) throw itemError;
   }
 

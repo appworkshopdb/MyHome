@@ -1,6 +1,6 @@
 import { PREDEFINED_UNITS } from './data/predefinedUnits';
 import { getMuscleVisual } from './data/muscleGroups';
-import { SPORT_TYPE_PREFIX } from '../../../core/lib/sportsData';
+import { fallbackSymbol, isSymbol } from './sportSymbols';
 
 // Bilder einer Einheit: Plan-Tage (spo_plan_items), Kalender-Einheiten
 // (spo_workouts) und Plan-Tage im Editor haben dieselbe Form.
@@ -34,16 +34,15 @@ export function resolvePlanMuscleGroups(item, units = []) {
   return muscleGroupsForType(item.type_key);
 }
 
-// Platzhalter-Symbol für Einheiten ohne Muskelbilder (Ausdauer, Beweglichkeit,
-// Sportarten), bis es dafür eigene Bilder gibt.
+// Symbol für Einheiten ohne Muskelbilder (lib/sportSymbols.js): das gespeicherte,
+// sonst das der App-Einheit (Titel, Typ), sonst aus Sportart, Kategorie oder Namen.
 export function resolvePlanIcon(item) {
-  if (item.icon) return item.icon;
+  if (isSymbol(item.icon)) return item.icon;
   const byTitle = BY_TITLE.get(item.title);
   if (byTitle?.icon) return byTitle.icon;
   const byType = BY_TYPE.get(item.type_key);
   if (byType?.icon) return byType.icon;
-  if (item.type_key?.startsWith(SPORT_TYPE_PREFIX)) return '🏅';
-  return '';
+  return fallbackSymbol(item) || item.icon || '';
 }
 
 // { tags, icon } für UnitVisual: Muskelbilder, sonst das Platzhalter-Symbol

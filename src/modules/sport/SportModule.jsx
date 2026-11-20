@@ -266,7 +266,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }
 
-  // Eigene Einheit aus Muskeln ("Eigene Einheit zusammenstellen" in der Galerie)
+  // Eigene Einheit aus der Galerie ("Neue Einheit" oder "Als eigene Einheit speichern")
   async function handleCreateOwn(draft) {
     const row = await db.createOwnUnit(session, draft);
     setUnits((list) => [...list, row]);
@@ -318,7 +318,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
             />
           )}
 
-          {view === 'einheiten' && <EinheitenView units={units} loading={loading} />}
+          {view === 'einheiten' && <EinheitenView units={units} loading={loading} userSports={userSports} onChanged={load} showToast={showToast} />}
 
           {view === 'plaene' && (
             <PlaeneView

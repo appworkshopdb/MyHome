@@ -1,5 +1,6 @@
 import { getTrainingType } from './data/trainingTypes';
 import { sportFromTypeKey } from '../../../core/lib/sportsData';
+import { OWN_CATEGORIES } from './sportSymbols';
 
 // type_key kann zweierlei sein: ein Trainingstyp aus trainingTypes.js
 // ('strength.push') oder eine Sportart aus dem Profil ('sport.fussball').
@@ -8,5 +9,8 @@ import { sportFromTypeKey } from '../../../core/lib/sportsData';
 // Unterschied kennt. Sonst müsste jede Ansicht beide Fälle prüfen.
 export function resolveTypeLabel(typeKey) {
   if (!typeKey || typeKey === 'sonstiges') return null;
+  // Eigene Einheiten tragen ihre Kategorie als 'custom.<kategorie>' (lib/sportSymbols.js)
+  const custom = OWN_CATEGORIES.find((c) => c.type_key === typeKey);
+  if (custom) return custom.label;
   return getTrainingType(typeKey)?.label ?? sportFromTypeKey(typeKey)?.label ?? null;
 }
