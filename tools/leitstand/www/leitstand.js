@@ -45,14 +45,72 @@ function usageFacts(a) {
   return `<div class="facts ufacts">${f('Heute', usd(u.cost.heute), lauf(u.runs.heute))}${f('7 Tage', usd(u.cost.t7), lauf(u.runs.t7))}${f('30 Tage', usd(u.cost.t30), lauf(u.runs.t30))}`
     + `${f('Ø je Lauf', u.avg == null ? '–' : usd(u.avg), u.models.length ? esc(mdl(u.models)) : 'noch kein Lauf')}${f('Seit Messbeginn', usd(u.cost.gesamt), lauf(u.runsGesamt))}</div>`;
 }
-function usageBox(M) {
+/* Farben je Agent (zusätzlich steht der Name immer im Diagramm, Farbe ist nie das einzige Zeichen) */
+const AG_COLOR = { server:'#38E1FF', kontext:'#8B7CFF', pruefer:'#FFB547', dsgvo:'#34F0C2', social:'#FF7AB6', du:'rgba(190,200,230,.42)', sonst:'rgba(190,200,230,.24)' };
+const PERIODS = [['heute', 'Heute'], ['t7', '7 Tage'], ['t30', '30 Tage']];
+const usdK = (v) => v >= 100 ? '$' + Math.round(v) : v >= 10 ? '$' + v.toFixed(0) : '$' + v.toFixed(2).replace('.', ',');
+
+/* Fortschrittsbalken: Verbrauch auf diesem Server im Vergleich zum Bezugswert je Zeitraum.
+   focus = Agenten-Kennung: nur dessen Anteil farbig, der Rest blass; ohne focus: gestapelt nach Agent. */
+function usageBars(U, focus) {
+  if (!U || !U.rows) return '';
+  const B = U.budget || {}, order = ['server', 'kontext', 'pruefer', 'dsgvo', 'social', 'du', 'sonst'];
+  const rows = order.map((id) => U.rows.find((r) => r.id === id)).filter(Boolean);
+  const bar = ([k, label]) => {
+    const total = rows.reduce((x, r) => x + r.cost[k], 0), ref = B[k] > 0 ? B[k] : null;
+    const segs = rows.map((r) => ({ r, c: r.cost[k] })).filter((x) => x.c > 0);
+    const mine = focus ? (rows.find((r) => r.id === focus) || { cost: { [k]: 0 } }).cost[k] : total;
+    const scale = ref || total || 1, over = ref && total > ref;
+    const html = !ref ? '' : segs.map(({ r, c }) => `<i title="${esc(r.name)}: ${usd(c)}" style="width:${(100 * c / scale / (over ? total / ref : 1)).toFixed(2)}%;background:${focus && r.id !== focus ? 'rgba(190,200,230,.18)' : AG_COLOR[r.id]}"></i>`).join('');
+    const txt = ref ? `${pct(mine / ref)} <span>von ${usd(ref)}</span>` : `${usd(mine)} <span>Bezugswert fehlt</span>`;
+    return `<div class="ubar${over ? ' over' : ''}${ref ? '' : ' noref'}"><span class="ul">${label}</span><span class="ut" role="img" aria-label="${esc(label)}: ${esc(txt.replace(/<[^>]+>/g, ''))}">${html}</span><b>${txt}</b></div>`;
+  };
+  const noRef = PERIODS.every(([k]) => !(B[k] > 0));
+  return `<div class="ubars">${PERIODS.map(bar).join('')}</div>`
+    + `<div class="det">${noRef ? '<b>Bezugswert noch nicht festgelegt:</b> Die Balken füllen sich, sobald ein Wert gesetzt ist. Am einfachsten kalibrieren: auf claude.ai → Einstellungen → Nutzung den Prozentwert ablesen und <code>node /opt/nestua/ops/leitstand/usage.mjs --kalibrieren t7 &lt;Prozent&gt;</code> ausführen (oder <code>--referenz t7 &lt;Dollar&gt;</code>). '
+      : `Bezugswerte gesetzt ${esc(B.gesetzt || '')}${B.quelle ? ' (' + esc(B.quelle) + ')' : ''}. `}Der Bezugswert ist eine eigene Schätzung in Dollar, kein offizieller Wert von Anthropic. Gezählt wird nur, was auf diesem Server gemessen wurde: Nutzung am PC, am Handy und in claude.ai zählt beim echten Kontingent mit, fehlt hier aber.</div>`;
+}
+
+/* Liniendiagramm der Kosten je Tag (SVG, ohne Bibliothek). mode: 'tag' oder 'summe'. */
+function usageChart(U, ids, mode) {
+  if (!U || !U.days || !U.rows) return '';
+  const rows = ids.map((id) => U.rows.find((r) => r.id === id)).filter(Boolean);
+  const n = U.days.length;
+  // linker Rand: erster Tag mit Daten (in irgendeiner Zeile), mindestens 7 Tage Breite
+  const first = Math.max(0, Math.min(U.rows.reduce((m, r) => { const i = r.daily.findIndex((v) => v > 0); return i >= 0 && i < m ? i : m; }, n), n - 7));
+  const idx = Array.from({ length: n - first }, (_, i) => first + i), m = idx.length;
+  const series = rows.map((r) => { let acc = 0; return { r, v: idx.map((i) => { acc += r.daily[i]; return mode === 'summe' ? acc : r.daily[i]; }) }; });
+  const W = 720, H = 230, L = 52, R = 16, T = 14, Bt = 30, pw = W - L - R, ph = H - T - Bt;
+  const maxV = Math.max(0.01, ...series.flatMap((s) => s.v)), top = (() => { const e = Math.pow(10, Math.floor(Math.log10(maxV))); const f = maxV / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; })();
+  const x = (i) => L + (m === 1 ? pw / 2 : pw * i / (m - 1)), y = (v) => T + ph - ph * v / top;
+  const grid = [0, 0.5, 1].map((f) => `<line x1="${L}" x2="${W - R}" y1="${y(top * f).toFixed(1)}" y2="${y(top * f).toFixed(1)}" class="gl"/><text x="${L - 8}" y="${(y(top * f) + 4).toFixed(1)}" class="gt" text-anchor="end">${usdK(top * f)}</text>`).join('');
+  const step = Math.max(1, Math.round(m / 6)), xl = idx.map((di, i) => (i % step === 0 || i === m - 1 ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" class="gt" text-anchor="middle">${dm(U.days[di]).replace(/\.$/, '')}</text>` : '')).join('');
+  const one = series.length === 1;
+  const paths = series.map((s) => {
+    const pts = s.v.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`), c = AG_COLOR[s.r.id] || '#8B7CFF';
+    const area = one ? `<path d="M${x(0).toFixed(1)},${y(0).toFixed(1)} L${pts.join(' L')} L${x(m - 1).toFixed(1)},${y(0).toFixed(1)} Z" fill="${c}" opacity=".13"/>` : '';
+    const dots = s.v.map((v, i) => (v > 0 && (mode === 'tag' || v !== (s.v[i - 1] || 0)) ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.2" fill="${c}"><title>${esc(s.r.name)}, ${dm(U.days[idx[i]])}: ${usd(v)}${mode === 'summe' ? ' (summiert)' : ''}</title></circle>` : '')).join('');
+    return `${area}<path d="M${pts.join(' L')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
+  }).join('');
+  const summary = series.map((s) => `${s.r.name} ${usd(s.r.daily.slice(first).reduce((a, b) => a + b, 0))}`).join(', ');
+  const legend = series.length > 1 ? `<div class="uleg">${series.map((s) => `<span><i style="background:${AG_COLOR[s.r.id]}"></i>${esc(s.r.name)}<b>${usd(s.r.daily.slice(first).reduce((a, b) => a + b, 0))}</b></span>`).join('')}</div>` : '';
+  return `<svg viewBox="0 0 ${W} ${H}" class="uc" role="img" aria-label="Verbrauch ${mode === 'summe' ? 'summiert' : 'pro Tag'} seit ${dm(U.days[first])}: ${esc(summary)}" preserveAspectRatio="xMidYMid meet">${grid}${xl}${paths}</svg>${legend}`;
+}
+function chartBlock(U, ids, mode, title) {
+  return `<div class="uchead"><h3>${esc(title)}</h3><span class="umode" role="group" aria-label="Darstellung"><button type="button" data-m="tag" aria-pressed="${mode !== 'summe'}">Pro Tag</button><button type="button" data-m="summe" aria-pressed="${mode === 'summe'}">Summiert</button></span></div>`
+    + `<div class="uchart" data-ids="${esc(ids.join(','))}">${usageChart(U, ids, mode)}</div>`;
+}
+function usageBox(M, mode = 'tag') {
   const U = M.usage; if (!U || !U.rows || !U.rows.length) return '';
   const ids = M.agents.map((a) => a.id), ag = ids.map((id) => U.rows.find((r) => r.id === id)).filter(Boolean);
   const top = Math.max(0.01, ...ag.map((r) => r.cost.t30)), du = U.rows.find((r) => r.id === 'du'), so = U.rows.find((r) => r.id === 'sonst');
   const row = (r) => `<div class="urow"><span class="un">${esc(r.name)}</span><span class="ub"><i style="width:${Math.max(r.cost.t30 ? 2 : 0, Math.round(100 * r.cost.t30 / top))}%"></i></span>`
     + `<b>${usd(r.cost.t30)}</b><span class="um">${r.runs.t30 ? lauf(r.runs.t30) : 'kein Lauf'}${r.avg == null ? '' : ' · Ø ' + usd(r.avg)}</span></div>`;
   const share = U.sum30 ? U.sumAgents30 / U.sum30 : 0;
-  return `<section class="box glass ubox"><div class="bh"><h2 class="h">Verbrauch der Agenten</h2><span class="pill s-plan"><i></i>Schätzung, 30 Tage</span></div>
+  return `<section class="box glass ubox"><div class="bh"><h2 class="h">Verbrauch der Agenten</h2><span class="pill s-plan"><i></i>Schätzung zu API-Listenpreisen</span></div>
+    <div class="grp" style="margin-top:0">Verbrauch im Vergleich zum Bezugswert (alles auf diesem Server)</div>${usageBars(U, null)}
+    ${chartBlock(U, ids, mode, 'Verlauf je Agent')}
+    <div class="grp">Die letzten 30 Tage je Agent</div>
     <div class="ulist">${ag.map(row).join('')}</div>
     <div class="usum"><div><small>Agenten gesamt</small><b>${usd(U.sumAgents30)}</b></div>
       <div><small>Du, interaktiv</small><b>${usd(du ? du.cost.t30 : 0)}</b></div>
@@ -97,12 +155,12 @@ function model(D) {
     agBad:agents.filter((a) => a.st === 'bad'), agWarn:agents.filter((a) => a.st === 'warn'),
     sysBad:sys.filter((c) => c.status === 'bad'), sysWarn:sys.filter((c) => c.status === 'warn'), next:nexts[0] || null, tasksFile:T.fehlt ? 'fehlt' : T.updated };
 }
-if (typeof document === 'undefined') { if (typeof module !== 'undefined') module.exports = { model, usageBox, usageLine, usageFacts }; return; }
+if (typeof document === 'undefined') { if (typeof module !== 'undefined') module.exports = { model, usageBox, usageLine, usageFacts, usageBars, usageChart, chartBlock }; return; }
 
 /* ---------- Ansichten ---------- */
 const home = document.getElementById('vHome'), agentV = document.getElementById('vAgent');
 const stateEl = document.getElementById('state'), standEl = document.getElementById('stand');
-let D = null, M = null, current = null, busy = false, homeScroll = 0;
+let D = null, M = null, current = null, busy = false, homeScroll = 0, uMode = 'tag';
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.8,.2,1)';
 const segs = (n, on, cls = (i) => '') => `<span class="segs">${Array.from({ length:n }, (_, i) => `<i class="${i < on ? cls(i) : 'off'}"></i>`).join('')}</span>`;
@@ -155,7 +213,7 @@ function renderHome() {
         </div></div>
     </section>
     <div><h2 class="h" style="margin-bottom:10px">Agenten</h2><div class="agents">${m.agents.map(card).join('')}</div></div>
-    ${usageBox(m)}
+    ${usageBox(m, uMode)}
     <div class="lower">
       <section class="box glass s-warn"><div class="bh"><h2 class="h">Braucht dich</h2><span class="cnt">${m.du.length}</span></div>
         ${m.du.map((t) => taskRow(t, true)).join('') || '<div class="empty">Nichts offen.</div>'}
@@ -209,7 +267,10 @@ function renderAgent(id) {
       <section class="box glass"><div class="bh"><h2 class="h">Aufbau und Aufgaben</h2></div>
         ${a.builds.length ? `<div class="bl">${a.builds.map((b) => `<div class="s-${b.status}" title="${esc(b.detail)}"><i></i>${esc(b.label)}<span>${esc(b.value)}</span></div>${b.status !== 'ok' ? `<div class="det">${esc(b.detail)}</div>` : ''}`).join('')}</div>` : '<div class="empty" style="margin-bottom:10px">Aufbau noch nicht begonnen.</div>'}
         ${a.tasks.length ? a.tasks.map((t) => taskRow(t, false)).join('') : '<div class="empty">Keine offenen Aufgaben.</div>'}</section>
-      <section class="box glass ubox1"><div class="bh"><h2 class="h">Verbrauch</h2><span class="pill s-plan"><i></i>Schätzung zu API-Listenpreisen</span></div>${usageFacts(a)}
+      <section class="box glass ubox1"><div class="bh"><h2 class="h">Verbrauch</h2><span class="pill s-plan"><i></i>Schätzung zu API-Listenpreisen</span></div>
+        <div class="grp" style="margin-top:0">Anteil dieses Agenten im Vergleich zum Bezugswert</div>${usageBars(M.usage, a.id)}
+        ${usageFacts(a)}
+        ${chartBlock(M.usage, [a.id], uMode, 'Verlauf')}
         <div class="det">Aus den Sitzungs-Transkripten von Claude Code. Das Abo-Kontingent selbst zeigt claude.ai → Einstellungen → Nutzung.</div></section>
     </div>`;
   document.getElementById('back').onclick = () => { location.hash = ''; };
@@ -284,6 +345,13 @@ function route(animate) {
   else if (current) goHome();
 }
 home.addEventListener('click', (e) => { const c = e.target.closest('.acard'); if (c) location.hash = c.dataset.id; });
+/* Diagramm umschalten (Pro Tag / Summiert): zeichnet nur die Diagramme neu, merkt sich die Wahl für beide Ansichten */
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.umode button'); if (!b || !M) return;
+  uMode = b.dataset.m;
+  document.querySelectorAll('.uchart').forEach((el) => { el.innerHTML = usageChart(M.usage, el.dataset.ids.split(','), uMode); });
+  document.querySelectorAll('.umode button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.m === uMode)));
+});
 addEventListener('hashchange', () => route(true));
 
 /* ---------- Daten laden ---------- */

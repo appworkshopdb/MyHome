@@ -259,3 +259,34 @@ h2.h{margin:0;font-family:var(--f-disp);font-size:13px;font-weight:600;letter-sp
   .urow .ub{grid-column:1/-1;order:3}
   .urow .um{order:4}
 }
+
+/* Kontingent-Balken und Verlaufsdiagramm */
+.ubars{display:flex;flex-direction:column;gap:8px;margin:8px 0 4px}
+.ubar{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(140px,auto);align-items:center;gap:12px;font-size:12.5px}
+.ubar .ul{color:var(--mut)}
+.ubar .ut{display:flex;height:10px;border-radius:5px;background:rgba(150,170,255,.12);overflow:hidden;gap:1px}
+.ubar .ut i{display:block;height:100%;min-width:2px}
+.ubar.noref .ut{background:repeating-linear-gradient(135deg,rgba(150,170,255,.1) 0 6px,transparent 6px 12px)}
+.ubar b{font-family:var(--f-disp);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.ubar b span{font-family:var(--f-body);font-weight:400;font-size:11.5px;color:var(--mut)}
+.ubar.over b{color:var(--bad)}.ubar.over .ut{box-shadow:0 0 0 1px var(--bad)}
+.ubars+.det code,.ubox .det code,.ubox1 .det code{font-family:var(--f-mono);font-size:10.5px;overflow-wrap:anywhere}
+.uchead{display:flex;align-items:center;gap:10px;margin:16px 0 6px}
+.uchead h3{flex:1;margin:0;font-family:var(--f-disp);font-size:13px;font-weight:600;color:var(--tx)}
+.umode{display:inline-flex;border:1px solid var(--rim);border-radius:8px;overflow:hidden}
+.umode button{font:inherit;font-size:12px;color:var(--mut);background:transparent;border:0;padding:6px 11px;min-height:32px;cursor:pointer}
+.umode button[aria-pressed="true"]{background:rgba(139,124,255,.22);color:var(--tx)}
+.umode button:focus-visible{outline:2px solid var(--flow);outline-offset:-2px}
+.uchart{min-width:0}
+.uc{display:block;width:100%;height:auto;max-height:260px;overflow:visible}
+.uc .gl{stroke:rgba(150,170,255,.14);stroke-width:1}
+.uc .gt{fill:var(--mut);font-size:11px;font-family:var(--f-body);font-variant-numeric:tabular-nums}
+.uc circle{stroke:var(--void);stroke-width:1.2}
+.uleg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;font-size:12px;color:var(--mut)}
+.uleg span{display:inline-flex;align-items:center;gap:6px}
+.uleg i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.uleg b{font-family:var(--f-disp);font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
+@media (max-width:760px){
+  .ubar{grid-template-columns:56px minmax(0,1fr)}
+  .ubar b{grid-column:1/-1;text-align:left}
+}

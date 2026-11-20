@@ -46,17 +46,20 @@ async function readSession(file) {
       const c = m.content;
       first = (typeof c === 'string' ? c : Array.isArray(c) ? c.map((x) => x?.text || '').join(' ') : '').slice(0, 200);
     }
-    if (m.usage && m.id) seen.set(m.id, { model: m.model, u: m.usage });
+    if (m.usage && m.id) seen.set(m.id, { model: m.model, u: m.usage, ts: o.timestamp || start });
     if (o.totalCostUSD != null) { cost = o.totalCostUSD; modelUsage = o.modelUsage || modelUsage; }
   }
   const tok = { in: 0, out: 0, cw: 0, cr: 0 };
   const models = {};
-  for (const { model, u } of seen.values()) {
+  const byDay = {};   // Verteilungsschlüssel je Tag (Preisverhältnis der Tokenarten), wird später auf die Sitzungskosten skaliert
+  for (const { model, u, ts } of seen.values()) {
+    const w = (u.input_tokens || 0) + 5 * (u.output_tokens || 0) + 1.25 * (u.cache_creation_input_tokens || 0) + 0.1 * (u.cache_read_input_tokens || 0);
+    if (ts) { const d = day.format(new Date(ts)); byDay[d] = (byDay[d] || 0) + w; }
     tok.in += u.input_tokens || 0; tok.out += u.output_tokens || 0; tok.cw += u.cache_creation_input_tokens || 0; tok.cr += u.cache_read_input_tokens || 0;
     if (model) models[model] = (models[model] || 0) + 1;
   }
   if (!seen.size && cost == null) return null;
-  return { agent: classify(first, entry), start, entry, messages: seen.size, cost, models: Object.keys(models), tokens: tok };
+  return { agent: classify(first, entry), start, entry, messages: seen.size, cost, models: Object.keys(models), tokens: tok, byDay };
 }
 
 async function listFiles() {
@@ -68,6 +71,17 @@ async function listFiles() {
   return out;
 }
 
+const BUDGET = '/opt/nestua/ops/leitstand/budget.json';
+const PERIODS = ['heute', 't7', 't30'];
+async function readBudget() {
+  try { return JSON.parse(await readFile(BUDGET, 'utf8')); }
+  catch {
+    const b = { hinweis: 'Bezugswerte (Dollar-Schätzung) je Zeitraum heute, t7, t30; null = nicht festgelegt. Setzen: node usage.mjs --referenz t7 <dollar> oder --kalibrieren t7 <prozent laut claude.ai>.', heute: null, t7: null, t30: null, gesetzt: null, quelle: null };
+    try { await writeFile(BUDGET, JSON.stringify(b, null, 1) + '\n'); } catch { /* ohne Datei weiter */ }
+    return b;
+  }
+}
+
 export async function collectUsage(now = new Date()) {
   let store = { sessions: {} };
   try { store = JSON.parse(await readFile(STORE, 'utf8')); } catch { /* erster Lauf */ }
@@ -75,7 +89,7 @@ export async function collectUsage(now = new Date()) {
   for (const file of await listFiles()) {
     const st = await stat(file); const id = path.basename(file, '.jsonl');
     const old = store.sessions[id];
-    if (old && old.size === st.size && old.mtime === Math.round(st.mtimeMs)) continue;   // unverändert
+    if (old && old.byDay && old.size === st.size && old.mtime === Math.round(st.mtimeMs)) continue;   // unverändert und schon mit Tagesverteilung
     const s = await readSession(file).catch(() => null);
     if (!s) continue;
     store.sessions[id] = { ...s, day: day.format(new Date(s.start || st.mtimeMs)), size: st.size, mtime: Math.round(st.mtimeMs) };
@@ -86,35 +100,56 @@ export async function collectUsage(now = new Date()) {
   const today = day.format(now);
   const ago = (n) => day.format(new Date(now.getTime() - n * 864e5));
   const d7 = ago(6), d30 = ago(29);
-  const blank = () => ({ runs: [0, 0, 0], cost: [0, 0, 0], out: [0, 0, 0], last: null, models: new Set(), perRun: 0 });
+  const days30 = Array.from({ length: 30 }, (_, i) => ago(29 - i));
+  const blank = () => ({ runs: [0, 0, 0], out30: 0, last: null, models: new Set(), perDay: {}, total: { runs: 0 } });
   const agg = Object.fromEntries([...AGENTS.map((a) => a.id), 'du', 'sonst'].map((k) => [k, blank()]));
   for (const s of Object.values(store.sessions)) {
     const a = agg[s.agent] || agg.sonst;
-    const w = [s.day === today, s.day >= d7, s.day >= d30];       // heute, 7 Tage, 30 Tage; gesamt kommt extra
-    a.runs[2] += 0;
-    [0, 1, 2].forEach((i) => { if (w[i]) { a.runs[i]++; a.cost[i] += s.cost || 0; a.out[i] += s.tokens.out; } });
-    a.total = a.total || { runs: 0, cost: 0, out: 0, cr: 0 };
-    a.total.runs++; a.total.cost += s.cost || 0; a.total.out += s.tokens.out; a.total.cr += s.tokens.cr;
+    const w = [s.day === today, s.day >= d7, s.day >= d30];       // Läufe zählen am Starttag
+    [0, 1, 2].forEach((i) => { if (w[i]) a.runs[i]++; });
+    if (w[2]) a.out30 += s.tokens.out;
+    a.total.runs++;
+    // Kosten auf die Tage der Sitzung verteilt (nach Token-Gewicht): eine mehrtägige Sitzung gibt so keinen einzelnen Ausschlag
+    const cost = s.cost || 0, bd = s.byDay && Object.keys(s.byDay).length ? s.byDay : { [s.day]: 1 };
+    const sum = Object.values(bd).reduce((x, y) => x + y, 0) || 1;
+    for (const [d, wt] of Object.entries(bd)) a.perDay[d] = (a.perDay[d] || 0) + cost * wt / sum;
     if (!a.last || s.start > a.last) a.last = s.start;
     s.models.filter((m) => !m.startsWith('<')).forEach((m) => a.models.add(m));
   }
   const names = Object.fromEntries([...AGENTS.map((a) => [a.id, a.name]), ['du', 'Du (interaktiv)'], ['sonst', 'Sonstige Hilfsläufe']]);
+  const sumFrom = (perDay, from) => Object.entries(perDay).reduce((x, [d, c]) => (d >= from ? x + c : x), 0);
   const rows = Object.entries(agg).map(([id, a]) => ({
     id, name: names[id], runs: { heute: a.runs[0], t7: a.runs[1], t30: a.runs[2] },
-    cost: { heute: a.cost[0], t7: a.cost[1], t30: a.cost[2], gesamt: a.total?.cost || 0 },
-    out: { t30: a.out[2] }, runsGesamt: a.total?.runs || 0,
-    avg: a.runs[2] ? a.cost[2] / a.runs[2] : null, last: a.last, models: [...a.models].sort()
+    cost: { heute: sumFrom(a.perDay, today), t7: sumFrom(a.perDay, d7), t30: sumFrom(a.perDay, d30), gesamt: sumFrom(a.perDay, '0000') },
+    out: { t30: a.out30 }, runsGesamt: a.total.runs,
+    avg: a.runs[2] ? sumFrom(a.perDay, d30) / a.runs[2] : null, last: a.last, models: [...a.models].sort(),
+    daily: days30.map((d) => Math.round((a.perDay[d] || 0) * 10000) / 10000)
   }));
   const sum30 = rows.reduce((x, r) => x + r.cost.t30, 0);
   const sumAgents30 = rows.filter((r) => AGENTS.some((a) => a.id === r.id)).reduce((x, r) => x + r.cost.t30, 0);
   rows.forEach((r) => { r.share30 = sum30 ? r.cost.t30 / sum30 : 0; });
   const since = Object.values(store.sessions).reduce((m, s) => (s.day < m ? s.day : m), today);
-  return { rows, sum30, sumAgents30, sum7: rows.reduce((x, r) => x + r.cost.t7, 0), sumHeute: rows.reduce((x, r) => x + r.cost.heute, 0), since, sessions: Object.keys(store.sessions).length };
+  const budget = await readBudget();
+  return { days: days30, budget, rows, sum30, sumAgents30, sum7: rows.reduce((x, r) => x + r.cost.t7, 0), sumHeute: rows.reduce((x, r) => x + r.cost.heute, 0), since, sessions: Object.keys(store.sessions).length };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('usage.mjs')) {
-  const u = await collectUsage();
+  const args = process.argv.slice(2), u = await collectUsage();
+  const i = args.findIndex((x) => x === '--referenz' || x === '--kalibrieren');
+  if (i >= 0) {
+    const mode = args[i], per = args[i + 1], val = Number(String(args[i + 2] || '').replace(',', '.'));
+    if (!PERIODS.includes(per) || !(val > 0) || (mode === '--kalibrieren' && val > 100)) {
+      console.error('Aufruf: usage.mjs --referenz <heute|t7|t30> <dollar>   oder   --kalibrieren <heute|t7|t30> <prozent 1-100>'); process.exit(1);
+    }
+    const used = u.rows.reduce((x, r) => x + r.cost[per], 0), b = await readBudget();
+    b[per] = mode === '--referenz' ? val : used / (val / 100);
+    b.gesetzt = new Date().toISOString().slice(0, 10);
+    b.quelle = mode === '--referenz' ? 'von Hand gesetzt' : `kalibriert: ${val} % laut claude.ai bei $${used.toFixed(2)} gemessen (${per})`;
+    await writeFile(BUDGET, JSON.stringify(b, null, 1) + '\n');
+    console.log(`Bezugswert ${per}: $${b[per].toFixed(2)} (${b.quelle})`); process.exit(0);
+  }
   console.log(`Verbrauch seit ${u.since} (${u.sessions} Sitzungen), geschätzt zu API-Listenpreisen:`);
-  for (const r of u.rows) console.log(`  ${r.name.padEnd(22)} Läufe 30 T: ${String(r.runs.t30).padStart(3)}  Kosten 30 T: $${r.cost.t30.toFixed(2).padStart(7)}  Anteil: ${(r.share30 * 100).toFixed(1).padStart(5)} %  Ø/Lauf: ${r.avg == null ? '   -' : '$' + r.avg.toFixed(2)}  ${r.models.join(', ')}`);
+  for (const r of u.rows) console.log(`  ${r.name.padEnd(22)} Läufe 30 T: ${String(r.runs.t30).padStart(3)}  Kosten heute/7/30 T: $${r.cost.heute.toFixed(2)} / $${r.cost.t7.toFixed(2)} / $${r.cost.t30.toFixed(2)}  Ø/Lauf: ${r.avg == null ? '-' : '$' + r.avg.toFixed(2)}  ${r.models.join(', ')}`);
   console.log(`  Summe 30 T: $${u.sum30.toFixed(2)} | davon Agenten: $${u.sumAgents30.toFixed(2)}`);
+  console.log(`  Bezugswerte: heute ${u.budget.heute ?? '-'}, 7 Tage ${u.budget.t7 ?? '-'}, 30 Tage ${u.budget.t30 ?? '-'}`);
 }
