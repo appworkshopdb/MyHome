@@ -10,6 +10,7 @@ import { connect } from 'node:tls';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectUsage } from './usage.mjs';
 
 const BASE = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(BASE, 'www', 'data');
@@ -288,12 +289,14 @@ async function main() {
   const sys = reg.system.map((id) => checks[id]);
   const now = new Date();
   await Promise.all(nodes.filter((n) => n.kind === 'agent').map(async (n) => { const r = await runInfo(n, now); if (Object.keys(r).length) n.run = r; }));
+  let usage = null;
+  try { usage = await collectUsage(now); } catch (e) { usage = { fehler: String(e.message || e).slice(0, 160), rows: [] }; }
   const data = {
     generated: now.toISOString(),
     generatedText: `${fmtDate(now)}, ${fmtTime(now)}`,
     durationMs: Date.now() - t0,
     system: { ids: reg.system, ok: sys.filter((c) => c.status === 'ok').length, warn: sys.filter((c) => c.status === 'warn').length, bad: sys.filter((c) => c.status === 'bad').length, total: sys.length },
-    checks, nodes, edges, tasks, lastReport
+    checks, nodes, edges, tasks, lastReport, usage
   };
   await mkdir(OUT_DIR, { recursive: true });
   const tmp = path.join(OUT_DIR, `.leitstand.${process.pid}.tmp`);

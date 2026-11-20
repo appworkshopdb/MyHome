@@ -231,3 +231,31 @@ h2.h{margin:0;font-family:var(--f-disp);font-size:13px;font-weight:600;letter-sp
   .spin,.wires .flowdot{animation:none!important}
   .enter *{animation:none!important}
 }
+
+/* Verbrauch pro Agent (Schätzung) */
+.uline{display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--mut);padding-top:10px;border-top:1px solid rgba(150,170,255,.1)}
+.uline b{font-family:var(--f-disp);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--tx);margin-left:auto}
+.uline span:last-child{min-width:0;white-space:nowrap}
+.ulist{display:flex;flex-direction:column;gap:2px}
+.urow{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) 78px minmax(150px,220px);align-items:center;gap:12px;padding:8px 0;border-top:1px solid rgba(150,170,255,.08);font-size:12.5px}
+.urow:first-child{border-top:0}
+.urow .un{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.urow .ub{height:6px;border-radius:3px;background:rgba(150,170,255,.12);overflow:hidden}
+.urow .ub i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--core),var(--flow));box-shadow:0 0 8px color-mix(in srgb,var(--flow) 50%,transparent)}
+.urow b{font-family:var(--f-disp);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.urow .um{color:var(--mut);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(150,170,255,.1)}
+.usum small{display:block;font-size:11px;color:var(--mut)}
+.usum b{font-family:var(--f-disp);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.ubox1{grid-column:1/-1}
+.ufacts{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1000px){
+  .urow{grid-template-columns:minmax(100px,140px) minmax(0,1fr) 70px}
+  .urow .um{grid-column:1/-1;margin-top:-4px}
+  .usum,.ufacts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .urow{grid-template-columns:minmax(0,1fr) 70px}
+  .urow .ub{grid-column:1/-1;order:3}
+  .urow .um{order:4}
+}

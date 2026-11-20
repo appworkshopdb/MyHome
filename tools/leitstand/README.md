@@ -12,3 +12,12 @@ Nur lesende Oberfläche für die Agenten, ihre Abhängigkeiten und offene Aufgab
 
 Laufzeit auf dem Server: `/opt/nestua/ops/leitstand/` (Scan per Cron alle 5 Minuten als `nestua`), ausgeliefert von Caddy unter `leitstand.nestua.de` mit Basic Auth.
 Aufgabenliste: `/opt/nestua/ops/leitstand/aufgaben.json` (pflegen die Sitzungen von Hand).
+
+## Verbrauch pro Agent
+
+`usage.mjs` (vom Scan aufgerufen) liest die Sitzungs-Transkripte von Claude Code (`~/.claude/projects/*/*.jsonl`) und sammelt je Sitzung
+Kosten (`totalCostUSD`, Schätzung zu API-Listenpreisen), Tokens und Modell in `/opt/nestua/ops/leitstand/usage.json`. Die Datei bleibt erhalten,
+auch wenn Claude Code Transkripte nach 30 Tagen löscht. Zuordnung über den Anfang des ersten Prompts (`Du bist der Agent "<Name>"`, bzw. `Unbeaufsichtigter Server-Check`);
+alles andere zählt als „Du (interaktiv)“ oder „Sonstige Hilfsläufe“. Es wird kein Inhalt gespeichert. Neuer Agent: Name in `AGENTS` (usage.mjs) ergänzen.
+Das Abo-Kontingent (5-Stunden-/Wochenlimit) ist von hier nicht lesbar, es steht unter claude.ai → Einstellungen → Nutzung.
+`node tools/leitstand/usage.mjs` gibt eine Übersicht im Terminal aus.

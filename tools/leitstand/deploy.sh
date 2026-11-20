@@ -8,6 +8,7 @@ mkdir -p "$DST/www/data"
 install -m 644 "$SRC/registry.json" "$DST/registry.json"
 install -m 755 "$SRC/scan.mjs" "$DST/scan.mjs"
 install -m 755 "$SRC/report.mjs" "$DST/report.mjs"
+install -m 755 "$SRC/usage.mjs" "$DST/usage.mjs"
 install -m 755 "$SRC/notify.mjs" "$DST/notify.mjs"
 install -m 755 "$SRC/server-check.sh" /opt/nestua/ops/server-check.sh
 install -m 755 "$SRC/server-check-cron.sh" /opt/nestua/ops/server-check-cron.sh

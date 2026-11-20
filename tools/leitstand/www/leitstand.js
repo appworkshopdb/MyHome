@@ -30,8 +30,41 @@ const POLL_MS = 15000, STALE_MIN = 12;
 const dm = (iso) => (iso || '').split('-').reverse().slice(0, 2).join('.') + '.';
 const berlinDay = (d) => new Intl.DateTimeFormat('en-CA', { timeZone:'Europe/Berlin', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
 
+/* ---------- Verbrauch (Schätzung zu API-Listenpreisen, aus den Transkripten von Claude Code) ---------- */
+const usd = (v) => new Intl.NumberFormat('de-DE', { style:'currency', currency:'USD' }).format(v || 0);
+const pct = (v) => (v * 100 < 0.1 && v > 0 ? '<0,1' : (v * 100).toLocaleString('de-DE', { maximumFractionDigits:1 })) + ' %';
+const mdl = (list) => (list || []).map((m) => m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase())).join(', ');
+const lauf = (n) => `${n} ${n === 1 ? 'Lauf' : 'Läufe'}`;
+function usageLine(a) {
+  const u = a.usage; if (!u) return '';
+  return `<span class="uline"><span>Verbrauch 30 Tage</span><b>${usd(u.cost.t30)}</b><span>${u.runs.t30 ? lauf(u.runs.t30) : 'noch kein Lauf'}</span></span>`;
+}
+function usageFacts(a) {
+  const u = a.usage; if (!u) return '<div class="empty">Keine Verbrauchsdaten.</div>';
+  const f = (k, v, sub) => `<div class="fact"><small>${k}</small><b>${v}</b><span>${sub}</span></div>`;
+  return `<div class="facts ufacts">${f('Heute', usd(u.cost.heute), lauf(u.runs.heute))}${f('7 Tage', usd(u.cost.t7), lauf(u.runs.t7))}${f('30 Tage', usd(u.cost.t30), lauf(u.runs.t30))}`
+    + `${f('Ø je Lauf', u.avg == null ? '–' : usd(u.avg), u.models.length ? esc(mdl(u.models)) : 'noch kein Lauf')}${f('Seit Messbeginn', usd(u.cost.gesamt), lauf(u.runsGesamt))}</div>`;
+}
+function usageBox(M) {
+  const U = M.usage; if (!U || !U.rows || !U.rows.length) return '';
+  const ids = M.agents.map((a) => a.id), ag = ids.map((id) => U.rows.find((r) => r.id === id)).filter(Boolean);
+  const top = Math.max(0.01, ...ag.map((r) => r.cost.t30)), du = U.rows.find((r) => r.id === 'du'), so = U.rows.find((r) => r.id === 'sonst');
+  const row = (r) => `<div class="urow"><span class="un">${esc(r.name)}</span><span class="ub"><i style="width:${Math.max(r.cost.t30 ? 2 : 0, Math.round(100 * r.cost.t30 / top))}%"></i></span>`
+    + `<b>${usd(r.cost.t30)}</b><span class="um">${r.runs.t30 ? lauf(r.runs.t30) : 'kein Lauf'}${r.avg == null ? '' : ' · Ø ' + usd(r.avg)}</span></div>`;
+  const share = U.sum30 ? U.sumAgents30 / U.sum30 : 0;
+  return `<section class="box glass ubox"><div class="bh"><h2 class="h">Verbrauch der Agenten</h2><span class="pill s-plan"><i></i>Schätzung, 30 Tage</span></div>
+    <div class="ulist">${ag.map(row).join('')}</div>
+    <div class="usum"><div><small>Agenten gesamt</small><b>${usd(U.sumAgents30)}</b></div>
+      <div><small>Du, interaktiv</small><b>${usd(du ? du.cost.t30 : 0)}</b></div>
+      <div><small>Anteil der Agenten</small><b>${pct(share)}</b></div>
+      <div><small>Heute / 7 Tage (alles)</small><b>${usd(U.sumHeute)} / ${usd(U.sum7)}</b></div></div>
+    <div class="det">Kosten geschätzt zu API-Listenpreisen (Claude Code, je Sitzung), keine Abrechnung. Dein Abo-Kontingent (5-Stunden- und Wochenlimit) ist von hier aus nicht lesbar: dort zeigt <b>claude.ai → Einstellungen → Nutzung</b> den echten Stand.
+      Gemessen seit ${esc(dm(U.since).replace(/\.$/, ''))}. ${so && so.runs.t30 ? `Sonstige Hilfsläufe: ${usd(so.cost.t30)}. ` : ''}Quelle: Transkripte unter ~/.claude/projects, gespeichert in /opt/nestua/ops/leitstand/usage.json.</div></section>`;
+}
+
 /* ---------- Daten aufbereiten (reine Funktion, auch in Node testbar) ---------- */
 function model(D) {
+  const uRow = (id) => ((D.usage && D.usage.rows) || []).find((r) => r.id === id) || null;
   const byId = Object.fromEntries(D.nodes.map((n) => [n.id, n]));
   const chk = (id) => D.checks[id] || { status:'warn', value:'?', label:id, detail:'Prüfung fehlt im Scan' };
   const T = D.tasks || {};
@@ -51,7 +84,7 @@ function model(D) {
     });
     const guard = n.guard && byId[n.guard] ? { name:byId[n.guard].name, sub:byId[n.guard].sub || '', st:byId[n.guard].status || 'plan', val:byId[n.guard].value || '' } : null;
     return { id:n.id, name:n.name, sub:n.sub || '', icon:n.icon, phase:n.phase || '', st, state, progress:n.progress || null, last, next:run.next || null, runText:n.runText || '', overdue:!!run.overdue,
-      channel:n.channel || '', info:n.info || [], zust:n.zust || [], flow, guard,
+      channel:n.channel || '', info:n.info || [], zust:n.zust || [], flow, guard, usage:uRow(n.id),
       builds:(n.builds || []).map((b) => ({ id:b, ...chk(b) })), tasks:[...du, ...cl].filter((t) => t.agent === n.id) };
   });
   const sys = (D.system.ids || []).map((id) => ({ id, ...chk(id) }));
@@ -60,11 +93,11 @@ function model(D) {
   const done = T.done || [];
   const active = agents.filter((a) => a.st !== 'plan');
   const nexts = agents.filter((a) => a.next).sort((a, b) => `${a.next.datum} ${a.next.zeit}`.localeCompare(`${b.next.datum} ${b.next.zeit}`));
-  return { agents, sys, tools, du, cl, done, doneToday:done.filter((t) => t.date === today), active,
+  return { usage:D.usage || null, agents, sys, tools, du, cl, done, doneToday:done.filter((t) => t.date === today), active,
     agBad:agents.filter((a) => a.st === 'bad'), agWarn:agents.filter((a) => a.st === 'warn'),
     sysBad:sys.filter((c) => c.status === 'bad'), sysWarn:sys.filter((c) => c.status === 'warn'), next:nexts[0] || null, tasksFile:T.fehlt ? 'fehlt' : T.updated };
 }
-if (typeof document === 'undefined') { if (typeof module !== 'undefined') module.exports = { model }; return; }
+if (typeof document === 'undefined') { if (typeof module !== 'undefined') module.exports = { model, usageBox, usageLine, usageFacts }; return; }
 
 /* ---------- Ansichten ---------- */
 const home = document.getElementById('vHome'), agentV = document.getElementById('vAgent');
@@ -92,6 +125,7 @@ function renderHome() {
       <dl class="met"><div><dt>Letzter Lauf</dt><dd class="${a.last ? (lastSt === 'ok' ? '' : lastSt) : 'mut'}">${a.last ? runTxt(a.last) : 'noch keiner'}</dd></div>
         <div><dt>Nächster Lauf</dt><dd class="${a.next ? (a.overdue ? 'warn' : '') : a.runText ? '' : 'mut'}">${a.next ? runTxt(a.next) : esc(a.runText || 'nicht geplant')}</dd></div>
         <div><dt>Befunde</dt><dd class="${a.last ? (a.last.befunde ? lastSt : '') : 'mut'}">${a.last ? a.last.befunde : '–'}</dd></div></dl>
+      ${usageLine(a)}
       <span class="build ${a.progress ? (a.progress[0] === a.progress[1] ? 's-ok' : 's-build') : 's-plan'}"><span class="row"><span>Aufbau</span><span>${a.progress ? `${a.progress[0]} von ${a.progress[1]} Bausteinen` : 'noch nicht begonnen'}</span></span>${segs(a.progress ? a.progress[1] : 7, a.progress ? a.progress[0] : 0)}</span>
       <span class="links"><span class="dots">${a.flow.map((l) => `<i class="s-${l.st}"></i>`).join('')}</span><span class="lt">${a.flow.length} Verknüpfungen${a.channel ? ` · Discord ${esc(a.channel)}` : ''}</span><span class="go">Öffnen${svg('arrow')}</span></span>
     </button>`;
@@ -121,6 +155,7 @@ function renderHome() {
         </div></div>
     </section>
     <div><h2 class="h" style="margin-bottom:10px">Agenten</h2><div class="agents">${m.agents.map(card).join('')}</div></div>
+    ${usageBox(m)}
     <div class="lower">
       <section class="box glass s-warn"><div class="bh"><h2 class="h">Braucht dich</h2><span class="cnt">${m.du.length}</span></div>
         ${m.du.map((t) => taskRow(t, true)).join('') || '<div class="empty">Nichts offen.</div>'}
@@ -174,6 +209,8 @@ function renderAgent(id) {
       <section class="box glass"><div class="bh"><h2 class="h">Aufbau und Aufgaben</h2></div>
         ${a.builds.length ? `<div class="bl">${a.builds.map((b) => `<div class="s-${b.status}" title="${esc(b.detail)}"><i></i>${esc(b.label)}<span>${esc(b.value)}</span></div>${b.status !== 'ok' ? `<div class="det">${esc(b.detail)}</div>` : ''}`).join('')}</div>` : '<div class="empty" style="margin-bottom:10px">Aufbau noch nicht begonnen.</div>'}
         ${a.tasks.length ? a.tasks.map((t) => taskRow(t, false)).join('') : '<div class="empty">Keine offenen Aufgaben.</div>'}</section>
+      <section class="box glass ubox1"><div class="bh"><h2 class="h">Verbrauch</h2><span class="pill s-plan"><i></i>Schätzung zu API-Listenpreisen</span></div>${usageFacts(a)}
+        <div class="det">Aus den Sitzungs-Transkripten von Claude Code. Das Abo-Kontingent selbst zeigt claude.ai → Einstellungen → Nutzung.</div></section>
     </div>`;
   document.getElementById('back').onclick = () => { location.hash = ''; };
   return true;
