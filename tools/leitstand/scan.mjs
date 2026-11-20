@@ -223,10 +223,12 @@ async function runInfo(n, now) {
       const f = (await readdir(REPORTS_DIR)).filter((x) => re.test(x)).sort().at(-1);
       if (f) {
         const r = JSON.parse(await readFile(path.join(REPORTS_DIR, f), 'utf8'));
-        let ki = '';
-        try { ki = (await readFile(path.join(REPORTS_DIR, f.replace(/\.json$/, '-ki.md')), 'utf8')).trim().slice(0, 1500); } catch { /* keine KI-Auswertung */ }
+        // KI-Text und Design-Review (nur Prüfer) bis 8000 Zeichen; die Anzeige scrollt, abgeschnitten wird nur, was wirklich lang ist
+        let ki = '', design = '';
+        try { ki = (await readFile(path.join(REPORTS_DIR, f.replace(/\.json$/, '-ki.md')), 'utf8')).trim().slice(0, 8000); } catch { /* keine KI-Auswertung */ }
+        try { design = (await readFile(path.join(REPORTS_DIR, f.replace(/\.json$/, '-design.md')), 'utf8')).trim().slice(0, 8000); } catch { /* kein Design-Review */ }
         const bef = (r.befunde || []).map((b) => ({ label: b.label, value: b.value, status: b.status }));
-        run.last = { datum: r.datum, zeit: r.zeit, status: r.status, befunde: bef.length, befundListe: bef, fazit: r.fazit || '', ki, file: path.join(REPORTS_DIR, f.replace(/\.json$/, '.md')) };
+        run.last = { datum: r.datum, zeit: r.zeit, status: r.status, befunde: bef.length, befundListe: bef, fazit: r.fazit || '', ki, design, file: path.join(REPORTS_DIR, f.replace(/\.json$/, '.md')) };
       }
     } catch { /* noch kein Bericht */ }
   }

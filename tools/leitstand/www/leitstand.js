@@ -261,7 +261,7 @@ function renderAgent(id) {
         ${a.overdue ? `<div class="warnline">Der geplante Lauf um ${esc(a.next?.zeit || '')} hat keinen Bericht hinterlassen. Log: /opt/nestua/ops/reports/cron-last.log</div>` : ''}
         ${a.last ? `<div class="rep"><span class="when">${runTxt(a.last)} Uhr <span class="pill"><i></i>${esc(a.last.status)}</span></span><span>${esc(a.last.fazit)}</span>
           ${a.last.befundListe.length ? a.last.befundListe.map((b) => `<div class="li s-${REP[b.status] || 'warn'}"><i></i><span class="lt">${esc(b.label)}: ${esc(b.value)}</span></div>`).join('') : ''}
-          ${a.last.ki ? `<div class="ki"><b>KI-Einschätzung (nur Vorschlag)</b>${esc(a.last.ki)}</div>` : ''}<span class="mono">${esc(a.last.file)}</span></div>`
+          ${a.last.ki ? `<div class="ki"><b>KI-Einschätzung (nur Vorschlag)</b>${esc(a.last.ki)}</div>` : ''}${a.last.design ? `<div class="ki"><b>Design-Review (Empfehlung, blockiert nicht)</b>${esc(a.last.design)}</div>` : ''}<span class="mono">${esc(a.last.file)}</span></div>`
           : `<div class="empty">Noch kein Lauf.${p ? ` Der Agent ist ${esc(a.state)}.` : ''}</div>`}</section>
       <section class="box glass"><div class="bh"><h2 class="h">Steckbrief</h2></div>
         <dl class="kv">${a.info.map(([x, v]) => `<dt>${esc(x)}</dt><dd>${esc(v)}</dd>`).join('')}${a.channel ? `<dt>Discord</dt><dd>${esc(a.channel)}</dd>` : ''}</dl>
