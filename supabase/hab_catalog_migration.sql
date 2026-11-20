@@ -50,7 +50,7 @@ update public.hab_habits h
     ('Wasser trinken','Ernährung'), ('Gemüse essen','Ernährung'), ('Obst essen','Ernährung'),
     ('Kein Zucker','Ernährung'), ('Zu Hause kochen','Ernährung'), ('Achtsam essen','Ernährung'),
     ('Vor 23 Uhr ins Bett','Schlaf'), ('Kein Handy vor dem Schlafen','Schlaf'),
-    ('Feste Aufstehzeit','Schlaf'), ('Kein Koffein nach 14 Uhr','Schlaf'),
+    ('Feste Aufstehzeit','Schlaf'), ('Kein Koffein nach 14 Uhr','Schlaf'), ('Kein Koffein ab Uhrzeit','Schlaf'),
     ('Meditieren','Mental'), ('Atemübungen','Mental'), ('Dankbarkeit notieren','Mental'),
     ('Journaling','Mental'), ('Digitale Pause','Mental'), ('Digitale Pause am Abend','Mental'),
     ('Tagesplanung machen','Produktivität'), ('Kein Handy morgens','Produktivität'),
@@ -107,4 +107,4 @@ notify pgrst, 'reload schema';
 --   update public.hab_habits set goal_time = '06:30', unit = null, target_count = 1
 --    where lower(trim(name)) = 'feste aufstehzeit' and goal_time is null;
 --   update public.hab_habits set goal_time = '14:00', unit = null, target_count = 1
---    where lower(trim(name)) = 'kein koffein nach 14 uhr' and goal_time is null;
+--    where lower(trim(name)) in ('kein koffein nach 14 uhr','kein koffein ab uhrzeit') and goal_time is null;

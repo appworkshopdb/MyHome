@@ -40,7 +40,7 @@ export const HABIT_CATALOG = [
   { name: 'Vor 23 Uhr ins Bett',         icon: '😴', category: 'Schlaf',        frequency: 'daily',    time_slot: 'evening', goal: CHECK },
   { name: 'Kein Handy vor dem Schlafen', icon: '📵', category: 'Schlaf',        frequency: 'daily',    time_slot: 'evening', goal: CHECK },
   { name: 'Feste Aufstehzeit',           icon: '⏰', category: 'Schlaf',        frequency: 'daily',    time_slot: 'morning', goal: { type: 'time', step: 10, time: '06:30' } },
-  { name: 'Kein Koffein nach 14 Uhr',    icon: '☕', category: 'Schlaf',        frequency: 'daily',    time_slot: 'anytime', goal: { type: 'time', step: 30, time: '14:00' } },
+  { name: 'Kein Koffein ab Uhrzeit',     icon: '☕', category: 'Schlaf',        frequency: 'daily',    time_slot: 'anytime', goal: { type: 'time', step: 30, time: '14:00' } },
   // Mental
   { name: 'Meditieren',                  icon: '🧠', category: 'Mental',        frequency: 'daily',    time_slot: 'morning', goal: CHECK },
   { name: 'Atemübungen',                 icon: '🌬️', category: 'Mental',       frequency: 'daily',    time_slot: 'anytime', goal: CHECK },
@@ -64,9 +64,12 @@ export const HABIT_CATALOG = [
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 
+// Frühere Namen von Vorlagen, damit bereits angelegte Gewohnheiten gesperrt bleiben
+const LEGACY_NAMES = { 'kein koffein nach 14 uhr': 'kein koffein ab uhrzeit' };
+
 /** Katalog-Eintrag zu einem Namen (oder null → eigene Gewohnheit). */
 export function catalogEntryByName(name) {
-  const n = norm(name);
+  const n = LEGACY_NAMES[norm(name)] ?? norm(name);
   return HABIT_CATALOG.find((e) => norm(e.name) === n) ?? null;
 }
 
