@@ -24,7 +24,7 @@ const kiFehler = kiBefunde.filter((l) => /^- \*\*Fehler/.test(l)).length, kiHinw
 const design = await read(arg('--design', ''));
 const ui = (await read(arg('--ui', ''))).split('\n').filter(Boolean);
 const dStufe = (design.match(/STUFE:\s*(grün|gelb|rot)\s*$/i) || [])[1]?.toLowerCase() || '';
-const dEmpf = (design.split(/^## /m).find((s) => s.startsWith('Empfehlungen')) || '').split('\n').filter((l) => /^- \*\*Empfehlung\*\*/.test(l));
+const dEmpf = (design.split(/^## /m).find((s) => s.startsWith('Empfehlungen')) || '').split('\n').filter((l) => /^- /.test(l) && !/^- \**keine\**\.?\s*$/i.test(l));   // jede Listenzeile zählt, auch wenn das Modell den Titel statt "Empfehlung" fett setzt
 const dText = design ? `${dEmpf.length} Empfehlung${dEmpf.length === 1 ? '' : 'en'}` : ui.length ? 'nicht gelaufen' : 'keine UI-Änderung';
 const ratsche = Object.entries(R.design || {}).filter(([k]) => k !== 'seit').map(([k, v]) => `${k.replace('design-', '')} +${v.neu}/−${v.entfernt}`).join(', ');
 
@@ -59,7 +59,7 @@ const kurz = ((ki.split(/^## /m).find((s) => s.startsWith('Kurzfazit')) || '').r
 // notify.mjs kürzt bei etwa 1800 Zeichen; damit der Link am Ende bleibt, fallen vorher einzelne Befunde weg (Rest steht im Bericht)
 const MAX = 1700;
 const top = kiBefunde.slice(0, 4).map((l) => clip(l.replace(/^- /, '• '), 230));
-const dTop = dEmpf.slice(0, 3).map((l) => clip(l.replace(/^- \*\*Empfehlung\*\* /, '• '), 200));
+const dTop = dEmpf.slice(0, 3).map((l) => clip(l.replace(/^- (\*\*Empfehlung\*\* )?/, '• '), 200));
 const build = () => {
   const lines = [`${icon} **${name}** (${commits} Commits, ${R.dateien} Dateien, Stand ${sha})`, clip(kurz, design ? 350 : 450)];
   if (top.length) lines.push('', ...top, ...(kiBefunde.length > top.length ? [`… ${kiBefunde.length - top.length} weitere im Bericht`] : []));

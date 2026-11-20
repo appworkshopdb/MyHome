@@ -28,7 +28,7 @@ Antworte auf Deutsch in genau diesem Aufbau:
 1 bis 2 Sätze.
 
 ## Empfehlungen
-Höchstens 8, wichtigste zuerst. Je Empfehlung eine Zeile: `- **Empfehlung** \`datei:zeile\`: was, warum (DESIGN.md Abschnitt N), konkreter Vorschlag.` Wenn nichts: `- keine`.
+Höchstens 8, wichtigste zuerst. Je Empfehlung genau eine Zeile, die mit `- **Empfehlung** ` beginnt (das Wort "Empfehlung" fett, kein anderer Titel), danach `\`datei:zeile\`: was, warum (DESIGN.md Abschnitt N), konkreter Vorschlag.` Wenn nichts: `- keine`. Halte jede Zeile unter 400 Zeichen; Aufzählungen mehrerer Fundstellen gehören in eine Zeile, nicht in Unterpunkte.
 
 ## Nicht geprüft
 Was du ausgelassen hast.
