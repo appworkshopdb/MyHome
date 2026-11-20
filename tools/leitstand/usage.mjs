@@ -51,15 +51,16 @@ async function readSession(file) {
   }
   const tok = { in: 0, out: 0, cw: 0, cr: 0 };
   const models = {};
+  const msgs = [];    // [Zeit in ms, Gewicht] je Nachricht, für das 5-Stunden-Fenster
   const byDay = {};   // Verteilungsschlüssel je Tag (Preisverhältnis der Tokenarten), wird später auf die Sitzungskosten skaliert
   for (const { model, u, ts } of seen.values()) {
     const w = (u.input_tokens || 0) + 5 * (u.output_tokens || 0) + 1.25 * (u.cache_creation_input_tokens || 0) + 0.1 * (u.cache_read_input_tokens || 0);
-    if (ts) { const d = day.format(new Date(ts)); byDay[d] = (byDay[d] || 0) + w; }
+    if (ts) { const d = day.format(new Date(ts)); byDay[d] = (byDay[d] || 0) + w; msgs.push([Date.parse(ts), Math.round(w)]); }
     tok.in += u.input_tokens || 0; tok.out += u.output_tokens || 0; tok.cw += u.cache_creation_input_tokens || 0; tok.cr += u.cache_read_input_tokens || 0;
     if (model) models[model] = (models[model] || 0) + 1;
   }
   if (!seen.size && cost == null) return null;
-  return { agent: classify(first, entry), start, entry, messages: seen.size, cost, models: Object.keys(models), tokens: tok, byDay };
+  return { agent: classify(first, entry), start, entry, messages: seen.size, cost, models: Object.keys(models), tokens: tok, byDay, msgs };
 }
 
 async function listFiles() {
@@ -72,7 +73,7 @@ async function listFiles() {
 }
 
 const BUDGET = '/opt/nestua/ops/leitstand/budget.json';
-const PERIODS = ['heute', 't7', 't30'];
+const PERIODS = ['sitzung', 'heute', 't7', 't30'];
 async function readBudget() {
   try { return JSON.parse(await readFile(BUDGET, 'utf8')); }
   catch {
@@ -89,7 +90,7 @@ export async function collectUsage(now = new Date()) {
   for (const file of await listFiles()) {
     const st = await stat(file); const id = path.basename(file, '.jsonl');
     const old = store.sessions[id];
-    if (old && old.byDay && old.size === st.size && old.mtime === Math.round(st.mtimeMs)) continue;   // unverändert und schon mit Tagesverteilung
+    if (old && old.byDay && old.msgs && old.size === st.size && old.mtime === Math.round(st.mtimeMs)) continue;   // unverändert und schon mit Tagesverteilung
     const s = await readSession(file).catch(() => null);
     if (!s) continue;
     store.sessions[id] = { ...s, day: day.format(new Date(s.start || st.mtimeMs)), size: st.size, mtime: Math.round(st.mtimeMs) };
@@ -103,6 +104,7 @@ export async function collectUsage(now = new Date()) {
   const days30 = Array.from({ length: 30 }, (_, i) => ago(29 - i));
   const blank = () => ({ runs: [0, 0, 0], out30: 0, last: null, models: new Set(), perDay: {}, total: { runs: 0 } });
   const agg = Object.fromEntries([...AGENTS.map((a) => a.id), 'du', 'sonst'].map((k) => [k, blank()]));
+  const allMsgs = [];
   for (const s of Object.values(store.sessions)) {
     const a = agg[s.agent] || agg.sonst;
     const w = [s.day === today, s.day >= d7, s.day >= d30];       // Läufe zählen am Starttag
@@ -113,14 +115,27 @@ export async function collectUsage(now = new Date()) {
     const cost = s.cost || 0, bd = s.byDay && Object.keys(s.byDay).length ? s.byDay : { [s.day]: 1 };
     const sum = Object.values(bd).reduce((x, y) => x + y, 0) || 1;
     for (const [d, wt] of Object.entries(bd)) a.perDay[d] = (a.perDay[d] || 0) + cost * wt / sum;
+    // je Nachricht: Kostenanteil nach Gewicht (für das 5-Stunden-Fenster)
+    if (s.msgs && s.msgs.length) { const sw = s.msgs.reduce((x, m) => x + m[1], 0) || 1; for (const [t, wt] of s.msgs) allMsgs.push({ t, c: cost * wt / sw, id: agg[s.agent] ? s.agent : 'sonst' }); }
     if (!a.last || s.start > a.last) a.last = s.start;
     s.models.filter((m) => !m.startsWith('<')).forEach((m) => a.models.add(m));
   }
   const names = Object.fromEntries([...AGENTS.map((a) => [a.id, a.name]), ['du', 'Du (interaktiv)'], ['sonst', 'Sonstige Hilfsläufe']]);
   const sumFrom = (perDay, from) => Object.entries(perDay).reduce((x, [d, c]) => (d >= from ? x + c : x), 0);
+  // 5-Stunden-Fenster rekonstruieren: es beginnt mit der ersten Nachricht und läuft 5 Stunden; die nächste Nachricht danach beginnt ein neues.
+  // Sieht nur Nachrichten auf diesem Server (Nutzung an anderen Geräten kann das echte Fenster früher starten lassen).
+  const WIN = 5 * 3600e3;
+  allMsgs.sort((x, y) => x.t - y.t);
+  let wStart = null;
+  for (const m of allMsgs) if (wStart === null || m.t >= wStart + WIN) wStart = m.t;
+  const nowMs = now.getTime(), aktiv = wStart !== null && nowMs < wStart + WIN;
+  const winCost = Object.fromEntries(Object.keys(agg).map((k) => [k, 0]));
+  let winMsgs = 0;
+  if (aktiv) for (const m of allMsgs) if (m.t >= wStart) { winCost[m.id] += m.c; winMsgs++; }
+  const fenster = { aktiv, start: wStart ? new Date(wStart).toISOString() : null, ende: wStart ? new Date(wStart + WIN).toISOString() : null, nachrichten: winMsgs, kosten: Object.values(winCost).reduce((x, y) => x + y, 0) };
   const rows = Object.entries(agg).map(([id, a]) => ({
     id, name: names[id], runs: { heute: a.runs[0], t7: a.runs[1], t30: a.runs[2] },
-    cost: { heute: sumFrom(a.perDay, today), t7: sumFrom(a.perDay, d7), t30: sumFrom(a.perDay, d30), gesamt: sumFrom(a.perDay, '0000') },
+    cost: { sitzung: winCost[id], heute: sumFrom(a.perDay, today), t7: sumFrom(a.perDay, d7), t30: sumFrom(a.perDay, d30), gesamt: sumFrom(a.perDay, '0000') },
     out: { t30: a.out30 }, runsGesamt: a.total.runs,
     avg: a.runs[2] ? sumFrom(a.perDay, d30) / a.runs[2] : null, last: a.last, models: [...a.models].sort(),
     daily: days30.map((d) => Math.round((a.perDay[d] || 0) * 10000) / 10000)
@@ -130,7 +145,7 @@ export async function collectUsage(now = new Date()) {
   rows.forEach((r) => { r.share30 = sum30 ? r.cost.t30 / sum30 : 0; });
   const since = Object.values(store.sessions).reduce((m, s) => (s.day < m ? s.day : m), today);
   const budget = await readBudget();
-  return { days: days30, budget, rows, sum30, sumAgents30, sum7: rows.reduce((x, r) => x + r.cost.t7, 0), sumHeute: rows.reduce((x, r) => x + r.cost.heute, 0), since, sessions: Object.keys(store.sessions).length };
+  return { days: days30, budget, fenster, rows, sum30, sumAgents30, sum7: rows.reduce((x, r) => x + r.cost.t7, 0), sumHeute: rows.reduce((x, r) => x + r.cost.heute, 0), since, sessions: Object.keys(store.sessions).length };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('usage.mjs')) {

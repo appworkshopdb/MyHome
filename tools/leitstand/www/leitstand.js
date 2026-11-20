@@ -47,7 +47,8 @@ function usageFacts(a) {
 }
 /* Farben je Agent (zusätzlich steht der Name immer im Diagramm, Farbe ist nie das einzige Zeichen) */
 const AG_COLOR = { server:'#38E1FF', kontext:'#8B7CFF', pruefer:'#FFB547', dsgvo:'#34F0C2', social:'#FF7AB6', du:'rgba(190,200,230,.42)', sonst:'rgba(190,200,230,.24)' };
-const PERIODS = [['heute', 'Heute'], ['t7', '7 Tage'], ['t30', '30 Tage']];
+const PERIODS = [['sitzung', '5 Std.'], ['heute', 'Heute'], ['t7', '7 Tage'], ['t30', '30 Tage']];
+const hm = (iso) => (iso ? new Intl.DateTimeFormat('de-DE', { timeZone:'Europe/Berlin', hour:'2-digit', minute:'2-digit' }).format(new Date(iso)) : '');
 const usdK = (v) => v >= 100 ? '$' + Math.round(v) : v >= 10 ? '$' + v.toFixed(0) : '$' + v.toFixed(2).replace('.', ',');
 
 /* Fortschrittsbalken: Verbrauch auf diesem Server im Vergleich zum Bezugswert je Zeitraum.
@@ -57,18 +58,19 @@ function usageBars(U, focus) {
   const B = U.budget || {}, order = ['server', 'kontext', 'pruefer', 'dsgvo', 'social', 'du', 'sonst'];
   const rows = order.map((id) => U.rows.find((r) => r.id === id)).filter(Boolean);
   const bar = ([k, label]) => {
-    const total = rows.reduce((x, r) => x + r.cost[k], 0), ref = B[k] > 0 ? B[k] : null;
-    const segs = rows.map((r) => ({ r, c: r.cost[k] })).filter((x) => x.c > 0);
-    const mine = focus ? (rows.find((r) => r.id === focus) || { cost: { [k]: 0 } }).cost[k] : total;
+    const total = rows.reduce((x, r) => x + (r.cost[k] || 0), 0), ref = B[k] > 0 ? B[k] : null;
+    const segs = rows.map((r) => ({ r, c: r.cost[k] || 0 })).filter((x) => x.c > 0);
+    const mine = focus ? ((rows.find((r) => r.id === focus) || { cost: {} }).cost[k] || 0) : total;
+    const F = U.fenster, extra = k !== 'sitzung' ? '' : F && F.aktiv ? ` · endet ${hm(F.ende)}` : ' · kein aktives Fenster';
     const scale = ref || total || 1, over = ref && total > ref;
     const html = !ref ? '' : segs.map(({ r, c }) => `<i title="${esc(r.name)}: ${usd(c)}" style="width:${(100 * c / scale / (over ? total / ref : 1)).toFixed(2)}%;background:${focus && r.id !== focus ? 'rgba(190,200,230,.18)' : AG_COLOR[r.id]}"></i>`).join('');
-    const txt = ref ? `${pct(mine / ref)} <span>von ${usd(ref)}</span>` : `${usd(mine)} <span>Bezugswert fehlt</span>`;
+    const txt = ref ? `${pct(mine / ref)} <span>von ${usd(ref)}${extra}</span>` : `${usd(mine)} <span>Bezugswert fehlt${extra}</span>`;
     return `<div class="ubar${over ? ' over' : ''}${ref ? '' : ' noref'}"><span class="ul">${label}</span><span class="ut" role="img" aria-label="${esc(label)}: ${esc(txt.replace(/<[^>]+>/g, ''))}">${html}</span><b>${txt}</b></div>`;
   };
   const noRef = PERIODS.every(([k]) => !(B[k] > 0));
   return `<div class="ubars">${PERIODS.map(bar).join('')}</div>`
     + `<div class="det">${noRef ? '<b>Bezugswert noch nicht festgelegt:</b> Die Balken füllen sich, sobald ein Wert gesetzt ist. Am einfachsten kalibrieren: auf claude.ai → Einstellungen → Nutzung den Prozentwert ablesen und <code>node /opt/nestua/ops/leitstand/usage.mjs --kalibrieren t7 &lt;Prozent&gt;</code> ausführen (oder <code>--referenz t7 &lt;Dollar&gt;</code>). '
-      : `Bezugswerte gesetzt ${esc(B.gesetzt || '')}${B.quelle ? ' (' + esc(B.quelle) + ')' : ''}. `}Der Bezugswert ist eine eigene Schätzung in Dollar, kein offizieller Wert von Anthropic. Gezählt wird nur, was auf diesem Server gemessen wurde: Nutzung am PC, am Handy und in claude.ai zählt beim echten Kontingent mit, fehlt hier aber.</div>`;
+      : `Bezugswerte gesetzt ${esc(B.gesetzt || '')}${B.quelle ? ' (' + esc(B.quelle) + ')' : ''}. `}Der Bezugswert ist eine eigene Schätzung in Dollar, kein offizieller Wert von Anthropic. Das 5-Stunden-Fenster beginnt mit der ersten Nachricht und läuft 5 Stunden, es wird aus den Zeitstempeln hier rekonstruiert (Abweichung zu claude.ai wenige Minuten). Gezählt wird nur, was auf diesem Server gemessen wurde: Nutzung am PC, am Handy und in claude.ai zählt beim echten Kontingent mit, fehlt hier aber.</div>`;
 }
 
 /* Liniendiagramm der Kosten je Tag (SVG, ohne Bibliothek). mode: 'tag' oder 'summe'. */

@@ -30,3 +30,6 @@ Das Abo-Kontingent (5-Stunden-/Wochenlimit) ist von hier nicht lesbar, es steht 
   Genau genug nur, wenn im Zeitraum fast nur auf diesem Server gearbeitet wurde: Nutzung an anderen Geräten und in claude.ai zählt beim echten Kontingent mit, ist hier nicht sichtbar.
 - **Balken:** Heute, 7 Tage, 30 Tage; Startseite gestapelt nach Agent (plus Du und Sonstige), Agenten-Seite nur der Anteil dieses Agenten. Über 100 % wird rot.
 - **Diagramm:** Kosten je Tag, Startseite eine Linie je Agent, Agenten-Seite eine Linie. Umschalter Pro Tag / Summiert. Die Kosten einer Sitzung werden nach Token-Gewicht auf ihre Tage verteilt.
+- **5-Stunden-Fenster** (`sitzung`): beginnt mit der ersten Nachricht und läuft 5 Stunden; rekonstruiert aus den Zeitstempeln aller Nachrichten auf diesem Server (`usage.mjs`, Feld `fenster`).
+  Abweichung zu claude.ai: wenige Minuten (die erste Antwort kommt kurz nach der ersten Nachricht); Nutzung an anderen Geräten kann das echte Fenster früher beginnen lassen.
+  Kalibrieren: `node usage.mjs --kalibrieren sitzung <prozent>` kurz nachdem du den Wert unter „Aktuelle Sitzung“ abgelesen hast.
