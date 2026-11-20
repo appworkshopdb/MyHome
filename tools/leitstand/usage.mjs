@@ -144,9 +144,12 @@ if (process.argv[1] && process.argv[1].endsWith('usage.mjs')) {
     const used = u.rows.reduce((x, r) => x + r.cost[per], 0), b = await readBudget();
     b[per] = mode === '--referenz' ? val : used / (val / 100);
     b.gesetzt = new Date().toISOString().slice(0, 10);
-    b.quelle = mode === '--referenz' ? 'von Hand gesetzt' : `kalibriert: ${val} % laut claude.ai bei $${used.toFixed(2)} gemessen (${per})`;
+    const note = args[i + 3] && !args[i + 3].startsWith('--') ? args.slice(i + 3).join(' ') : null;
+    b.quellen = b.quellen || {};
+    b.quellen[per] = note || (mode === '--referenz' ? 'von Hand gesetzt' : `kalibriert: ${val} % laut claude.ai bei $${used.toFixed(2)} gemessen`);
+    b.quelle = Object.entries(b.quellen).map(([k, v]) => `${k}: ${v}`).join('; ');
     await writeFile(BUDGET, JSON.stringify(b, null, 1) + '\n');
-    console.log(`Bezugswert ${per}: $${b[per].toFixed(2)} (${b.quelle})`); process.exit(0);
+    console.log(`Bezugswert ${per}: $${b[per].toFixed(2)} (${b.quellen[per]})`); process.exit(0);
   }
   console.log(`Verbrauch seit ${u.since} (${u.sessions} Sitzungen), geschätzt zu API-Listenpreisen:`);
   for (const r of u.rows) console.log(`  ${r.name.padEnd(22)} Läufe 30 T: ${String(r.runs.t30).padStart(3)}  Kosten heute/7/30 T: $${r.cost.heute.toFixed(2)} / $${r.cost.t7.toFixed(2)} / $${r.cost.t30.toFixed(2)}  Ø/Lauf: ${r.avg == null ? '-' : '$' + r.avg.toFixed(2)}  ${r.models.join(', ')}`);

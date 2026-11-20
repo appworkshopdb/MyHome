@@ -32,7 +32,7 @@ const berlinDay = (d) => new Intl.DateTimeFormat('en-CA', { timeZone:'Europe/Ber
 
 /* ---------- Verbrauch (Schätzung zu API-Listenpreisen, aus den Transkripten von Claude Code) ---------- */
 const usd = (v) => new Intl.NumberFormat('de-DE', { style:'currency', currency:'USD' }).format(v || 0);
-const pct = (v) => (v * 100 < 0.1 && v > 0 ? '<0,1' : (v * 100).toLocaleString('de-DE', { maximumFractionDigits:1 })) + ' %';
+const pct = (v) => (v * 100 < 0.1 && v > 0 ? 'unter 0,1' : (v * 100).toLocaleString('de-DE', { maximumFractionDigits:1 })) + ' %';
 const mdl = (list) => (list || []).map((m) => m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase())).join(', ');
 const lauf = (n) => `${n} ${n === 1 ? 'Lauf' : 'Läufe'}`;
 function usageLine(a) {
