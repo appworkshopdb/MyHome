@@ -1,6 +1,6 @@
 name: Prüfer
 
-# Regel-Check ohne KI für jeden PR gegen main: Fehlerliste aus CLAUDE.md, SQL-Migrationen, Geheimnisse, npm audit.
+# Regel-Check ohne KI für jeden PR gegen main und jeden Push auf staging: Fehlerliste aus CLAUDE.md, SQL-Migrationen, Geheimnisse, npm audit.
 # Nur neu hinzugefügte Zeilen zählen. Fehler machen den Check rot (blockiert den Merge, wenn "Regel-Check" in der
 # Branch-Schutzregel für main als Pflicht eingetragen ist), Hinweise bleiben gelbe Anmerkungen.
 # Das KI-Review läuft getrennt davon auf dem Server und meldet nach Discord #pruefer.
@@ -8,6 +8,8 @@ name: Prüfer
 on:
   pull_request:
     branches: [main]
+  push:            # staging ist der Entwicklungszweig: jeder Push wird gegen den Stand davor geprüft (rot ist hier nur eine Warnung, nichts wird blockiert)
+    branches: [staging]
 
 permissions:
   contents: read
@@ -30,4 +32,14 @@ jobs:
       - name: Regeln prüfen
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node tools/pruefer/regeln.mjs --base "origin/$BASE_REF" --head HEAD --github
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          # PR: Vergleich mit dem Zielzweig. Push auf staging: Vergleich mit dem Stand vor dem Push
+          # (neuer Zweig oder überschriebener Stand ohne Vorgänger: ersatzweise main).
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BASE="$PUSH_BEFORE"
+            if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then BASE=origin/main; fi
+          else
+            BASE="origin/$BASE_REF"
+          fi
+          node tools/pruefer/regeln.mjs --base "$BASE" --head HEAD --github

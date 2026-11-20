@@ -12,8 +12,10 @@ const REPORTS = process.env.LEITSTAND_REPORTS || '/opt/nestua/ops/reports';
 const KEEP_DAYS = 120, TZ = 'Europe/Berlin', REPO = 'https://github.com/appworkshopdb/MyHome';
 const read = async (p) => { try { return (await readFile(p, 'utf8')).trim(); } catch { return ''; } };
 
-const pr = arg('--pr', '?'), sha = (arg('--sha', '') || '').slice(0, 7), commits = arg('--commits', '?');
-const isPr = /^\d+$/.test(pr), name = isPr ? `PR #${pr}` : `Branch ${pr}`, link = isPr ? `${REPO}/pull/${pr}` : `${REPO}/compare/main...${encodeURIComponent(pr)}`;
+const pr = arg('--pr', '?'), shaFull = arg('--sha', '') || '', sha = shaFull.slice(0, 7), commits = arg('--commits', '?');
+const von = arg('--von', '') || '';   // gesetzt: Entwicklungszweig seit diesem Stand (staging), Link auf genau diesen Abschnitt
+const isPr = /^\d+$/.test(pr), name = isPr ? `PR #${pr}` : von ? `Branch ${pr} (neu seit ${von.slice(0, 7)})` : `Branch ${pr}`;
+const link = isPr ? `${REPO}/pull/${pr}` : von ? `${REPO}/compare/${von}...${shaFull}` : `${REPO}/compare/main...${encodeURIComponent(pr)}`;
 const R = JSON.parse((await read(arg('--regeln', ''))) || '{"fehler":[],"hinweise":[],"dateien":0}');
 const ki = await read(arg('--ki', ''));
 const lauf = (await read(arg('--lauf', ''))).split('\n').filter(Boolean).map((l) => { const [label, status, ...v] = l.split('|'); return { label, status, value: v.join('|') }; });

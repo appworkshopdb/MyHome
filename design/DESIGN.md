@@ -70,10 +70,10 @@ Nichts wird ohne bestätigtes Mockup gebaut. Nur Gestaltung ändern: Daten, Logi
 
 ## 7. Prüfung vor dem Merge
 
-**Regel-Check (ohne KI, GitHub-Workflow "Prüfer", Pflicht-Check):** `tools/pruefer/regeln.mjs` prüft neben der Fehlerliste aus `CLAUDE.md` die **Design-Ratsche**: Neue Hex-Farben (außerhalb `base.css`/`themes.css`), feste Schriftgrößen in px, feste Eckenradien in px und neue Inline-Styles werden gegen entfernte gezählt. **Unterm Strich mehr = Fehler** (blockiert den Merge), weniger = gut. Verschobener Code hebt sich auf.
+**Regel-Check (ohne KI, GitHub-Workflow "Prüfer", Pflicht-Check):** `tools/pruefer/regeln.mjs` prüft neben der Fehlerliste aus `CLAUDE.md` die **Design-Ratsche**: Neue Hex-Farben (außerhalb `base.css`/`themes.css`), feste Schriftgrößen in px, feste Eckenradien in px und neue Inline-Styles werden gegen entfernte gezählt. **Unterm Strich mehr = Fehler** (blockiert den Merge), weniger = gut. Verschobener Code hebt sich auf. Der Check läuft bei jedem PR gegen `main` **und bei jedem Push auf `staging`** (dort gegen den Stand vor dem Push; rot ist auf `staging` eine Warnung, blockiert wird nur der Merge nach `main`).
 Ausnahmen: Kommentar `pruefer:ok <Grund>` am Zeilenende (z. B. berechnete Breite in %) oder `tools/pruefer/ausnahmen.txt`. Lokal: `npm run pruefer`.
 
-**Design-Review (KI, Prüfer-Agent auf dem Server, nur Empfehlung):** läuft bei PRs, die UI-Dateien ändern, und prüft anhand dieser Datei, was ein Skript nicht sieht:
+**Design-Review (KI, Prüfer-Agent auf dem Server, nur Empfehlung):** läuft bei PRs und bei jedem neuen Stand von `staging` (alle 15 Minuten nachgesehen), sobald UI-Dateien unter `src/` geändert sind, und prüft anhand dieser Datei, was ein Skript nicht sieht:
 - eine Hauptaktion, Lesereihenfolge, Seitentyp passend (Abschnitte 2 und 3)
 - Text: kürzer möglich? Knopf = Verb? gleiche Wörter wie sonst?
 - vorhandener Baustein statt Neubau, CSS am richtigen Ort, Wrapper statt globaler Klasse (Abschnitt 5)

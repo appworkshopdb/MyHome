@@ -8,17 +8,19 @@
 #   --pr <nr>    diesen PR jetzt prüfen, auch wenn er schon geprüft ist
 #   --seed       alle aktuellen PR-Stände als geprüft merken, ohne zu prüfen
 #   --no-ai      ohne KI-Review     --no-send   nichts nach Discord senden
+#   --no-staging staging nicht mitprüfen (sonst: jeder neue Stand von staging, nur die neuen Commits seit dem letzten geprüften Stand)
 #   --no-design  ohne Design-Review (läuft sonst nur, wenn der PR UI-Dateien unter src/ ändert; nur Empfehlung, blockiert nichts)
 set -uo pipefail
 OPS=/opt/nestua/ops
 P=${PRUEFER_DIR:-$OPS/agenten/pruefer}
 BARE=$OPS/pruefer/MyHome.git
 STATE=$OPS/pruefer/geprueft.txt
+STSTATE=$OPS/pruefer/staging-geprueft.txt   # zuletzt geprüfter Stand von staging (eine Zeile, Commit-Hash)
 NODE=/usr/bin/node
 CLAUDE=/home/nestua/.local/bin/claude
-AI=1; SEND=1; ONLY=""; SEED=0; DESIGN=1
+AI=1; SEND=1; ONLY=""; SEED=0; DESIGN=1; STAGING=1
 BRANCH=""
-while [ $# -gt 0 ]; do case "$1" in --no-ai) AI=0 ;; --no-design) DESIGN=0 ;; --no-send) SEND=0 ;; --seed) SEED=1 ;; --pr) ONLY=$2; shift ;; --branch) BRANCH=$2; shift ;; esac; shift; done
+while [ $# -gt 0 ]; do case "$1" in --no-ai) AI=0 ;; --no-design) DESIGN=0 ;; --no-staging) STAGING=0 ;; --no-send) SEND=0 ;; --seed) SEED=1 ;; --pr) ONLY=$2; shift ;; --branch) BRANCH=$2; shift ;; esac; shift; done
 
 exec 9>"$OPS/.pruefer-cron.lock"
 flock -n 9 || { echo "läuft schon"; exit 0; }
@@ -48,7 +50,21 @@ fi
   if [ "$SEED" = 1 ]; then echo "$n $sha" >> "$STATE"; echo "gemerkt: PR #$n $sha"; continue; fi
   todo+=("$n $sha")
 done < <(G for-each-ref --format='%(refname) %(objectname)' 'refs/pull/*/head' | sort -t/ -k3 -n)
-[ "$SEED" = 1 ] && exit 0
+
+# staging ist der Entwicklungszweig: jeder neue Stand wird geprüft, aber nur die Commits seit dem letzten geprüften Stand.
+# Erster Lauf ohne Stand: aktuellen Stand merken, geprüft wird ab dem nächsten Push (der Bestand wäre ein Review über Hunderte Dateien).
+STHEAD=$(G rev-parse --verify -q refs/heads/staging || true)
+if [ "$SEED" = 1 ]; then [ -n "$STHEAD" ] && { echo "$STHEAD" > "$STSTATE"; echo "gemerkt: staging $STHEAD"; }; exit 0; fi
+if [ -z "$BRANCH" ] && [ -z "$ONLY" ] && [ "$STAGING" = 1 ] && [ -n "$STHEAD" ]; then
+  STLAST=$(cat "$STSTATE" 2>/dev/null || true)
+  if [ -z "$STLAST" ] || ! G cat-file -e "${STLAST}^{commit}" 2>/dev/null; then
+    echo "$STHEAD" > "$STSTATE"; echo "staging: Ausgangsstand ${STHEAD:0:7} gemerkt, geprüft wird ab dem nächsten Push"
+  elif [ "$STHEAD" != "$STLAST" ]; then
+    # Vorgänger-Stand; wurde staging überschrieben (Force-Push), gilt der gemeinsame Vorfahr als Basis
+    VONB=$STLAST; G merge-base --is-ancestor "$STLAST" "$STHEAD" 2>/dev/null || VONB=$(G merge-base "$STLAST" "$STHEAD" 2>/dev/null || true)
+    if [ -n "$VONB" ]; then todo+=("staging $STHEAD $VONB"); else echo "$STHEAD" > "$STSTATE"; fi
+  fi
+fi
 [ ${#todo[@]} -eq 0 ] && { echo "nichts Neues"; exit 0; }
 
 # Langzeit-Token für claude -p aus der Meldungs-Konfiguration (wie beim Server-Check)
@@ -58,15 +74,20 @@ if [ "$AI" = 1 ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ -r "$OPS/notify.e
 fi
 
 for item in "${todo[@]}"; do
-  read -r PR SHA <<< "$item"
+  read -r PR SHA VON <<< "$item"   # VON gesetzt = staging seit diesem Stand (kein PR)
   RUN=$P/run/pr-$PR; rm -rf "$RUN"; mkdir -p "$RUN/tree"; : > "$RUN/lauf"
-  if [ -n "$BRANCH" ]; then echo "== Branch $PR ($SHA)"; else echo "== PR #$PR ($SHA)"; fi
-  MB=$(G merge-base refs/heads/main "$SHA")
+  if [ -n "$VON" ]; then echo "== staging ${VON:0:7}..${SHA:0:7}"; elif [ -n "$BRANCH" ]; then echo "== Branch $PR ($SHA)"; else echo "== PR #$PR ($SHA)"; fi
+  if [ -n "$VON" ]; then
+    MB=$VON; ZIEL="den Entwicklungszweig \`staging\` (neue Commits seit ${VON:0:7}, kein PR; verglichen wird mit diesem Stand, nicht mit main)"
+  else
+    MB=$(G merge-base refs/heads/main "$SHA")
+    if [ -n "$BRANCH" ]; then ZIEL="den Branch \`$PR\` gegen \`main\`"; else ZIEL="PR #$PR gegen \`main\`"; fi
+  fi
   G log --oneline --no-merges "$MB..$SHA" > "$RUN/commits.txt"
   COMMITS=$(wc -l < "$RUN/commits.txt")
 
   # 1. Regel-Check (wie im GitHub-Workflow, ohne npm audit)
-  "$NODE" "$P/regeln.mjs" --repo "$BARE" --base refs/heads/main --head "$SHA" --no-audit --json "$RUN/regeln.json" > "$RUN/regeln.txt"
+  "$NODE" "$P/regeln.mjs" --repo "$BARE" --base "${VON:-refs/heads/main}" --head "$SHA" --no-audit --json "$RUN/regeln.json" > "$RUN/regeln.txt"
   [ -s "$RUN/regeln.json" ] || { echo "Regel-Check|rot|fehlgeschlagen" >> "$RUN/lauf"; echo '{"fehler":[],"hinweise":[],"dateien":0}' > "$RUN/regeln.json"; }
   DATEIEN=$("$NODE" -e 'console.log(require(process.argv[1]).dateien)' "$RUN/regeln.json")
 
@@ -83,9 +104,14 @@ for item in "${todo[@]}"; do
   G diff --name-only --diff-filter=d "$MB" "$SHA" -- ':(glob)src/**/*.jsx' ':(glob)src/**/*.tsx' ':(glob)src/**/*.css' > "$RUN/ui-dateien.txt"
   G ls-tree -r --name-only "$SHA" -- design/ > "$RUN/design-dateien.txt"
 
+  # staging: nur Werkzeuge oder Doku geändert und der Regel-Check ohne Befund: nichts zu prüfen, still weiter
+  if [ -n "$VON" ] && [ -z "$(G diff --name-only "$MB" "$SHA" -- src supabase .github package.json package-lock.json)" ] && [ "$("$NODE" -e 'const r=require(process.argv[1]); console.log(r.fehler.length+r.hinweise.length)' "$RUN/regeln.json")" = 0 ]; then
+    echo "staging ${SHA:0:7}: nichts unter src/, supabase/, .github/ oder in den Paketdateien geändert, nichts zu prüfen"; echo "$SHA" > "$STSTATE"; continue
+  fi
+
   # 3. KI-Review: nur lesen im Lauf-Ordner, keine Shell, kein Schreiben
   ki() {   # ki <prompt-datei> <ausgabe> <label>
-    local prompt; prompt=$(sed -e "s#{{PR}}#$PR#g" -e "s#{{COMMITS}}#$COMMITS#g" -e "s#{{DATEIEN}}#$DATEIEN#g" "$P/$1")
+    local prompt; prompt=$(sed -e "s#{{PR}}#$PR#g" -e "s#{{COMMITS}}#$COMMITS#g" -e "s#{{DATEIEN}}#$DATEIEN#g" -e "s|{{ZIEL}}|$ZIEL|g" "$P/$1")
     ( cd "$RUN" && timeout 900 "$CLAUDE" -p "$prompt" --max-turns 40 --permission-mode default \
         --allowedTools "Read(//opt/nestua/ops/agenten/pruefer/run/**)" "Glob" "Grep" \
         --disallowedTools "Bash" "Write" "Edit" "NotebookEdit" "WebFetch" "WebSearch" \
@@ -103,9 +129,10 @@ for item in "${todo[@]}"; do
   fi
 
   # 4. Bericht und Meldung
-  "$NODE" "$P/bericht.mjs" --pr "$PR" --sha "$SHA" --commits "$COMMITS" --regeln "$RUN/regeln.json" --ki "$RUN/review.md" --design "$RUN/design-review.md" --ui "$RUN/ui-dateien.txt" --lauf "$RUN/lauf" > "$RUN/discord.md"
+  "$NODE" "$P/bericht.mjs" --pr "$PR" --sha "$SHA" --von "$VON" --commits "$COMMITS" --regeln "$RUN/regeln.json" --ki "$RUN/review.md" --design "$RUN/design-review.md" --ui "$RUN/ui-dateien.txt" --lauf "$RUN/lauf" > "$RUN/discord.md"
   cat "$RUN/discord.md"
   if [ "$SEND" = 1 ]; then "$NODE" "$OPS/leitstand/notify.mjs" --agent pruefer --message "$(cat "$RUN/discord.md")" || echo "Meldung nach Discord fehlgeschlagen"; fi
-  if [ -z "$BRANCH" ] && ! grep -qx "$PR $SHA" "$STATE"; then echo "$PR $SHA" >> "$STATE"; fi
+  if [ -n "$VON" ]; then echo "$SHA" > "$STSTATE"
+  elif [ -z "$BRANCH" ] && ! grep -qx "$PR $SHA" "$STATE"; then echo "$PR $SHA" >> "$STATE"; fi
 done
 exit 0

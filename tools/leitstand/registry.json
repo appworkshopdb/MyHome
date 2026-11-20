@@ -776,7 +776,7 @@
       "info": [
         [
           "Auslöser",
-          "neuer Stand eines PR gegen main"
+          "neuer Stand eines PR gegen main und jeder neue Stand von staging"
         ],
         [
           "Regel-Check",
@@ -816,8 +816,8 @@
         {
           "g": "in",
           "check": "pr_cron",
-          "name": "Neuer PR-Stand",
-          "sub": "gegen main, alle 15 Min nachgesehen",
+          "name": "Neuer PR- oder staging-Stand",
+          "sub": "PR gegen main, staging seit letztem Stand, alle 15 Min",
           "icon": "git"
         },
         {
