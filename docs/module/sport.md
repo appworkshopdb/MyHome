@@ -20,7 +20,7 @@ die Spalte und löst Bilder dann wie früher über Einheit/Titel/Typ auf). Detai
 
 App-Einheiten und eigene Einheiten (seit 20.11.2026): Einheit = Baustein (fest aus der App oder selbst angelegt),
 Training = Einheit an einem Tag, Trainingsplan = Einheiten über Tage. Plus-Menü in zwei Gruppen (Im Kalender eintragen:
-Training, Ruhetag; Neu anlegen: Trainingsplan, Eigene Einheit). Eigene Einheiten haben ein Symbol (16, `lib/sportSymbols.js`)
+Training (eine Seite: Name, Datum, darunter die Einheiten), Ruhetag; Neu anlegen: Trainingsplan, Eigene Einheit). Eigene Einheiten haben ein Symbol (16, `lib/sportSymbols.js`)
 oder Muskeln und eine Kategorie (`type_key` `custom.*`); EIN Formular `OwnUnitForm`. Galerie speichert Muskel-Kombinationen
 nur mit dem Schalter „Als eigene Einheit speichern“. Bearbeiten/Löschen im Bereich „Einheiten“ (Vorlagen | Eigene, Name links, Bilder rechts). Im Sport-Wizard (Plus-Menü, Training, Plan, Ruhetag) keine Erklär- und „Noch nötig“-Texte.
 Spalte `icon` in `spo_units`/`spo_workouts`/`spo_plan_items`: Migration `supabase/spo_unit_icon_migration.sql` vor dem

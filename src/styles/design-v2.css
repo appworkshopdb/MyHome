@@ -1488,4 +1488,12 @@ button.cl-row-btn { cursor: pointer; }
 .eh-tx small { display: block; font-size: var(--fs-meta); font-weight: 700; color: var(--text-muted); }
 .eh-edit { flex: none; color: var(--text-muted); }
 .eh .up-sec { margin: 6px 2px; }
+/* Training eintragen auf einer Seite: Auswahl über "Speichern" (Fußleiste des Wizards) */
+.tr-sel { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-xl); background: var(--m-tint); color: var(--m-ink); }
+.tr-sel > span { flex: 1; min-width: 0; }
+.tr-sel b { display: block; overflow: hidden; font-size: var(--fs-small); font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.tr-sel small { display: block; font-size: var(--fs-meta); font-weight: 700; opacity: 0.85; }
+.tr-sel .sym-c { background: var(--surface-raised); }
+.tr-full { grid-column: 1 / -1; margin: 0; }
+.up--inline { padding-top: 0; }
 

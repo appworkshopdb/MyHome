@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import UnitVisual from './UnitVisual';
 import SportSymbol from './SportSymbol';
 import OwnUnitForm from './OwnUnitForm';
@@ -17,12 +17,17 @@ import { muscleLabel } from '../lib/planMuscles';
 // Neue eigene Einheiten entstehen über die Kachel "Neue Einheit" (Formular OwnUnitForm),
 // beides nur, wenn onCreateOwn gegeben ist (gibt den Katalog-Eintrag zurück).
 // Der Inhalt scrollt im umgebenden Sheet/Wizard, die Fußleiste klebt unten.
+// inline: eingebettet in ein Formular ("Training eintragen" auf einer Seite): ohne Suche
+// und ohne eigene Fußleiste; jede Auswahl geht sofort an onChange(entry | null), ein
+// zweiter Tipp hebt sie auf. "Neue Einheit" ruft dann onNewOwn() statt das Formular hier
+// zu öffnen. Muskel-Kombinationen kommen als Eintrag 'combo:…' (Speichern als eigene
+// Einheit entscheidet das umgebende Formular).
 
 const TAB_SYMBOL = { kraft: 'kraft', aus: 'laufen', beweg: 'mobility', eigen: 'stern' };
 const COMBO_TYPE = 'custom.kraft'; // Muskel-Kombinationen zählen in der Auswertung als Kraft
 const sameSet = (a, b) => a.length === b.length && a.every((m) => b.includes(m));
 
-export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }) {
+export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn, inline = false, onChange, onNewOwn }) {
   const current = catalog.find((e) => e.key === selectedKey);
   const comboStart = selectedKey?.startsWith('combo:') ? selectedKey.slice(6).split('+').filter(Boolean) : null;
   const [tab, setTab] = useState(comboStart ? 'kraft' : current ? tabOf(current.cat) : 'kraft');
@@ -50,7 +55,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
   const comboTitle = mus.map(muscleLabel).join(' & ');
   const ready = muscleMode ? mus.length > 0 : Boolean(chosen);
 
-  function tap(key) { setError(''); setSel([key]); }
+  function tap(key) { setError(''); setSel((cur) => (inline && cur[0] === key ? [] : [key])); }
   function toggleMuscle(key) { setError(''); setMus((cur) => (cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key])); }
   function changeTab(next) { setTab(next); setSel([]); setMus([]); setError(''); }
   function changeSub(next) { setSub(next); setSel([]); setMus([]); setError(''); }
@@ -74,6 +79,20 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
     onPick({ key: `combo:${mus.join('+')}`, title: comboTitle, type_key: COMBO_TYPE, muscle_groups: mus, icon: '', cat: 'kombi' });
   }
 
+  // inline: aktuelle Auswahl melden (Kombination: vorhandene Einheit mit denselben Muskeln oder 'combo:…')
+  const report = useRef(onChange);
+  report.current = onChange;
+  useEffect(() => {
+    if (!inline) return;
+    if (muscleMode) {
+      if (!mus.length) return report.current?.(null);
+      const existing = catalog.find((e) => e.cat !== 'sport' && e.muscle_groups?.length && sameSet(e.muscle_groups, mus));
+      report.current?.(existing ?? { key: `combo:${mus.join('+')}`, title: comboTitle, type_key: COMBO_TYPE, muscle_groups: mus, icon: '', cat: 'kombi' });
+    } else {
+      report.current?.(catalog.find((e) => e.key === sel[0]) ?? null);
+    }
+  }, [inline, muscleMode, mus.join('+'), sel[0]]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function createOwn(draft) {
     const entry = await onCreateOwn(draft);
     onPick(entry);
@@ -93,8 +112,8 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
       </button>
     );
   };
-  const newCard = onCreateOwn && (
-    <button key="new" type="button" className="up-card up-card--new" onClick={() => setCreating(true)}>
+  const newCard = (inline ? onNewOwn : onCreateOwn) && (
+    <button key="new" type="button" className="up-card up-card--new" onClick={() => (inline ? onNewOwn() : setCreating(true))}>
       <span className="up-vis"><span className="up-plus" aria-hidden="true">+</span></span>
       <b>Neue Einheit</b>
     </button>
@@ -118,13 +137,13 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
   };
 
   return (
-    <div className="up">
-      <div className="up-search">
+    <div className={`up${inline ? ' up--inline' : ''}`}>
+      {!inline && <div className="up-search">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" />
         </svg>
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen, z. B. Brust oder Lauf" aria-label="Einheit suchen" />
-      </div>
+      </div>}
 
       {!searching && (
         <>
@@ -173,7 +192,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
       {muscleMode && mus.length === 0 && <p className="up-hint">Tippe einen oder mehrere Muskeln an, z. B. Brust &amp; Beine.</p>}
       {!searching && tab === 'eigen' && list.length === 0 && <p className="up-hint">Noch keine eigene Einheit. Sportarten aus deinem Profil erscheinen ebenfalls hier.</p>}
 
-      <div className="up-foot">
+      {!inline && <div className="up-foot">
         {muscleMode && mus.length > 0 && (
           <>
             <div className="up-combo" aria-live="polite">
@@ -194,7 +213,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
         )}
         {error && <p className="up-error" role="alert">{error}</p>}
         <button type="button" className="btn btn-primary" disabled={!ready || busy} onClick={confirm}>{busy ? 'Speichert…' : 'Auswählen'}</button>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import * as db from '../lib/spoData';
 import PlanDaysBoard, { DayTile } from './PlanDaysBoard';
 import UnitPicker from './UnitPicker';
-import UnitSelectCard from './UnitSelectCard';
+import UnitVisual from './UnitVisual';
 import RestBadge from './RestBadge';
 import SportSymbol from './SportSymbol';
 import OwnUnitForm from './OwnUnitForm';
@@ -21,7 +21,7 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame 
 // Begriffe: eine EINHEIT ist ein Baustein (fest aus der App oder selbst angelegt), ein
 // TRAINING ist eine Einheit an einem Tag, ein TRAININGSPLAN reiht Einheiten über Tage.
 // Auswahl in zwei Gruppen:
-//   Im Kalender eintragen: Training (e1, e1pick Einheit wählen) · Ruhetag (r1) → spo_workouts
+//   Im Kalender eintragen: Training (e1: Name, Datum, darunter die Galerie eingebettet) · Ruhetag (r1) → spo_workouts
 //   Neu anlegen:           Trainingsplan (p1 Name, p2 Tage, p3 Prüfen) → spo_plans
 //                          Eigene Einheit (own, Formular OwnUnitForm) → spo_units
 // Bearbeiten/Löschen eigener Einheiten: Bereich "Einheiten" im Modul (EinheitenView).
@@ -29,7 +29,7 @@ import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame 
 // Mobility, Eigene (inkl. Sportarten), mit Bildern bzw. Symbolen.
 // Plan: Tage als Kachelraster (PlanDaysBoard), Einheit über die Galerie (UnitPicker, Screen p2pick).
 
-const STATUS_OPTIONS = [{ value: 'done', label: '✓ Erledigt' }, { value: 'planned', label: '◷ Geplant' }];
+const STATUS_OPTIONS = [{ value: 'done', label: 'Erledigt' }, { value: 'planned', label: 'Geplant' }];
 
 export default function SportQuickSheet({ onClose }) {
   const { session } = useAuth();
@@ -51,19 +51,26 @@ export default function SportQuickSheet({ onClose }) {
   const [date,    setDate]    = useState(todayIso());
   const [statusPick, setStatusPick] = useState(null); // null = folgt dem Datum
   const [showMore, setShowMore] = useState(false);
+  const [saveCombo, setSaveCombo] = useState(false); // Muskel-Kombination zusätzlich als eigene Einheit speichern
+  const ownReturn = useRef(false); // "Neue Einheit" aus dem Training: danach zurück und gleich wählen
 
   const status = statusPick ?? (date > todayIso() ? 'planned' : 'done');
 
-  // Einheit aus der Galerie: Typ, Bilder und (solange nicht selbst geändert) der Name
+  // Einheit aus der Galerie: Typ, Bilder und (solange nicht selbst geändert) der Name; null = keine Auswahl
   function selectUnit(entry) {
     setPicked(entry);
-    setTypeKey(entry.type_key || 'sonstiges');
-    if (titleAuto.current || !title) { setTitle(entry.title); titleAuto.current = true; }
+    setTypeKey(entry?.type_key || 'sonstiges');
+    if (titleAuto.current || !title) { setTitle(entry?.title ?? ''); titleAuto.current = true; }
   }
+  const isCombo = Boolean(picked?.key?.startsWith('combo:'));
 
   async function saveWorkout() {
     setSaving(true); setError('');
     try {
+      // Muskel-Kombination auf Wunsch zusätzlich als eigene Einheit (Name = Name des Trainings)
+      if (isCombo && saveCombo) {
+        await db.createOwnUnit(session, { title: title.trim(), muscle_groups: picked.muscle_groups, icon: null, type_key: picked.type_key });
+      }
       await db.saveWorkout(session, {
         occurred_on: date,
         type_key: typeKey,
@@ -142,6 +149,12 @@ export default function SportQuickSheet({ onClose }) {
 
   // ── Eigene Einheit anlegen ──
   async function saveOwnUnit(draft) {
+    if (ownReturn.current) { // aus "Training eintragen": anlegen, gleich wählen, zurück
+      ownReturn.current = false;
+      selectUnit(await createOwnUnitEntry(draft));
+      back();
+      return;
+    }
     await db.createOwnUnit(session, draft);
     notifySaved();
     onClose();
@@ -184,76 +197,64 @@ export default function SportQuickSheet({ onClose }) {
     ));
   }
 
-  // ── Neue Einheit: Eingeben ──
+  // ── Training eintragen: eine Seite (Name, Datum, darunter die Einheiten) ──
   if (screen === 'e1') {
-    const nameOk = Boolean(title.trim());
-    const ready = Boolean(picked) && nameOk && Boolean(date);
+    const ready = Boolean(picked) && Boolean(title.trim()) && Boolean(date);
     return wrap({
       title: 'Training eintragen',
-      sub: 'Einheit, Name und Datum',
       onBack: back,
       footer: (
         <WizardFoot>
-          <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
+          {picked && (
+            <div className="tr-sel" aria-live="polite">
+              <UnitVisual {...resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits)} size={34} max={3} />
+              <span><b>{picked.title}</b><small>{unitKindLabel(picked)} · {status === 'planned' ? 'Geplant' : 'Erledigt'}</small></span>
+            </div>
+          )}
+          {isCombo && (
+            <label className="up-switch tr-full">
+              <input type="checkbox" checked={saveCombo} onChange={(e) => setSaveCombo(e.target.checked)} />
+              <span className="up-sw" aria-hidden="true" />
+              <span><b>Als eigene Einheit speichern</b><small>{saveCombo ? 'Steht danach unter „Eigene“' : 'Sonst gilt die Auswahl nur hier'}</small></span>
+            </label>
+          )}
+          {showMore && (
+            <div className="up-seg tr-full" role="group" aria-label="Status">
+              {STATUS_OPTIONS.map((o) => (
+                <button key={o.value} type="button" className={status === o.value ? 'is-on' : ''} aria-pressed={status === o.value} onClick={() => setStatusPick(o.value)}>{o.label}</button>
+              ))}
+            </div>
+          )}
+          {error && <p className="wz-hint err tr-full" role="alert">{error}</p>}
+          <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} labelClosed="Mehr" labelOpen="Weniger" />
           <button type="button" className="btn btn-primary" disabled={!ready || saving} onClick={saveWorkout}>{saving ? 'Speichert…' : 'Speichern'}</button>
         </WizardFoot>
       ),
     }, (
       <>
-        <div className="wz-lbl">Einheit</div>
-        <UnitSelectCard
-          chosen={Boolean(picked)}
-          title={picked?.title}
-          subtitle={unitKindLabel(picked)}
-          {...(picked ? resolveUnitVisual({ muscle_groups: picked.muscle_groups, icon: picked.icon, type_key: picked.type_key, title: picked.title }, myUnits) : {})}
-          onClick={() => go('e1pick')}
-        />
-
-        <label className="wz-lbl" htmlFor="wz-sport-name" style={{ marginTop: 18 }}>Name</label>
+        <label className="wz-lbl" htmlFor="wz-sport-name">Name</label>
         <input
           id="wz-sport-name"
           className="wz-input hero"
           type="text"
           value={title}
           onChange={(e) => { titleAuto.current = false; setTitle(e.target.value); }}
-          placeholder="z. B. Legday, Arme"
+          placeholder="Wird aus der Einheit übernommen"
           autoComplete="off"
         />
 
         <div className="wz-lbl">Datum</div>
         <DateButton value={date} onChange={setDate} placeholder="Datum wählen" label="Datum" />
 
-        {showMore && (
-          <div style={{ marginTop: 16 }}>
-            <div>
-              <div className="wz-col-lbl">Status</div>
-              <div style={{ display: 'grid', gap: 8 }} role="group" aria-label="Status">
-                {STATUS_OPTIONS.map((o) => (
-                  <button key={o.value} type="button" className={`wz-gbtn${status === o.value ? ' on' : ''}`} style={{ minHeight: 58 }} aria-pressed={status === o.value} onClick={() => setStatusPick(o.value)}>
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        {errorEl}
+        <div className="wz-lbl">Einheit</div>
+        <UnitPicker
+          inline
+          catalog={catalog}
+          selectedKey={picked?.key}
+          onChange={selectUnit}
+          onNewOwn={() => { ownReturn.current = true; go('own'); }}
+        />
       </>
-    ));
-  }
-  // Einheit für die neue Einheit aus der Galerie wählen, danach zurück
-  if (screen === 'e1pick') {
-    return wrap({
-      title: 'Einheit wählen',
-      sub: 'Kraft, Ausdauer, Mobility oder eigene',
-      onBack: back,
-    }, (
-      <UnitPicker
-        catalog={catalog}
-        selectedKey={picked?.key}
-        onPick={(entry) => { selectUnit(entry); back(); }}
-        onCreateOwn={createOwnUnitEntry}
-      />
     ));
   }
 
@@ -373,6 +374,6 @@ export default function SportQuickSheet({ onClose }) {
 
   // ── Eigene Einheit anlegen ──
   return wrap({ title: 'Eigene Einheit', sub: 'Baustein für Trainings und Pläne', onBack: back }, (
-    <OwnUnitForm onSave={saveOwnUnit} onCancel={back} saveLabel="Speichern" cancelLabel="Abbrechen" />
+    <OwnUnitForm onSave={saveOwnUnit} onCancel={() => { ownReturn.current = false; back(); }} saveLabel={ownReturn.current ? 'Speichern und wählen' : 'Speichern'} cancelLabel="Abbrechen" />
   ));
 }
