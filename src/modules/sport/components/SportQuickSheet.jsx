@@ -15,7 +15,7 @@ import { dayFromEntry, daysAreComplete, daysSummary, emptyDay, itemsFromDays } f
 import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { todayIso } from '../../../core/lib/wizardDates';
 import SheetShell from '../../../core/components/SheetShell';
-import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
+import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Begriffe: eine EINHEIT ist ein Baustein (fest aus der App oder selbst angelegt), ein
@@ -106,9 +106,6 @@ export default function SportQuickSheet({ onClose }) {
   }
 
   const planDaysOk = daysAreComplete(planDays);
-  const planHint = planDays.length === 0
-    ? 'Der Plan braucht mindestens einen Tag'
-    : (planDaysOk ? '' : 'Bitte jedem Trainingstag eine Einheit zuweisen');
 
   async function savePlan() {
     setSaving(true); setError('');
@@ -183,7 +180,6 @@ export default function SportQuickSheet({ onClose }) {
           <span>Eigene Einheit<small>Baustein mit Symbol oder Muskeln</small></span>
           <span className="chev" aria-hidden="true">›</span>
         </button>
-        <p className="wz-hint">Ein Training ist eine Einheit an einem bestimmten Tag. Eigene Einheiten bearbeitest du im Bereich „Einheiten“.</p>
       </>
     ));
   }
@@ -197,7 +193,7 @@ export default function SportQuickSheet({ onClose }) {
       sub: 'Einheit, Name und Datum',
       onBack: back,
       footer: (
-        <WizardFoot hint={ready ? '' : missingHint([['Einheit', !picked], ['Name', !nameOk], ['Datum', !date]])}>
+        <WizardFoot>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
           <button type="button" className="btn btn-primary" disabled={!ready || saving} onClick={saveWorkout}>{saving ? 'Speichert…' : 'Speichern'}</button>
         </WizardFoot>
@@ -270,7 +266,7 @@ export default function SportQuickSheet({ onClose }) {
       sub: 'Schritt 1 von 3 · Name',
       step: 1, total: 3, onBack: back,
       footer: (
-        <WizardFoot one hint={ok ? '' : missingHint([['Name', true]])}>
+        <WizardFoot one>
           <button type="button" className="btn btn-primary" disabled={!ok} onClick={() => go('p2')}>Weiter</button>
         </WizardFoot>
       ),
@@ -288,7 +284,6 @@ export default function SportQuickSheet({ onClose }) {
           autoComplete="off"
           onKeyDown={(e) => e.key === 'Enter' && ok && go('p2')}
         />
-        <p className="wz-hint">Danach legst du Tag für Tag eine Einheit oder einen Ruhetag an. Die Länge des Plans ergibt sich aus den Tagen. Aktivieren kannst du den Plan anschließend unter „Pläne“.</p>
       </>
     ));
   }
@@ -298,7 +293,7 @@ export default function SportQuickSheet({ onClose }) {
       sub: 'Schritt 2 von 3 · Trainingstage',
       step: 2, total: 3, onBack: back,
       footer: (
-        <WizardFoot hint={planHint}>
+        <WizardFoot>
           <MoreButton open={planMore} onClick={() => setPlanMore((o) => !o)} />
           <button type="button" className="btn btn-primary" disabled={!planDaysOk} onClick={() => go('p3')}>Weiter</button>
         </WizardFoot>
@@ -365,7 +360,7 @@ export default function SportQuickSheet({ onClose }) {
       sub: 'Erholung festhalten',
       onBack: back,
       footer: (
-        <WizardFoot one hint={restDate ? '' : missingHint([['Datum', true]])}>
+        <WizardFoot one>
           <button type="button" className="btn btn-primary" disabled={!restDate || saving} onClick={saveRest}>{saving ? 'Speichert…' : 'Speichern'}</button>
         </WizardFoot>
       ),

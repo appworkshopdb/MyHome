@@ -94,11 +94,11 @@ export function searchCatalog(catalog, query) {
   });
 }
 
-// Herkunft eines Eintrags für die Anzeige ("App-Einheit", "Eigene Einheit" …)
+// Herkunft eines Eintrags für die Anzeige ("Vorlage", "Eigene Einheit" …)
 export function unitKindLabel(entry) {
   if (!entry) return '';
   if (entry.own) return 'Eigene Einheit';
   if (entry.cat === 'sport') return 'Sportart aus deinem Profil';
   if (String(entry.key ?? '').startsWith('combo:')) return 'Muskeln, nur für dieses Training';
-  return 'App-Einheit';
+  return 'Vorlage';
 }

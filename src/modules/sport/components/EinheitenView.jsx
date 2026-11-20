@@ -7,10 +7,11 @@ import * as db from '../lib/spoData';
 import { buildCatalog } from '../lib/unitCatalog';
 import { OWN_CATEGORIES, categoryOfType } from '../lib/sportSymbols';
 
-// Bereich "Einheiten": die Bibliothek. Umschalter App-Einheiten | Eigene.
-//   App-Einheiten: fest aus der App, nur ansehen (gruppiert wie in der Galerie).
+// Bereich "Einheiten": die Bibliothek. Umschalter Vorlagen | Eigene.
+//   Vorlagen: fest vorgegebene Einheiten aus der App, nur ansehen (gruppiert wie in der Galerie).
 //   Eigene:        selbst angelegte Einheiten anlegen, bearbeiten, löschen
 //                  (Formular OwnUnitForm), dazu die Sportarten aus dem Profil.
+// Zeile: Name links, Bilder rechtsbündig (Namen stehen immer an derselben Stelle).
 // Trainings und Pläne legt man über den Plus-Knopf an.
 
 const APP_GROUPS = [
@@ -25,8 +26,8 @@ function Row({ entry, sub, onClick }) {
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag {...(onClick ? { type: 'button', onClick } : {})} className={`eh-row${onClick ? ' is-btn' : ''}`}>
-      <span className="eh-vis"><UnitVisual tags={entry.muscle_groups} icon={entry.icon} size={36} max={3} /></span>
       <span className="eh-tx"><b>{entry.title}</b>{sub && <small>{sub}</small>}</span>
+      <span className="eh-vis"><UnitVisual tags={entry.muscle_groups} icon={entry.icon} size={36} max={3} /></span>
       {onClick && (
         <svg className="eh-edit" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /></svg>
       )}
@@ -65,13 +66,13 @@ export default function EinheitenView({ units, loading, userSports = [], onChang
   return (
     <div className="page eh">
       <div className="up-seg" role="tablist" aria-label="Einheiten">
-        <button type="button" role="tab" aria-selected={view === 'app'} className={view === 'app' ? 'is-on' : ''} onClick={() => setView('app')}>App-Einheiten <em>{appCount}</em></button>
+        <button type="button" role="tab" aria-selected={view === 'app'} className={view === 'app' ? 'is-on' : ''} onClick={() => setView('app')}>Vorlagen <em>{appCount}</em></button>
         <button type="button" role="tab" aria-selected={view === 'own'} className={view === 'own' ? 'is-on' : ''} onClick={() => setView('own')}>Eigene <em>{own.length}</em></button>
       </div>
 
       {view === 'app' ? (
         <>
-          <p className="eh-hint">Feste Einheiten aus der App. Du kannst sie in Trainings und Plänen verwenden, aber nicht ändern.</p>
+          <p className="eh-hint">Fest vorgegebene Einheiten. Du kannst sie in Trainings und Plänen verwenden, aber nicht ändern.</p>
           {APP_GROUPS.map(([cat, label]) => (
             <section key={cat}>
               <div className="up-sec">{label}</div>

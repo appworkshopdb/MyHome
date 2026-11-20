@@ -1479,10 +1479,10 @@ button.cl-row-btn { cursor: pointer; }
 .eh { display: flex; flex-direction: column; gap: 10px; }
 .eh-hint { margin: 0 2px; font-size: var(--fs-meta); font-weight: 600; line-height: 1.45; color: var(--text-muted); }
 .eh-list { display: flex; flex-direction: column; gap: 6px; }
-.eh-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px; border: 0; border-radius: var(--r-xl); background: var(--surface-raised); box-shadow: var(--shadow-card); color: var(--text-primary); font: inherit; text-align: left; }
+.eh-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 12px 8px 16px; border: 0; border-radius: var(--r-xl); background: var(--surface-raised); box-shadow: var(--shadow-card); color: var(--text-primary); font: inherit; text-align: left; }
 .eh-row.is-btn { cursor: pointer; }
 .eh-row.is-btn:focus-visible { outline: 2px solid var(--m-ac); outline-offset: 2px; }
-.eh-vis { display: flex; flex: none; align-items: center; width: 64px; }
+.eh-vis { display: flex; flex: none; align-items: center; justify-content: flex-end; }
 .eh-tx { flex: 1; min-width: 0; }
 .eh-tx b { display: block; font-size: var(--fs-small); font-weight: 900; }
 .eh-tx small { display: block; font-size: var(--fs-meta); font-weight: 700; color: var(--text-muted); }

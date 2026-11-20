@@ -35,7 +35,7 @@ export function resolvePlanMuscleGroups(item, units = []) {
 }
 
 // Symbol für Einheiten ohne Muskelbilder (lib/sportSymbols.js): das gespeicherte,
-// sonst das der App-Einheit (Titel, Typ), sonst aus Sportart, Kategorie oder Namen.
+// sonst das der Vorlage (Titel, Typ), sonst aus Sportart, Kategorie oder Namen.
 export function resolvePlanIcon(item) {
   if (isSymbol(item.icon)) return item.icon;
   const byTitle = BY_TITLE.get(item.title);

@@ -7,7 +7,7 @@ import { MUSCLE_GROUPS, muscleSinglesByRegion } from '../lib/data/muscleGroups';
 import { muscleLabel } from '../lib/planMuscles';
 
 // Einheit wählen (Galerie). Kategorien als Kacheln: Kraft, Ausdauer, Mobility zeigen
-// die festen App-Einheiten, "Eigene" die selbst angelegten Einheiten und die Sportarten
+// die festen Vorlagen (App-Einheiten), "Eigene" die selbst angelegten Einheiten und die Sportarten
 // aus dem Profil. Bei Kraft darunter der Umschalter Splits / Muskeln / Kombinationen.
 // Ein Tipp wählt, "Auswählen" übernimmt.
 // Kraft › Muskeln: alle Muskeln als Mehrfachauswahl. Die Auswahl gilt nur für diese
@@ -105,7 +105,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn }
         { key: 'eigen', title: 'Meine Einheiten', items: list.filter((e) => e.cat === 'eigen'), lead: newCard },
         { key: 'sport', title: 'Aus deinem Profil', items: list.filter((e) => e.cat === 'sport') },
       ].filter((g) => g.items.length > 0 || g.lead)
-    : [{ key: 'all', title: searching ? '' : 'App-Einheiten', items: list }];
+    : [{ key: 'all', title: searching ? '' : 'Vorlagen', items: list }];
 
   const muscleCard = (m) => {
     const on = mus.includes(m.key);
