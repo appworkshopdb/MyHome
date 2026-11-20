@@ -19,8 +19,10 @@ const run = (cmd, args, opts = {}) => new Promise((res, rej) => execFile(cmd, ar
   (e, so, se) => (e && !opts.okExit ? rej(new Error((se || e.message).toString().trim().split('\n').pop())) : res({ out: so.toString(), code: e ? e.code : 0 }))));
 const git = async (...a) => (await run('git', ['-c', 'core.quotePath=false', '-C', REPO, ...a])).out;
 
-const fehler = [], hinweise = [];
-const add = (stufe, regel, titel, datei, zeile, text) => (stufe === 'fehler' ? fehler : hinweise).push({ regel, titel, datei, zeile, text });
+// Drei Stufen: fehler (blockiert den Merge, Ampel rot), hinweis (möglicher Fehler, Ampel gelb),
+// info (kein Fehler: Lob wie "weniger feste Werte" oder Erinnerungen wie "Function ausrollen", Ampel bleibt grün)
+const fehler = [], hinweise = [], infos = [];
+const add = (stufe, regel, titel, datei, zeile, text) => ({ fehler, hinweis: hinweise, info: infos })[stufe].push({ regel, titel, datei, zeile, text });
 
 /* ---------- Diff lesen: hinzugefügte Zeilen je Datei ---------- */
 let mb;
@@ -130,7 +132,7 @@ for (const r of DESIGN) {
     const s = stellen[0];
     add('fehler', r.regel, `${r.titel}: +${plus - minus}`, s.d, s.z, `${plus} neu, ${minus} entfernt. ${r.tipp}`);
     for (const x of stellen.slice(1, 10)) add('hinweis', r.regel, r.titel, x.d, x.z, r.tipp);
-  } else if (minus > plus) add('hinweis', `${r.regel}-weniger`, `${r.titel}: ${minus - plus} weniger`, 'design/DESIGN.md', 1, 'Gut so: weniger feste Werte als vorher.');
+  } else if (minus > plus) add('info', `${r.regel}-weniger`, `${r.titel}: ${minus - plus} weniger`, 'design/DESIGN.md', 1, 'Gut so: weniger feste Werte als vorher.');
 }
 
 /* ---------- Geheimnisse ---------- */
@@ -190,11 +192,11 @@ for (const d of Object.keys(added).filter((f) => /\.sql$/i.test(f))) {
   }
 }
 for (const s of status.filter((x) => x.st === 'A' && /^supabase\/migrations\//.test(x.datei)))
-  if (!/^supabase\/migrations\/\d{3}_[a-z0-9_]+\.sql$/.test(s.datei)) add('hinweis', 'migration-name', 'Migrationsname', s.datei, 1, 'Schema: supabase/migrations/NNN_kurzer_name.sql');
+  if (!/^supabase\/migrations\/\d{3}_[a-z0-9_]+\.sql$/.test(s.datei)) add('info', 'migration-name', 'Migrationsname', s.datei, 1, 'Schema: supabase/migrations/NNN_kurzer_name.sql');
 
 /* ---------- Edge Functions ---------- */
 const fns = [...new Set(status.filter((x) => /^supabase\/functions\/[^/]+\//.test(x.datei)).map((x) => x.datei.split('/')[2]))];
-for (const f of fns) add('hinweis', 'functions-deploy', `Edge Function geändert: ${f}`, `supabase/functions/${f}`, 1, `Nach dem Merge ausrollen: tools/deploy-functions.sh ${f} (vorher --dry-run).`);
+for (const f of fns) add('info', 'functions-deploy', `Edge Function geändert: ${f}`, `supabase/functions/${f}`, 1, `Nach dem Merge ausrollen: tools/deploy-functions.sh ${f} (vorher --dry-run).`);
 
 /* ---------- npm audit (nur mit Arbeitskopie und Netz) ---------- */
 let audit = null;
@@ -209,19 +211,21 @@ if (!has('--no-audit')) {
 
 /* ---------- Ausgabe ---------- */
 const zeilen = Object.values(added).reduce((n, a) => n + a.length, 0);
-const R = { base: BASE, head: HEAD, mergeBase: mb, dateien: status.length, zeilen, fehler, hinweise, audit, design: designZiel };
+const R = { base: BASE, head: HEAD, mergeBase: mb, dateien: status.length, zeilen, fehler, hinweise, infos, audit, design: designZiel };
 if (arg('--json', '')) await writeFile(arg('--json'), JSON.stringify(R, null, 1));
 const row = (x) => `${x.datei}:${x.zeile}  ${x.titel}`;
-console.log(`Prüfer: ${status.length} Dateien, ${zeilen} neue Zeilen. ${fehler.length} Fehler, ${hinweise.length} Hinweise.`);
+console.log(`Prüfer: ${status.length} Dateien, ${zeilen} neue Zeilen. ${fehler.length} Fehler, ${hinweise.length} Hinweise, ${infos.length} Infos.`);
 for (const x of fehler) console.log(`  FEHLER   ${row(x)}`);
 for (const x of hinweise) console.log(`  Hinweis  ${row(x)}`);
+for (const x of infos) console.log(`  Info     ${row(x)}`);
 if (has('--github')) {
   const esc = (s) => String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
   for (const x of fehler) console.log(`::error file=${x.datei},line=${x.zeile},title=Prüfer: ${esc(x.titel)}::${esc(x.text)}`);
   for (const x of hinweise) console.log(`::warning file=${x.datei},line=${x.zeile},title=Prüfer: ${esc(x.titel)}::${esc(x.text)}`);
+  for (const x of infos) console.log(`::notice file=${x.datei},line=${x.zeile},title=Prüfer: ${esc(x.titel)}::${esc(x.text)}`);
   if (process.env.GITHUB_STEP_SUMMARY) {
     const t = (list) => list.length ? `| Datei | Zeile | Befund | Was tun |\n|---|---|---|---|\n${list.map((x) => `| \`${x.datei}\` | ${x.zeile} | ${x.titel} | ${x.text} |`).join('\n')}` : 'Keine.';
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Prüfer: Regel-Check\n\n${status.length} Dateien, ${zeilen} neue Zeilen.\n\n### Fehler (blockieren den Merge): ${fehler.length}\n\n${t(fehler)}\n\n### Hinweise: ${hinweise.length}\n\n${t(hinweise)}\n\nAusnahmen: am Zeilenende \`pruefer:ok\` oder Eintrag in \`tools/pruefer/ausnahmen.txt\`.\n`);
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `## Prüfer: Regel-Check\n\n${status.length} Dateien, ${zeilen} neue Zeilen.\n\n### Fehler (blockieren den Merge): ${fehler.length}\n\n${t(fehler)}\n\n### Hinweise (mögliche Fehler): ${hinweise.length}\n\n${t(hinweise)}\n\n### Infos (keine Fehler): ${infos.length}\n\n${t(infos)}\n\nAusnahmen: am Zeilenende \`pruefer:ok\` oder Eintrag in \`tools/pruefer/ausnahmen.txt\`.\n`);
   }
 }
 process.exit(fehler.length ? 1 : 0);
