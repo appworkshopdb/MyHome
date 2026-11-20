@@ -222,7 +222,6 @@ export default function SportQuickSheet({ onClose }) {
 
         <div className="wz-lbl">Datum</div>
         <DateButton value={date} onChange={setDate} placeholder="Datum wählen" label="Datum" />
-        {date > todayIso() && statusPick === null && <p className="wz-hint">Liegt in der Zukunft, wird als „Geplant" gespeichert.</p>}
 
         {showMore && (
           <div style={{ marginTop: 16 }}>
@@ -347,7 +346,6 @@ export default function SportQuickSheet({ onClose }) {
           {planDays.map((d, i) => <DayTile key={i} day={d} index={i} />)}
         </div>
         <div className="pe-rvrow"><span>Notiz</span><span>{planNotes.trim() || '—'}</span></div>
-        <p className="wz-hint">Nach dem Speichern findest du den Plan unter „Pläne“ und kannst ihn dort aktivieren.</p>
         {errorEl}
       </div>
     ));
@@ -368,7 +366,6 @@ export default function SportQuickSheet({ onClose }) {
       <>
         <div className="wz-lbl">Datum</div>
         <DateButton value={restDate} onChange={setRestDate} placeholder="Datum wählen" label="Datum" />
-        <p className="wz-hint">Der Ruhetag steht danach im Kalender und wird im Hub als „Ruhetag" angezeigt.</p>
         {errorEl}
       </>
     ));
