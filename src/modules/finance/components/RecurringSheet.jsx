@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { INTERVALS, PAYMENTS, MONTHS_DE, addMonthsClamped } from '../lib/finance';
 import SheetShell from '../../../core/components/SheetShell';
 import { ChipGroup, DateButton, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
-import { parseNum } from '../../../core/lib/wizardDates';
+import { parseMoney } from '../../../core/lib/wizardDates';
 import { IconContract, IconFixed } from './ContractIcons';
 
 const INTERVAL_OPTIONS = Object.entries(INTERVALS).map(([value, { label }]) => ({ value, label }));
@@ -61,7 +61,7 @@ export default function RecurringSheet({
   const isContract   = kind === 'vertrag';
   const isRecurring  = interval !== 'monthly';
   const intervalMths = INTERVALS[interval]?.months ?? 1;
-  const amtNum       = parseNum(amount);
+  const amtNum       = parseMoney(amount) || 0;
   const monthlyHint  = intervalMths > 1 ? `≈ ${(amtNum / intervalMths).toFixed(2).replace('.', ',')} €/Mo.` : null;
 
   const title = editing
@@ -70,8 +70,8 @@ export default function RecurringSheet({
 
   function submit() {
     if (!name.trim()) return showToast('Bitte Name eingeben');
-    const amt = parseNum(amount);
-    if (!/\d/.test(amount) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
+    const amt = parseMoney(amount);
+    if (Number.isNaN(amt) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
     const dd = dueDay !== '' ? parseInt(dueDay, 10) : null;
     if (dd !== null && (Number.isNaN(dd) || dd < 1 || dd > 31)) return showToast('Fälligkeitstag muss zwischen 1 und 31 liegen');
 

@@ -33,6 +33,23 @@ export function fmtDate(iso) {
   return `${WEEKDAYS[d.getDay()]}., ${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+// Geldbetrag aus einem Eingabefeld → Zahl, bei ungültiger Eingabe NaN.
+// "1.234,56" / "1234,56" / "12,5" / "12.5" / "1.000" (= 1000) / "1.234.567".
+// Punkt + genau drei Ziffern gilt hier als Tausendertrenner, sonst als Dezimalpunkt
+// (höchstens zwei Nachkommastellen). Alles andere ("1,2,3", "1.2.3", ",") ist ungültig.
+const MONEY_THOUSANDS = /^[1-9]\d{0,2}(\.\d{3})+$/;
+export function parseMoney(v) {
+  const s = String(v ?? '').trim();
+  if (!/\d/.test(s)) return NaN;
+  if (s.includes(',')) {
+    if (!/^([1-9]\d{0,2}(\.\d{3})+|\d*),\d*$/.test(s)) return NaN;
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+  if (MONEY_THOUSANDS.test(s)) return parseFloat(s.replace(/\./g, ''));
+  if (/^\d*\.?\d{0,2}$/.test(s) || /^\d+$/.test(s)) return parseFloat(s) || 0;
+  return NaN;
+}
+
 // Kommazahl aus einem Eingabefeld ("38,15" / "38.15" / "1.234,56") → Zahl, sonst 0.
 // Kommt ein Komma vor, sind Punkte Tausendertrenner ("1.234,56" → 1234.56);
 // ohne Komma ist der Punkt das Dezimalzeichen ("38.15" → 38.15).

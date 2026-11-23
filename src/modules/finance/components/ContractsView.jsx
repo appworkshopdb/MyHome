@@ -186,12 +186,32 @@ export default function ContractsView() {
     load();
   }
 
-  function handleSaveTemplate(tpl) {
+  async function handleSaveTemplate(tpl) {
     const isNew = !tpl.id;
-    return run(async () => {
-      const saved = await db.saveFixTemplate(session, tpl);
-      if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
-    }, isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert', 'Speichern fehlgeschlagen');
+    let saved;
+    try {
+      saved = await db.saveFixTemplate(session, tpl);
+    } catch (err) {
+      console.error('[Verträge]', err);
+      showToast('Speichern fehlgeschlagen');
+      return;
+    }
+    if (isNew) {
+      try {
+        await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
+      } catch (err) {
+        // Die Vorlage steht schon in der Datenbank: Fenster schließen, sonst legt ein
+        // zweiter Klick auf "Speichern" eine doppelte Vorlage an.
+        console.error('[Verträge]', err);
+        setSheet(null);
+        showToast('Gespeichert, Übernahme in die Monate fehlgeschlagen');
+        load();
+        return;
+      }
+    }
+    setSheet(null);
+    showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
+    load();
   }
 
   async function handleDeleteTemplate(id) {

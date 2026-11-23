@@ -8,7 +8,9 @@ import { MONTHS_DE, PAYMENTS, SPARSCHWEIN_DEPOSIT_NAME, isInstantPaid, isInstant
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import ReceiptScanChoice from '../../../core/components/ReceiptScanChoice';
 import { formatReceiptDate } from '../../../core/lib/photoScan';
-import { fmtDate, parseNum } from '../../../core/lib/wizardDates';
+import { fmtDate, parseMoney } from '../../../core/lib/wizardDates';
+
+const money = (v) => parseMoney(v) || 0; // ungültig → 0
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 
@@ -100,11 +102,11 @@ function FinanceWizard({ onClose }) {
     setView('enter');
   }
 
-  const amountNum = parseNum(amount);
-  const splitNum  = parseNum(splitAmt);
+  const amountNum = money(amount);
+  const splitNum  = money(splitAmt);
   const baseValid = Boolean(name.trim()) && amountNum > 0;
   // Teilzahlungen: erste (Betrag splitAmt), weitere (mids), letzte = Rest (pay2)
-  const midNums   = mids.map((m) => parseNum(m.amount));
+  const midNums   = mids.map((m) => money(m.amount));
   const restNum   = amountNum - splitNum - midNums.reduce((a, b) => a + b, 0);
   const splitMethods = [pay1, ...mids.map((m) => m.method), pay2];
   const splitValid = !split || (
