@@ -31,7 +31,7 @@ export async function saveEntry(session, entry) {
 
   // payment-Feld (alter ENUM) für Abwärtskompatibilität:
   // Bei payments-Array: erste Zahlungsart eintragen damit alte
-  // Code-Pfade (z.B. PaymentBadge) weiterhin funktionieren.
+  // Code-Pfade (z.B. ältere Auswertungen) weiterhin funktionieren.
   let legacyPayment = entry.payment;
   if (Array.isArray(entry.payments) && entry.payments.length > 0) {
     legacyPayment = entry.payments[0].method;

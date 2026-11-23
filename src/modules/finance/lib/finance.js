@@ -230,6 +230,18 @@ export function templateAppliesTo(t, year, month) {
 // Vertragsstatus: active / expiring (< 30 Tage) / expired
 // Unterstützt jetzt auch `contract_duration_months` als Alternative zu
 // einem expliziten `end_date`.
+
+// Monate addieren, ohne am Monatsende in den Folgemonat zu springen:
+// 31.01. + 1 Monat = 28.02. (nicht 03.03.).
+export function addMonthsClamped(date, months) {
+  const d = new Date(date);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + Number(months));
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return d;
+}
+
 export function getContractStatus(c) {
   // Kein Ende definiert oder unbefristet
   if (c.is_open || (!c.end_date && !c.contract_duration_months)) return 'active';
@@ -239,8 +251,7 @@ export function getContractStatus(c) {
   if (!endDate && c.contract_duration_months && c.start_date) {
     const start = new Date(c.start_date);
     if (!isNaN(start)) {
-      endDate = new Date(start);
-      endDate.setMonth(endDate.getMonth() + Number(c.contract_duration_months));
+      endDate = addMonthsClamped(start, c.contract_duration_months);
     }
   }
 
@@ -260,9 +271,7 @@ export function getContractEndDate(c) {
   if (c.contract_duration_months && c.start_date) {
     const start = new Date(c.start_date);
     if (!isNaN(start)) {
-      const end = new Date(start);
-      end.setMonth(end.getMonth() + Number(c.contract_duration_months));
-      return end;
+      return addMonthsClamped(start, c.contract_duration_months);
     }
   }
   return null;
@@ -288,9 +297,7 @@ export function getTemplateEndDate(t) {
   if (t.contract_duration_months && t.start_date) {
     const s = new Date(t.start_date);
     if (!isNaN(s)) {
-      const e = new Date(s);
-      e.setMonth(e.getMonth() + Number(t.contract_duration_months));
-      return e;
+      return addMonthsClamped(s, t.contract_duration_months);
     }
   }
   return null;

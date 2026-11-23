@@ -172,36 +172,40 @@ export default function ContractsView() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function handleSaveTemplate(tpl) {
-    const isNew = !tpl.id;
-    const saved = await db.saveFixTemplate(session, tpl);
-    if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
+  // Fehler beim Speichern/Löschen: Fenster bleibt offen, Meldung statt stillem Promise-Fehler.
+  async function run(action, okText, failText) {
+    try {
+      await action();
+    } catch (err) {
+      console.error('[Verträge]', err);
+      showToast(failText);
+      return;
+    }
     setSheet(null);
-    showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
+    showToast(okText);
     load();
+  }
+
+  function handleSaveTemplate(tpl) {
+    const isNew = !tpl.id;
+    return run(async () => {
+      const saved = await db.saveFixTemplate(session, tpl);
+      if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
+    }, isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert', 'Speichern fehlgeschlagen');
   }
 
   async function handleDeleteTemplate(id) {
     if (!confirm('Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
-    await db.deleteFixTemplate(session, id);
-    setSheet(null);
-    showToast('Posten gelöscht');
-    load();
+    await run(() => db.deleteFixTemplate(session, id), 'Posten gelöscht', 'Löschen fehlgeschlagen');
   }
 
-  async function handleSaveContract(c) {
-    await db.saveContract(session, c);
-    setSheet(null);
-    showToast(c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt');
-    load();
+  function handleSaveContract(c) {
+    return run(() => db.saveContract(session, c), c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt', 'Speichern fehlgeschlagen');
   }
 
   async function handleDeleteContract(id) {
     if (!confirm('Vertrag löschen?')) return;
-    await db.deleteContract(id);
-    setSheet(null);
-    showToast('Vertrag gelöscht');
-    load();
+    await run(() => db.deleteContract(id), 'Vertrag gelöscht', 'Löschen fehlgeschlagen');
   }
 
   return (

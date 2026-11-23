@@ -33,8 +33,11 @@ export function fmtDate(iso) {
   return `${WEEKDAYS[d.getDay()]}., ${d.getDate()}. ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// Kommazahl aus einem Eingabefeld ("38,15" / "38.15") → Zahl, sonst 0
+// Kommazahl aus einem Eingabefeld ("38,15" / "38.15" / "1.234,56") → Zahl, sonst 0.
+// Kommt ein Komma vor, sind Punkte Tausendertrenner ("1.234,56" → 1234.56);
+// ohne Komma ist der Punkt das Dezimalzeichen ("38.15" → 38.15).
 export function parseNum(v) {
-  const n = parseFloat(String(v ?? '').replace(',', '.'));
+  const s = String(v ?? '');
+  const n = parseFloat(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
   return Number.isNaN(n) ? 0 : n;
 }

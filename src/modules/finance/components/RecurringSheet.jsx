@@ -10,7 +10,7 @@
 // Ersetzt FixTemplateModal und ContractModal; die Felder sind dieselben.
 
 import { useState } from 'react';
-import { INTERVALS, PAYMENTS, MONTHS_DE } from '../lib/finance';
+import { INTERVALS, PAYMENTS, MONTHS_DE, addMonthsClamped } from '../lib/finance';
 import SheetShell from '../../../core/components/SheetShell';
 import { ChipGroup, DateButton, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import { parseNum } from '../../../core/lib/wizardDates';
@@ -71,7 +71,7 @@ export default function RecurringSheet({
   function submit() {
     if (!name.trim()) return showToast('Bitte Name eingeben');
     const amt = parseNum(amount);
-    if (amount === '' || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
+    if (!/\d/.test(amount) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
     const dd = dueDay !== '' ? parseInt(dueDay, 10) : null;
     if (dd !== null && (Number.isNaN(dd) || dd < 1 || dd > 31)) return showToast('Fälligkeitstag muss zwischen 1 und 31 liegen');
 
@@ -125,8 +125,7 @@ export default function RecurringSheet({
   if (useDuration && durationMonths && startDate) {
     const s = new Date(startDate);
     if (!Number.isNaN(s.getTime()) && parseInt(durationMonths, 10) > 0) {
-      const end = new Date(s);
-      end.setMonth(end.getMonth() + parseInt(durationMonths, 10));
+      const end = addMonthsClamped(s, parseInt(durationMonths, 10));
       endDatePreview = end.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
   }
