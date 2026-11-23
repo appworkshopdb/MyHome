@@ -7,7 +7,8 @@ import { getDueToday, toggleHabitOn, setHabitCount } from '../../../core/lib/hab
 import { isDone, getEntry, today, isDueOn, overallRate } from '../lib/habUtils.js';
 import { useGamificationStore } from '../../../core/lib/gamificationStore.js';
 import { fb } from '../../../core/lib/feedback.js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { loadDeletedHabits } from '../lib/habData.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import Ring from '../../../core/components/Ring.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -33,6 +34,18 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
   const todayStr = today();
 
   const activeHabits = habits.filter((h) => h.active && !h.deleted_at);
+  // Alle Gewohnheiten der Liste (aktiv + pausiert); gelöschte stehen im Archiv
+  const ownCount = habits.filter((h) => !h.deleted_at).length;
+
+  // Anzahl im Archiv (null = lädt noch)
+  const [archivedCount, setArchivedCount] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    loadDeletedHabits()
+      .then((d) => { if (alive) setArchivedCount(d.length); })
+      .catch(() => { if (alive) setArchivedCount(null); });
+    return () => { alive = false; };
+  }, [habits]);
   const dueToday      = getDueToday(activeHabits, entries);
   const doneToday     = dueToday.filter((h) => isDone(entries, h.id, todayStr, h.target_count));
   const openToday     = dueToday.filter((h) => !isDone(entries, h.id, todayStr, h.target_count));
@@ -147,10 +160,10 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
       <PageSection title="Bereiche">
         <AreaList variant="tiles">
           <AreaRow
-            label="Meine Gewohnheiten"
+            label="Eigene"
             icon="habits"
             featured
-            value={`${activeHabits.length} aktiv`}
+            value={`${activeHabits.length}/${ownCount} aktiv`}
             onPress={() => onNavigate('gewohnheiten')}
           />
           <AreaRow
@@ -158,6 +171,12 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
             icon="chart"
             value={`${Math.round(monthRate * 100)} % · ${perfectDays}/7 Tage`}
             onPress={() => onNavigate('statistik')}
+          />
+          <AreaRow
+            label="Archiv"
+            icon="archive"
+            value={archivedCount === null ? '–' : `${archivedCount} ${archivedCount === 1 ? 'Eintrag' : 'Einträge'}`}
+            onPress={() => onNavigate('archiv')}
           />
         </AreaList>
       </PageSection>

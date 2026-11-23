@@ -16,3 +16,10 @@ erkennt die App am Namen (`catalogEntryByName`): im Formular sind Kategorie und 
 bleiben Liter (Wasser) und die Uhrzeiten. Eigene Gewohnheiten sind frei. Statistik rechnet über `isDueHistoric`
 (archivierte/pausierte zählen für ihre aktiven Tage; `stats_hidden` blendet gelöschte aus). Migrationen:
 `hab_stats_hidden_migration.sql`, `hab_catalog_migration.sql` (vor dem Ausrollen einspielen, idempotent).
+
+## Übersicht und Archiv
+
+Die Übersicht (`OverviewSection.jsx`) hat unter "Bereiche" drei Kacheln: "Eigene" (`aktiv/gesamt aktiv`, Gesamt = aktiv + pausiert, ohne
+Gelöschte; öffnet die Liste), "Statistik" und "Archiv" (Anzahl gelöschter Gewohnheiten, öffnet `#/habits/archiv` = `HabitArchiveView.jsx`).
+Das Archiv enthält ALLE gelöschten Gewohnheiten (auch aus Vorlagen); Wiederherstellen und "Aus Statistik entfernen" (`stats_hidden`) gibt es
+nur dort. Pausierte stehen in der Liste unter "Pausiert", nicht im Archiv. Die Liste selbst hat keinen Archiv- und keinen Vorlagen-Knopf mehr.

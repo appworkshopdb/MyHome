@@ -23,7 +23,6 @@ import { CSS } from '@dnd-kit/utilities';
 
 import {
   saveHabit, deleteHabit, toggleHabitActive, updateSortOrder,
-  restoreHabit, loadDeletedHabits, setStatsHidden,
 } from '../lib/habData.js';
 import {
   HABIT_CATEGORIES, HABIT_UNITS, HABIT_ICONS, TIME_SLOTS,
@@ -67,10 +66,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
   // Name der Vorlage, aus der das Formular stammt: Kategorie und Ziel-Art sind dann fest
   const [lockName, setLockName]       = useState(null);
   const [error, setError]             = useState(null);
-  const [showArchive, setShowArchive] = useState(false);
-  const [archivedHabits, setArchived] = useState([]);
-  const [loadingArchive, setLoadingArchive] = useState(false);
-  const [restoringId, setRestoringId] = useState(null);
   const [iconPicker, setIconPicker]   = useState(false);
 
   // Lokale Reihenfolge für optimistisches UI beim Drag & Drop
@@ -240,47 +235,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  async function openArchive() {
-    setLoadingArchive(true);
-    setShowArchive(true);
-    setShowForm(false);
-    try {
-      const data = await loadDeletedHabits();
-      setArchived(data);
-    } catch (e) {
-      setError('Archiv konnte nicht geladen werden.');
-    } finally {
-      setLoadingArchive(false);
-    }
-  }
-
-  async function handleToggleStatsHidden(habit) {
-    setRestoringId(habit.id);
-    try {
-      await setStatsHidden(habit.id, !habit.stats_hidden);
-      setArchived(await loadDeletedHabits());
-    } catch (e) {
-      setError('Konnte nicht geändert werden. Ist die Migration hab_stats_hidden eingespielt?');
-    } finally {
-      setRestoringId(null);
-    }
-  }
-
-  async function handleRestore(habitId) {
-    setRestoringId(habitId);
-    try {
-      await restoreHabit(habitId, { wasHidden: archivedHabits.find((h) => h.id === habitId)?.stats_hidden });
-      await onHabitsChange();
-      setLocalOrder(null);
-      const data = await loadDeletedHabits();
-      setArchived(data);
-    } catch (e) {
-      setError('Wiederherstellen fehlgeschlagen.');
-    } finally {
-      setRestoringId(null);
-    }
-  }
-
   const deleteSheet = deleteTarget && (
     <SheetShell onClose={() => setDeleteTarget(null)} labelledBy="hab-del-title">
       <div className="hab-cp-sheet">
@@ -328,62 +282,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
       </div>
     </SheetShell>
   );
-
-  // ─── Archiv ──────────────────────────────────────────────
-  if (showArchive) {
-    return (
-      <div className="hab-archive">
-        <div className="hab-form-header">
-          <button className="hab-back-btn" onClick={() => setShowArchive(false)}>← Zurück</button>
-          <h2 className="hab-form-title">Archiv</h2>
-        </div>
-        {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
-        {loadingArchive && <div className="page-loading">Wird geladen …</div>}
-        {!loadingArchive && archivedHabits.length === 0 && (
-          <div className="hab-empty">
-            <div className="hab-empty-icon">📦</div>
-            <div className="hab-empty-title">Archiv ist leer</div>
-            <div className="hab-empty-text">Gelöschte Gewohnheiten erscheinen hier und können wiederhergestellt werden.</div>
-          </div>
-        )}
-        {!loadingArchive && archivedHabits.length > 0 && (
-          <div className="hab-manage-list">
-            {archivedHabits.map((habit) => (
-              <div key={habit.id} className="hab-manage-card hab-manage-card--paused">
-                <div className="hab-manage-card-left">
-                  <span className="hab-item-icon">{habit.icon}</span>
-                  <div>
-                    <div className="hab-manage-name">{habit.name}</div>
-                    <div className="hab-manage-meta">
-                      {habit.category} · Gelöscht am {new Date(habit.deleted_at).toLocaleDateString('de-DE')}
-                      {habit.stats_hidden ? ' · nicht in Statistik' : ' · in Statistik'}
-                    </div>
-                  </div>
-                </div>
-                <div className="hab-manage-card-right">
-                  <button
-                    className="hab-manage-btn hab-manage-btn--text"
-                    onClick={() => handleToggleStatsHidden(habit)}
-                    disabled={restoringId === habit.id}
-                  >
-                    {habit.stats_hidden ? 'In Statistik zeigen' : 'Aus Statistik entfernen'}
-                  </button>
-                  <button
-                    className="hab-manage-btn"
-                    onClick={() => handleRestore(habit.id)}
-                    disabled={restoringId === habit.id}
-                    title="Wiederherstellen"
-                  >
-                    {restoringId === habit.id ? '…' : '↩️'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // ─── Formular ────────────────────────────────────────────
   if (showForm) {
@@ -634,10 +532,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
   // ─── Liste mit Drag & Drop ───────────────────────────────
   return (
     <div className="hab-habits-view">
-
-      <div className="hab-habits-actions">
-        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv"><span aria-hidden="true">📦</span> Archiv</button>
-      </div>
 
       {showOverloadWarning && (
         <div className="hab-overload-warning">

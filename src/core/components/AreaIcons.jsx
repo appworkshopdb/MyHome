@@ -34,6 +34,8 @@ export default function AreaIcon({ id, size = 15, strokeWidth = 1.9 }) {
       return (<svg {...common}><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8.5 9.5a4.2 4.2 0 0 1 7 0" /><line x1="12" y1="9.5" x2="13.6" y2="7.8" /></svg>);
     case 'calendar':
       return (<svg {...common}><rect x="3.5" y="5" width="17" height="15.5" rx="3" /><line x1="3.5" y1="10" x2="20.5" y2="10" /><line x1="8" y1="3" x2="8" y2="6.5" /><line x1="16" y1="3" x2="16" y2="6.5" /></svg>);
+    case 'archive': // Archiv
+      return (<svg {...common}><rect x="3.5" y="4" width="17" height="4.5" rx="1.5" /><path d="M5 8.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5" /><line x1="10" y1="12.5" x2="14" y2="12.5" /></svg>);
     case 'tasks':
       return (<svg {...common}><rect x="4" y="4" width="16" height="16" rx="4" /><polyline points="8.5 12.5 11 15 15.5 9.5" /></svg>);
     case 'pig': // Sparschwein (nur als Notnagel, die Finanzen nutzen ihr eigenes Bild)
