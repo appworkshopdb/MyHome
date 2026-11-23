@@ -26,7 +26,7 @@ Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig 
 
 ## Buchungen: Stift- und Papierkorb-Knopf je Posten
 
-In den vier Bereichen der Buchungsliste (Einnahmen, Fixkosten, Variable Kosten, Sonstige Ausgaben; `MonthsView.EntryRow`) hat jede Karte rechts unter dem Betrag zwei kleine Knöpfe (`.fin-row-btn`, `IconEdit` / `IconTrash`):
+In den vier Bereichen der Buchungsliste (Einnahmen, Fixkosten, Variable Kosten, Sonstige Ausgaben; `MonthsView.EntryRow`) hat jede Karte rechts neben dem Betrag zwei kleine Knöpfe (`.fin-row-btn`, `IconEdit` / `IconTrash`):
 - **Stift**: öffnet den Posten-Dialog direkt im Bearbeiten-Modus (`EntryDetailSheet` mit `startInEdit`; Tippen auf die Karte öffnet weiter die Ansicht).
 - **Papierkorb**: fragt `confirm('Eintrag löschen?')` und löscht über `handleDelete` (Vorlagen-Posten: siehe oben, Monat wird in `skipped_months` vermerkt).
 - Nicht in der Liste „Offene Posten“ (offene Frage, ob dort auch).

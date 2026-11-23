@@ -150,9 +150,10 @@
 .ed-check.is-paid .ed-box { background:var(--status-positive); border-color:var(--status-positive); }
 .ed-box svg { width:14px; height:14px; stroke-width:3; }
 
-/* Posten-Zeile: Betrag oben, darunter die Knöpfe Bearbeiten (Stift) und Löschen (Eimer) */
+/* Posten-Zeile: Betrag, rechts daneben die Knöpfe Bearbeiten (Stift) und Löschen (Eimer) */
 .fin-row-meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fin-row-side { flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2); }
+.fin-row-side { flex:none; display:flex; align-items:center; gap:var(--sp-3); }
+.fin-row-side .fin-row-amount { text-align:right; }
 .fin-row-btns { display:flex; gap:var(--sp-2); }
 .fin-row-btn { position:relative; display:grid; place-items:center; width:34px; height:34px; padding:0; border:var(--bd-hair) solid var(--border-hairline); border-radius:50%; background:var(--surface-sunken); color:var(--text-secondary); cursor:pointer; }
 .fin-row-btn::after { content:''; position:absolute; inset:-5px; }
