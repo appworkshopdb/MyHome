@@ -18,7 +18,7 @@
 // Modulwechsel läuft ausschließlich über die Bottom-Nav — bitte nicht
 // wieder einbauen.
 
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useAuth } from './core/lib/AuthContext';
 import { syncAnalyticsSession } from './core/lib/analytics';
 import { restorePushForUser } from './core/lib/pushNotifications';
@@ -93,6 +93,18 @@ export default function App() {
   // Tracking nur für eingeloggte Nutzer und nur mit Einwilligung — die
   // Prüfung steckt in analytics.js, hier wird nur die Anmeldung gemeldet.
   useEffect(() => { syncAnalyticsSession(session); }, [session]);
+
+  // Frische Anmeldung (Login-Formular) landet immer im Hub. Beim Abmelden bleibt der
+  // Hash (z. B. #/profile) stehen und würde sonst nach dem Login wieder greifen.
+  // Ein Neuladen mit gespeicherter Sitzung und Links aus Mails/Pushes bleiben unberührt,
+  // weil nur der Wechsel „abgemeldet → angemeldet“ nach dem ersten Laden zählt.
+  const wasLoggedIn = useRef(null);
+  useEffect(() => {
+    if (ladeVorgang) return;
+    const loggedIn = Boolean(session);
+    if (wasLoggedIn.current === false && loggedIn) navigate('');
+    wasLoggedIn.current = loggedIn;
+  }, [session, ladeVorgang, navigate]);
 
   // Push-Abo dieses Geräts für den angemeldeten Nutzer wiederherstellen (ohne
   // neue Abfrage, wenn er es hier schon aktiviert hatte) — nur bei Nutzerwechsel.
