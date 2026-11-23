@@ -27,3 +27,9 @@ Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig 
 ## Saldo-Karte
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.
+
+## Verträge (Seite `#/finance/vertraege`)
+
+`ContractsView.jsx`: zwei Gruppen, **Einnahmen** und **Fixkosten & Verträge**, je Eintrag eine Karte (`.vt-*` in `design-v2.css`), ohne Fokuskarte; Summe pro Monat rechts neben der Gruppenüberschrift, darunter "N aktiv · … pro Jahr". Drei Symbole (`ContractIcons.jsx`): Einnahme = Münze mit Euro, Fixkosten = Kalender, Vertrag = Dokument. Abgelaufene sind eingeklappt, "Hinzufügen" ist eine gestrichelte Karte.
+Alle Fenster dieser Seite = `RecurringSheet.jsx` (ersetzt `FixTemplateModal`, `ContractModal`, `PaymentBadge`): "Einnahme hinzufügen" (Vorlage `fixeinnahmen`), "Hinzufügen" mit Art Fixkosten | Vertrag, beim Bearbeiten steht die Art fest und es gibt "Löschen" (auch für Verträge, das ging vorher in der Oberfläche nicht). **Fixkosten** sind Vorlagen (`fin_fixtemplates`) und legen jeden Monat eine Buchung an; **Verträge** (`fin_contracts`) erscheinen nur in der Übersicht und buchen nichts. Neue Verträge lassen sich seit diesem Umbau in der Oberfläche anlegen. Entwurf: Mockup-Runde "Verträge" (Satz 1 der Symbole).
+
