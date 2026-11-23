@@ -1532,8 +1532,6 @@ button.cl-row-btn { cursor: pointer; }
 .rf-form { display: flex; flex-direction: column; }
 .rf-form .wz-lbl { margin-top: var(--sp-4); }
 .rf-form .wz-lbl:first-child { margin-top: 0; }
-.rf-gap { margin-top: var(--sp-4); }
-.rf-gap .wz-lbl { margin-top: 0; }
 .rf-hint { margin-top: var(--sp-1); font-size: var(--fs-meta); font-weight: var(--fw-meta); color: var(--text-muted); }
 .rf-card { margin-top: var(--sp-4); padding: 0 var(--sp-4) var(--sp-4); border-radius: var(--rad-xl); background: color-mix(in srgb, var(--m-tint, var(--action-quiet-bg)) 45%, var(--surface-raised)); }
 .rf-card .wz-lbl:first-child { margin-top: var(--sp-4); }

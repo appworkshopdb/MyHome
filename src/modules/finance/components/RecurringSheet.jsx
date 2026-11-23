@@ -10,7 +10,7 @@
 // Ersetzt FixTemplateModal und ContractModal; die Felder sind dieselben.
 
 import { useState } from 'react';
-import { INTERVALS, PAYMENTS, MONTHS_DE, addMonthsClamped } from '../lib/finance';
+import { INTERVALS, PAYMENTS, MONTHS_DE, addMonthsClamped, dueDateFor } from '../lib/finance';
 import SheetShell from '../../../core/components/SheetShell';
 import { ChipGroup, DateButton, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import { parseMoney } from '../../../core/lib/wizardDates';
@@ -46,7 +46,8 @@ export default function RecurringSheet({
   const [name,    setName]    = useState(item?.name || '');
   const [payment, setPayment] = useState(item?.payment || 'Bank');
   const [amount,  setAmount]  = useState(fmtNum(item?.amount));
-  const [dueDay,  setDueDay]  = useState(item?.due_day ?? '');
+  // Fälligkeit als Datum im Kalender (optional); gespeichert wird der Tag im Monat (due_day)
+  const [dueDate, setDueDate] = useState(item?.due_day ? dueDateFor(item.due_day, currentYear, currentMonth) : '');
   const initialInterval = item?.interval ?? (item?.quarterly ? 'quarterly' : 'monthly');
   const [interval,   setInterval]   = useState(initialInterval);
   const [startMonth, setStartMonth] = useState(item?.start_month || currentMonth);
@@ -72,8 +73,7 @@ export default function RecurringSheet({
     if (!name.trim()) return showToast('Bitte Name eingeben');
     const amt = parseMoney(amount);
     if (Number.isNaN(amt) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
-    const dd = dueDay !== '' ? parseInt(dueDay, 10) : null;
-    if (dd !== null && (Number.isNaN(dd) || dd < 1 || dd > 31)) return showToast('Fälligkeitstag muss zwischen 1 und 31 liegen');
+    const dd = dueDate ? parseInt(dueDate.slice(8, 10), 10) : null;
 
     let contractDurationMonths = null;
     let resolvedEndDate = null;
@@ -119,7 +119,9 @@ export default function RecurringSheet({
   const endLabel   = isContract ? 'Vertragsende' : 'Ende';
   const startLabel = isContract ? 'Vertragsbeginn' : 'Beginn';
   const namePh = isContract ? 'z. B. Gym, Strom, Netflix…' : (kind === 'einnahme' ? 'z. B. Gehalt, Rente…' : 'z. B. Miete, Strom…');
-  const dayPh = isContract ? 'z. B. 5' : 'z. B. 1';
+  const dueDay = dueDate ? parseInt(dueDate.slice(8, 10), 10) : null;
+  // Gespeichert wird nur der Tag; die Anzeige bleibt im laufenden Monat (auch bei einem Tag aus einem anderen Monat)
+  const pickDueDate = (iso) => setDueDate(iso ? dueDateFor(parseInt(iso.slice(8, 10), 10), currentYear, currentMonth) : '');
 
   let endDatePreview = null;
   if (useDuration && durationMonths && startDate) {
@@ -162,19 +164,14 @@ export default function RecurringSheet({
           <label className="wz-lbl" htmlFor="rf-name">Name</label>
           <input id="rf-name" className="wz-input hero" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={namePh} autoComplete="off" />
 
-          <div className="wz-two rf-gap">
-            <div>
-              <label className="wz-lbl" htmlFor="rf-amount">Betrag (€)</label>
-              <input id="rf-amount" className="wz-input" type="text" inputMode="decimal" value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} placeholder="0,00" autoComplete="off" />
-              {monthlyHint ? <div className="rf-hint">{monthlyHint}</div> : null}
-            </div>
-            <div>
-              <label className="wz-lbl" htmlFor="rf-day">Fällig am <span className="opt">Tag</span></label>
-              <input id="rf-day" className="wz-input" type="text" inputMode="numeric" value={dueDay}
-                onChange={(e) => setDueDay(e.target.value.replace(/\D/g, '').slice(0, 2))} placeholder={dayPh} autoComplete="off" />
-            </div>
-          </div>
+          <label className="wz-lbl" htmlFor="rf-amount">Betrag (€)</label>
+          <input id="rf-amount" className="wz-input" type="text" inputMode="decimal" value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} placeholder="0,00" autoComplete="off" />
+          {monthlyHint ? <div className="rf-hint">{monthlyHint}</div> : null}
+
+          <div className="wz-lbl">Fällig am <span className="opt">optional</span></div>
+          <DateButton value={dueDate} onChange={pickDueDate} optional placeholder="Datum wählen" label="Fällig am" />
+          {dueDay ? <div className="rf-hint">{isRecurring ? `Am ${dueDay}. des Fälligkeitsmonats` : `Jeden Monat am ${dueDay}.`}</div> : null}
 
           <div className="wz-lbl">Zahlungsart</div>
           <ChipGroup options={PAYMENTS} value={payment} onChange={setPayment} label="Zahlungsart" />

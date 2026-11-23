@@ -1,7 +1,7 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
+import { templateAppliesTo, dueDateFor, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
 
 function ownerId(session) {
   return session.user.id;
@@ -271,11 +271,16 @@ async function syncTemplateEntries(session, tpl) {
       // Ausnahme: der amount bezahlter Vergangenheits-Einträge bleibt
       // unverändert (historische Wahrheit), nur Name und Zahlung folgen.
       const isPastPaid = entry.paid && !isFuture;
+      // Fälligkeitsdatum folgt dem Tag der Vorlage (nur laufender/zukünftiger Monat; ein
+      // von Hand geänderter Posten ist gesperrt und kommt hier gar nicht an)
+      const due = isCurrentOrFuture(entry.year, entry.month)
+        ? { due_date: tpl.due_day ? dueDateFor(tpl.due_day, entry.year, entry.month) : null }
+        : {};
       await getSupabase()
         .from('fin_entries')
         .update(isPastPaid
-          ? { name: tpl.name, payment: tpl.payment }          // Betrag bleibt
-          : { name: tpl.name, amount: tpl.amount, payment: tpl.payment }
+          ? { name: tpl.name, payment: tpl.payment, ...due }                       // Betrag bleibt
+          : { name: tpl.name, amount: tpl.amount, payment: tpl.payment, ...due }
         )
         .eq('id', entry.id);
     }
@@ -334,8 +339,17 @@ function isSkippedMonth(t, year, month) {
   return Array.isArray(t.skipped_months) && t.skipped_months.includes(monthKey(year, month));
 }
 
+// Laufender oder zukünftiger Monat? Nur dort bekommen Posten aus Vorlagen ein Fälligkeitsdatum
+// (rückwirkend angelegte Posten alter Monate bleiben ohne, sonst wären sie sofort überfällig).
+function isCurrentOrFuture(year, month) {
+  const n = new Date();
+  return year * 12 + month >= n.getFullYear() * 12 + n.getMonth() + 1;
+}
+
 function templateToEntry(t, year, month) {
+  const due = t.due_day && isCurrentOrFuture(year, month) ? { due_date: dueDateFor(t.due_day, year, month) } : {};
   return {
+    ...due,
     category: t.category,
     year,
     month,
@@ -365,9 +379,14 @@ export async function applyMissingFixTemplatesWith(session, year, month, templat
   for (const t of templates) {
     if (!templateAppliesTo(t, year, month)) continue;
     if (isSkippedMonth(t, year, month)) continue; // der Nutzer hat ihn gelöscht
-    const exists = monthEntries.some((e) => e.from_template === t.id);
-    if (!exists) {
+    const existing = monthEntries.find((e) => e.from_template === t.id);
+    if (!existing) {
       await saveEntry(session, templateToEntry(t, year, month));
+      added++;
+    } else if (t.due_day && !existing.due_date && !existing.template_locked && isCurrentOrFuture(year, month)) {
+      // Posten aus der Zeit vor dem Datums-Feld: Fälligkeitsdatum aus dem Tag der Vorlage nachtragen
+      await getSupabase().from('fin_entries')
+        .update({ due_date: dueDateFor(t.due_day, year, month) }).eq('id', existing.id);
       added++;
     }
   }

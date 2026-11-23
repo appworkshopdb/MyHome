@@ -89,6 +89,15 @@ export function isSparschweinDirectWithdrawal(entry) {
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
 }
 
+// Fälligkeitsdatum eines Monatspostens aus dem Tag der Vorlage ("fällig am 28."):
+// 'YYYY-MM-DD', der Tag wird auf die Monatslänge begrenzt (31. → 28./29./30.).
+export function dueDateFor(day, year, month) {
+  const d = Number(day);
+  if (!d) return null;
+  const last = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+}
+
 // Heute als lokales 'YYYY-MM-DD' (nie über toISOString, siehe CLAUDE.md).
 export function localTodayStr(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

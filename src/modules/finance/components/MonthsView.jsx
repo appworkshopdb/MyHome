@@ -244,13 +244,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   }, []);
 
   // Posten aus einer Vorlage (laufender Vertrag), den der Nutzer von Hand ändert
-  // (Name, Betrag, Zahlung, Ausgabenart): gilt nur für diesen Monat. Er wird
+  // (Name, Betrag, Zahlung, Ausgabenart, Fälligkeit): gilt nur für diesen Monat. Er wird
   // gesperrt, damit eine spätere Änderung der Vorlage ihn nicht überschreibt.
   function changedByHand(old, next) {
     const parts = (e) => JSON.stringify((e.payments || []).map((p) => [p.method, Number(p.amount)]));
     return old.name !== next.name
       || Number(old.amount) !== Number(next.amount)
       || old.category !== next.category
+      || (old.due_date || '').slice(0, 10) !== (next.due_date || '').slice(0, 10)
       || parts(old) !== parts(next);
   }
 
