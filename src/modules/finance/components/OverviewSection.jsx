@@ -102,8 +102,11 @@ export default function OverviewSection({ onNavigate }) {
   const totalGespart = entries
     .filter((e) => isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  const saldo      = totalEin - totalAus - totalGespart;
-  const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
+  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
+  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
+  const ausAnzeige = totalAus + totalGespart;
+  const saldo      = totalEin - ausAnzeige;
+  const spentRatio = totalEin > 0 ? Math.min(1, ausAnzeige / totalEin) : 0;
 
   // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
   // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
@@ -139,7 +142,7 @@ export default function OverviewSection({ onNavigate }) {
         <FocusCard.Meta>
           {/* "+" statt "Ein", "−" statt "Aus" */}
           <span>+ <b>{formatEur(totalEin)}</b></span>
-          <span>− <b>{formatEur(totalAus)}</b></span>
+          <span>− <b>{formatEur(ausAnzeige)}</b></span>
         </FocusCard.Meta>
         <FocusCard.Progress value={spentRatio} />
       </FocusCard>

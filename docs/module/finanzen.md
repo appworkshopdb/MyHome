@@ -17,3 +17,13 @@ Buchungen (`MonthsView`): Tipp auf einen Posten öffnet `EntryDetailSheet` (Stat
 per Tipp, Details, Löschen); "Bearbeiten" macht dieselbe Ansicht an Ort und Stelle änderbar (Entwurf, Speichern/Abbrechen).
 `saveEntry` übernimmt ein ausdrücklich übergebenes `paid`; nur ohne Angabe wird es aus den
 Zahlungsarten abgeleitet (Bar/Gutschein/Sparschwein = sofort bezahlt).
+
+## Laufende Posten (Vorlagen): Löschen und Bearbeiten gelten nur für den Monat
+
+Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig (Migration `supabase/fin_template_overrides_migration.sql`, additiv; ohne sie läuft die App weiter, nur ohne diese Merker):
+- **Löschen** (`finData.deleteEntry`): Der Posten wird wirklich entfernt, und die Vorlage merkt sich den Monat in `fin_fixtemplates.skipped_months` (`'YYYY-MM'`). `applyMissingFixTemplatesWith` und `syncTemplateEntries` legen dort nichts neu an, auch nicht nach Bearbeiten der Vorlage. Posten ohne Vorlage bleiben beim Soft Delete (`deleted_at`).
+- **Von Hand ändern** (Name, Betrag, Zahlung, Ausgabenart im Posten-Dialog, `MonthsView.handleSave`): setzt `fin_entries.template_locked = true`. `syncTemplateEntries` überspringt solche Posten (außer der Monat liegt nicht mehr im Gültigkeitsfenster der Vorlage, dann wird er wie bisher entfernt). Bezahlt/offen und die Notiz sperren nicht.
+
+## Saldo-Karte
+
+"+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.

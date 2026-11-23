@@ -1,6 +1,6 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
-import { saveEntry, deleteEntry } from '../../../core/lib/finEntries';
+import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
 import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
 
 function ownerId(session) {
@@ -123,7 +123,50 @@ export async function getNameSuggestions(session) {
 // saveEntry/deleteEntry liegen in core/lib/finEntries.js, damit auch die
 // Brücke für andere Module (core/lib/financeBridge.js) sie nutzen kann, ohne
 // aus modules/ zu importieren. Hier nur weitergereicht.
-export { saveEntry, deleteEntry };
+export { saveEntry };
+
+// Fehlende Spalte (Migration fin_template_overrides_migration.sql noch nicht
+// eingespielt): Funktionen fallen dann auf das alte Verhalten zurück, statt zu scheitern.
+const isMissingColumn = (e) => Boolean(e)
+  && (e.code === '42703' || e.code === 'PGRST204' || /does not exist|Could not find the .* column/i.test(e.message || ''));
+
+const monthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
+
+// Posten löschen. Stammt er aus einer Vorlage (laufender Vertrag), merkt sich die
+// Vorlage den Monat (`skipped_months`), damit die Prüfung ihn nicht wieder anlegt,
+// und der Posten wird wirklich entfernt. Alle anderen Posten werden wie bisher
+// als gelöscht markiert.
+export async function deleteEntry(id) {
+  const sb = getSupabase();
+  const { data: entry, error } = await sb
+    .from('fin_entries')
+    .select('id, from_template, year, month')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!entry || !entry.from_template) return softDeleteEntry(id);
+
+  const { data: tpl, error: tplErr } = await sb
+    .from('fin_fixtemplates')
+    .select('*')
+    .eq('id', entry.from_template)
+    .maybeSingle();
+  if (tplErr) throw tplErr;
+  if (tpl) {
+    const key = monthKey(entry.year, entry.month);
+    const list = Array.isArray(tpl.skipped_months) ? tpl.skipped_months : [];
+    if (!list.includes(key)) {
+      const { error: upErr } = await sb
+        .from('fin_fixtemplates')
+        .update({ skipped_months: [...list, key] })
+        .eq('id', tpl.id);
+      if (upErr && !isMissingColumn(upErr)) throw upErr;
+    }
+  }
+  const { error: delErr } = await sb.from('fin_entries').delete().eq('id', id);
+  if (delErr) throw delErr;
+  invalidateHubCache();
+}
 
 // Ganzen Posten auf bezahlt/offen setzen. `payments` (optional) sind die dazu
 // passend umgesetzten Teilzahlungen (setPartsPaid aus paymentParts.js), damit
@@ -218,6 +261,10 @@ async function syncTemplateEntries(session, tpl) {
         .from('fin_entries')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', entry.id);
+    } else if (entry.template_locked) {
+      // Der Nutzer hat diesen Posten von Hand geändert (Name, Betrag, Zahlung):
+      // gilt nur für diesen Monat, die Vorlage fasst ihn nicht mehr an.
+      continue;
     } else {
       // Name, Betrag und Zahlungsart in ALLEN Einträgen nachziehen —
       // auch in bezahlten, damit die Monatsansicht konsistent bleibt.
@@ -250,6 +297,7 @@ async function syncTemplateEntries(session, tpl) {
     if (isFutureMonth) continue;
     if (existingKeys.has(key)) continue;
     if (!templateAppliesTo(tpl, y, m)) continue;
+    if (isSkippedMonth(tpl, y, m)) continue; // von Hand gelöscht
     await saveEntry(session, templateToEntry(tpl, y, m));
   }
 }
@@ -279,6 +327,11 @@ export async function deleteFixTemplate(session, id) {
     .eq('from_template', id)
     .is('deleted_at', null);
   if (entryErr) throw entryErr;
+}
+
+// Hat der Nutzer den Posten dieses Monats aus der Vorlage gelöscht?
+function isSkippedMonth(t, year, month) {
+  return Array.isArray(t.skipped_months) && t.skipped_months.includes(monthKey(year, month));
 }
 
 function templateToEntry(t, year, month) {
@@ -311,6 +364,7 @@ export async function applyMissingFixTemplatesWith(session, year, month, templat
   let added = 0;
   for (const t of templates) {
     if (!templateAppliesTo(t, year, month)) continue;
+    if (isSkippedMonth(t, year, month)) continue; // der Nutzer hat ihn gelöscht
     const exists = monthEntries.some((e) => e.from_template === t.id);
     if (!exists) {
       await saveEntry(session, templateToEntry(t, year, month));

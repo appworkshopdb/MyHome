@@ -243,8 +243,21 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Posten aus einer Vorlage (laufender Vertrag), den der Nutzer von Hand ändert
+  // (Name, Betrag, Zahlung, Ausgabenart): gilt nur für diesen Monat. Er wird
+  // gesperrt, damit eine spätere Änderung der Vorlage ihn nicht überschreibt.
+  function changedByHand(old, next) {
+    const parts = (e) => JSON.stringify((e.payments || []).map((p) => [p.method, Number(p.amount)]));
+    return old.name !== next.name
+      || Number(old.amount) !== Number(next.amount)
+      || old.category !== next.category
+      || parts(old) !== parts(next);
+  }
+
   async function handleSave(entry) {
-    const saved = await db.saveEntry(session, { ...entry, year, month });
+    const old = entries.find((e) => e.id === entry.id);
+    const lock = old?.from_template && !old.template_locked && changedByHand(old, entry);
+    const saved = await db.saveEntry(session, { ...entry, year, month, ...(lock ? { template_locked: true } : {}) });
     // Sofort sichtbar machen (Ansicht bleibt offen); der Reload holt den Rest nach
     setEntries((prev) => prev.map((e) => (e.id === saved.id ? saved : e)));
     showToast('Eintrag aktualisiert');
@@ -326,13 +339,16 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const totalGespart = entries
     .filter((e) => isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  const verfuegbar  = totalEin - totalAus - totalGespart;
+  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
+  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
+  const ausAnzeige  = totalAus + totalGespart;
+  const verfuegbar  = totalEin - ausAnzeige;
   // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
   // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
   // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
   const offene      = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  const spentRatio  = totalEin > 0 ? Math.min(100, (totalAus  / totalEin) * 100) : 0;
+  const spentRatio  = totalEin > 0 ? Math.min(100, (ausAnzeige / totalEin) * 100) : 0;
   const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
 
   // Sichtbare Spalten je nach aktivem Filter
@@ -364,7 +380,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         {/* Infozeile: + Einnahmen  − Ausgaben  N offen  N Buchungen */}
         <div className="fin-summary-sub">
           <span>+ <b>{formatEur(totalEin)}</b></span>
-          <span>− <b>{formatEur(totalAus)}</b></span>
+          <span>− <b>{formatEur(ausAnzeige)}</b></span>
           {offene.length > 0 && (
             <span style={{ color: 'var(--status-critical)' }}>
               {offene.length} offen

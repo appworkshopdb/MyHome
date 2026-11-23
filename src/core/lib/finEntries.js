@@ -44,7 +44,12 @@ export async function saveEntry(session, entry) {
     payment: legacyPayment,
     ...(resolvedPayments !== undefined ? { payments: resolvedPayments } : {}),
   };
-  const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
+  let { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
+  // Spalte template_locked fehlt noch (Migration nicht eingespielt): ohne sie speichern
+  if (error && 'template_locked' in payload && (error.code === 'PGRST204' || error.code === '42703')) {
+    const { template_locked: _unused, ...rest } = payload;
+    ({ data, error } = await getSupabase().from('fin_entries').upsert(rest).select().single());
+  }
   if (error) throw error;
   track('finance_entry_saved', { category: String(entry.category ?? '') });
   invalidateHubCache();
