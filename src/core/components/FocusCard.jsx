@@ -58,11 +58,19 @@ FocusCard.Meta = function Meta({ children }) {
 };
 
 // 8px-Fortschrittsbalken, value als 0–1
-FocusCard.Progress = function Progress({ value = 0 }) {
+// open (optional, 0–1): zweiter, schraffierter Abschnitt hinter dem ersten (z. B. offene Zahlungen)
+FocusCard.Progress = function Progress({ value = 0, open = 0 }) {
   const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const pctOpen = Math.round(Math.min(1 - pct / 100, Math.max(0, open)) * 100);
   return (
     <div className="focus-card-progress">
       <div className="focus-card-progress-fill" style={{ width: `${pct}%` }} />
+      {pctOpen > 0 && (
+        <div
+          className="focus-card-progress-open"
+          style={{ width: `${pctOpen}%` }} // pruefer:ok berechnete Breite in %
+        />
+      )}
     </div>
   );
 };

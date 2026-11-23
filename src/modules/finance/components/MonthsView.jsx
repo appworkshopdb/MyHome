@@ -5,7 +5,7 @@ import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
   MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, isIncomePending, offenePostenText, offenerZahlungenText, localTodayStr, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
@@ -342,14 +342,21 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
   // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
   const ausAnzeige  = totalAus + totalGespart;
-  const verfuegbar  = totalEin - ausAnzeige;
+  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
+  const heute       = localTodayStr();
+  const einErhalten = totalEin - entries
+    .filter((e) => isIncomePending(e, heute))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const verfuegbar  = einErhalten - ausAnzeige;
   // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
   // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
   // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
   const offene      = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  const spentRatio  = totalEin > 0 ? Math.min(100, (ausAnzeige / totalEin) * 100) : 0;
-  const openRatio   = totalEin > 0 ? Math.min(100 - spentRatio, (offeneSumme / totalEin) * 100) : 0;
+  // Balken: bezahlt ausgefüllt, offen schraffiert
+  const spentRatio  = einErhalten > 0 ? Math.min(100, Math.max(0, ((ausAnzeige - offeneSumme) / einErhalten) * 100)) : 0;
+  const openRatio   = einErhalten > 0 ? Math.min(100 - spentRatio, (offeneSumme / einErhalten) * 100) : 0;
+  const aktuell     = verfuegbar + offeneSumme;   // Saldo vor den offenen Zahlungen
 
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
@@ -377,9 +384,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         <div className="fin-summary-value t-display">
           {loading ? '—' : formatEur(verfuegbar)}
         </div>
+        {!loading && offene.length > 0 && (
+          <div className="fin-summary-sub">
+            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
+          </div>
+        )}
         {/* Infozeile: + Einnahmen  − Ausgaben  N offen  N Buchungen */}
         <div className="fin-summary-sub">
-          <span>+ <b>{formatEur(totalEin)}</b></span>
+          <span>+ <b>{formatEur(einErhalten)}</b></span>
           <span>− <b>{formatEur(ausAnzeige)}</b></span>
           {offene.length > 0 && (
             <span style={{ color: 'var(--status-critical)' }}>

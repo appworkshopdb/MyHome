@@ -1578,3 +1578,8 @@ button.cl-row-btn { cursor: pointer; }
 .se-stat { display: flex; flex-direction: column; padding: var(--sp-3); border-radius: var(--rad-xl); background: var(--m-tint, var(--action-quiet-bg)); color: var(--m-ink, var(--text-primary)); }
 .se-stat b { font-size: var(--fs-number); font-weight: var(--fw-number); line-height: var(--lh-number); font-variant-numeric: tabular-nums; }
 .se-stat span { font-size: var(--fs-meta); font-weight: var(--fw-meta); }
+
+/* FocusCard: Balken mit zweitem, schraffiertem Abschnitt (offen) */
+.focus-card-progress { display: flex; }
+.focus-card-progress-fill { flex: none; }
+.focus-card-progress-open { flex: none; height: 100%; background: repeating-linear-gradient(135deg, var(--hero-fg) 0 3px, transparent 3px 6px); }

@@ -28,6 +28,8 @@ Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig 
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.
 
+**Fokuskarte (Übersicht, Buchungen, Hub):** große Zahl = Saldo **nach** den offenen Zahlungen (wie bisher); darunter "Aktuell inkl. offener Zahlung(en): X" = Saldo + offene Zahlungen, nur wenn etwas offen ist. Der Balken zeigt bezahlt ausgefüllt und offen schraffiert (`FocusCard.Progress` mit `open`). **Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag** (`isIncomePending` in `core/lib/paymentParts.js`; heute zählt schon; ohne Datum zählt sofort), "Ein" auf der Karte zeigt nur die schon erhaltenen. Der Hub holt dafür die Einnahmen mit Datum extra (`loadPendingIncome`) und zieht sie vom Einnahmen-Messwert ab. Texte: `offeneZahlungenText` / `offenerZahlungenText` (Zahlung/Zahlungen), `offenePostenText` (Posten) in der Liste "Offene Posten". Offen: Posten aus Vorlagen bekommen aus "Fällig am (Tag)" kein Fälligkeitsdatum (`templateToEntry`), die Datumsregel gilt für sie daher nicht.
+
 ## Verträge (Seite `#/finance/vertraege`)
 
 `ContractsView.jsx`: zwei Gruppen, **Einnahmen** und **Fixkosten & Verträge**, je Eintrag eine Karte (`.vt-*` in `design-v2.css`), ohne Fokuskarte; Summe pro Monat rechts neben der Gruppenüberschrift, darunter "N aktiv · … pro Jahr". Drei Symbole (`ContractIcons.jsx`): Einnahme = Münze mit Euro, Fixkosten = Kalender, Vertrag = Dokument. Abgelaufene sind eingeklappt, "Hinzufügen" ist eine gestrichelte Karte.

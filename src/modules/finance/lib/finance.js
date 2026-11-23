@@ -89,6 +89,11 @@ export function isSparschweinDirectWithdrawal(entry) {
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
 }
 
+// Heute als lokales 'YYYY-MM-DD' (nie über toISOString, siehe CLAUDE.md).
+export function localTodayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Steht der Posten in der Buchungsliste? Sparschwein-Einzahlung ("Ersparnisse") und
 // -Entnahme sind Transfers und stehen nicht in den Kategorien, sondern im Sparschwein.
 // Die Zahl "N im Monat" auf der Übersicht zählt genau die Posten der Buchungsliste.
@@ -137,7 +142,7 @@ export function isInstantPaid(paymentsOrMethod) {
   return isInstantMethod(paymentsOrMethod);
 }
 export {
-  isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  isInstantMethod, entryParts, openAmount, isOpenExpense, isIncomePending, offenePostenText, offeneZahlungenText, offenerZahlungenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../../../core/lib/paymentParts.js';
 
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
