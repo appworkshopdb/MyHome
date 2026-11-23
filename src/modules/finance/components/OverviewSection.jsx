@@ -18,6 +18,7 @@ import {
   isSparschweinDirectWithdrawal,
   openAmount,
   isOpenExpense,
+  isListedEntry,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -213,7 +214,7 @@ export default function OverviewSection({ onNavigate }) {
             label="Buchungen"
             icon="list"
             featured
-            value={`${entries.length} im Monat`}
+            value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
           />
           <AreaRow

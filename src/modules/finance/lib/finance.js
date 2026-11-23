@@ -89,6 +89,13 @@ export function isSparschweinDirectWithdrawal(entry) {
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
 }
 
+// Steht der Posten in der Buchungsliste? Sparschwein-Einzahlung ("Ersparnisse") und
+// -Entnahme sind Transfers und stehen nicht in den Kategorien, sondern im Sparschwein.
+// Die Zahl "N im Monat" auf der Übersicht zählt genau die Posten der Buchungsliste.
+export function isListedEntry(entry) {
+  return !isSparschweinDeposit(entry) && !isSparschweinDirectWithdrawal(entry);
+}
+
 // Gibt den Betrag zurück der tatsächlich aus dem Sparschwein entnommen wird.
 // Bei Teilzahlung (payments-Array) nur den Sparschwein-Anteil, nicht Gesamtbetrag.
 export function getSparschweinWithdrawalAmount(entry) {
