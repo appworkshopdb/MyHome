@@ -24,6 +24,14 @@ Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig 
 - **Löschen** (`finData.deleteEntry`): Der Posten wird wirklich entfernt, und die Vorlage merkt sich den Monat in `fin_fixtemplates.skipped_months` (`'YYYY-MM'`). `applyMissingFixTemplatesWith` und `syncTemplateEntries` legen dort nichts neu an, auch nicht nach Bearbeiten der Vorlage. Posten ohne Vorlage bleiben beim Soft Delete (`deleted_at`).
 - **Von Hand ändern** (Name, Betrag, Zahlung, Ausgabenart im Posten-Dialog, `MonthsView.handleSave`): setzt `fin_entries.template_locked = true`. `syncTemplateEntries` überspringt solche Posten (außer der Monat liegt nicht mehr im Gültigkeitsfenster der Vorlage, dann wird er wie bisher entfernt). Bezahlt/offen und die Notiz sperren nicht.
 
+## Buchungen: Stift- und Papierkorb-Knopf je Posten
+
+In den vier Bereichen der Buchungsliste (Einnahmen, Fixkosten, Variable Kosten, Sonstige Ausgaben; `MonthsView.EntryRow`) hat jede Karte rechts unter dem Betrag zwei kleine Knöpfe (`.fin-row-btn`, `IconEdit` / `IconTrash`):
+- **Stift**: öffnet den Posten-Dialog direkt im Bearbeiten-Modus (`EntryDetailSheet` mit `startInEdit`; Tippen auf die Karte öffnet weiter die Ansicht).
+- **Papierkorb**: fragt `confirm('Eintrag löschen?')` und löscht über `handleDelete` (Vorlagen-Posten: siehe oben, Monat wird in `skipped_months` vermerkt).
+- Nicht in der Liste „Offene Posten“ (offene Frage, ob dort auch).
+- Lange Namen und die Meta-Zeile werden mit „…“ abgeschnitten (`.fin-row-info { min-width:0 }`, `white-space:nowrap`); der Abstand zum Betrag bleibt über den Flex-Gap der Zeile konstant, bei schmaleren Displays wird entsprechend früher gekürzt.
+
 ## Saldo-Karte
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.

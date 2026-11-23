@@ -149,3 +149,12 @@
 .ed-box { width:24px; height:24px; flex:0 0 24px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; border:2px solid var(--border-strong); border-radius:var(--r-sm,6px); color:var(--surface-raised); }
 .ed-check.is-paid .ed-box { background:var(--status-positive); border-color:var(--status-positive); }
 .ed-box svg { width:14px; height:14px; stroke-width:3; }
+
+/* Posten-Zeile: Betrag oben, darunter die Knöpfe Bearbeiten (Stift) und Löschen (Eimer) */
+.fin-row-meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fin-row-side { flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2); }
+.fin-row-btns { display:flex; gap:var(--sp-2); }
+.fin-row-btn { position:relative; display:grid; place-items:center; width:34px; height:34px; padding:0; border:var(--bd-hair) solid var(--border-hairline); border-radius:50%; background:var(--surface-sunken); color:var(--text-secondary); cursor:pointer; }
+.fin-row-btn::after { content:''; position:absolute; inset:-5px; }
+.fin-row-btn svg { width:16px; height:16px; }
+.fin-row-btn--del { color:var(--status-critical); }

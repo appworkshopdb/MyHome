@@ -10,7 +10,7 @@ import {
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
-import { IconChevronLeft, IconChevronRight } from '../../../core/components/Icons';
+import { IconChevronLeft, IconChevronRight, IconEdit, IconTrash } from '../../../core/components/Icons';
 
 // 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
 const COLUMNS = [
@@ -34,7 +34,7 @@ function sortByCreated(arr, dir = 'asc') {
 
 // ── Aufklappbare Kategorie-Sektion ───────────────────────────────────────────
 // Einzelne Eintragszeile — wiederverwendbar für Collapse und Offen-Liste
-function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
+function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = false }) {
   const isIncome = e.category === 'fixeinnahmen' || e.category === 'sonstige_einnahmen';
   // Lokaler Animations-State: kurz "flash" nach Abhaken, unabhängig vom
   // globalen Reload. Verhindert Flackern/Kollabieren der Dropdowns.
@@ -83,9 +83,23 @@ function EntryRow({ e, onOpenModal, onTogglePaid, showOpen = false }) {
         )}
         {e.note && <div className="fin-row-note">{e.note}</div>}
       </div>
-      <div className={`fin-row-amount ${fully && !isIncome ? 'paid' : ''}`}>
-        {formatEur(shownAmount).replace('€', '').trim()}
-        {showOpen && partly && <span className="fin-row-of">von {formatEur(e.amount)}</span>}
+      <div className="fin-row-side">
+        <div className={`fin-row-amount ${fully && !isIncome ? 'paid' : ''}`}>
+          {formatEur(shownAmount).replace('€', '').trim()}
+          {showOpen && partly && <span className="fin-row-of">von {formatEur(e.amount)}</span>}
+        </div>
+        {(onEdit || onDelete) && (
+          <div className="fin-row-btns">
+            {onEdit && (
+              <button type="button" className="fin-row-btn" aria-label={`${e.name} bearbeiten`}
+                onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}><IconEdit /></button>
+            )}
+            {onDelete && (
+              <button type="button" className="fin-row-btn fin-row-btn--del" aria-label={`${e.name} löschen`}
+                onClick={(ev) => { ev.stopPropagation(); onDelete(e); }}><IconTrash size={16} /></button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -134,7 +148,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
 }
 
 // Aufklappbare Kategorie-Sektion (für alle anderen Filter)
-function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
 
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
@@ -174,6 +188,8 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid }) {
               e={e}
               onOpenModal={onOpenModal}
               onTogglePaid={onTogglePaid}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>
@@ -197,6 +213,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Tipp auf einen Posten öffnet die Ansicht (EntryDetailSheet); "Bearbeiten"
   // schaltet darin auf die Bearbeiten-Ansicht um.
   const [detailId, setDetailId] = useState(null);
+  const [detailEdit, setDetailEdit] = useState(false); // Ansicht gleich im Bearbeiten-Modus öffnen (Stift in der Zeile)
   const [filter,  setFilter]  = useState(initialFilter);
 
   // useRef-Muster: session-Objekt stabilisieren, damit load() sich nicht
@@ -275,7 +292,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     notifySaved();
   }
 
-  function openEntry({ entry }) { setDetailId(entry.id); }
+  function openEntry({ entry }) { setDetailEdit(false); setDetailId(entry.id); }
+  function editEntry(entry) { setDetailEdit(true); setDetailId(entry.id); }
 
   function handleTogglePaid(entry) {
     // Optimistischer Update: entries sofort lokal umschalten.
@@ -437,6 +455,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
               entries={entries}
               onOpenModal={openEntry}
               onTogglePaid={handleTogglePaid}
+              onEdit={editEntry}
+              onDelete={(e) => handleDelete(e.id)}
             />
           ))}
         </div>
@@ -444,7 +464,9 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
       {detailEntry && (
         <EntryDetailSheet
+          key={`${detailEntry.id}-${detailEdit}`}
           entry={detailEntry}
+          startInEdit={detailEdit}
           onClose={() => setDetailId(null)}
           onSave={handleSave}
           showToast={showToast}

@@ -66,8 +66,21 @@ function initialPayments(entry) {
 const setAllPaid = (payments, paid) => payments.map((p) => ({ ...p, paid: isInstantMethod(p.method) ? true : paid }));
 const draftPaidFlag = (p) => isInstantMethod(p.method) || !!p.paid;
 
-export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, onTogglePart, showToast }) {
-  const [draft, setDraft] = useState(null); // null = Ansicht, sonst Entwurf beim Bearbeiten
+// Entwurf beim Bearbeiten (alle Felder als Text)
+function makeDraft(entry) {
+  return {
+    category: entry.category,
+    name: entry.name || '',
+    amount: entry.amount != null ? String(entry.amount).replace('.', ',') : '',
+    payments: initialPayments(entry),
+    dueDate: entry.due_date || '',
+    note: entry.note || '',
+  };
+}
+
+export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onTogglePaid, onTogglePart, showToast, startInEdit = false }) {
+  // null = Ansicht, sonst Entwurf beim Bearbeiten (startInEdit: gleich im Bearbeiten-Modus, z. B. über den Stift in der Liste)
+  const [draft, setDraft] = useState(() => (startInEdit ? makeDraft(entry) : null));
   const [focus, setFocus] = useState(null);
   const [saving, setSaving] = useState(false);
   const noteRef = useRef(null);
@@ -85,14 +98,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   }, [editing, focus]);
 
   function startEdit(target = null) {
-    setDraft({
-      category: entry.category,
-      name: entry.name || '',
-      amount: entry.amount != null ? String(entry.amount).replace('.', ',') : '',
-      payments: initialPayments(entry),
-      dueDate: entry.due_date || '',
-      note: entry.note || '',
-    });
+    setDraft(makeDraft(entry));
     setFocus(target);
   }
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
