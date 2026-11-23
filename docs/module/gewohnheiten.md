@@ -6,6 +6,9 @@ Aus `CLAUDE.md` ausgelagert (17.11.2026). Vor Arbeit an diesem Bereich lesen; Ä
 
 Alle Vorlagen stehen in `core/lib/habitCatalog.js` (27 Einträge, Kategorie + Häufigkeit + Ziel fest); die
 Vorlagen-Auswahl (`HABIT_LIBRARY`, `HabitTemplateLibrary.jsx`) und die Tour (`HABIT_AREAS`) leiten sich daraus ab.
+Neue Gewohnheiten (auch aus Vorlagen) gibt es NUR über den Plus-Knopf (`HabitQuickSheet`): Schritt 1 "Aus Vorlage" /
+"Manuelle Eingabe"; Vorlage → direkt "Wann & wie oft" (Name, Symbol, Kategorie, Ziel-Art fest, nur Liter bzw. Uhrzeit
+einstellbar), manuell → Name & Bereich → Wann & wie oft. Die Gewohnheitenseite selbst hat keinen Vorlagen-Knopf mehr.
 EINE Kategorie pro Gewohnheit (9 feste, `HABIT_CATEGORIES`), Einheiten fest (`HABIT_UNITS`). Ziel-Arten: Ja/Nein,
 Zähler (Einheit + Zielwert, Liter in 0,5-Schritten) und Uhrzeit (`hab_habits.goal_time`, Schritt 10/30 Min je Vorlage).
 Abgehakt wird immer mit EINEM Tipp (setzt den vollen Zielwert); der Zähler ist nur das Ziel. Vorlagen-Gewohnheiten

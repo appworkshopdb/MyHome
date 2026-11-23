@@ -5,7 +5,6 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
-import HabitTemplateLibrary from './HabitTemplateLibrary.jsx';
 import {
   DndContext,
   closestCenter,
@@ -59,7 +58,6 @@ const EMPTY_HABIT = {
 
 export default function HabitsView({ habits, onHabitsChange }) {
   const [showForm, setShowForm]       = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
   const [editHabit, setEditHabit]     = useState(null);
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
@@ -111,10 +109,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  // openCreate() wurde entfernt — "Neue Gewohnheit" läuft jetzt
-  // ausschließlich über den globalen FAB (HabitQuickSheet). openLibrary/
-  // applyTemplate bleiben unverändert, das ist ein eigenständiges Feature
-  // (Vorlagen durchsuchen), keine manuelle Neuanlage.
+  // Neue Gewohnheiten (auch aus Vorlagen) laufen ausschließlich über den globalen
+  // Plus-Knopf (HabitQuickSheet: "Aus Vorlage" / "Manuelle Eingabe").
 
   function openEdit(habit) {
     setEditHabit(habit);
@@ -135,34 +131,11 @@ export default function HabitsView({ habits, onHabitsChange }) {
     });
     setLockName(habit.name);
     setShowForm(true);
-    setShowLibrary(false);
-    setError(null);
-  }
-
-  function openLibrary() {
-    setShowLibrary(true);
-    setShowForm(false);
-  }
-
-  function applyTemplate(template) {
-    setEditHabit(null);
-    setForm({
-      ...EMPTY_HABIT,
-      ...template,
-      unit:          template.unit ?? '',
-      goal_time:     template.goal_time ?? '',
-      reminder_time: '',
-      time_slot:     template.time_slot ?? 'anytime',
-    });
-    setLockName(template.name);
-    setShowLibrary(false);
-    setShowForm(true);
     setError(null);
   }
 
   function cancel() {
     setShowForm(false);
-    setShowLibrary(false);
     setEditHabit(null);
     setLockName(null);
     setError(null);
@@ -271,7 +244,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
     setLoadingArchive(true);
     setShowArchive(true);
     setShowForm(false);
-    setShowLibrary(false);
     try {
       const data = await loadDeletedHabits();
       setArchived(data);
@@ -410,17 +382,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
           </div>
         )}
       </div>
-    );
-  }
-
-  // ─── Bibliothek ─────────────────────────────────────────
-  if (showLibrary) {
-    return (
-      <HabitTemplateLibrary
-        habits={habits}
-        onBack={() => setShowLibrary(false)}
-        onPick={applyTemplate}
-      />
     );
   }
 
@@ -675,7 +636,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
     <div className="hab-habits-view">
 
       <div className="hab-habits-actions">
-        <button className="hab-pill-btn" onClick={openLibrary}>Vorlagen</button>
         <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv"><span aria-hidden="true">📦</span> Archiv</button>
       </div>
 
@@ -693,10 +653,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
           <div className="hab-empty-icon">🌱</div>
           <div className="hab-empty-title">Noch keine Gewohnheiten</div>
           <div className="hab-empty-text">Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.</div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={openLibrary}>Aus Vorlagen</button>
-            <div className="hab-empty-fab-hint">oder mit dem <b>＋</b>-Button unten rechts von Grund auf neu</div>
-          </div>
+          <div className="hab-empty-fab-hint">Tippe unten rechts auf <b>＋</b>: dort findest du Vorlagen oder legst selbst eine an.</div>
         </div>
       )}
 

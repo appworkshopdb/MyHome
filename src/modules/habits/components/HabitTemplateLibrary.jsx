@@ -1,12 +1,13 @@
 // modules/habits/components/HabitTemplateLibrary.jsx
-// Vorlagen-Auswahl: Startseite mit "Für den Einstieg" + Kategorien, dann je
-// Kategorie (oder Suche) eine Liste mit Filter-Sheet (Tageszeit, Häufigkeit, Art).
-// Antippen einer Vorlage gibt sie an onPick weiter (öffnet das Formular).
+// Vorlagen-Auswahl im Plus-Wizard (HabitQuickSheet, Schritt "Aus Vorlage"):
+// Startseite mit "Für den Einstieg" + Kategorien, dann je Kategorie (oder Suche) eine
+// Liste mit Filtern (Tageszeit, Häufigkeit, Art). Antippen einer Vorlage gibt sie an
+// onPick weiter; der Wizard springt dann zu "Wann & wie oft".
 
 import { useState, useMemo } from 'react';
-import SheetShell from '../../../core/components/SheetShell.jsx';
 import { HABIT_LIBRARY, HABIT_CATEGORIES, TIME_SLOTS } from '../lib/habUtils.js';
-import { goalKind, goalText, catalogEntryByName } from '../../../core/lib/habitCatalog.js';
+import { goalKind, goalText } from '../../../core/lib/habitCatalog.js';
+import '../habits.css';
 
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -50,24 +51,22 @@ function toggleIn(list, v) {
   return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 }
 
-export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
-  const [cat, setCat]     = useState(null);   // null = Startseite
-  const [q, setQ]         = useState('');
-  const [slots, setSlots] = useState([]);
-  const [freqs, setFreqs] = useState([]);
-  const [kinds, setKinds] = useState([]);
-  const [sheet, setSheet] = useState(false);
+export default function HabitTemplateLibrary({ habits, onPick }) {
+  const [cat, setCat]       = useState(null);   // null = Startseite
+  const [q, setQ]           = useState('');
+  const [slots, setSlots]   = useState([]);
+  const [freqs, setFreqs]   = useState([]);
+  const [kinds, setKinds]   = useState([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Frühere Namen einer Vorlage (LEGACY_NAMES im Katalog) zählen als dieselbe Vorlage, sonst ließe sie sich doppelt anlegen
   const activeNames = useMemo(
-    () => new Set(habits.filter((h) => !h.deleted_at).map((h) => (catalogEntryByName(h.name)?.name ?? h.name).trim().toLowerCase())),
+    () => new Set(habits.filter((h) => !h.deleted_at).map((h) => h.name.trim().toLowerCase())),
     [habits]
   );
   const isActive = (t) => activeNames.has(t.name.trim().toLowerCase());
 
   const filterCount = slots.length + freqs.length + kinds.length;
-  const searching = q.trim() !== '';
-  const inList = cat !== null || searching;
+  const inList = cat !== null || q.trim() !== '';
 
   function passes(t) {
     return (cat === null || t.category === cat)
@@ -88,26 +87,23 @@ export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
   }, [activeNames]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function resetFilters() { setSlots([]); setFreqs([]); setKinds([]); }
-  function toStart() { setCat(null); setQ(''); resetFilters(); }
+  function toStart() { setCat(null); setQ(''); resetFilters(); setFiltersOpen(false); }
 
   return (
-    <div className="hab-tl">
-      <div className="hab-tl-top">
-        <button
-          type="button"
-          className="hab-tl-back"
-          onClick={inList ? toStart : onBack}
-          aria-label={inList ? 'Zurück zu den Kategorien' : 'Zurück zur Liste'}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M19 12H5M11 6l-6 6 6 6" />
-          </svg>
-        </button>
-        <div>
-          <h2>{inList ? (cat ?? 'Suchergebnisse') : 'Vorlagen'}</h2>
-          <small>{inList ? `${items.length} Vorlagen` : 'Startpunkt wählen, alles ist anpassbar'}</small>
+    <div className="hab-tl hab-tl--embedded">
+      {inList && (
+        <div className="hab-tl-top">
+          <button type="button" className="hab-tl-back" onClick={toStart} aria-label="Zurück zu den Kategorien">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 6l-6 6 6 6" />
+            </svg>
+          </button>
+          <div>
+            <h2>{cat ?? 'Suchergebnisse'}</h2>
+            <small>{items.length} Vorlagen</small>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="hab-tl-searchrow">
         <label className="hab-tl-search">
@@ -123,11 +119,27 @@ export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
           />
         </label>
         {inList && (
-          <button type="button" className="hab-tl-fbtn" onClick={() => setSheet(true)}>
+          <button
+            type="button"
+            className="hab-tl-fbtn"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
             Filter{filterCount > 0 && <b>{filterCount}</b>}
           </button>
         )}
       </div>
+
+      {inList && filtersOpen && (
+        <div className="hab-tl-filters">
+          <FilterGroup title="Tageszeit" options={TIME_SLOTS.map((s) => ({ value: s.value, label: s.label }))} selected={slots} onToggle={(v) => setSlots(toggleIn(slots, v))} />
+          <FilterGroup title="Häufigkeit" options={FREQ_FILTERS} selected={freqs} onToggle={(v) => setFreqs(toggleIn(freqs, v))} />
+          <FilterGroup title="Art" options={KIND_FILTERS} selected={kinds} onToggle={(v) => setKinds(toggleIn(kinds, v))} />
+          {filterCount > 0 && (
+            <button type="button" className="hab-cp-link hab-tl-reset" onClick={resetFilters}>Filter zurücksetzen</button>
+          )}
+        </div>
+      )}
 
       {!inList && (
         <>
@@ -181,23 +193,6 @@ export default function HabitTemplateLibrary({ habits, onBack, onPick }) {
             <button type="button" onClick={() => { setQ(''); resetFilters(); }}>Filter zurücksetzen</button>
           </div>
         )
-      )}
-
-      {sheet && (
-        <SheetShell onClose={() => setSheet(false)} labelledBy="hab-tl-filter-title">
-          <div className="hab-cp-sheet">
-            <div className="hab-cp-sheet-head">
-              <h2 id="hab-tl-filter-title">Filter</h2>
-              <button type="button" className="hab-cp-link" onClick={resetFilters}>Zurücksetzen</button>
-            </div>
-            <FilterGroup title="Tageszeit" options={TIME_SLOTS.map((s) => ({ value: s.value, label: s.label }))} selected={slots} onToggle={(v) => setSlots(toggleIn(slots, v))} />
-            <FilterGroup title="Häufigkeit" options={FREQ_FILTERS} selected={freqs} onToggle={(v) => setFreqs(toggleIn(freqs, v))} />
-            <FilterGroup title="Art" options={KIND_FILTERS} selected={kinds} onToggle={(v) => setKinds(toggleIn(kinds, v))} />
-            <button type="button" className="btn btn-primary" onClick={() => setSheet(false)}>
-              {items.length} Vorlagen anzeigen
-            </button>
-          </div>
-        </SheetShell>
       )}
     </div>
   );
