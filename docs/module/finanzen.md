@@ -32,6 +32,13 @@ In den vier Bereichen der Buchungsliste (Einnahmen, Fixkosten, Variable Kosten, 
 - Nicht in der Liste „Offene Posten“ (offene Frage, ob dort auch).
 - Lange Namen und die Meta-Zeile werden mit „…“ abgeschnitten (`.fin-row-info { min-width:0 }`, `white-space:nowrap`); der Abstand zum Betrag bleibt über den Flex-Gap der Zeile konstant, bei schmaleren Displays wird entsprechend früher gekürzt.
 
+## Posten bearbeiten (`EntryEditForm.jsx`)
+
+Die Bearbeitung sieht aus wie "Neuer Eintrag" (`EntrySheet.jsx`, gleiche Bausteine aus `WizardKit`: `WizardFrame`, `WheelPicker`, `DateButton`, `MoreButton`, `SegGroup`). `EntryDetailSheet` zeigt weiter die Ansicht und wechselt per "Bearbeiten", Stift in der Liste oder Tipp auf ein Feld der Ansicht in die Bearbeitung; "Speichern" kehrt zur Ansicht zurück, das X schließt das Sheet.
+- Ein Schritt (kein Fortschritt, kein Zurück). Name, Betrag, Regler Kategorie (fünf Einträge: wie beim Anlegen plus "Fixeinnahme") und Zahlungsart, darunter Status (Offen | Bezahlt, nur bei Ausgaben; bei nur Bar/Gutschein/Sparschwein nur ein Hinweis, weil diese sofort als bezahlt gelten).
+- "Mehr Details": Fällig am (Kalender), Zahlung aufteilen (wie beim Anlegen, dazu je Teilzahlung ein Haken "bezahlt", Sofort-Zahlarten fest gesetzt), Notiz, Herkunft und "Eintrag löschen" (mit der Nachfrage aus `MonthsView.handleDelete`). Startet offen, wenn der Posten schon Datum, Notiz oder eine Aufteilung hat.
+- Teilzahlungen: letzte Zeile ist immer der Rest; gespeichert wird wie bisher `payments` (Methode, Betrag, `paid`).
+
 ## Saldo-Karte
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.
