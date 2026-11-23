@@ -1555,3 +1555,26 @@ button.cl-row-btn { cursor: pointer; }
 .rf-switch.on i { left: calc(100% - var(--sp-1) - (var(--hit-min) / 2 - var(--sp-1))); }
 .rf-link { align-self: flex-start; margin-top: var(--sp-3); padding: var(--sp-1) 0; min-height: var(--ctl-h-sm); background: none; border: 0; color: var(--m-deep, var(--action-primary)); font: inherit; font-size: var(--fs-small); font-weight: 800; cursor: pointer; text-align: left; }
 .rf-form select.wz-input { background-repeat: no-repeat; }
+
+
+/* ── Finanzen · Einstellungen (se-): Sicherung als Hauptaktion, Gefahrenbereich getrennt ── */
+.se-page { display: flex; flex-direction: column; padding-bottom: calc(var(--sp-7) + var(--sp-5)); }
+.se-title { margin-top: var(--sp-1); font-size: var(--fs-title); font-weight: var(--fw-title); line-height: var(--lh-title); }
+.se-hero-act { margin-top: var(--sp-4); }
+.se-hero-act svg { width: 18px; height: 18px; }
+.se-two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
+.se-btn { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: var(--hit-min); padding: 0 var(--sp-3); background: transparent; border: var(--bd-hair) solid var(--border-strong); border-radius: var(--r-pill); color: var(--m-deep, var(--action-primary)); font: inherit; font-size: var(--fs-small); font-weight: 800; cursor: pointer; }
+.se-btn svg { width: 18px; height: 18px; flex: none; }
+.se-hint { margin: var(--sp-2) var(--sp-1) 0; font-size: var(--fs-meta); font-weight: var(--fw-meta); color: var(--text-muted); }
+.se-page .status-note { margin: var(--sp-2) var(--sp-1) 0; }
+.se-group { margin-top: var(--sp-5); }
+.se-gl { margin: 0 var(--sp-1) var(--sp-2); font-size: var(--fs-caption); font-weight: var(--fw-caption); letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+.se-del { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); width: 100%; min-height: var(--hit-min); background: transparent; border: var(--bd-hair) solid var(--status-critical); border-radius: var(--r-pill); color: var(--status-critical); font: inherit; font-size: var(--fs-small); font-weight: 800; cursor: pointer; }
+.se-foot { margin: var(--sp-5) var(--sp-2) 0; text-align: center; font-size: var(--fs-meta); font-weight: var(--fw-meta); color: var(--text-muted); }
+.se-text { margin: 0 0 var(--sp-4); font-size: var(--fs-body); font-weight: var(--fw-body); line-height: var(--lh-body); }
+.se-file { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); min-height: var(--ctl-h); padding: 0 var(--sp-3); background: var(--surface-sunken); border: var(--bd-hair) solid var(--border-hairline); border-radius: var(--rad-lg); font-size: var(--fs-body); font-weight: 700; overflow-wrap: anywhere; }
+.se-file b { color: var(--m-deep, var(--action-primary)); }
+.se-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-4); }
+.se-stat { display: flex; flex-direction: column; padding: var(--sp-3); border-radius: var(--rad-xl); background: var(--m-tint, var(--action-quiet-bg)); color: var(--m-ink, var(--text-primary)); }
+.se-stat b { font-size: var(--fs-number); font-weight: var(--fw-number); line-height: var(--lh-number); font-variant-numeric: tabular-nums; }
+.se-stat span { font-size: var(--fs-meta); font-weight: var(--fw-meta); }

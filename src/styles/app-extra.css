@@ -3655,20 +3655,6 @@
   padding: 6px 28px 6px 10px;
 }
 
-/* ── Einstellungen: XLSX-Vorschau-Box ───────────────────────────── */
-.settings-xlsx-preview {
-  margin-top: var(--space-4);
-  background: var(--action-quiet-bg);
-  border-radius: var(--r-md);
-  padding: var(--space-4);
-}
-
-.settings-xlsx-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-1) var(--space-3);
-}
-
 /* ── EntryModal: Meta-Zeile (Erfassungsdatum) ───────────────────── */
 .entry-modal-meta {
   display: flex;

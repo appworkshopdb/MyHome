@@ -58,6 +58,7 @@ Die Liste wird von Hand gepflegt und kann hinter dem Code zurückliegen (andere 
 - Sport · Pläne mit Plan-Editor, Plan-Wizard (drei Stufen), Plan-Auswahl und aktivem Dauerplan; Einheiten-Galerie und erweiterter Katalog (laut Commits).
 - Einkauf · Abschluss einer Liste (Zahlungsschritt mit Beleg-Scan, "Als Vorlage speichern") in neuer Optik (laut Commits).
 - Finanzen · Verträge (Karten ohne Fokuskarte, drei Symbole) und die Fenster "Einnahme hinzufügen" / "Fixkosten oder Vertrag hinzufügen" / Bearbeiten (`RecurringSheet`), 2026-11-23.
+- Finanzen · Einstellungen (Backup als Fokuskarte, Importieren/Excel, Gefahrenbereich mit Eintipp-Bestätigung "Löschen"), 2026-11-23.
 
 **Entwurf vorhanden, vom Nutzer noch nicht bestätigt** (Mockup neu zeigen oder nachfragen):
 - Finanzen · Buchungen (und Offene Posten): blaue Saldo-Karte, Kategorien als Kacheln mit Anteilsbalken.
@@ -65,7 +66,7 @@ Die Liste wird von Hand gepflegt und kann hinter dem Code zurückliegen (andere 
 - Ernährung · Mahlzeiten: grüne Tageskarte, Einträge nach Mahlzeit gruppiert.
 
 **Noch ohne Entwurf**
-- Finanzen: Auswertung, Einstellungen, Sparschwein-Sheet, Posten-Detail.
+- Finanzen: Auswertung, Sparschwein-Sheet, Posten-Detail.
 - Ernährung: Rezepte, Ampel, Tipps, Rezept-Dialog, Mahlzeit-Scan.
 - Sport: Monats- und Wochenkalender (Einheiten-Galerie siehe oben, Zustand prüfen).
 - Gewohnheiten: Statistik.

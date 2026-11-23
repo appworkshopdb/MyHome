@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import * as db from '../lib/finData';
-import { IconDownload, IconUpload, IconFile } from '../../../core/components/Icons';
+import { IconDownload, IconUpload, IconFile, IconTrash } from '../../../core/components/Icons';
+import FocusCard from '../../../core/components/FocusCard';
+import SheetShell from '../../../core/components/SheetShell';
+import { WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 
 // SheetJS erst bei Bedarf nachladen — spart Ladezeit solange niemand
 // die XLSX-Migration nutzt.
@@ -17,6 +20,63 @@ function loadSheetJS() {
   });
 }
 
+// Zur Bestätigung muss dieses Wort eingetippt werden (Groß-/Kleinschreibung egal).
+const DELETE_WORD = 'Löschen';
+const isDeleteWord = (v) => v.trim().toLocaleLowerCase('de') === DELETE_WORD.toLocaleLowerCase('de');
+
+// Fenster "Alle Finanzdaten löschen?": der rote Knopf wird erst aktiv, wenn
+// das Wort "Löschen" getippt wurde.
+function DeleteSheet({ onConfirm, onClose, busy }) {
+  const [typed, setTyped] = useState('');
+  const ok = isDeleteWord(typed);
+  const footer = (
+    <WizardFoot>
+      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
+      <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={!ok || busy}>Alle Daten löschen</button>
+    </WizardFoot>
+  );
+  return (
+    <SheetShell onClose={onClose} wizard>
+      <WizardFrame title="Alle Finanzdaten löschen?" onClose={onClose} footer={footer}>
+        <p className="se-text">
+          Einträge, Sparschwein, Verträge und Vorlagen werden gelöscht, auch auf deinen anderen
+          Geräten. Das lässt sich nicht rückgängig machen.
+        </p>
+        <label className="wz-lbl" htmlFor="se-del-word">Zur Bestätigung „{DELETE_WORD}“ eintippen</label>
+        <input
+          id="se-del-word" className="wz-input hero" type="text" value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && ok && !busy) onConfirm(); }}
+          placeholder={DELETE_WORD} autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+        />
+      </WizardFrame>
+    </SheetShell>
+  );
+}
+
+// Fenster "Excel-Datei lesen": gefundene Daten, noch nichts importiert.
+function ExcelSheet({ fileName, preview, onConfirm, onClose, busy }) {
+  const footer = (
+    <WizardFoot>
+      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
+      <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy}>Jetzt importieren</button>
+    </WizardFoot>
+  );
+  return (
+    <SheetShell onClose={onClose} wizard>
+      <WizardFrame title="Excel-Datei lesen" onClose={onClose} footer={footer}>
+        <div className="wz-lbl">Datei</div>
+        <div className="se-file"><span>{fileName}</span><b aria-label="gelesen">✓</b></div>
+        <div className="se-stats">
+          <div className="se-stat"><b>{preview.entries.length}</b><span>Einträge</span></div>
+          <div className="se-stat"><b>{preview.savings.length}</b><span>Monate Ersparnisse</span></div>
+        </div>
+        <p className="se-hint">Vorschau — gefundene Daten</p>
+      </WizardFrame>
+    </SheetShell>
+  );
+}
+
 export default function SettingsView() {
   const { session }   = useAuth();
   const { showToast } = useUi();
@@ -24,6 +84,12 @@ export default function SettingsView() {
   const [importStatus, setImportStatus] = useState(null);
   const [xlsxStatus,   setXlsxStatus]   = useState(null);
   const [xlsxPreview,  setXlsxPreview]  = useState(null);
+  const [xlsxName,     setXlsxName]     = useState('');
+  const [deleting,     setDeleting]     = useState(false);   // Lösch-Fenster offen
+  const [busy,         setBusy]         = useState(false);
+
+  const jsonRef = useRef(null);
+  const xlsxRef = useRef(null);
 
   const now = new Date();
 
@@ -72,8 +138,9 @@ export default function SettingsView() {
       const XLSX   = await loadSheetJS();
       const wb     = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const parsed = db.parseXlsxWorkbook(XLSX, wb, now.getFullYear());
+      setXlsxName(file.name);
       setXlsxPreview(parsed);
-      setXlsxStatus({ type: 'ok', text: '✓ Datei gelesen' });
+      setXlsxStatus(null);
     } catch (err) {
       setXlsxStatus({ type: 'error', text: '✗ Fehler: ' + err.message });
     }
@@ -81,122 +148,64 @@ export default function SettingsView() {
   }
 
   async function confirmXLSX() {
+    setBusy(true);
     try {
       await db.saveXlsxImport(session, xlsxPreview.entries, xlsxPreview.savings);
       setXlsxStatus({ type: 'ok', text: `✓ ${xlsxPreview.entries.length} Einträge importiert` });
       setXlsxPreview(null);
       showToast('XLSX erfolgreich importiert');
     } catch (err) {
+      setXlsxPreview(null);
       setXlsxStatus({ type: 'error', text: '✗ Import fehlgeschlagen: ' + err.message });
     }
+    setBusy(false);
   }
 
   async function clearAll() {
-    if (!confirm('Wirklich alle Daten löschen? Das kann nicht rückgängig gemacht werden.')) return;
-    if (!confirm('Bist du sicher? Alle Einträge, Ersparnisse und Verträge werden gelöscht.')) return;
+    setBusy(true);
     try {
       await db.deleteAllData(session);
+      setDeleting(false);
       showToast('Alle Daten gelöscht');
     } catch (e) {
       showToast('Löschen fehlgeschlagen');
       console.error(e);
     }
+    setBusy(false);
   }
 
   return (
-    <>
-      {/* Darstellung */}
-      <div className="card">
-        <div className="card-title">Darstellung</div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)' }}>
-          Hell/Dunkel/System gilt app-weit — umschaltbar oben im Menü (Zahnrad-Symbol).
-        </p>
+    <div className="se-page">
+      <FocusCard>
+        <FocusCard.Eyebrow>Sicherung</FocusCard.Eyebrow>
+        <div className="se-title">Backup erstellen</div>
+        <FocusCard.Meta>Alle Einträge, Sparschwein und Verträge als JSON-Datei</FocusCard.Meta>
+        <div className="se-hero-act">
+          <FocusCard.Pill onPress={exportJSON}><IconDownload /> JSON exportieren</FocusCard.Pill>
+        </div>
+      </FocusCard>
+
+      <div className="se-two">
+        <button type="button" className="se-btn" onClick={() => jsonRef.current?.click()}><IconUpload /> Importieren</button>
+        <button type="button" className="se-btn" onClick={() => xlsxRef.current?.click()}><IconFile /> Aus Excel</button>
       </div>
+      <input ref={jsonRef} type="file" accept=".json" onChange={importJSON} hidden />
+      <input ref={xlsxRef} type="file" accept=".xlsx,.xls" onChange={readXLSX} hidden />
+      <p className="se-hint">Import überschreibt gleiche Einträge, neue kommen dazu.</p>
+      {importStatus && <div className={`status-note ${importStatus.type}`}>{importStatus.text}</div>}
+      {xlsxStatus && <div className={`status-note ${xlsxStatus.type}`}>{xlsxStatus.text}</div>}
 
-      {/* Export */}
-      <div className="card">
-        <div className="card-title">Daten exportieren</div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
-          Exportiert alle Einträge, Ersparnisse und Verträge als JSON-Datei — als
-          zusätzliches Backup. Die Synchronisation zwischen deinen Geräten läuft
-          automatisch über die Cloud.
-        </p>
-        <button className="btn btn-primary" onClick={exportJSON}>
-          <IconDownload /> JSON exportieren
-        </button>
-      </div>
+      <section className="se-group">
+        <h2 className="se-gl">Gefahrenbereich</h2>
+        <button type="button" className="se-del" onClick={() => setDeleting(true)}><IconTrash size={18} /> Alle Daten löschen</button>
+      </section>
 
-      {/* Import */}
-      <div className="card">
-        <div className="card-title">Daten importieren</div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
-          Importiert eine zuvor exportierte JSON-Datei — auch aus der alten,
-          lokalen Version der App. Bestehende Einträge mit gleicher ID werden
-          überschrieben, neue hinzugefügt.
-        </p>
-        <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <IconUpload /> JSON importieren
-          <input type="file" accept=".json" onChange={importJSON} style={{ display: 'none' }} />
-        </label>
-        {importStatus && (
-          <div className={`status-note ${importStatus.type}`} style={{ marginTop: 10 }}>
-            {importStatus.text}
-          </div>
-        )}
-      </div>
+      <p className="se-foot">Hell/Dunkel: Zahnrad im Menü. Konto und Abmelden: Profil oben rechts.</p>
 
-      {/* XLSX */}
-      <div className="card">
-        <div className="card-title">XLSX Migration</div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
-          Importiere deine bestehende Google Sheets / Excel-Datei einmalig in die App.
-        </p>
-        <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <IconFile /> XLSX importieren
-          <input type="file" accept=".xlsx,.xls" onChange={readXLSX} style={{ display: 'none' }} />
-        </label>
-        {xlsxStatus && (
-          <div className={`status-note ${xlsxStatus.type}`} style={{ marginTop: 10 }}>
-            {xlsxStatus.text}
-          </div>
-        )}
-
-        {xlsxPreview && (
-          <div className="settings-xlsx-preview">
-            <div className="t-body" style={{ fontWeight: 700, marginBottom: 8, color: 'var(--action-primary)' }}>
-              Vorschau — gefundene Daten
-            </div>
-            <div className="settings-xlsx-grid t-body" style={{ color: 'var(--text-secondary)' }}>
-              <span>Einträge:</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{xlsxPreview.entries.length}</span>
-              <span>Ersparnisse:</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{xlsxPreview.savings.length} Monate</span>
-            </div>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary"   onClick={confirmXLSX}>Jetzt importieren</button>
-              <button className="btn btn-secondary" onClick={() => setXlsxPreview(null)}>Abbrechen</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Daten löschen */}
-      <div className="card">
-        <div className="card-title" style={{ color: 'var(--status-critical)' }}>Daten löschen</div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)', marginBottom: 14 }}>
-          Löscht alle gespeicherten Daten unwiderruflich aus deinem Konto — auch
-          auf allen anderen Geräten.
-        </p>
-        <button className="btn btn-danger" onClick={clearAll}>Alle Daten löschen</button>
-      </div>
-
-      <p className="t-meta" style={{ textAlign: 'center', margin: '4px 0 0', color: 'var(--text-muted)' }}>
-        Konto, Passwort und Abmelden findest du im Profil-Menü oben rechts.
-      </p>
-
-      <div className="t-meta" style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--text-muted)' }}>
-        Nestua · Finanzen-Modul · Cloud-Sync über Supabase
-      </div>
-    </>
+      {xlsxPreview && (
+        <ExcelSheet fileName={xlsxName} preview={xlsxPreview} busy={busy} onConfirm={confirmXLSX} onClose={() => setXlsxPreview(null)} />
+      )}
+      {deleting && <DeleteSheet busy={busy} onConfirm={clearAll} onClose={() => setDeleting(false)} />}
+    </div>
   );
 }
