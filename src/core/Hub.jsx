@@ -9,7 +9,7 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
 import { useGamificationStore } from './lib/gamificationStore.js';
-import { openAmount, isOpenExpense } from './lib/paymentParts';
+import { openAmount, isOpenExpense, offenePostenText } from './lib/paymentParts';
 import { HUB_CACHE_KEY } from './lib/hubCache';
 import { DayPlanSection, NutritionBlock } from './components/DayPlan';
 import { HabitTile, TrainingTile } from './components/HubTiles';
@@ -653,7 +653,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 </FocusCard.Meta>
                 {openPosten.length > 0 && (
                   <FocusCard.Footer>
-                    <span>{openPosten.length} offene Posten · <Money value={offeneSumme} hide={hideAmounts} /></span>
+                    <span>{offenePostenText(openPosten.length)} · <Money value={offeneSumme} hide={hideAmounts} /></span>
                     <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
                   </FocusCard.Footer>
                 )}

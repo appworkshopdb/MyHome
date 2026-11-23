@@ -5,7 +5,7 @@ import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
   MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
@@ -113,7 +113,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
       {/* Gesamtbetrag */}
       <div className="fin-offen-header">
         <span className="t-meta" style={{ color: 'var(--text-muted)' }}>
-          {offene.length} offene Posten
+          {offenePostenText(offene.length)}
         </span>
         <span className="t-body" style={{ fontWeight: 700, color: 'var(--status-critical)' }}>
           {formatEur(gesamtOffen)}

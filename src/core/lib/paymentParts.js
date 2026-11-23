@@ -54,6 +54,9 @@ export const isOpenExpense = (e) => EXPENSE_CATEGORIES.has(e.category)
   && String(e.name || '').trim().toLowerCase() !== SAVINGS_DEPOSIT_NAME
   && openAmount(e) > 0;
 
+// "1 offener Posten", "2 offene Posten": Text passend zur Anzahl.
+export const offenePostenText = (n) => (n === 1 ? '1 offener Posten' : `${n} offene Posten`);
+
 // Schon bezahlter Betrag
 export function paidAmount(entry) {
   return entryParts(entry).filter((p) => p.paid).reduce((s, p) => s + p.amount, 0);

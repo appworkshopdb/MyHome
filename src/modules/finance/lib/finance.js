@@ -137,7 +137,7 @@ export function isInstantPaid(paymentsOrMethod) {
   return isInstantMethod(paymentsOrMethod);
 }
 export {
-  isInstantMethod, entryParts, openAmount, isOpenExpense, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../../../core/lib/paymentParts.js';
 
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
