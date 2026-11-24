@@ -9,6 +9,8 @@
 #   --no-send   nichts nach Discord senden
 # Exit-Code: 0 grün, 1 gelb, 2 rot.
 set -uo pipefail
+# Im Leitstand ausgeschaltet: kein Lauf (AGENT_FORCE=1 überspringt das für einen Handlauf)
+if [ -z "${AGENT_FORCE:-}" ] && /opt/nestua/ops/leitstand/aus.sh dsgvo; then echo "im Leitstand ausgeschaltet, kein Lauf"; exit 0; fi
 OPS=/opt/nestua/ops
 D=${DATENSCHUTZ_DIR:-$OPS/agenten/datenschutz}
 VAULT=$OPS/vault

@@ -1,6 +1,6 @@
 # Leitstand
 
-Nur lesende Oberfläche für die Agenten, ihre Abhängigkeiten und offene Aufgaben (Konzept: Abschnitt 4a).
+Lesende Oberfläche für die Agenten, ihre Abhängigkeiten und offene Aufgaben (Konzept: Abschnitt 4a), dazu ein Ein/Aus-Schalter je Agent (Abschnitt „Ein/Aus-Schalter“).
 
 - `registry.json`: Knoten, Verbindungen und Prüfungen. Neue Agenten, Ressourcen oder Prüfungen hier eintragen.
 - `scan.mjs`: führt die Prüfungen aus (Docker, Datenbank, Backup-Log, HTTP, Zertifikate, Dateien, crontab) und schreibt `www/data/leitstand.json`. Nur lesend, keine Abhängigkeiten (Node 22). Geheimnisse nur als „gesetzt/leer“.
@@ -33,3 +33,14 @@ Das Abo-Kontingent (5-Stunden-/Wochenlimit) ist von hier nicht lesbar, es steht 
 - **5-Stunden-Fenster** (`sitzung`): beginnt mit der ersten Nachricht und läuft 5 Stunden; rekonstruiert aus den Zeitstempeln aller Nachrichten auf diesem Server (`usage.mjs`, Feld `fenster`).
   Abweichung zu claude.ai: wenige Minuten (die erste Antwort kommt kurz nach der ersten Nachricht); Nutzung an anderen Geräten kann das echte Fenster früher beginnen lassen.
   Kalibrieren: `node usage.mjs --kalibrieren sitzung <prozent>` kurz nachdem du den Wert unter „Aktuelle Sitzung“ abgelesen hast.
+
+## Ein/Aus-Schalter je Agent (seit 20.11.2026)
+
+Jede Agentenkarte und jede Agentenseite hat einen Schalter. **Aus:** der Agent prüft nichts und startet nicht (der Cron-Eintrag bleibt, das Skript beendet sich als Erstes). **An:** es zählt der nächste Lauf im Plan, Versäumtes wird nicht nachgeholt; beim Prüfer gelten dafür alle PR- und staging-Stände aus der Pause als gesehen (`pruefer-cron.sh --seed`).
+
+- `api.mjs`: Schnittstelle auf `127.0.0.1:8788` (`POST /api/agent {id, an}`, `GET /api/ping`, `GET /api/schalter`). Caddy reicht `/api/*` hinter dem Login des Leitstands durch. Geprüft werden Origin, Sec-Fetch-Site, der Header `X-Leitstand: 1` und die Kennung gegen `registry.json`.
+- Zustand: Datei `/opt/nestua/ops/leitstand/aus/<id>` (vorhanden = aus) und `schalter.json` (Zeitpunkte `seit` und `ein`, Berlin-Zeit). `scan.mjs` übernimmt beides nach `leitstand.json` (`schalter`).
+- `aus.sh <id>`: Exit 0, wenn ausgeschaltet. Steht am Anfang der fünf Cron-Skripte (`server-check-cron.sh`, `kontext-`, `pruefer-`, `datenschutz-`, `social-cron.sh`). `AGENT_FORCE=1` überspringt die Prüfung für einen Handlauf.
+- `api-start.sh` startet die Schnittstelle (Cron alle 5 Minuten, die Sperre hält der Server selbst). `setup-api.sh` richtet Caddy-Block und Cron-Eintrag ein (`--dry-run` zeigt nur).
+- Nicht abgeschaltet wird der GitHub-Check „Prüfer“ (läuft bei GitHub, nicht auf dem Server); der Server-Teil des Prüfers pausiert.
+

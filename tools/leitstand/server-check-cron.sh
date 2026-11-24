@@ -6,6 +6,8 @@
 #   --no-send   nichts nach Discord senden (Nachricht nur ausgeben)
 #   --force-ai  KI-Auswertung auch bei grün (zum Testen; bei grün geht sie nicht in die Meldung, sondern nur in die Datei <bericht>-ki.md)
 set -uo pipefail
+# Im Leitstand ausgeschaltet: kein Lauf (AGENT_FORCE=1 überspringt das für einen Handlauf)
+if [ -z "${AGENT_FORCE:-}" ] && /opt/nestua/ops/leitstand/aus.sh server; then echo "im Leitstand ausgeschaltet, kein Lauf"; exit 0; fi
 OPS=/opt/nestua/ops
 REPORTS=$OPS/reports
 NODE=/usr/bin/node

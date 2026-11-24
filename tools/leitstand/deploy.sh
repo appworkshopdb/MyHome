@@ -10,6 +10,10 @@ install -m 755 "$SRC/scan.mjs" "$DST/scan.mjs"
 install -m 755 "$SRC/report.mjs" "$DST/report.mjs"
 install -m 755 "$SRC/usage.mjs" "$DST/usage.mjs"
 install -m 755 "$SRC/notify.mjs" "$DST/notify.mjs"
+install -m 755 "$SRC/api.mjs" "$DST/api.mjs"
+install -m 755 "$SRC/api-start.sh" "$DST/api-start.sh"
+install -m 755 "$SRC/aus.sh" "$DST/aus.sh"
+mkdir -p "$DST/aus"
 install -m 755 "$SRC/server-check.sh" /opt/nestua/ops/server-check.sh
 install -m 755 "$SRC/server-check-cron.sh" /opt/nestua/ops/server-check-cron.sh
 for f in index.html leitstand.css leitstand.js; do install -m 644 "$SRC/www/$f" "$DST/www/$f"; done

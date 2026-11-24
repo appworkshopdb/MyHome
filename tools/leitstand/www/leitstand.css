@@ -290,3 +290,26 @@ h2.h{margin:0;font-family:var(--f-disp);font-size:13px;font-weight:600;letter-sp
   .ubar{grid-template-columns:56px minmax(0,1fr)}
   .ubar b{grid-column:1/-1;text-align:left}
 }
+.ukey{margin-top:6px;gap:12px;font-size:11px;color:var(--mut)}
+.ukey i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px}
+.ukey .ukt{margin-left:auto;color:var(--dim)}
+
+/* Ein/Aus-Schalter je Agent */
+.awrap{position:relative;display:flex;min-width:0}
+.awrap>.acard{flex:1;min-width:0}
+.awrap .ahd .pill{margin-right:56px}
+.awrap>.tgl{position:absolute;top:15px;right:16px;z-index:2}
+.awrap.off>.acard{opacity:.62}
+.tgl{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:6px 0;cursor:pointer;color:var(--tx-2,#B8C0E0);font:inherit}
+.tgl .knob{position:relative;width:44px;height:24px;border-radius:12px;background:rgba(150,170,255,.14);box-shadow:inset 0 0 0 1px rgba(150,170,255,.32);transition:background .2s,box-shadow .2s;flex:none}
+.tgl .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#9AA3C8;transition:transform .2s,background .2s,box-shadow .2s}
+.tgl.on .knob{background:color-mix(in srgb,var(--ok) 26%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ok) 55%,transparent)}
+.tgl.on .knob::after{transform:translateX(20px);background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.tgl .tl{font-size:12px;font-weight:600;min-width:2.1em;text-align:left}
+.tgl:focus-visible{outline:2px solid var(--flow);outline-offset:3px;border-radius:12px}
+.tgl[disabled]{opacity:.45;cursor:not-allowed}
+.tgl.wait{opacity:.6;cursor:progress}
+.tgw{margin-left:4px}
+.offline{font-size:12.5px;color:var(--tx-2,#B8C0E0);border:1px dashed rgba(150,170,255,.35);border-radius:10px;padding:9px 12px;background:rgba(150,170,255,.05)}
+@media (prefers-reduced-motion:reduce){.tgl .knob,.tgl .knob::after{transition:none}}
+

@@ -11,6 +11,8 @@
 #   --no-staging staging nicht mitprüfen (sonst: jeder neue Stand von staging, nur die neuen Commits seit dem letzten geprüften Stand)
 #   --no-design  ohne Design-Review (läuft sonst nur, wenn der PR UI-Dateien unter src/ ändert; nur Empfehlung, blockiert nichts)
 set -uo pipefail
+# Im Leitstand ausgeschaltet: kein Lauf (AGENT_FORCE=1 überspringt das für einen Handlauf)
+if [ -z "${AGENT_FORCE:-}" ] && /opt/nestua/ops/leitstand/aus.sh pruefer; then echo "im Leitstand ausgeschaltet, kein Lauf"; exit 0; fi
 OPS=/opt/nestua/ops
 P=${PRUEFER_DIR:-$OPS/agenten/pruefer}
 BARE=$OPS/pruefer/MyHome.git

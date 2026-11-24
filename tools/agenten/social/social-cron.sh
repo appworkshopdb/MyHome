@@ -11,6 +11,8 @@
 #   --no-send   nichts nach Discord senden
 # Exit-Code: 0 grün, 1 gelb, 2 rot.
 set -uo pipefail
+# Im Leitstand ausgeschaltet: kein Lauf (AGENT_FORCE=1 überspringt das für einen Handlauf)
+if [ -z "${AGENT_FORCE:-}" ] && /opt/nestua/ops/leitstand/aus.sh social; then echo "im Leitstand ausgeschaltet, kein Lauf"; exit 0; fi
 OPS=/opt/nestua/ops
 D=${SOCIAL_DIR:-$OPS/agenten/social}
 VAULT=$OPS/vault

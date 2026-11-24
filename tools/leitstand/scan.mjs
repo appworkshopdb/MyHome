@@ -215,7 +215,7 @@ function berlin(d) {
     .formatToParts(d).map((x) => [x.type, x.value]));
   return { day: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
 }
-async function runInfo(n, now) {
+async function runInfo(n, now, sw) {   // sw: Schalter des Agenten (aus, seit, ein) aus schalter.json
   const run = {};
   if (n.report) {
     try {
@@ -243,7 +243,8 @@ async function runInfo(n, now) {
     for (let k = 0; k <= span; k++) { const b = at(k); if (fits(b) && (k > 0 || b0.hm < n.runAt)) { run.next = { datum: b.day, zeit: n.runAt }; break; } }
     let due = null;
     for (let k = 0; k <= span; k++) { const b = at(-k); if (fits(b) && (k > 0 || b0.hm >= grace)) { due = b.day; break; } }
-    run.overdue = !!due && (n.runSince ? due >= n.runSince : true) && (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
+    // nach dem Einschalten zählt nur der nächste Lauf im Plan: ein Termin vor der Einschaltung ist nie überfällig, ausgeschaltet auch nicht
+    run.overdue = !(sw && sw.aus) && !!due && (n.runSince ? due >= n.runSince : true) && !(sw && sw.ein && `${due} ${n.runAt}` <= sw.ein) && (run.last ? `${run.last.datum} ${run.last.zeit}` : '') < `${due} ${n.runAt}`;
   }
   return run;
 }
@@ -290,7 +291,14 @@ async function main() {
   } catch { /* noch kein Bericht */ }
   const sys = reg.system.map((id) => checks[id]);
   const now = new Date();
-  await Promise.all(nodes.filter((n) => n.kind === 'agent').map(async (n) => { const r = await runInfo(n, now); if (Object.keys(r).length) n.run = r; }));
+  // Ein/Aus-Schalter je Agent: Datei aus/<id> (Wahrheit für die Cron-Skripte), Zeitpunkte aus schalter.json (schreibt api.mjs)
+  let swFile = {}; try { swFile = JSON.parse(await readFile(path.join(BASE, 'schalter.json'), 'utf8')); } catch { /* noch nie geschaltet */ }
+  const schalter = {};
+  for (const n of nodes.filter((x) => x.kind === 'agent')) {
+    const aus = await access(path.join(BASE, 'aus', n.id)).then(() => true, () => false);
+    schalter[n.id] = { aus, seit: swFile[n.id]?.seit || null, ein: swFile[n.id]?.ein || null };
+  }
+  await Promise.all(nodes.filter((n) => n.kind === 'agent').map(async (n) => { const r = await runInfo(n, now, schalter[n.id]); if (Object.keys(r).length) n.run = r; }));
   let usage = null;
   try { usage = await collectUsage(now); } catch (e) { usage = { fehler: String(e.message || e).slice(0, 160), rows: [] }; }
   const data = {
@@ -298,7 +306,7 @@ async function main() {
     generatedText: `${fmtDate(now)}, ${fmtTime(now)}`,
     durationMs: Date.now() - t0,
     system: { ids: reg.system, ok: sys.filter((c) => c.status === 'ok').length, warn: sys.filter((c) => c.status === 'warn').length, bad: sys.filter((c) => c.status === 'bad').length, total: sys.length },
-    checks, nodes, edges, tasks, lastReport, usage
+    checks, nodes, edges, tasks, lastReport, usage, schalter
   };
   await mkdir(OUT_DIR, { recursive: true });
   const tmp = path.join(OUT_DIR, `.leitstand.${process.pid}.tmp`);

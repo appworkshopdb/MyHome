@@ -9,6 +9,8 @@
 #   --no-send   nichts nach Discord senden (Meldung nur ausgeben)
 # Exit-Code: 0 grün, 1 gelb, 2 rot.
 set -uo pipefail
+# Im Leitstand ausgeschaltet: kein Lauf (AGENT_FORCE=1 überspringt das für einen Handlauf)
+if [ -z "${AGENT_FORCE:-}" ] && /opt/nestua/ops/leitstand/aus.sh kontext; then echo "im Leitstand ausgeschaltet, kein Lauf"; exit 0; fi
 OPS=/opt/nestua/ops
 K=${KONTEXT_DIR:-$OPS/agenten/kontext}     # nur für Tests überschreiben
 VAULT=${KONTEXT_VAULT:-$OPS/vault}         # nur für Tests überschreiben (die KI-Rechte gelten fest für $OPS/vault)
