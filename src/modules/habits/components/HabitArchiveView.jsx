@@ -56,7 +56,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
           <small>Gelöschte Gewohnheiten, auch aus Vorlagen</small>
         </div>
       </div>
-      {error && <div className="toast toast-error" style={{ margin: '12px 0' }}>{error}</div>}
+      {error && <div className="toast toast-error">{error}</div>}
       {loading && <div className="page-loading">Wird geladen …</div>}
       {!loading && archived.length === 0 && (
         <div className="hab-empty">
@@ -66,7 +66,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
         </div>
       )}
       {!loading && archived.length > 0 && (
-        <div className="hab-manage-list" style={{ marginTop: 12 }}>
+        <div className="hab-manage-list">
           {archived.map((habit) => (
             <div key={habit.id} className="hab-manage-card hab-manage-card--paused">
               <div className="hab-manage-card-left">
