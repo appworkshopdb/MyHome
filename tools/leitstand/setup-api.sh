@@ -44,8 +44,8 @@ echo "Schnittstelle läuft auf 127.0.0.1:8788"
 
 # 2. Caddyfile übernehmen (mit Sicherung; bei Fehler zurückspielen)
 if ! cmp -s "$CF" "$TMP"; then
-  BAK="$CF.bak-$(date +%Y%m%d-%H%M%S)"
-  cp -a "$CF" "$BAK"
+  BAK="$(dirname "$REF")/Caddyfile.bak-$(date +%Y%m%d-%H%M%S)"   # /etc/caddy ist nicht beschreibbar
+  cp -p "$CF" "$BAK"
   cat "$TMP" > "$CF"
   if caddy validate --config "$CF" --adapter caddyfile >/dev/null 2>&1 && sudo -n systemctl reload caddy; then
     install -m 600 "$CF" "$REF"; echo "Caddy neu geladen. Sicherung: $BAK"
