@@ -41,9 +41,17 @@ function normName(name) {
   return (name || '').trim().toLowerCase();
 }
 
+// Einzahlung ins Sparschwein: Ausgabe "Ersparnisse" oder eine Sparplan-Rate
+// (Buchung mit savings_plan_id, Name "Sparrate · …", siehe lib/savingsPlans.js).
 export function isSparschweinDeposit(entry) {
   return EXPENSE_CATEGORIES.has(entry.category) &&
-    normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase();
+    (normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase() || Boolean(entry.savings_plan_id));
+}
+
+// Zählt die Einzahlung schon im Sparschwein-Stand? Sparplan-Raten erst, wenn sie
+// bezahlt sind; bis dahin sind sie offene Posten (zählen aber im Saldo des Monats).
+export function isCountedDeposit(entry) {
+  return isSparschweinDeposit(entry) && (!entry.savings_plan_id || entry.paid === true);
 }
 
 // Entnahme aus dem Sparschwein — zwei Wege:

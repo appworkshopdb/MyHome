@@ -272,6 +272,8 @@ function CalendarPopup({ value, onPick, onClose, optional }) {
   const today = todayIso();
   const start = value ? parseIso(value) : new Date();
   const [view, setView] = useState(new Date(start.getFullYear(), start.getMonth(), 1));
+  // Tipp auf Monat/Jahr im Kopf: Monats- und Jahresauswahl statt vieler Pfeil-Tipps
+  const [pickMonth, setPickMonth] = useState(false);
 
   const y = view.getFullYear();
   const m = view.getMonth();
@@ -287,13 +289,37 @@ function CalendarPopup({ value, onPick, onClose, optional }) {
   return createPortal(
     <div className="wz-cal-back" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="wz-cal" role="dialog" aria-modal="true" aria-label="Datum wählen">
-        <div className="wz-cal-head">
-          <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Vorheriger Monat">‹</button>
-          <b>{MONTHS_FULL[m]} {y}</b>
-          <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} aria-label="Nächster Monat">›</button>
-        </div>
-        <div className="wz-cal-wd">{['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => <span key={d}>{d}</span>)}</div>
-        <div className="wz-cal-grid">
+        {pickMonth ? (
+          <>
+            <div className="wz-cal-head">
+              <button type="button" onClick={() => setView(new Date(y - 1, m, 1))} aria-label="Vorheriges Jahr">‹</button>
+              <button type="button" className="wz-cal-title" onClick={() => setPickMonth(false)} aria-expanded="true">{y}</button>
+              <button type="button" onClick={() => setView(new Date(y + 1, m, 1))} aria-label="Nächstes Jahr">›</button>
+            </div>
+            <div className="wz-cal-months">
+              {MONTHS_FULL.map((name, i) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={i === m ? 'sel' : ''}
+                  onClick={() => { setView(new Date(y, i, 1)); setPickMonth(false); }}
+                >
+                  {name.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="wz-cal-head">
+            <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Vorheriger Monat">‹</button>
+            <button type="button" className="wz-cal-title" onClick={() => setPickMonth(true)} aria-expanded="false" aria-label={`${MONTHS_FULL[m]} ${y}, Monat und Jahr wählen`}>
+              {MONTHS_FULL[m]} {y} <span aria-hidden="true">▾</span>
+            </button>
+            <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} aria-label="Nächster Monat">›</button>
+          </div>
+        )}
+        {!pickMonth && <div className="wz-cal-wd">{['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => <span key={d}>{d}</span>)}</div>}
+        {!pickMonth && <div className="wz-cal-grid">
           {cells.map((d) => {
             const iso = isoLocal(d);
             const cls = [d.getMonth() !== m && 'out', iso === today && 'today', iso === value && 'sel'].filter(Boolean).join(' ');
@@ -303,7 +329,7 @@ function CalendarPopup({ value, onPick, onClose, optional }) {
               </button>
             );
           })}
-        </div>
+        </div>}
         <div className="wz-cal-foot">
           <button type="button" onClick={() => onPick(today)}>Heute</button>
           {optional ? <button type="button" onClick={() => onPick('')}>Entfernen</button> : <span />}

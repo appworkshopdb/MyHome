@@ -360,6 +360,12 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
 }
 .wz-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .wz-cal-head b { font-size: 16px; font-weight: 800; }
+.wz-cal-head .wz-cal-title { width: auto; height: 40px; padding: 0 var(--sp-3); border-radius: var(--rad-md); font-size: var(--fs-body); font-weight: 800; color: var(--text-primary); }
+.wz-cal-title span { font-size: var(--fs-caption); color: var(--text-muted); margin-left: var(--sp-1); }
+.wz-cal-months { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); padding: var(--sp-2) 0; }
+.wz-cal-months button { height: var(--hit-min); border-radius: var(--rad-lg); font-size: var(--fs-small); font-weight: 700; color: var(--text-primary); background: var(--surface-sunken); }
+.wz-cal-months button:hover { background: var(--action-quiet-bg); }
+.wz-cal-months button.sel { background: var(--action-primary); color: var(--text-on-accent); }
 .wz-cal-head button { width: 40px; height: 40px; border-radius: 50%; font-size: 20px; color: var(--text-secondary); }
 .wz-cal-head button:hover { background: var(--surface-sunken); }
 .wz-cal-wd, .wz-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
@@ -634,6 +640,8 @@ textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-hei
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 60%, transparent);
 }
 .action-toast-btn.primary { background: var(--surface-page); color: var(--text-primary); box-shadow: none; }
+.action-toast-btns.one { grid-template-columns: 1fr; }
+.action-toast--fin .action-toast-ok { background: var(--mod-fin-ac); color: var(--mod-fin-on); }
 .action-toast-timer {
   position: absolute; left: 0; bottom: 0; width: 100%; height: 4px; transform-origin: left;
   background: color-mix(in srgb, currentColor 40%, transparent);

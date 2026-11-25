@@ -39,6 +39,16 @@ Die Bearbeitung sieht aus wie "Neuer Eintrag" (`EntrySheet.jsx`, gleiche Baustei
 - "Mehr Details": Fällig am (Kalender), Zahlung aufteilen (wie beim Anlegen, dazu je Teilzahlung ein Haken "bezahlt", Sofort-Zahlarten fest gesetzt), Notiz, Herkunft und "Eintrag löschen" (mit der Nachfrage aus `MonthsView.handleDelete`). Startet offen, wenn der Posten schon Datum, Notiz oder eine Aufteilung hat.
 - Teilzahlungen: letzte Zeile ist immer der Rest; gespeichert wird wie bisher `payments` (Methode, Betrag, `paid`).
 
+## Sparpläne (seit 25.11.2026, Migration `supabase/fin_savings_plans_migration.sql`)
+
+Sparziel mit Raten. Daten: Tabelle `fin_savings_plans` (Name, `target_amount`, `target_date` optional, `rhythm` monthly/quarterly, `rate`, `due_day` 1/15/31 = Monatsende, `status` aktiv/beendet) und `fin_entries.savings_plan_id`. Beides additiv; ohne Migration zeigt der Bereich "Sparen" nur das Sparschwein.
+- **Raten sind Buchungen:** beim Speichern werden alle Raten als Posten angelegt (`variable_kosten`, Name "Sparrate · <Plan>", Zahlungsart Bank, `paid=false`, `due_date`, `savings_plan_id`). `isSparschweinDeposit` erkennt sie über `savings_plan_id`. Folge: eine Rate zählt im Saldo ihres Monats als Gespartes, ist bis zur Einzahlung ein offener Posten (Offene Posten, Fokuskarte "Aktuell inkl. offener Zahlungen", Hub) und erst bezahlt im Sparschwein (`isCountedDeposit`, ebenso in `core/lib/savingsBalance.js`). In den vier Bereichen der Buchungen stehen Raten wie alle Sparschwein-Einzahlungen nicht.
+- **Anlegen/Ändern:** `SavingsPlanWizard.jsx` im Aufbau von "Neuer Eintrag": 1 Ziel (Name, Zielbetrag, Bis Datum mit Kalender und Schnellwahl 3/6/12/24 Monate oder Ohne Datum, erste Rate in diesem/nächsten Monat), 2 Plan wählen, 3 Prüfen (Fälligkeitstag). Ändern ersetzt die offenen Raten, eingezahlte bleiben (Vorschläge rechnen mit dem Rest).
+- **Vorschläge** (`lib/savingsPlans.js`): Durchschnitt aus `analytics.monthlySeries` ohne Sparschwein-Buchungen. Weniger als 3 abgeschlossene Monate seit der ersten Buchung: alle Monate inkl. laufendem ("Dein aktueller Durchschnitt"), 3–5: letzte 3 ("· letzte 3 Monate"), ab 6: letzte 6. Mit Datum: monatlich gleich, quartalsweise, mit Puffer (2 Monate früher); ohne Datum: 25/50/75 % vom Übrig. Immer aufsteigend nach Rate, Einordnung passt gut (≤ 40 %), machbar (≤ 70 %), knapp (≤ 100 %), mehr als dein Übrig.
+- **Plan-Ansicht** (`SavingsPlans.jsx`): Gespart mit Strich "Soll heute", Status (im Plan, Rate fällig, N Raten offen, Ziel erreicht), Raten-Liste, "Rate einzahlen"/"X € einzahlen"/"Rate vorziehen" jeweils mit "Rückgängig machen" (ActionToast, 10 Sekunden mit Zeitbalken), bei Rückstand "Plan anpassen" (Rest verteilen bis zum Zieldatum oder Ziel verschieben), Bearbeiten, Beenden (offene Raten fallen weg, Eingezahltes bleibt).
+- Keine Punkte, kein Einfluss aufs Level (Finanzen ruft `awardPoints` nicht auf). Push-Erinnerung ist für später geplant.
+- Kalender im Wizard (gilt für alle Wizards): Tipp auf Monat/Jahr im Kopf öffnet Monats- und Jahresauswahl.
+
 ## Saldo-Karte
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.

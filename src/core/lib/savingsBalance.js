@@ -3,8 +3,8 @@
 // "Aktueller Stand" im Finanzen-Modul (finData.getSparschweinLedger + finance.js:
 // isSparschweinDeposit/-Withdrawal/getSparschweinWithdrawalAmount), hier dupliziert,
 // weil core/ nicht aus modules/ importieren darf. Ändert sich eine Regel dort, hier nachziehen:
-//   Einzahlung = Ausgabe "Ersparnisse" (+), Entnahme = Zahlungsart Sparschwein auf einer
-//   Ausgabe (nur der Sparschwein-Anteil) oder Einnahme "Sparschwein" (−).
+//   Einzahlung = Ausgabe "Ersparnisse" oder bezahlte Sparplan-Rate (+), Entnahme = Zahlungsart
+//   Sparschwein auf einer Ausgabe (nur der Sparschwein-Anteil) oder Einnahme "Sparschwein" (−).
 
 import { getSupabase } from './supabaseClient';
 
@@ -12,7 +12,9 @@ const EXPENSE = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 const norm = (s) => (s || '').trim().toLowerCase();
 
-const isDeposit = (e) => EXPENSE.has(e.category) && norm(e.name) === 'ersparnisse';
+// Einzahlung: "Ersparnisse" oder Sparplan-Rate (savings_plan_id); Raten erst nach dem Bezahlen
+const isDeposit = (e) => EXPENSE.has(e.category) && (norm(e.name) === 'ersparnisse' || Boolean(e.savings_plan_id));
+const isCountedDeposit = (e) => isDeposit(e) && (!e.savings_plan_id || e.paid === true);
 
 function withdrawalAmount(e) {
   if (isDeposit(e)) return 0;
@@ -28,12 +30,12 @@ function withdrawalAmount(e) {
 export async function loadSavingsBalance(session) {
   const { data, error } = await getSupabase()
     .from('fin_entries')
-    .select('name, amount, category, payment, payments')
+    .select('*') // auch paid/savings_plan_id, ohne Fehler, falls die Spalte noch fehlt
     .eq('owner_id', session.user.id)
     .is('deleted_at', null);
   if (error) throw error;
   return (data ?? []).reduce(
-    (sum, e) => sum + (isDeposit(e) ? Number(e.amount) : -withdrawalAmount(e)),
+    (sum, e) => sum + (isCountedDeposit(e) ? Number(e.amount) : isDeposit(e) ? 0 : -withdrawalAmount(e)),
     0,
   );
 }

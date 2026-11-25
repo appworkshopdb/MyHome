@@ -1,7 +1,8 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
-import { templateAppliesTo, dueDateFor, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
+import { templateAppliesTo, dueDateFor, MONTHS_DE, isSparschweinDeposit, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
+import { rateName } from './savingsPlans';
 
 function ownerId(session) {
   return session.user.id;
@@ -16,7 +17,8 @@ function ownerId(session) {
 // direkt über die vorhandenen Buchungen, inkl. deren echtem Timestamp.
 export async function getSparschweinLedger(session) {
   const all = await getAllEntries(session);
-  const relevant = all.filter((e) => isSparschweinDeposit(e) || isSparschweinWithdrawal(e));
+  // Offene Sparplan-Raten sind noch nicht im Sparschwein (isCountedDeposit)
+  const relevant = all.filter((e) => isCountedDeposit(e) || isSparschweinWithdrawal(e));
 
   // Chronologisch aufsteigend sortieren, um den laufenden Stand
   // korrekt hochzuzählen (created_at, Fallback auf year/month)
@@ -483,9 +485,10 @@ export async function exportAllData(session) {
 
 export async function deleteAllData(session) {
   const owner = ownerId(session);
-  for (const table of ['fin_entries', 'fin_savings', 'fin_contracts', 'fin_fixtemplates']) {
+  for (const table of ['fin_entries', 'fin_savings', 'fin_contracts', 'fin_fixtemplates', 'fin_savings_plans']) {
     const { error } = await getSupabase().from(table).delete().eq('owner_id', owner);
-    if (error) throw error;
+    // Sparpläne gibt es erst mit der Migration fin_savings_plans_migration.sql
+    if (error && !(table === 'fin_savings_plans' && isMissingTable(error))) throw error;
   }
 }
 
@@ -637,3 +640,114 @@ export async function importLegacyBackup(session, data, currentYear, currentMont
   return counts;
 }
 
+
+// ---------------------------------------------------------------------
+// Sparpläne (fin_savings_plans, Migration supabase/fin_savings_plans_migration.sql)
+// ---------------------------------------------------------------------
+// Raten sind Buchungen in fin_entries mit savings_plan_id (lib/savingsPlans.js).
+// Ohne Migration liefern die Lesefunktionen null bzw. [], die App blendet die
+// Sparpläne dann aus.
+
+const isMissingTable = (e) => Boolean(e)
+  && (e.code === '42P01' || e.code === 'PGRST205' || /fin_savings_plans|schema cache/i.test(e.message || ''));
+
+export async function getSavingsPlans(session) {
+  const { data, error } = await getSupabase()
+    .from('fin_savings_plans')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .eq('status', 'aktiv')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (isMissingTable(error)) return null;
+    throw error;
+  }
+  return data ?? [];
+}
+
+export async function getSavingsPlanRates(session) {
+  const { data, error } = await getSupabase()
+    .from('fin_entries')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .not('savings_plan_id', 'is', null)
+    .is('deleted_at', null);
+  if (error) {
+    if (isMissingColumn(error)) return [];
+    throw error;
+  }
+  return data ?? [];
+}
+
+function rateRow(session, plan, r) {
+  return {
+    owner_id: ownerId(session),
+    year: r.year,
+    month: r.month,
+    category: 'variable_kosten',
+    name: rateName(plan.name),
+    payment: 'Bank',
+    payments: [{ method: 'Bank', amount: r.amount, paid: false }],
+    amount: r.amount,
+    paid: false,
+    due_date: r.due_date,
+    savings_plan_id: plan.id,
+  };
+}
+
+// Plan speichern (neu oder geändert). Bei einer Änderung fallen die offenen Raten
+// weg (Soft Delete) und `rates` (geplante Raten: year, month, due_date, amount)
+// werden neu angelegt; eingezahlte Raten bleiben und bekommen den neuen Namen.
+export async function saveSavingsPlan(session, plan, rates) {
+  const sb = getSupabase();
+  const payload = {
+    owner_id: ownerId(session),
+    name: String(plan.name).trim(),
+    target_amount: plan.target_amount,
+    target_date: plan.target_date || null,
+    rhythm: plan.rhythm,
+    rate: plan.rate,
+    due_day: plan.due_day,
+    status: 'aktiv',
+    updated_at: new Date().toISOString(),
+    ...(plan.id ? { id: plan.id } : {}),
+  };
+  const { data: saved, error } = await sb.from('fin_savings_plans').upsert(payload).select().single();
+  if (error) throw error;
+  if (plan.id) {
+    const now = new Date().toISOString();
+    const { error: delErr } = await sb.from('fin_entries').update({ deleted_at: now })
+      .eq('savings_plan_id', saved.id).eq('paid', false).is('deleted_at', null);
+    if (delErr) throw delErr;
+    const { error: nameErr } = await sb.from('fin_entries').update({ name: rateName(saved.name) })
+      .eq('savings_plan_id', saved.id).is('deleted_at', null);
+    if (nameErr) throw nameErr;
+  }
+  if (rates.length) {
+    const { error: insErr } = await sb.from('fin_entries').insert(rates.map((r) => rateRow(session, saved, r)));
+    if (insErr) throw insErr;
+  }
+  invalidateHubCache();
+  return saved;
+}
+
+// Raten auf bezahlt/offen setzen (Einzahlen, Vorziehen, Rückgängig)
+export async function setRatesPaid(rates, paid) {
+  for (const r of rates) {
+    // eslint-disable-next-line no-await-in-loop
+    await togglePaid(r.id, paid, [{ method: r.payment || 'Bank', amount: Number(r.amount), paid }]);
+  }
+}
+
+// Plan beenden: offene Raten fallen weg, Eingezahltes bleibt im Sparschwein
+export async function endSavingsPlan(session, planId) {
+  const sb = getSupabase();
+  const now = new Date().toISOString();
+  const { error: delErr } = await sb.from('fin_entries').update({ deleted_at: now })
+    .eq('owner_id', ownerId(session)).eq('savings_plan_id', planId).eq('paid', false).is('deleted_at', null);
+  if (delErr) throw delErr;
+  const { error } = await sb.from('fin_savings_plans').update({ status: 'beendet', updated_at: now }).eq('id', planId);
+  if (error) throw error;
+  invalidateHubCache();
+}
