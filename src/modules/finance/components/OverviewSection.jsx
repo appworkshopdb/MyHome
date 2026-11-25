@@ -18,6 +18,7 @@ import {
   isSparschweinDirectWithdrawal,
   openAmount,
   isOpenExpense,
+  isIncomePending,
   isListedEntry,
   localTodayStr,
 } from '../lib/finance';
@@ -101,7 +102,10 @@ export default function OverviewSection({ onNavigate }) {
   const totalEntnommen = entries
     .filter((e) => isSparschweinDirectWithdrawal(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
+  // Nur schon eingegangene Einnahmen: Posten mit Datum in der Zukunft zählen erst ab diesem Tag
+  // (wie "+ Eingänge" in der Fokuskarte, lib/income.js).
+  const arrived = entries.filter((e) => !isIncomePending(e, localTodayStr()));
+  const totalEin = sumCat(arrived, 'fixeinnahmen') + sumCat(arrived, 'sonstige_einnahmen') - totalEntnommen;
   const spend    = SPEND_CATS.map((c) => ({
     ...c,
     value: entries
