@@ -16,8 +16,6 @@ export default function AreaIcon({ id, size = 15, strokeWidth = 1.9 }) {
       return (<svg {...common}><line x1="8" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="20" y2="12" /><line x1="8" y1="18" x2="20" y2="18" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></svg>);
     case 'clock': // Offene Posten
       return (<svg {...common}><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" /></svg>);
-    case 'income': // Einnahmen (Eingang)
-      return (<svg {...common}><line x1="12" y1="4" x2="12" y2="15" /><polyline points="7.5 10.5 12 15 16.5 10.5" /><path d="M5 19h14" /></svg>);
     case 'contract': // Verträge
       return (<svg {...common}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><polyline points="14 3 14 8 19 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></svg>);
     case 'chart': // Auswertung, Statistiken

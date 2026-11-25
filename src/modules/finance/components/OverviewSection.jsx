@@ -146,8 +146,8 @@ export default function OverviewSection({ onNavigate }) {
       </div>
 
       {/* Fokuskarte: Verfügbar jetzt (Einnahmen und Ausgaben getrennt verwaltet, Summen hängen zusammen) */}
-      <FocusCard>
-        <FocusCard.Eyebrow>Verfügbar jetzt</FocusCard.Eyebrow>
+      <FocusCard onPress={() => onNavigate('einnahmen')} label="Verfügbar jetzt, Einnahmen öffnen">
+        <FocusCard.Eyebrow right="Einnahmen ›">Verfügbar jetzt</FocusCard.Eyebrow>
         <FocusCard.Value>{loading ? '—' : formatEur(stand.verf)}</FocusCard.Value>
         {!loading && stand.offen.length > 0 && (
           <FocusCard.Meta>
@@ -242,12 +242,6 @@ export default function OverviewSection({ onNavigate }) {
             featured
             value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
-          />
-          <AreaRow
-            label="Einnahmen"
-            icon="income"
-            value="Eingänge"
-            onPress={() => onNavigate('einnahmen')}
           />
           <AreaRow
             label="Offene Posten"

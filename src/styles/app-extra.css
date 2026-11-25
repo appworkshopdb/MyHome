@@ -4755,3 +4755,8 @@
 .consent-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
 .consent-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); margin: 0 0 12px; }
 .consent-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Fokuskarte antippbar (FocusCard onPress) */
+.focus-card--tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.focus-card--tap:active { opacity: .94; }
+.focus-card--tap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
