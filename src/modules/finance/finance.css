@@ -58,15 +58,9 @@
   .fin-collapse-count { display:none; }
 }
 
-/* Posten ansehen (EntryDetailSheet) — erst ansehen, dann bearbeiten */
-.ed-root { display:flex; flex-direction:column; min-height:100%; padding:0 var(--space-5,18px); box-sizing:border-box; }
-.ed-top { display:flex; align-items:center; justify-content:space-between; gap:var(--space-3,12px); min-height:52px; }
-.ed-close { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; border:0; border-radius:var(--r-pill); background:var(--surface-sunken); color:var(--text-secondary); cursor:pointer; }
-.ed-close svg { width:20px; height:20px; }
-.ed-name { margin:6px 0 0; font-size:26px; font-weight:800; line-height:1.2; letter-spacing:-.01em; color:var(--text-primary); overflow-wrap:anywhere; }
-.ed-amount { margin-top:2px; font-size:44px; font-weight:800; line-height:1.15; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--text-primary); }
-.ed-amount span { font-size:28px; color:var(--text-muted); }
-.ed-status { width:100%; margin-top:var(--space-5,18px); min-height:60px; display:flex; align-items:center; gap:12px; padding:0 16px; border:1.5px solid var(--border-strong); border-radius:var(--r-xl); background:var(--surface-raised); color:var(--text-primary); text-align:left; cursor:pointer; }
+/* Posten ansehen (EntryDetailSheet): im Aufbau von "Neuer Eintrag", als Text mit feinen Linien */
+.ed-status { width:100%; min-height:56px; display:flex; align-items:center; gap:12px; padding:0 16px; border:0; border-radius:var(--rad-lg,12px); background:var(--surface-sunken); color:var(--text-primary); text-align:left; cursor:pointer; }
+.ed-status:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .ed-status b { display:block; font-size:15px; font-weight:800; }
 .ed-status small { display:block; margin-top:1px; font-size:12px; font-weight:600; color:var(--text-muted); }
 .ed-status.is-paid { background:var(--status-positive-bg); border-color:transparent; color:var(--status-positive); }
@@ -74,23 +68,6 @@
 .ed-ring { width:26px; height:26px; flex:0 0 26px; box-sizing:border-box; border:2px solid var(--border-strong); border-radius:50%; }
 .ed-tick { width:26px; height:26px; flex:0 0 26px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:var(--status-positive); color:var(--surface-raised); }
 .ed-tick svg { width:15px; height:15px; stroke-width:3; }
-.ed-list { margin-top:var(--space-5,18px); padding:0 14px; border-radius:var(--r-xl); background:var(--surface-sunken); }
-.ed-li, .ed-ro { width:100%; min-height:54px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0; border:0; border-top:1px solid var(--border-hairline); background:none; text-align:left; color:var(--text-primary); }
-.ed-li { cursor:pointer; }
-.ed-li:first-child { border-top:0; }
-.ed-li--note { align-items:flex-start; padding:16px 0; }
-.ed-k { flex-shrink:0; font-size:13px; font-weight:700; color:var(--text-muted); }
-.ed-v { display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; font-size:14px; font-weight:800; text-align:right; }
-.ed-v--mut { font-weight:600; color:var(--text-muted); }
-.ed-v--bad { color:var(--status-critical); }
-.ed-v--note { display:block; font-weight:600; white-space:pre-wrap; overflow-wrap:anywhere; }
-.ed-chev { display:flex; color:var(--text-muted); flex-shrink:0; }
-.ed-chev svg { width:16px; height:16px; }
-.ed-actions { position:sticky; bottom:0; margin-top:auto; padding:22px 0 4px; background:linear-gradient(to bottom, transparent, var(--surface-raised) 22px); }
-/* Das Sheet wächst mit dem Inhalt (bis 88 % der Höhe), damit "Bearbeiten" ohne Scrollen sichtbar ist */
-.sheet:has(.ed-root) { height:auto; min-height:67vh; }
-.ed-delete { display:block; width:100%; min-height:48px; margin-top:6px; border:0; background:none; color:var(--status-critical); font-size:14px; font-weight:800; cursor:pointer; }
-.ed-status:focus-visible, .ed-li:focus-visible, .ed-edit:focus-visible, .ed-delete:focus-visible, .ed-close:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
 
 .ed-status:disabled { cursor:default; }
 
@@ -98,13 +75,6 @@
 .ed-status.is-part { background:var(--status-caution-bg); border-color:transparent; color:var(--status-caution); }
 .ed-status.is-part small { color:var(--status-caution); }
 .ed-ring--part { border-color:var(--status-caution); background:linear-gradient(90deg, var(--status-caution) 50%, transparent 50%); }
-.ed-li--parts { align-items:flex-start; padding:14px 0; }
-.ed-v--parts { align-items:flex-start; }
-.ed-parts { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-.ed-part { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; }
-.ed-part em { padding:2px 8px; border-radius:var(--r-pill); font-style:normal; font-size:11.5px; font-weight:800; }
-.ed-part em.is-paid { background:var(--status-positive-bg); color:var(--status-positive); }
-.ed-part em.is-open { background:var(--status-caution-bg); color:var(--status-caution); }
 .wiz-payment-paid { display:block; width:100%; min-height:36px; margin-top:6px; padding:0 12px; border:1px solid var(--border-hairline); border-radius:var(--r-md); background:var(--surface-raised); color:var(--text-secondary); font-size:12.5px; font-weight:700; text-align:left; cursor:pointer; }
 .wiz-payment-paid.is-paid { background:var(--status-positive-bg); border-color:transparent; color:var(--status-positive); }
 .wiz-payment-paid:disabled { cursor:default; }
@@ -114,7 +84,7 @@
 
 /* Teilzahlungen einzeln abhaken (Bearbeiten, direkt unter dem Status) */
 .ed-checks { list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
-.ed-check { width:100%; min-height:52px; display:flex; align-items:center; gap:12px; padding:0 14px; border:1.5px solid var(--border-hairline); border-radius:var(--r-lg); background:var(--surface-raised); color:var(--text-primary); text-align:left; cursor:pointer; }
+.ed-check { width:100%; min-height:52px; display:flex; align-items:center; gap:12px; padding:0 14px; border:1px solid var(--border-hairline); border-radius:var(--rad-md,8px); background:var(--surface-raised); color:var(--text-primary); text-align:left; cursor:pointer; }
 .ed-check b { display:block; font-size:14px; font-weight:800; font-variant-numeric:tabular-nums; }
 .ed-check small { display:block; margin-top:1px; font-size:12px; font-weight:600; color:var(--text-muted); }
 .ed-check.is-paid { background:var(--status-positive-bg); border-color:transparent; }
@@ -147,3 +117,28 @@
 .ed-ro2 span { color:var(--text-muted); font-weight:700; }
 .ed-ro2 b { font-weight:600; text-align:right; }
 .ed-del2 { margin-top:var(--sp-3); gap:8px; }
+
+/* Ansicht eines Postens (Variante A): Beschriftung klein darüber, Wert als Text, feine Trennlinien */
+.vw-sec { display:block; width:100%; padding:var(--sp-3) 0; border:0; border-bottom:1px solid var(--border-hairline); background:none; text-align:left; color:var(--text-primary); }
+.vw-sec:first-child { padding-top:0; }
+.vw-btn { cursor:pointer; }
+.vw-btn:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+.vw-sec .wz-lbl { margin:0 0 6px; }
+.vw-v { display:block; margin:0; font-size:17px; font-weight:700; line-height:1.3; overflow-wrap:anywhere; }
+.vw-v--name { font-size:20px; font-weight:800; }
+.vw-v--mut { font-size:15px; font-weight:600; color:var(--text-muted); }
+.vw-v--note { font-size:15px; font-weight:600; white-space:pre-wrap; }
+.vw-v--bad { color:var(--status-critical); }
+.vw-amt { display:flex; align-items:baseline; gap:var(--sp-2); font-size:44px; font-weight:800; line-height:1.1; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+.vw-amt span { font-size:24px; font-weight:700; color:var(--text-muted); }
+.vw-two { display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-3); }
+.vw-two > * { min-width:0; }
+.vw-dot { display:inline-flex; align-items:center; gap:var(--sp-2); }
+.vw-dot i { width:9px; height:9px; border-radius:50%; background:var(--dot, var(--data-2)); flex:none; }
+.vw-row { display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); color:var(--text-muted); }
+.vw-row svg { width:16px; height:16px; flex:none; }
+.vw-meta { display:flex; justify-content:space-between; gap:var(--sp-3); margin-top:var(--sp-4); font-size:13px; }
+.vw-meta span { color:var(--text-muted); font-weight:600; }
+.vw-meta b { font-weight:600; text-align:right; }
+.vw-del { background:none; color:var(--status-critical); border:1px solid color-mix(in srgb, var(--status-critical) 40%, transparent); }
+.vw-edit svg { width:18px; height:18px; flex:none; }

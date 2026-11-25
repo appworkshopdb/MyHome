@@ -1,8 +1,10 @@
 // modules/finance/components/EntryDetailSheet.jsx
 //
-// Ansicht eines bereits angelegten Postens. "Bearbeiten" (oder ein Tipp auf eine
-// Zeile) wechselt zur Bearbeitungsansicht (EntryEditForm.jsx), die wie
-// "Neuer Eintrag" aufgebaut ist; "Speichern" kehrt hierher zurück.
+// Ansicht eines bereits angelegten Postens, im Aufbau von "Neuer Eintrag" und
+// "Posten bearbeiten": gleiche Kopfzeile (WizardFrame), gleiche Reihenfolge und
+// Beschriftungen, aber als Text mit feinen Linien (nur lesen). "Bearbeiten" (oder
+// ein Tipp auf Zahlungsart, Fällig am oder Notiz) wechselt zur Bearbeitung
+// (EntryEditForm.jsx); "Speichern" kehrt hierher zurück.
 //
 // Teilzahlungen: Bar, Gutschein und Sparschwein gelten SOFORT als bezahlt, offen
 // ist nur der Rest (core/lib/paymentParts.js). Bei geteilter Zahlung zeigt die
@@ -14,13 +16,14 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell';
-import { IconClose, IconEdit, IconChevronRight, IconCheck } from '../../../core/components/Icons';
+import { WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
+import { IconEdit, IconTrash, IconChevronRight, IconCheck } from '../../../core/components/Icons';
 import {
-  CATEGORIES, formatDateTime, formatPayments, formatEur, isSparschweinDeposit,
+  formatDateTime, formatPayments, formatEur, isSparschweinDeposit,
   isInstantMethod, entryParts, openAmount, isFullyPaid, isPartlyPaid,
 } from '../lib/finance';
 import { toDateStr } from '../lib/analytics';
-import EntryEditForm from './EntryEditForm';
+import EntryEditForm, { CATEGORY_ITEMS } from './EntryEditForm';
 
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 const DOT = {
@@ -30,6 +33,8 @@ const DOT = {
   variable_kosten: 'var(--data-2)',
   sonstige_ausgaben: 'var(--data-3)',
 };
+
+const CAT_LABEL = Object.fromEntries(CATEGORY_ITEMS.map((c) => [c.value, c.label]));
 
 const NF = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -78,6 +83,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   const partly = isPartlyPaid(entry);
   const allInstant = parts.every((p) => isInstantMethod(p.method));
   const open = openAmount(entry);
+  const split = parts.length > 1;
 
   function onStatus() {
     if (allInstant) return;
@@ -85,120 +91,122 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   }
 
   return (
-    <SheetShell onClose={onClose} labelledBy="ed-title">
-      <div className="ed-root">
-        <div className="ed-top">
-          <span className="ed-tag" style={{ '--dot': DOT[category] }}>
-            <i aria-hidden="true" />{CATEGORIES[category] || category}
-          </span>
-          <button type="button" className="ed-close" onClick={onClose} aria-label="Schließen"><IconClose /></button>
+    <SheetShell onClose={onClose} wizard>
+      <WizardFrame
+        title="Posten"
+        sub={entry.created_at ? `Erfasst am ${formatDateTime(entry.created_at)}` : undefined}
+        stepKey="view"
+        onClose={onClose}
+        footer={(
+          <WizardFoot>
+            <button type="button" className="btn vw-del" onClick={() => onDelete(entry.id)} aria-label="Eintrag löschen">
+              <IconTrash size={18} /> Löschen
+            </button>
+            <button type="button" className="btn btn-primary vw-edit" onClick={() => startEdit(null)}>
+              <IconEdit /> Bearbeiten
+            </button>
+          </WizardFoot>
+        )}
+      >
+        <div className="vw-sec">
+          <span className="wz-lbl">Name</span>
+          <h1 className="vw-v vw-v--name" id="ed-title">{entry.name}</h1>
         </div>
 
-        <h1 className="ed-name" id="ed-title">{entry.name}</h1>
-        <div className="ed-amount">{NF.format(Number(entry.amount || 0))} <span>€</span></div>
+        <div className="vw-sec">
+          <span className="wz-lbl">Betrag</span>
+          <div className="vw-amt">{NF.format(Number(entry.amount || 0))} <span>€</span></div>
+        </div>
+
+        <button type="button" className="vw-sec vw-btn" onClick={() => startEdit('payment')}>
+          <span className="vw-two">
+            <span>
+              <span className="wz-lbl">Kategorie</span>
+              <span className="vw-v vw-dot" style={{ '--dot': DOT[category] }}><i aria-hidden="true" />{CAT_LABEL[category] || category}</span>
+            </span>
+            <span>
+              <span className="wz-lbl">Zahlungsart</span>
+              <span className="vw-v">{split && canPay ? parts.map((p) => p.method).join(' · ') : paymentText(entry)}</span>
+            </span>
+          </span>
+        </button>
 
         {canPay && (
-          <button
-            type="button"
-            className={`ed-status ${fully ? 'is-paid' : ''} ${partly ? 'is-part' : ''}`}
-            aria-pressed={partly ? 'mixed' : fully}
-            disabled={allInstant}
-            onClick={onStatus}
-          >
-            {fully
-              ? <span className="ed-tick" aria-hidden="true"><IconCheck /></span>
-              : <span className={`ed-ring ${partly ? 'ed-ring--part' : ''}`} aria-hidden="true" />}
-            <span>
-              <b>{fully ? 'Bezahlt' : partly ? 'Teilweise bezahlt' : 'Offen'}</b>
-              <small>
-                {allInstant
-                  ? 'Bar, Gutschein und Sparschwein gelten sofort als bezahlt'
-                  : fully ? 'Tippen, um wieder auf offen zu setzen'
-                    : partly ? `${formatEur(open)} noch offen · Tippen, um alles als bezahlt zu markieren`
-                      : 'Tippen, um als bezahlt zu markieren'}
-              </small>
-            </span>
-          </button>
-        )}
-
-        {canPay && parts.length > 1 && (
-          <ul className="ed-checks" aria-label="Teilzahlungen">
-            {parts.map((p, i) => {
-              const instant = isInstantMethod(p.method);
-              return (
-                <li key={i}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={p.paid}
-                    disabled={instant}
-                    className={`ed-check ${p.paid ? 'is-paid' : ''}`}
-                    onClick={() => onTogglePart(entry, i)}
-                  >
-                    <span className="ed-box" aria-hidden="true">{p.paid && <IconCheck />}</span>
-                    <span className="ed-check-t">
-                      <b>{p.method} · {formatEur(p.amount)}</b>
-                      <small>{instant ? 'Gilt sofort als bezahlt' : p.paid ? 'Bezahlt' : 'Offen — antippen zum Abhaken'}</small>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        <div className="ed-list">
-          <button type="button" className="ed-li ed-li--parts" onClick={() => startEdit('payment')}>
-            <span className="ed-k">Zahlungsart</span>
-            {parts.length > 1 ? (
-              <span className="ed-v ed-v--parts">
-                <span className="ed-parts">
-                  {parts.map((p, i) => (
-                    <span key={i} className="ed-part">
-                      <span>{p.method} {NF.format(p.amount)} €</span>
-                    </span>
-                  ))}
-                </span>
-                <span className="ed-chev"><IconChevronRight /></span>
+          <div className="vw-sec">
+            <span className="wz-lbl">Status</span>
+            <button
+              type="button"
+              className={`ed-status ${fully ? 'is-paid' : ''} ${partly ? 'is-part' : ''}`}
+              aria-pressed={partly ? 'mixed' : fully}
+              disabled={allInstant}
+              onClick={onStatus}
+            >
+              {fully
+                ? <span className="ed-tick" aria-hidden="true"><IconCheck /></span>
+                : <span className={`ed-ring ${partly ? 'ed-ring--part' : ''}`} aria-hidden="true" />}
+              <span>
+                <b>{fully ? 'Bezahlt' : partly ? 'Teilweise bezahlt' : 'Offen'}</b>
+                <small>
+                  {allInstant
+                    ? 'Bar, Gutschein und Sparschwein gelten sofort als bezahlt'
+                    : fully ? 'Tippen, um wieder auf offen zu setzen'
+                      : partly ? `${formatEur(open)} noch offen · Tippen, um alles als bezahlt zu markieren`
+                        : 'Tippen, um als bezahlt zu markieren'}
+                </small>
               </span>
-            ) : (
-              <span className="ed-v">{paymentText(entry)}<span className="ed-chev"><IconChevronRight /></span></span>
+            </button>
+            {split && (
+              <ul className="ed-checks" aria-label="Teilzahlungen">
+                {parts.map((p, i) => {
+                  const instant = isInstantMethod(p.method);
+                  return (
+                    <li key={i}>
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={p.paid}
+                        disabled={instant}
+                        className={`ed-check ${p.paid ? 'is-paid' : ''}`}
+                        onClick={() => onTogglePart(entry, i)}
+                      >
+                        <span className="ed-box" aria-hidden="true">{p.paid && <IconCheck />}</span>
+                        <span className="ed-check-t">
+                          <b>{p.method} · {formatEur(p.amount)}</b>
+                          <small>{instant ? 'Gilt sofort als bezahlt' : p.paid ? 'Bezahlt' : 'Offen — antippen zum Abhaken'}</small>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </button>
-
-          <button type="button" className="ed-li" onClick={() => startEdit('due')}>
-            <span className="ed-k">Fällig am</span>
-            {entry.due_date
-              ? <span className={`ed-v ${overdue ? 'ed-v--bad' : ''}`}>{fmtDue(entry.due_date)}{overdue ? ' · überfällig' : ''}<span className="ed-chev"><IconChevronRight /></span></span>
-              : <span className="ed-v ed-v--mut">+ Datum setzen</span>}
-          </button>
-
-          <button type="button" className="ed-li ed-li--note" onClick={() => startEdit('note')}>
-            <span className="ed-k">Notiz</span>
-            {entry.note
-              ? <span className="ed-v ed-v--note">{entry.note}</span>
-              : <span className="ed-v ed-v--mut">+ Notiz hinzufügen</span>}
-          </button>
-
-          <div className="ed-ro">
-            <span className="ed-k">Herkunft</span>
-            <span className="ed-v">{entry.from_template ? 'Festposten (aus Vorlage)' : 'Einzelbuchung'}</span>
           </div>
-          {entry.created_at && (
-            <div className="ed-ro">
-              <span className="ed-k">Erfasst am</span>
-              <span className="ed-v">{formatDateTime(entry.created_at)}</span>
-            </div>
-          )}
-        </div>
+        )}
 
-        <div className="ed-actions">
-          <button type="button" className="ed-edit" onClick={() => startEdit(null)}>
-            <span className="ed-edit-ic"><IconEdit /></span>Bearbeiten
-          </button>
-          <button type="button" className="ed-delete" onClick={() => onDelete(entry.id)}>Eintrag löschen</button>
+        <button type="button" className="vw-sec vw-btn" onClick={() => startEdit('due')}>
+          <span className="wz-lbl">Fällig am <span className="opt">optional</span></span>
+          {entry.due_date
+            ? (
+              <span className="vw-row">
+                <span className={`vw-v ${overdue ? 'vw-v--bad' : ''}`}>{fmtDue(entry.due_date)}{overdue ? ' · überfällig' : ''}</span>
+                <IconChevronRight />
+              </span>
+            )
+            : <span className="vw-v vw-v--mut">+ Datum setzen</span>}
+        </button>
+
+        <button type="button" className="vw-sec vw-btn" onClick={() => startEdit('note')}>
+          <span className="wz-lbl">Notiz <span className="opt">optional</span></span>
+          {entry.note
+            ? <span className="vw-v vw-v--note">{entry.note}</span>
+            : <span className="vw-v vw-v--mut">+ Notiz hinzufügen</span>}
+        </button>
+
+        <div className="vw-meta">
+          <span>Herkunft</span>
+          <b>{entry.from_template ? 'Festposten (aus Vorlage)' : 'Einzelbuchung'}</b>
         </div>
-      </div>
+      </WizardFrame>
     </SheetShell>
   );
 }

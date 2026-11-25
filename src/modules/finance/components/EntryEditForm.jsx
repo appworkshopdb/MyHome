@@ -25,7 +25,7 @@ const money = (v) => parseMoney(v) || 0; // ungültig → 0
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 
 // Fünf Einträge: wie beim Anlegen, dazu "Fixeinnahme" (Posten aus Vorlagen behalten ihre Art)
-const CATEGORY_ITEMS = [
+export const CATEGORY_ITEMS = [
   { value: 'fixeinnahmen',       label: 'Fixeinnahme' },
   { value: 'sonstige_einnahmen', label: 'Einnahme'    },
   { value: 'fixkosten',          label: 'Fixkosten'   },
