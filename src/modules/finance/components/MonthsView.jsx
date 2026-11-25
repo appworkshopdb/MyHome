@@ -107,7 +107,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
 
 // Flache Offen-Liste — keine Dropdowns, direkte Auflistung aller offenen
 // Ausgaben-Einträge mit Gesamtbetrag oben und Abhak-Funktion.
-function OffenList({ entries, onOpenModal, onTogglePaid }) {
+function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
   // Offen ist nur, was noch nicht bezahlt ist: bei geteilter Zahlung der Rest
   // ohne die Bar-/Gutschein-/Sparschwein-Anteile.
   const offene = entries.filter(isOpenExpense);
@@ -140,6 +140,8 @@ function OffenList({ entries, onOpenModal, onTogglePaid }) {
           e={e}
           onOpenModal={onOpenModal}
           onTogglePaid={onTogglePaid}
+          onEdit={onEdit}
+          onDelete={onDelete}
           showOpen
         />
       ))}
@@ -445,6 +447,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
           entries={entries}
           onOpenModal={openEntry}
           onTogglePaid={handleTogglePaid}
+          onEdit={editEntry}
+          onDelete={(e) => handleDelete(e.id)}
         />
       ) : (
         <div className="fin-collapse-list">

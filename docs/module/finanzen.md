@@ -29,7 +29,7 @@ Posten aus einer Fixkosten-Vorlage (`from_template`) sind pro Monat unabhängig 
 In den vier Bereichen der Buchungsliste (Einnahmen, Fixkosten, Variable Kosten, Sonstige Ausgaben; `MonthsView.EntryRow`) hat jede Karte rechts neben dem Betrag zwei kleine Knöpfe (`.fin-row-btn`, `IconEdit` / `IconTrash`):
 - **Stift**: öffnet den Posten-Dialog direkt im Bearbeiten-Modus (`EntryDetailSheet` mit `startInEdit`; Tippen auf die Karte öffnet weiter die Ansicht).
 - **Papierkorb**: fragt `confirm('Eintrag löschen?')` und löscht über `handleDelete` (Vorlagen-Posten: siehe oben, Monat wird in `skipped_months` vermerkt).
-- Nicht in der Liste „Offene Posten“ (offene Frage, ob dort auch).
+- Auch in der Liste „Offene Posten“ (seit 25.11.2026, gleiche Knöpfe, Zeile mit „von X €“ und Teilzahlungs-Hinweis bleibt).
 - Lange Namen und die Meta-Zeile werden mit „…“ abgeschnitten (`.fin-row-info { min-width:0 }`, `white-space:nowrap`); der Abstand zum Betrag bleibt über den Flex-Gap der Zeile konstant, bei schmaleren Displays wird entsprechend früher gekürzt.
 
 ## Posten bearbeiten (`EntryEditForm.jsx`)
