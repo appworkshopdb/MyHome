@@ -27,9 +27,11 @@ function dueText(x) {
 // src: 'template' (Einnahme oder Fixkosten) | 'contract'
 function EntryCard({ x, src, expired, onClick }) {
   const iv = intervalOf(x);
-  const Icon = src === 'contract' ? IconContract : (x.category === 'fixeinnahmen' ? IconIncome : IconFixed);
-  const expiring = src === 'contract' && getContractStatus(x) === 'expiring';
-  const sub = [dueText(x), src === 'contract' ? x.notes : ''].filter(Boolean).join(' · ');
+  // Vertrag = älterer Eintrag aus fin_contracts oder Vorlage mit is_contract (bucht wie Fixkosten)
+  const isContract = src === 'contract' || x.is_contract;
+  const Icon = isContract ? IconContract : (x.category === 'fixeinnahmen' ? IconIncome : IconFixed);
+  const expiring = (src === 'contract' ? getContractStatus(x) : getTemplateStatus(x)) === 'expiring';
+  const sub = [dueText(x), isContract ? x.notes : ''].filter(Boolean).join(' · ');
 
   return (
     <button type="button" className={`vt-card${expired ? ' is-expired' : ''}`} onClick={() => onClick(x)}>
@@ -186,11 +188,14 @@ export default function ContractsView() {
     load();
   }
 
-  async function handleSaveTemplate(tpl) {
+  async function handleSaveTemplate(input) {
+    // legacyContractId: älterer Vertrag aus fin_contracts, der jetzt als Vorlage gespeichert wird
+    const { legacyContractId, ...tpl } = input;
     const isNew = !tpl.id;
     let saved;
     try {
       saved = await db.saveFixTemplate(session, tpl);
+      if (legacyContractId) await db.deleteContract(legacyContractId);
     } catch (err) {
       console.error('[Verträge]', err);
       showToast('Speichern fehlgeschlagen');
@@ -210,17 +215,14 @@ export default function ContractsView() {
       }
     }
     setSheet(null);
-    showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
+    if (tpl.is_contract) showToast(isNew ? 'Vertrag hinzugefügt' : 'Vertrag aktualisiert');
+    else showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
     load();
   }
 
   async function handleDeleteTemplate(id) {
     if (!confirm('Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
     await run(() => db.deleteFixTemplate(session, id), 'Posten gelöscht', 'Löschen fehlgeschlagen');
-  }
-
-  function handleSaveContract(c) {
-    return run(() => db.saveContract(session, c), c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt', 'Speichern fehlgeschlagen');
   }
 
   async function handleDeleteContract(id) {
@@ -254,7 +256,6 @@ export default function ContractsView() {
           currentMonth={now.getMonth() + 1}
           currentYear={now.getFullYear()}
           onSaveTemplate={handleSaveTemplate}
-          onSaveContract={handleSaveContract}
           onDelete={sheet.itemType === 'contract' ? handleDeleteContract : handleDeleteTemplate}
           onClose={() => setSheet(null)}
           showToast={showToast}

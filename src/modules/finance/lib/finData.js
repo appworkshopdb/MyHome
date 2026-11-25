@@ -197,6 +197,7 @@ export async function getFixTemplates(session) {
 // Felder die NICHT in fin_fixtemplates gespeichert werden dürfen
 // (React-interne Flags, Join-Felder aus ContractsView etc.)
 const TEMPLATE_STRIP = ['_src', 'updated_at'];
+const CONTRACT_FIELDS = ['is_contract', 'cancellation', 'notes'];
 
 export async function saveFixTemplate(session, tpl) {
   const isUpdate = !!tpl.id;
@@ -206,11 +207,17 @@ export async function saveFixTemplate(session, tpl) {
       .filter(([k]) => !TEMPLATE_STRIP.includes(k))
       .map(([k, v]) => [k, v === '' ? null : v])
   );
-  const { data: saved, error } = await getSupabase()
+  let { data: saved, error } = await getSupabase()
     .from('fin_fixtemplates')
     .upsert(payload)
     .select()
     .single();
+  // Vertragsfelder fehlen noch (Migration fin_contracts_as_templates_migration.sql):
+  // ohne sie speichern, der Vertrag bucht dann als normale Fixkosten
+  if (error && isMissingColumn(error) && CONTRACT_FIELDS.some((k) => k in payload)) {
+    const rest = Object.fromEntries(Object.entries(payload).filter(([k]) => !CONTRACT_FIELDS.includes(k)));
+    ({ data: saved, error } = await getSupabase().from('fin_fixtemplates').upsert(rest).select().single());
+  }
   if (error) throw error;
 
   // Bei einem Update: abhängige fin_entries synchronisieren.

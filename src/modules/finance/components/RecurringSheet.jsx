@@ -3,7 +3,9 @@
 // Ein Fenster für alle laufenden Einträge der Seite "Verträge":
 //   einnahme  → Vorlage mit Kategorie fixeinnahmen   (fin_fixtemplates)
 //   fixkosten → Vorlage mit Kategorie fixkosten      (fin_fixtemplates, bucht jeden Monat)
-//   vertrag   → Vertrag                              (fin_contracts, nur Übersicht)
+//   vertrag   → Vorlage mit Kategorie fixkosten und is_contract (bucht genau wie Fixkosten,
+//               dazu Kündigung und Notiz). Ältere Verträge aus fin_contracts werden beim
+//               Speichern als Vorlage übernommen (legacyContractId).
 //
 // Neu anlegen: "Einnahme hinzufügen" (kind = einnahme) oder "Hinzufügen" mit Art-Auswahl
 // Fixkosten | Vertrag (choose). Bearbeiten: die Art steht fest, dazu "Löschen".
@@ -36,11 +38,11 @@ export default function RecurringSheet({
   item = null,             // bestehende Vorlage oder Vertrag
   itemType = null,         // 'template' | 'contract' (nur beim Bearbeiten)
   currentMonth, currentYear,
-  onSaveTemplate, onSaveContract, onDelete, onClose, showToast,
+  onSaveTemplate, onDelete, onClose, showToast,
 }) {
   const editing = Boolean(item);
   const [kind, setKind] = useState(editing
-    ? (itemType === 'contract' ? 'vertrag' : (item.category === 'fixeinnahmen' ? 'einnahme' : 'fixkosten'))
+    ? (itemType === 'contract' || item.is_contract ? 'vertrag' : (item.category === 'fixeinnahmen' ? 'einnahme' : 'fixkosten'))
     : initialKind);
 
   const [name,    setName]    = useState(item?.name || '');
@@ -86,28 +88,18 @@ export default function RecurringSheet({
       }
     }
 
-    if (isContract) {
-      return onSaveContract({
-        ...(item || {}),
-        name: name.trim(), amount: amt, interval,
-        start_date: startDate || null,
-        is_open: isOpen, is_monthly: isOpen,
-        end_date: isOpen ? null : resolvedEndDate,
-        contract_duration_months: isOpen ? null : contractDurationMonths,
-        payment,
-        cancellation: cancellation.trim() || null,
-        notes: notes.trim() || null,
-        quarterly: null,
-        due_day: dd,
-      });
-    }
+    // Ein älterer Vertrag (fin_contracts) wird als neue Vorlage gespeichert; seine
+    // Felder werden dabei nicht übernommen (andere Tabelle, andere Spalten).
+    const legacy = itemType === 'contract';
     return onSaveTemplate({
-      ...(item || {}),
-      category: CATEGORY_OF[kind],
+      ...(item && !legacy ? item : {}),
+      ...(legacy ? { legacyContractId: item.id } : {}),
+      ...(isContract ? { is_contract: true, cancellation: cancellation.trim() || null, notes: notes.trim() || null } : {}),
+      category: isContract ? 'fixkosten' : CATEGORY_OF[kind],
       name: name.trim(), payment, amount: amt, interval,
       quarterly: interval === 'quarterly',
       start_month: isRecurring ? startMonth : null,
-      start_year:  isRecurring ? (item?.start_year || currentYear) : null,
+      start_year:  isRecurring ? ((!legacy && item?.start_year) || currentYear) : null,
       start_date:  startDate || null,
       is_open:     isOpen,
       end_date:    isOpen ? null : resolvedEndDate,
@@ -155,7 +147,7 @@ export default function RecurringSheet({
                   <span className="rf-ic"><IconFixed /></span><b>Fixkosten</b><small>Wird jeden Monat gebucht</small>
                 </button>
                 <button type="button" className="rf-type" aria-pressed={kind === 'vertrag'} onClick={() => setKind('vertrag')}>
-                  <span className="rf-ic"><IconContract /></span><b>Vertrag</b><small>Nur zur Übersicht, bucht nichts</small>
+                  <span className="rf-ic"><IconContract /></span><b>Vertrag</b><small>Bucht wie Fixkosten, mit Kündigung</small>
                 </button>
               </div>
             </>
@@ -179,7 +171,7 @@ export default function RecurringSheet({
           <div className="rf-card">
             <div className="wz-lbl">Zahlungsintervall</div>
             <ChipGroup options={INTERVAL_OPTIONS} value={interval} onChange={setInterval} label="Zahlungsintervall" />
-            {isRecurring && !isContract && (
+            {isRecurring && (
               <>
                 <label className="wz-lbl" htmlFor="rf-month">Startmonat</label>
                 <select id="rf-month" className="wz-input" value={startMonth} onChange={(e) => setStartMonth(Number(e.target.value))}>

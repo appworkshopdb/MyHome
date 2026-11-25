@@ -51,7 +51,7 @@ Sparziel mit Raten. Daten: Tabelle `fin_savings_plans` (Name, `target_amount`, `
 
 ## Buchungen: Bereiche immer sichtbar (seit 25.11.2026)
 
-Einnahmen, Fixkosten, Variable Kosten und Sonstige Ausgaben stehen in jedem Monat da, leere mit "0 Posten · 0,00 €" und beim Aufklappen "Keine Posten in diesem Monat" (`MonthsView.CollapseSection`). Laufende Posten (Fixkosten-Vorlagen) werden beim Öffnen eines Monats angelegt, auch für künftige Monate und Jahre, solange die Vorlage gilt (`templateAppliesTo`: bis auf weiteres oder bis zum Endmonat). Verträge (`fin_contracts`) buchen nichts, sie sind nur Übersicht.
+Einnahmen, Fixkosten, Variable Kosten und Sonstige Ausgaben stehen in jedem Monat da, leere mit "0 Posten · 0,00 €" und beim Aufklappen "Keine Posten in diesem Monat" (`MonthsView.CollapseSection`). Laufende Posten (Fixkosten-Vorlagen) werden beim Öffnen eines Monats angelegt, auch für künftige Monate und Jahre, solange die Vorlage gilt (`templateAppliesTo`: bis auf weiteres oder bis zum Endmonat). Verträge buchen genauso (Vorlage mit `is_contract`, siehe Verträge).
 
 ## Saldo-Karte
 
@@ -62,7 +62,7 @@ Einnahmen, Fixkosten, Variable Kosten und Sonstige Ausgaben stehen in jedem Mona
 ## Verträge (Seite `#/finance/vertraege`)
 
 `ContractsView.jsx`: zwei Gruppen, **Einnahmen** und **Fixkosten & Verträge**, je Eintrag eine Karte (`.vt-*` in `design-v2.css`), ohne Fokuskarte; Summe pro Monat rechts neben der Gruppenüberschrift, darunter "N aktiv · … pro Jahr". Drei Symbole (`ContractIcons.jsx`): Einnahme = Münze mit Euro, Fixkosten = Kalender, Vertrag = Dokument. Abgelaufene sind eingeklappt, "Hinzufügen" ist eine gestrichelte Karte.
-Alle Fenster dieser Seite = `RecurringSheet.jsx` (ersetzt `FixTemplateModal`, `ContractModal`, `PaymentBadge`): "Einnahme hinzufügen" (Vorlage `fixeinnahmen`), "Hinzufügen" mit Art Fixkosten | Vertrag, beim Bearbeiten steht die Art fest und es gibt "Löschen" (auch für Verträge, das ging vorher in der Oberfläche nicht). **Fixkosten** sind Vorlagen (`fin_fixtemplates`) und legen jeden Monat eine Buchung an; **Verträge** (`fin_contracts`) erscheinen nur in der Übersicht und buchen nichts. Neue Verträge lassen sich seit diesem Umbau in der Oberfläche anlegen. Entwurf: Mockup-Runde "Verträge" (Satz 1 der Symbole).
+Alle Fenster dieser Seite = `RecurringSheet.jsx` (ersetzt `FixTemplateModal`, `ContractModal`, `PaymentBadge`): "Einnahme hinzufügen" (Vorlage `fixeinnahmen`), "Hinzufügen" mit Art Fixkosten | Vertrag, beim Bearbeiten steht die Art fest und es gibt "Löschen" (auch für Verträge, das ging vorher in der Oberfläche nicht). **Fixkosten** sind Vorlagen (`fin_fixtemplates`) und legen jeden Monat eine Buchung an. **Verträge** verhalten sich seit 25.11.2026 genau gleich (Wunsch des Nutzers): ein Vertrag ist eine Vorlage mit Kategorie `fixkosten` und `is_contract = true` (dazu `cancellation`, `notes`; Migration `supabase/fin_contracts_as_templates_migration.sql`, additiv) und bucht jeden Monat bis auf weiteres oder bis zum Vertragsende. Ältere Verträge aus `fin_contracts` (buchen nicht) werden weiter angezeigt und beim nächsten Speichern als Vorlage übernommen (alter Eintrag wird gelöscht). Ohne Migration speichert `saveFixTemplate` einen Vertrag als normale Fixkosten. Entwurf: Mockup-Runde "Verträge" (Satz 1 der Symbole).
 
 ## Einstellungen (Seite `#/finance/einstellungen`)
 
