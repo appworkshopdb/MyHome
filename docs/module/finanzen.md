@@ -83,4 +83,10 @@ Alle Fenster dieser Seite = `RecurringSheet.jsx` (ersetzt `FixTemplateModal`, `C
 
 ## Aufbau der Übersicht (seit 25.11.2026)
 
-Reihenfolge: Fokuskarte "Verfügbar jetzt" (antippbar, öffnet Einnahmen), Streifen "Offene Posten" (rot mit Summe, bei nichts offen "Alles bezahlt"; führt auf `#/finance/offen`), Schnellübersicht (Umbau zum Kreisdiagramm geplant), Bereiche als Liste mit Symbolkreisen (Buchungen, Verträge, Auswertung, Einstellungen; `AreaList icons`), ganz unten Sparen (Sparschwein, Sparpläne). Offene Posten steht nicht mehr in den Bereichen.
+Ohne Überschriften (kein Titel "Finanzen", keine Abschnittstitel), nur Elemente, in dieser Reihenfolge:
+1. Fokuskarte "Verfügbar jetzt" (antippbar, öffnet Einnahmen).
+2. Streifen "Offene Posten" (rot, mit Summe, führt auf `#/finance/offen`): nur sichtbar, wenn mindestens ein Posten offen ist.
+3. Schnellübersicht als Kreisdiagramm (`components/SpendDonut.jsx`): in der Mitte die Einnahmen des Monats mit Monatsname, im Ring Fixkosten, Variable Kosten, Sonstiges im Verhältnis zueinander. Legende rechts mit Betrag und Anteil an den Ausgaben (Prozent rechtsbündig neben dem Betrag), darunter "Ausgaben gesamt" und Balken "N % der Einnahmen" (über 100 % rot). Tippen auf Segment oder Legendenzeile zeigt den Bereich in der Mitte, erneut tippen zurück. Farben: `--mod-fin-c1…c3` (base.css, themes.css). Auf Handys unter 340 px steht die Legende unter dem Ring.
+4. Bereiche als Liste mit Symbolkreisen (Buchungen, Verträge, Auswertung, Einstellungen; `AreaList icons`).
+5. Ganz unten Sparen (Sparschwein, Sparpläne).
+Der frühere Balken der Schnellübersicht (Tippen öffnete Buchungen) und die Kopfzeile mit Monat sind entfallen; Buchungen bleibt unter den Bereichen.

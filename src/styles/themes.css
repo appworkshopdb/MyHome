@@ -59,6 +59,7 @@
 
   /* ── Modulfamilien (Dunkel) — gleiche Rollen wie in base.css ── */
   --mod-fin-tint:   #1E2C45; --mod-fin-ink:   #D5E3F8; --mod-fin-ac:   #8FA6D6; --mod-fin-on:   #10203A; --mod-fin-deep:   #8FA6D6;
+  --mod-fin-c1: #B4C6EC; --mod-fin-c2: #6E8CC8; --mod-fin-c3: #4A5A82;
   --mod-fin-hero:   linear-gradient(150deg, #1F3A63 0%, #14233F 100%); --mod-fin-hero-ink: #FFFFFF; --mod-fin-pill: #14233F;
 
   --mod-food-tint:  #17301F; --mod-food-ink:  #CFEBD8; --mod-food-ac:  #6FCB8E; --mod-food-on:  #0A2314; --mod-food-deep:  #6FCB8E;

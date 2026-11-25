@@ -22,11 +22,11 @@ import {
   localTodayStr,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 import AreaIcon from '../../../core/components/AreaIcons.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
+import SpendDonut from './SpendDonut.jsx';
 import { available } from '../lib/income';
 
 const SPEND_CATS = [
@@ -108,7 +108,6 @@ export default function OverviewSection({ onNavigate }) {
       .filter((e) => e.category === c.key && !isSparschweinDeposit(e))
       .reduce((s, e) => s + Number(e.amount || 0), 0),
   }));
-  const totalAus   = spend.reduce((s, c) => s + c.value, 0);
   // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag (lib/income.js, available).
   const today = localTodayStr();
 
@@ -130,18 +129,8 @@ export default function OverviewSection({ onNavigate }) {
     templates.filter((t) => getTemplateStatus(t) !== 'expired').length +
     contracts.filter((c) => getContractStatus(c) !== 'expired').length;
 
-  const barTotal = Math.max(totalEin, totalAus) || 1;
-
   return (
     <>
-      {/* Kopfzeile: Titel + Monat als Text (kein Wechsler mehr) */}
-      <div className="fin-overview-head">
-        <h1 className="overview-page-title">Finanzen</h1>
-        <span className="t-meta" style={{ color: 'var(--text-muted)', alignSelf: 'center' }}>
-          {MONTHS_DE[month - 1]} {year}
-        </span>
-      </div>
-
       {/* Fokuskarte: Verfügbar jetzt (Einnahmen und Ausgaben getrennt verwaltet, Summen hängen zusammen) */}
       <FocusCard onPress={() => onNavigate('einnahmen')} label="Verfügbar jetzt, Einnahmen öffnen">
         <FocusCard.Eyebrow right="Einnahmen ›">Verfügbar jetzt</FocusCard.Eyebrow>
@@ -157,79 +146,24 @@ export default function OverviewSection({ onNavigate }) {
         </FocusCard.Meta>
       </FocusCard>
 
-      {/* Offene Posten: was zu erledigen ist, steht gleich unter der Fokuskarte */}
-      <button
-        type="button"
-        className={`fin-open-strip${offene.length > 0 ? ' fin-open-strip--open' : ''}`}
-        onClick={() => onNavigate('offen')}
-      >
-        <span className="fin-open-strip-badge" aria-hidden="true"><AreaIcon id="clock" size={20} /></span>
-        <span className="fin-open-strip-text">
-          <b>{offene.length > 0 ? (offene.length === 1 ? '1 offener Posten' : `${offene.length} offene Posten`) : 'Alles bezahlt'}</b>
-          <small>{offene.length > 0 ? 'noch zu bezahlen' : 'keine offenen Posten'}</small>
-        </span>
-        {offene.length > 0 && <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>}
-        <span className="fin-open-strip-chev" aria-hidden="true">›</span>
-      </button>
-
-      {/* ── Schnellübersicht ──────────────────────────────────────────
-          Gesamter Block antippbar → navigiert zu Buchungen.
-          Einnahmen als 4. Kategorie (Ton "d") neben den drei Ausgabenblöcken.
-          Der gestapelte Balken zeigt alle 4 Segmente.
-      ─────────────────────────────────────────────────────────────── */}
-      <PageSection title="Schnellübersicht">
-        <button
-          className="fin-split-card fin-split-card--tappable"
-          onClick={() => onNavigate('buchungen')}
-          aria-label="Alle Buchungen ansehen"
-        >
-          {/* Balken: Ausgaben-Segmente + Einnahmen-Segment */}
-          {(totalAus > 0 || totalEin > 0) ? (
-            <>
-              <div className="fin-split-bar">
-                {spend.map((c) =>
-                  c.value > 0 && (
-                    <div
-                      key={c.key}
-                      className={`fin-split-seg fin-split-seg--${c.tone}`}
-                      style={{ width: `${(c.value / barTotal) * 100}%` }}
-                    />
-                  )
-                )}
-                {totalEin > 0 && (
-                  <div
-                    className="fin-split-seg fin-split-seg--d"
-                    style={{ width: `${(totalEin / barTotal) * 100}%` }}
-                  />
-                )}
-              </div>
-
-              {/* Legende: Fixkosten, Variable, Sonstiges, Einnahmen */}
-              <div className="fin-split-legend">
-                {spend.map((c) => (
-                  <span key={c.key} className="fin-split-legend-item">
-                    <i className={`fin-split-dot fin-split-dot--${c.tone}`} />
-                    {c.label} <b>{formatEur(c.value)}</b>
-                  </span>
-                ))}
-                <span className="fin-split-legend-item">
-                  <i className="fin-split-dot fin-split-dot--d" />
-                  Einnahmen <b>{formatEur(totalEin)}</b>
-                </span>
-              </div>
-            </>
-          ) : (
-            <div className="fin-split-empty">
-              {loading ? 'Lädt …' : 'In diesem Monat noch keine Einträge erfasst.'}
-            </div>
-          )}
-
-
+      {/* Offene Posten: nur sichtbar, wenn wirklich etwas offen ist */}
+      {offene.length > 0 && (
+        <button type="button" className="fin-open-strip" onClick={() => onNavigate('offen')}>
+          <span className="fin-open-strip-badge" aria-hidden="true"><AreaIcon id="clock" size={20} /></span>
+          <span className="fin-open-strip-text">
+            <b>{offene.length === 1 ? '1 offener Posten' : `${offene.length} offene Posten`}</b>
+            <small>noch zu bezahlen</small>
+          </span>
+          <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>
+          <span className="fin-open-strip-chev" aria-hidden="true">›</span>
         </button>
-      </PageSection>
+      )}
 
-      {/* ── Bereiche (Offene Posten steht als Streifen unter der Fokuskarte) */}
-      <PageSection title="Bereiche">
+      {/* Schnellübersicht: Kreisdiagramm, Einnahmen in der Mitte, drei Ausgabebereiche im Ring */}
+      <SpendDonut cats={spend} income={totalEin} monthLabel={MONTHS_DE[month - 1]} />
+
+      {/* Bereiche als Liste, ohne Überschrift (Offene Posten steht als Streifen unter der Fokuskarte) */}
+      <section className="page-section">
         <AreaList icons>
           <AreaRow
             label="Buchungen"
@@ -256,7 +190,7 @@ export default function OverviewSection({ onNavigate }) {
             onPress={() => onNavigate('einstellungen')}
           />
         </AreaList>
-      </PageSection>
+      </section>
 
       {/* Sparen ganz unten: Sparschwein und Sparpläne */}
       <SparschweinSection year={year} month={month} />

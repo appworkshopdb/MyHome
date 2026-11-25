@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import SheetShell from '../../../core/components/SheetShell';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import * as finData from '../lib/finData';
 import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
@@ -120,7 +119,7 @@ export default function SparschweinSection({ year, month }) {
 
   return (
     <>
-      <PageSection title="Sparen">
+      <section className="page-section">
         <AreaList>
           <button
             className="area-row"
@@ -138,7 +137,7 @@ export default function SparschweinSection({ year, month }) {
           {/* Sparpläne (nur mit Migration fin_savings_plans) und "Sparplan anlegen" */}
           <SavingsPlanRows />
         </AreaList>
-      </PageSection>
+      </section>
 
       {/* ── Hauptsheet: Kontostand + Verlauf ── */}
       {open && (
