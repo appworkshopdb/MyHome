@@ -28,7 +28,7 @@ import AreaRow from '../../../core/components/AreaRow.jsx';
 import AreaIcon from '../../../core/components/AreaIcons.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
 import SpendDonut from './SpendDonut.jsx';
-import { available } from '../lib/income';
+import { available, dedupeIncome } from '../lib/income';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -104,7 +104,7 @@ export default function OverviewSection({ onNavigate }) {
     .reduce((s, e) => s + Number(e.amount || 0), 0);
   // Nur schon eingegangene Einnahmen: Posten mit Datum in der Zukunft zählen erst ab diesem Tag
   // (wie "+ Eingänge" in der Fokuskarte, lib/income.js).
-  const arrived = entries.filter((e) => !isIncomePending(e, localTodayStr()));
+  const arrived = dedupeIncome(entries).filter((e) => !isIncomePending(e, localTodayStr()));
   const totalEin = sumCat(arrived, 'fixeinnahmen') + sumCat(arrived, 'sonstige_einnahmen') - totalEntnommen;
   const spend    = SPEND_CATS.map((c) => ({
     ...c,

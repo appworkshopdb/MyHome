@@ -33,6 +33,15 @@ const entryIdx = (e) => monthIdxOf(e.year, e.month);
 // Fälligkeitstag eines Postens (Posten ohne Datum gelten ab dem 1. ihres Monats)
 export const dueOf = (e) => String(e.due_date || `${e.year}-${pad(e.month)}-01`).slice(0, 10);
 
+// Früher legte die App Einnahmen aus Vorlagen automatisch an (ohne received_on). Wurde der Eingang
+// dieser Quelle im selben Monat inzwischen bestätigt, zählt nur die Bestätigung, sonst stünde das
+// Gehalt doppelt in den Summen. Nicht bestätigte alte Posten bleiben unverändert.
+export function dedupeIncome(entries) {
+  const key = (e) => `${e.from_template}:${e.year}-${e.month}`;
+  const confirmed = new Set(entries.filter((e) => !e.deleted_at && e.from_template && e.received_on).map(key));
+  return entries.filter((e) => !(e.from_template && !e.received_on && INCOME.has(e.category) && confirmed.has(key(e))));
+}
+
 // Bestätigung dieser Quelle im laufenden Kalendermonat (nicht gelöscht). Nur Posten mit
 // received_on (Knopf "Eingang bestätigen") gelten als bestätigt; früher automatisch
 // angelegte Einnahme-Posten nicht, sie zählen aber als Einnahme im Monat.
@@ -89,7 +98,7 @@ export function available(entries, today, startIdx = -Infinity) {
   const { y, m } = parts(today);
   const cur = monthIdxOf(y, m);
   const inRange = (e) => entryIdx(e) <= cur && entryIdx(e) >= startIdx;
-  const live = entries.filter((e) => !e.deleted_at);
+  const live = dedupeIncome(entries.filter((e) => !e.deleted_at));
   const eingaenge = r2(sum(live
     .filter((e) => INCOME.has(e.category) && inRange(e) && !isIncomePending(e, today))
     .map((e) => Number(e.amount || 0))));
