@@ -258,6 +258,11 @@ async function syncTemplateEntries(session, tpl) {
     const isFuture = entry.year > currentYear ||
       (entry.year === currentYear && entry.month > currentMonth);
 
+    if (!applies && entry.paid && !isFuture) {
+      // Bezahlte Posten aus Vergangenheit und laufendem Monat bleiben immer erhalten
+      // (z. B. beim Wechsel von monatlich auf Quartal) — sie sind abgerechnete Wahrheit.
+      continue;
+    }
     if (!applies) {
       // Vorlage gilt für diesen Monat nicht mehr — entweder wegen
       // geändertem Intervall ODER weil der Monat außerhalb von
