@@ -33,10 +33,12 @@ const entryIdx = (e) => monthIdxOf(e.year, e.month);
 // Fälligkeitstag eines Postens (Posten ohne Datum gelten ab dem 1. ihres Monats)
 export const dueOf = (e) => String(e.due_date || `${e.year}-${pad(e.month)}-01`).slice(0, 10);
 
-// Bestätigung dieser Quelle im laufenden Kalendermonat (nicht gelöscht)
+// Bestätigung dieser Quelle im laufenden Kalendermonat (nicht gelöscht). Nur Posten mit
+// received_on (Knopf "Eingang bestätigen") gelten als bestätigt; früher automatisch
+// angelegte Einnahme-Posten nicht, sie zählen aber als Einnahme im Monat.
 export function confirmedThisMonth(t, entries, today) {
-  const { y, m } = parts(today);
-  return entries.find((e) => e.from_template === t.id && !e.deleted_at && e.year === y && e.month === m) || null;
+  const ym = String(today).slice(0, 7);
+  return entries.find((e) => e.from_template === t.id && !e.deleted_at && e.received_on && String(e.received_on).slice(0, 7) === ym) || null;
 }
 
 export function lastConfirmed(t, entries) {
@@ -80,29 +82,32 @@ export function suggestedAmount(t, entries) {
 // Verfügbar jetzt
 // ---------------------------------------------------------------------
 // Einnahmen zählen ab ihrem Eingang (nicht, wenn das Datum in der Zukunft liegt) und nur
-// bis zum laufenden Monat; Bezahltes ohne den Sparschwein-Anteil (Geld kommt aus dem Sparschwein).
-export function available(entries, today) {
+// im Zeitraum vom Startmonat (startIdx) bis zum laufenden Monat. Bezahltes zählt wie in der
+// Monatsrechnung (auch der Sparschwein-Anteil), sonst stimmt "Verfügbar" nicht mit dem
+// bisherigen Saldo überein.
+export function available(entries, today, startIdx = -Infinity) {
   const { y, m } = parts(today);
   const cur = monthIdxOf(y, m);
+  const inRange = (e) => entryIdx(e) <= cur && entryIdx(e) >= startIdx;
   const live = entries.filter((e) => !e.deleted_at);
   const eingaenge = r2(sum(live
-    .filter((e) => INCOME.has(e.category) && entryIdx(e) <= cur && !isIncomePending(e, today))
+    .filter((e) => INCOME.has(e.category) && inRange(e) && !isIncomePending(e, today))
     .map((e) => Number(e.amount || 0))));
   const bezahlt = r2(sum(live
-    .filter((e) => EXPENSE.has(e.category))
-    .map((e) => sum(entryParts(e).filter((p) => p.paid && p.method !== 'Sparschwein').map((p) => Number(p.amount || 0))))));
-  const offen = live.filter((e) => isOpenExpense(e) && entryIdx(e) <= cur);
+    .filter((e) => EXPENSE.has(e.category) && entryIdx(e) >= startIdx)
+    .map((e) => sum(entryParts(e).filter((p) => p.paid).map((p) => Number(p.amount || 0))))));
+  const offen = live.filter((e) => isOpenExpense(e) && inRange(e));
   const offenSum = r2(sum(offen.map((e) => openAmount(e))));
   return { eingaenge, bezahlt, verf: r2(eingaenge - bezahlt), offen, offenSum };
 }
 
 // Geplante (noch nicht bezahlte) Ausgaben bis zu einem Tag: alles bis zum laufenden Monat plus
 // künftige Posten, die bis dahin fällig sind
-export function plannedUntil(entries, until, today) {
+export function plannedUntil(entries, until, today, startIdx = -Infinity) {
   const { y, m } = parts(today);
   const cur = monthIdxOf(y, m);
   return r2(sum(entries
-    .filter((e) => !e.deleted_at && isOpenExpense(e) && (entryIdx(e) <= cur || dueOf(e) <= until))
+    .filter((e) => !e.deleted_at && isOpenExpense(e) && entryIdx(e) >= startIdx && (entryIdx(e) <= cur || dueOf(e) <= until))
     .map((e) => openAmount(e))));
 }
 

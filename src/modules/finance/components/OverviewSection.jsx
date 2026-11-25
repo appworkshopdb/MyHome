@@ -52,6 +52,7 @@ export default function OverviewSection({ onNavigate }) {
   const [templates, setTemplates] = useState(snap?.templates ?? []);
   const [contracts, setContracts] = useState(snap?.contracts ?? []);
   const [allEntries, setAllEntries] = useState(snap?.allEntries ?? []);
+  const [startIdx, setStartIdx] = useState(snap?.startIdx ?? -Infinity);
   const [loading,   setLoading]   = useState(!snap);
   const hasData = useRef(Boolean(snap)); // schon etwas anzuzeigen → kein Ladezustand beim Aktualisieren
 
@@ -67,20 +68,22 @@ export default function OverviewSection({ onNavigate }) {
       // diesen Daten berechnet (vorher: zwei zusätzliche Abfragen davor); nur wenn
       // etwas angelegt wurde (selten, z. B. erster Aufruf im Monat), lädt es die
       // Posten noch einmal neu.
-      const [es0, ts, cs, all] = await Promise.all([
+      const [es0, ts, cs, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
         db.getContracts(s),
-        db.getAllEntries(s), // "Verfügbar jetzt" rechnet monatsübergreifend
+        db.getAllEntries(s), // "Verfügbar jetzt" rechnet monatsübergreifend ab dem Startmonat
+        db.getFinStartIdx(s, localTodayStr()),
       ]);
       const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
       const es = added > 0 ? await db.getEntriesByMonth(s, year, month) : es0;
       setEntries(es);
       setAllEntries(all);
+      setStartIdx(st);
       setTemplates(ts);
       setContracts(cs);
       hasData.current = true;
-      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, allEntries: all, templates: ts, contracts: cs });
+      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, allEntries: all, startIdx: st, templates: ts, contracts: cs });
     } catch (e) {
       console.error(e);
     } finally {
@@ -117,9 +120,9 @@ export default function OverviewSection({ onNavigate }) {
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
 
   // "Verfügbar jetzt": alle Eingänge bis heute minus alles Bezahlte, ohne Monatsgrenze (lib/income.js)
-  const stand = available(allEntries, today);
+  const stand = available(allEntries, today, startIdx);
   const hz = horizon(templates, allEntries, today);
-  const geplant = plannedUntil(allEntries, hz.date, today);
+  const geplant = plannedUntil(allEntries, hz.date, today, startIdx);
   const hzRest = stand.verf - geplant;
   const hzDate = `${hz.date.slice(8, 10)}.${hz.date.slice(5, 7)}.`;
 

@@ -28,13 +28,13 @@ const fmtD = (s) => { const [y, m, d] = String(s).slice(0, 10).split('-'); retur
 const fmtDs = (s) => { const [, m, d] = String(s).slice(0, 10).split('-'); return `${d}.${m}.`; };
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 
-function ConfirmSheet({ tpl, entries, today, onClose, onDone }) {
+function ConfirmSheet({ tpl, entries, today, startIdx, onClose, onDone }) {
   const { session } = useAuth();
   const { showToast } = useUi();
   const [value, setValue] = useState(NF.format(suggestedAmount(tpl, entries)));
   const [busy, setBusy] = useState(false);
   const v = parseMoney(value) || 0;
-  const cur = available(entries, today).verf;
+  const cur = available(entries, today, startIdx).verf;
 
   async function save() {
     if (!(v > 0) || busy) return;
@@ -51,7 +51,7 @@ function ConfirmSheet({ tpl, entries, today, onClose, onDone }) {
       onDone(saved, tpl);
     } catch (e) {
       console.error(e);
-      showToast('Bestätigen fehlgeschlagen');
+      showToast(e.message?.startsWith('Datenbank-Update') ? e.message : 'Bestätigen fehlgeschlagen');
       setBusy(false);
     }
   }
@@ -95,6 +95,7 @@ export default function IncomeView() {
   const { version, notifySaved } = useEntrySheet();
   const [templates, setTemplates] = useState([]);
   const [entries, setEntries] = useState([]);
+  const [startIdx, setStartIdx] = useState(-Infinity);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null); // Vorlage
   const [sheet, setSheet] = useState(null); // { item } bearbeiten, {} neu
@@ -106,7 +107,8 @@ export default function IncomeView() {
 
   const load = useCallback(async () => {
     try {
-      const [ts, es] = await Promise.all([finData.getFixTemplates(sessionRef.current), finData.getAllEntries(sessionRef.current)]);
+      const [ts, es, st] = await Promise.all([finData.getFixTemplates(sessionRef.current), finData.getAllEntries(sessionRef.current), finData.getFinStartIdx(sessionRef.current, localTodayStr())]);
+      setStartIdx(st);
       setTemplates(ts.filter(isIncomeTemplate).sort((a, b) => a.name.localeCompare(b.name)));
       setEntries(es);
     } catch (e) {
@@ -117,7 +119,7 @@ export default function IncomeView() {
   }, [showToast]);
   useEffect(() => { load(); }, [load, version]);
 
-  const stand = available(entries, today);
+  const stand = available(entries, today, startIdx);
   const active = templates.filter((t) => getTemplateStatus(t) !== 'expired');
   const history = entries
     .filter((e) => INCOME.has(e.category) && !e.deleted_at && dueOf(e) <= today)
@@ -222,6 +224,7 @@ export default function IncomeView() {
           tpl={confirm}
           entries={entries}
           today={today}
+          startIdx={startIdx}
           onClose={() => setConfirm(null)}
           onDone={(saved, tpl) => {
             setConfirm(null);
