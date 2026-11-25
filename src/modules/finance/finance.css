@@ -297,13 +297,3 @@
 .inc-note { margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--rad-lg); background: var(--mod-fin-tint); color: var(--mod-fin-ink); font-size: var(--fs-small); font-weight: 600; line-height: 1.45; }
 .inc-note b { font-weight: 800; }
 
-/* Fokuskarte Zusatz: Bis zum nächsten Eingang / Monatsende */
-.fin-cycle { margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border-hairline); border-radius: var(--rad-xl); background: var(--surface-raised); }
-.fin-cycle-h { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-2); }
-.fin-cycle-h b { font-size: var(--fs-small); font-weight: 800; }
-.fin-cycle-h span { font-size: var(--fs-meta); font-weight: 600; color: var(--text-muted); }
-.fin-cycle-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-2); }
-.fin-cycle-g small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--text-muted); }
-.fin-cycle-g b { display: block; font-size: var(--fs-small); font-weight: 800; font-variant-numeric: tabular-nums; }
-.fin-cycle-g b.pos { color: var(--status-positive); }
-.fin-cycle-g b.neg { color: var(--status-critical); }

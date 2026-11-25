@@ -102,21 +102,3 @@ export function available(entries, today, startIdx = -Infinity) {
   const offenSum = r2(sum(offen.map((e) => openAmount(e))));
   return { eingaenge, bezahlt, verf: r2(eingaenge - bezahlt), offen, offenSum };
 }
-
-// Geplante (noch nicht bezahlte) Ausgaben bis zu einem Tag: alles bis zum laufenden Monat plus
-// künftige Posten, die bis dahin fällig sind
-export function plannedUntil(entries, until, today, startIdx = -Infinity) {
-  const { y, m } = parts(today);
-  const cur = monthIdxOf(y, m);
-  return r2(sum(entries
-    .filter((e) => !e.deleted_at && isOpenExpense(e) && entryIdx(e) >= startIdx && (entryIdx(e) <= cur || dueOf(e) <= until))
-    .map((e) => openAmount(e))));
-}
-
-// Horizont der Fokuskarte: nächster erwarteter Fix-Eingang, sonst Monatsende
-export function horizon(templates, entries, today) {
-  const dates = templates.filter((t) => isIncomeTemplate(t) && !t.deleted_at).map((t) => expectedDate(t, entries, today)).filter(Boolean).sort();
-  if (dates.length) return { kind: 'gehalt', date: dates[0] };
-  const { y, m } = parts(today);
-  return { kind: 'monat', date: `${y}-${pad(m)}-${pad(new Date(y, m, 0).getDate())}` };
-}

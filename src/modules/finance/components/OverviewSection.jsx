@@ -26,7 +26,7 @@ import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
-import { available, horizon, plannedUntil } from '../lib/income';
+import { available } from '../lib/income';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -121,10 +121,6 @@ export default function OverviewSection({ onNavigate }) {
 
   // "Verfügbar jetzt": alle Eingänge bis heute minus alles Bezahlte, ohne Monatsgrenze (lib/income.js)
   const stand = available(allEntries, today, startIdx);
-  const hz = horizon(templates, allEntries, today);
-  const geplant = plannedUntil(allEntries, hz.date, today, startIdx);
-  const hzRest = stand.verf - geplant;
-  const hzDate = `${hz.date.slice(8, 10)}.${hz.date.slice(5, 7)}.`;
 
   const expiring =
     templates.filter((t) => getTemplateStatus(t) === 'expiring').length +
@@ -159,20 +155,6 @@ export default function OverviewSection({ onNavigate }) {
           <span>− Bezahltes <b>{formatEur(stand.bezahlt)}</b></span>
         </FocusCard.Meta>
       </FocusCard>
-
-      {!loading && (
-        <div className="fin-cycle">
-          <div className="fin-cycle-h">
-            <b>{hz.kind === 'gehalt' ? 'Bis zum nächsten Eingang' : 'Bis Monatsende'}</b>
-            <span>{hz.kind === 'gehalt' ? `erwartet ${hzDate}` : hzDate}</span>
-          </div>
-          <div className="fin-cycle-g">
-            <div><small>Verfügbar</small><b>{formatEur(stand.verf)}</b></div>
-            <div><small>Geplant</small><b>− {formatEur(geplant)}</b></div>
-            <div><small>Rest</small><b className={hzRest < 0 ? 'neg' : 'pos'}>{formatEur(hzRest)}</b></div>
-          </div>
-        </div>
-      )}
 
       {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
       <SparschweinSection year={year} month={month} />
