@@ -144,7 +144,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
       });
     } catch (e) {
       console.error(e);
-      showToast('Speichern fehlgeschlagen');
+      showToast(e?.userMessage || 'Speichern fehlgeschlagen');
       setSaving(false);
     }
   }

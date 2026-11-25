@@ -2,7 +2,7 @@ import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
 import { templateAppliesTo, dueDateFor, MONTHS_DE, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, localTodayStr as localTodayStrFin } from './finance';
-import { rateName, rebalanceRates } from './savingsPlans';
+import { maxForRate, rateName, rebalanceRates } from './savingsPlans';
 
 function ownerId(session) {
   return session.user.id;
@@ -764,58 +764,100 @@ export async function endSavingsPlan(session, planId) {
   invalidateHubCache();
 }
 
+// Höchstbetrag, den eine Rate bekommen darf (was bis zum Ziel fehlt). Gilt für den Plan-Dialog
+// und für den Stift in den Buchungen, damit die Summe der Raten nie über dem Ziel liegt.
+export async function savingsPlanRateMax(session, planId, rateId) {
+  const { data: plan, error } = await getSupabase().from('fin_savings_plans').select('*')
+    .eq('owner_id', ownerId(session)).eq('id', planId).single();
+  if (error) throw error;
+  const rates = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  if (!rates.some((r) => r.id === rateId)) throw new Error('Rate nicht gefunden');
+  return maxForRate(plan, rates, rateId);
+}
+
 // Nach der Änderung einer Rate (Plan oder Stift in den Buchungen) die übrigen Raten
 // so anpassen, dass die Summe wieder das Ziel ergibt (lib/savingsPlans.js rebalanceRates).
-// Gibt einen Schnappschuss der Raten vorher zurück (für "Rückgängig machen").
+// Besteht ein Schritt nicht, wird der Stand von vorher wiederhergestellt (siehe unten) und der
+// Fehler weitergegeben. Gibt das Ergebnis des Ausgleichs zurück.
 export async function rebalanceSavingsPlan(session, planId, changedId) {
   const sb = getSupabase();
-  const { data: plan, error: pErr } = await sb.from('fin_savings_plans').select('*').eq('id', planId).single();
+  const owner = ownerId(session);
+  const { data: plan, error: pErr } = await sb.from('fin_savings_plans').select('*')
+    .eq('owner_id', owner).eq('id', planId).single();
   if (pErr) throw pErr;
   const rates = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
   const res = rebalanceRates(plan, rates, changedId, localTodayStrFin());
-  for (const u of res.updates) {
-    const r = rates.find((x) => x.id === u.id);
-    // eslint-disable-next-line no-await-in-loop
-    const { error } = await sb.from('fin_entries').update({ amount: u.amount, payments: [{ method: r.payment || 'Bank', amount: u.amount, paid: false }] }).eq('id', u.id);
-    if (error) throw error;
-  }
-  if (res.removes.length) {
-    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() }).in('id', res.removes);
-    if (error) throw error;
-  }
-  if (res.inserts.length) {
-    const { error } = await sb.from('fin_entries').insert(res.inserts.map((r) => rateRow(session, plan, r)));
-    if (error) throw error;
+  try {
+    for (const u of res.updates) {
+      const r = rates.find((x) => x.id === u.id);
+      // eslint-disable-next-line no-await-in-loop
+      const { error } = await sb.from('fin_entries').update({ amount: u.amount, payments: [{ method: r.payment || 'Bank', amount: u.amount, paid: false }] })
+        .eq('owner_id', owner).eq('id', u.id);
+      if (error) throw error;
+    }
+    if (res.removes.length) {
+      const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() })
+        .eq('owner_id', owner).in('id', res.removes);
+      if (error) throw error;
+    }
+    if (res.inserts.length) {
+      const { error } = await sb.from('fin_entries').insert(res.inserts.map((r) => rateRow(session, plan, r)));
+      if (error) throw error;
+    }
+  } catch (err) {
+    // Halb ausgeglichener Plan = falsche Summe: zurück auf den Stand vor dem Ausgleich.
+    try { await restoreSavingsPlanRates(session, planId, rates); } catch (e2) { console.error('[Sparplan] Zurücksetzen fehlgeschlagen', e2); }
+    throw err;
   }
   invalidateHubCache();
   return res;
 }
 
 // Eine Rate auf einen neuen Betrag setzen und den Plan ausgleichen. Rückgabe: Schnappschuss
-// aller Raten vorher, mit dem restoreSavingsPlanRates alles zurückholt.
+// aller Raten vorher, mit dem restoreSavingsPlanRates alles zurückholt. Schlägt der Ausgleich
+// fehl, steht danach auch die Rate wieder auf dem alten Betrag.
 export async function changeSavingsPlanRate(session, planId, rateId, amount) {
   const before = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
   const me = before.find((r) => r.id === rateId);
+  if (!me) throw new Error('Rate nicht gefunden');
   const { error } = await getSupabase().from('fin_entries')
-    .update({ amount, payments: [{ method: me.payment || 'Bank', amount, paid: !!me.paid }] }).eq('id', rateId);
+    .update({ amount, payments: [{ method: me.payment || 'Bank', amount, paid: !!me.paid }] })
+    .eq('owner_id', ownerId(session)).eq('id', rateId);
   if (error) throw error;
-  await rebalanceSavingsPlan(session, planId, rateId);
+  try {
+    await rebalanceSavingsPlan(session, planId, rateId);
+  } catch (err) {
+    try { await restoreSavingsPlanRates(session, planId, before); } catch (e2) { console.error('[Sparplan] Zurücksetzen fehlgeschlagen', e2); }
+    throw err;
+  }
   return before;
 }
 
+// Raten auf den Stand eines Schnappschusses zurücksetzen ("Rückgängig machen" und Rollback).
+// Eine Rate, die inzwischen bezahlt oder wieder offen gesetzt wurde, bleibt unangetastet
+// (Zahlung während der Rückgängig-Frist geht nicht verloren). Fehler brechen die Schleife nicht
+// ab: es wird so viel wie möglich zurückgesetzt, danach wird der erste Fehler geworfen.
 export async function restoreSavingsPlanRates(session, planId, before) {
   const sb = getSupabase();
+  const owner = ownerId(session);
   const now = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
-  const keep = new Set(before.map((r) => r.id));
-  const added = now.filter((r) => !keep.has(r.id)).map((r) => r.id);
+  const old = new Map(before.map((r) => [r.id, r]));
+  const nowById = new Map(now.map((r) => [r.id, r]));
+  const added = now.filter((r) => !old.has(r.id) && !r.paid).map((r) => r.id);
+  let firstError = null;
   if (added.length) {
-    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() }).in('id', added);
-    if (error) throw error;
+    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() })
+      .eq('owner_id', owner).in('id', added);
+    if (error) firstError = error;
   }
   for (const r of before) {
+    const cur = nowById.get(r.id);
+    if (cur && !!cur.paid !== !!r.paid) continue; // zwischenzeitlich bezahlt/geändert: lassen
     // eslint-disable-next-line no-await-in-loop
-    const { error } = await sb.from('fin_entries').update({ amount: r.amount, payments: r.payments, paid: r.paid, deleted_at: null }).eq('id', r.id);
-    if (error) throw error;
+    const { error } = await sb.from('fin_entries').update({ amount: r.amount, payments: r.payments, paid: r.paid, deleted_at: null })
+      .eq('owner_id', owner).eq('id', r.id);
+    if (error && !firstError) firstError = error;
   }
   invalidateHubCache();
+  if (firstError) throw firstError;
 }

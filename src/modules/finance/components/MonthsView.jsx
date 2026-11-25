@@ -288,15 +288,24 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   async function handleSave(entry) {
     const old = entries.find((e) => e.id === entry.id);
     const lock = old?.from_template && !old.template_locked && changedByHand(old, entry);
+    const rateChanged = Boolean(entry.savings_plan_id && old && Math.abs(Number(old.amount) - Number(entry.amount)) > 0.004);
+    if (rateChanged) {
+      // Mehr als bis zum Ziel fehlt lässt sich nicht ausgleichen: dann gar nicht erst speichern.
+      const max = await db.savingsPlanRateMax(session, entry.savings_plan_id, entry.id);
+      if (Number(entry.amount) > max + 0.004) {
+        throw Object.assign(new Error('Rate über dem Sparziel'), { userMessage: `Höchstens ${formatEur(max)} bis zum Ziel` });
+      }
+    }
     const saved = await db.saveEntry(session, { ...entry, year, month, ...(lock ? { template_locked: true } : {}) });
     // Sparplan-Rate mit neuem Betrag: Schlussraten anpassen, damit das Ziel wieder stimmt
     // (gleiche Wirkung wie "Rate ändern" im Plan)
-    if (entry.savings_plan_id && old && Math.abs(Number(old.amount) - Number(entry.amount)) > 0.004) {
-      try { await db.rebalanceSavingsPlan(session, entry.savings_plan_id, entry.id); } catch (e) { console.error('[Sparplan] Anpassen fehlgeschlagen', e); }
+    let rebalanceFailed = false;
+    if (rateChanged) {
+      try { await db.rebalanceSavingsPlan(session, entry.savings_plan_id, entry.id); } catch (e) { rebalanceFailed = true; console.error('[Sparplan] Anpassen fehlgeschlagen', e); }
     }
     // Sofort sichtbar machen (Ansicht bleibt offen); der Reload holt den Rest nach
     setEntries((prev) => prev.map((e) => (e.id === saved.id ? saved : e)));
-    showToast('Eintrag aktualisiert');
+    showToast(rebalanceFailed ? 'Rate gespeichert, Sparplan nicht angepasst' : 'Eintrag aktualisiert');
     load();
     notifySaved();
   }

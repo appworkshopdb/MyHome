@@ -248,7 +248,7 @@
 .spr-more small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--text-muted); }
 .spr-more-ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: var(--r-pill); background: var(--mod-fin-tint); color: var(--mod-fin-deep); font-size: var(--fs-title); font-weight: 700; line-height: 1; }
 .spr-more:focus-visible, .spr-rate--tap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.spr-rate--tap { display: flex; align-items: center; gap: var(--sp-3); min-height: 42px; font-size: var(--fs-small); width: 100%; padding: 0; border: 0; border-bottom: 1px solid var(--border-hairline); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.spr-rate--tap { display: flex; align-items: center; gap: var(--sp-3); min-height: var(--hit-min); width: 100%; padding: 0; border: 0; border-bottom: 1px solid var(--border-hairline); background: none; color: inherit; font: inherit; font-size: var(--fs-small); text-align: left; cursor: pointer; }
 .spr-rate .spr-rate-chev { width: 12px; flex: none; color: var(--text-muted); font-weight: 700; }
 .spr-chg { margin-left: var(--sp-2); padding: 1px 6px; border-radius: var(--r-pill); background: var(--mod-fin-tint); color: var(--mod-fin-ink); font-style: normal; font-size: var(--fs-caption); font-weight: 800; }
 .spr-pv { display: block; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: var(--rad-lg); }
