@@ -94,7 +94,9 @@ export function available(entries, today, startIdx = -Infinity) {
     .filter((e) => INCOME.has(e.category) && inRange(e) && !isIncomePending(e, today))
     .map((e) => Number(e.amount || 0))));
   const bezahlt = r2(sum(live
-    .filter((e) => EXPENSE.has(e.category) && entryIdx(e) >= startIdx)
+    // Posten künftiger Monate zählen nicht (Bar-Posten aus Vorlagen sind dort schon beim Anlegen "bezahlt");
+    // nur eine bewusst vorgezogene Sparrate zählt auch im Voraus (Geld ist schon im Sparschwein)
+    .filter((e) => EXPENSE.has(e.category) && entryIdx(e) >= startIdx && (entryIdx(e) <= cur || e.savings_plan_id))
     .map((e) => sum(entryParts(e).filter((p) => p.paid).map((p) => Number(p.amount || 0))))));
   const offen = live.filter((e) => isOpenExpense(e) && inRange(e));
   const offenSum = r2(sum(offen.map((e) => openAmount(e))));
