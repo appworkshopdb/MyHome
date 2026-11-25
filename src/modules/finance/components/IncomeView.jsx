@@ -17,7 +17,7 @@ import ActionToast from '../../../core/components/ActionToast';
 import { WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import { fmtDate, parseMoney } from '../../../core/lib/wizardDates';
 import * as finData from '../lib/finData';
-import { formatEur, getTemplateStatus, intervalLabel, localTodayStr } from '../lib/finance';
+import { formatEur, getTemplateStatus, intervalLabel, isSparschweinDirectWithdrawal, localTodayStr } from '../lib/finance';
 import {
   available, dueOf, incomeMode, incomeState, isIncomeTemplate, suggestedAmount,
 } from '../lib/income';
@@ -122,7 +122,8 @@ export default function IncomeView() {
   const stand = available(entries, today, startIdx);
   const active = templates.filter((t) => getTemplateStatus(t) !== 'expired');
   const history = entries
-    .filter((e) => INCOME.has(e.category) && !e.deleted_at && dueOf(e) <= today)
+    // Sparschwein-Entnahmen sind Umbuchungen, keine Eingänge
+    .filter((e) => INCOME.has(e.category) && !e.deleted_at && !isSparschweinDirectWithdrawal(e) && dueOf(e) <= today)
     .sort((a, b) => (dueOf(a) < dueOf(b) ? 1 : -1))
     .slice(0, 8);
 
