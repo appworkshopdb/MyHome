@@ -1,0 +1,18 @@
+# systemd-Unit für die Design-Werkstatt auf dem Server (Entwicklungswerkzeug, nicht Teil der App).
+# Installation siehe tools/werkstatt/SERVER.md. Lauscht nur auf 127.0.0.1:5180, Zugriff per SSH-Tunnel.
+[Unit]
+Description=Nestua Design-Werkstatt
+After=network.target
+
+[Service]
+Type=simple
+User=nestua
+WorkingDirectory=/opt/nestua/werkstatt
+# Pfad zu node mit `which node` prüfen und ggf. anpassen.
+ExecStartPre=/usr/bin/node tools/werkstatt/scan.mjs
+ExecStart=/usr/bin/node node_modules/.bin/vite --config tools/werkstatt/vite.config.js --host 127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

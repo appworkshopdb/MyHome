@@ -54,6 +54,21 @@ export const isOpenExpense = (e) => EXPENSE_CATEGORIES.has(e.category)
   && String(e.name || '').trim().toLowerCase() !== SAVINGS_DEPOSIT_NAME
   && openAmount(e) > 0;
 
+// Einnahme mit Fälligkeitsdatum in der Zukunft: zählt erst ab diesem Tag (heute zählt schon).
+// Einnahmen ohne Datum zählen sofort. Die Sparschwein-Entnahme ("Sparschwein"-Einnahme) ist
+// ein Transfer und wird hier nicht berücksichtigt. `today` = lokales 'YYYY-MM-DD'.
+const INCOME_CATEGORIES = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
+export const isIncomePending = (e, today) => INCOME_CATEGORIES.has(e.category)
+  && String(e.name || '').trim().toLowerCase() !== 'sparschwein'
+  && Boolean(e.due_date) && String(e.due_date).slice(0, 10) > today;
+
+// "1 offene Zahlung", "2 offene Zahlungen" (Fokuskarte) und "offener Zahlung(en)" nach "inkl."
+export const offeneZahlungenText = (n) => (n === 1 ? '1 offene Zahlung' : `${n} offene Zahlungen`);
+export const offenerZahlungenText = (n) => (n === 1 ? 'offener Zahlung' : 'offener Zahlungen');
+
+// "1 offener Posten", "2 offene Posten": Text passend zur Anzahl.
+export const offenePostenText = (n) => (n === 1 ? '1 offener Posten' : `${n} offene Posten`);
+
 // Schon bezahlter Betrag
 export function paidAmount(entry) {
   return entryParts(entry).filter((p) => p.paid).reduce((s, p) => s + p.amount, 0);

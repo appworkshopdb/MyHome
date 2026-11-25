@@ -46,6 +46,19 @@ export function isSparschweinDeposit(entry) {
     normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase();
 }
 
+// Sparplan-Rate (Buchung mit savings_plan_id, Name "Sparrate · …", lib/savingsPlans.js):
+// eine geplante Variable Ausgabe — steht unter Variable Kosten, zählt als Ausgabe im
+// Saldo und in der Auswertung, ist bis zur Einzahlung ein offener Posten.
+export function isSavingsPlanRate(entry) {
+  return EXPENSE_CATEGORIES.has(entry.category) && Boolean(entry.savings_plan_id);
+}
+
+// Was zählt im Sparschwein-Stand als Einzahlung? "Ersparnisse" sofort,
+// Sparplan-Raten erst, wenn sie bezahlt sind.
+export function isCountedDeposit(entry) {
+  return isSparschweinDeposit(entry) || (isSavingsPlanRate(entry) && entry.paid === true);
+}
+
 // Entnahme aus dem Sparschwein — zwei Wege:
 //  1. Zahlungsart "Sparschwein" auf einem beliebigen Ausgaben-Eintrag,
 //     egal welche Kategorie (Fixkosten/Variable/Sonstige) — der
@@ -89,6 +102,27 @@ export function isSparschweinDirectWithdrawal(entry) {
     normName(entry.name) === SPARSCHWEIN_WITHDRAWAL_NAME.toLowerCase();
 }
 
+// Fälligkeitsdatum eines Monatspostens aus dem Tag der Vorlage ("fällig am 28."):
+// 'YYYY-MM-DD', der Tag wird auf die Monatslänge begrenzt (31. → 28./29./30.).
+export function dueDateFor(day, year, month) {
+  const d = Number(day);
+  if (!d) return null;
+  const last = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+}
+
+// Heute als lokales 'YYYY-MM-DD' (nie über toISOString, siehe CLAUDE.md).
+export function localTodayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Steht der Posten in der Buchungsliste? Sparschwein-Einzahlung ("Ersparnisse") und
+// -Entnahme sind Transfers und stehen nicht in den Kategorien, sondern im Sparschwein.
+// Die Zahl "N im Monat" auf der Übersicht zählt genau die Posten der Buchungsliste.
+export function isListedEntry(entry) {
+  return !isSparschweinDeposit(entry) && !isSparschweinDirectWithdrawal(entry);
+}
+
 // Gibt den Betrag zurück der tatsächlich aus dem Sparschwein entnommen wird.
 // Bei Teilzahlung (payments-Array) nur den Sparschwein-Anteil, nicht Gesamtbetrag.
 export function getSparschweinWithdrawalAmount(entry) {
@@ -130,7 +164,7 @@ export function isInstantPaid(paymentsOrMethod) {
   return isInstantMethod(paymentsOrMethod);
 }
 export {
-  isInstantMethod, entryParts, openAmount, isOpenExpense, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  isInstantMethod, entryParts, openAmount, isOpenExpense, isIncomePending, offenePostenText, offeneZahlungenText, offenerZahlungenText, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../../../core/lib/paymentParts.js';
 
 export const PAYMENTS = ['Bank', 'Bar', 'Paypal', 'SEPA', 'Gutschein', 'Klarna', 'Sparschwein'];
@@ -230,6 +264,18 @@ export function templateAppliesTo(t, year, month) {
 // Vertragsstatus: active / expiring (< 30 Tage) / expired
 // Unterstützt jetzt auch `contract_duration_months` als Alternative zu
 // einem expliziten `end_date`.
+
+// Monate addieren, ohne am Monatsende in den Folgemonat zu springen:
+// 31.01. + 1 Monat = 28.02. (nicht 03.03.).
+export function addMonthsClamped(date, months) {
+  const d = new Date(date);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + Number(months));
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return d;
+}
+
 export function getContractStatus(c) {
   // Kein Ende definiert oder unbefristet
   if (c.is_open || (!c.end_date && !c.contract_duration_months)) return 'active';
@@ -239,8 +285,7 @@ export function getContractStatus(c) {
   if (!endDate && c.contract_duration_months && c.start_date) {
     const start = new Date(c.start_date);
     if (!isNaN(start)) {
-      endDate = new Date(start);
-      endDate.setMonth(endDate.getMonth() + Number(c.contract_duration_months));
+      endDate = addMonthsClamped(start, c.contract_duration_months);
     }
   }
 
@@ -260,9 +305,7 @@ export function getContractEndDate(c) {
   if (c.contract_duration_months && c.start_date) {
     const start = new Date(c.start_date);
     if (!isNaN(start)) {
-      const end = new Date(start);
-      end.setMonth(end.getMonth() + Number(c.contract_duration_months));
-      return end;
+      return addMonthsClamped(start, c.contract_duration_months);
     }
   }
   return null;
@@ -288,9 +331,7 @@ export function getTemplateEndDate(t) {
   if (t.contract_duration_months && t.start_date) {
     const s = new Date(t.start_date);
     if (!isNaN(s)) {
-      const e = new Date(s);
-      e.setMonth(e.getMonth() + Number(t.contract_duration_months));
-      return e;
+      return addMonthsClamped(s, t.contract_duration_months);
     }
   }
   return null;

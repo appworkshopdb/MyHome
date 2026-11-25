@@ -18,6 +18,10 @@ import {
   isSparschweinDirectWithdrawal,
   openAmount,
   isOpenExpense,
+  isListedEntry,
+  isIncomePending,
+  offenerZahlungenText,
+  localTodayStr,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
@@ -102,8 +106,15 @@ export default function OverviewSection({ onNavigate }) {
   const totalGespart = entries
     .filter((e) => isSparschweinDeposit(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  const saldo      = totalEin - totalAus - totalGespart;
-  const spentRatio = totalEin > 0 ? Math.min(1, totalAus / totalEin) : 0;
+  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
+  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
+  const ausAnzeige = totalAus + totalGespart;
+  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
+  const today = localTodayStr();
+  const einErhalten = totalEin - entries
+    .filter((e) => isIncomePending(e, today))
+    .reduce((s, e) => s + Number(e.amount || 0), 0);
+  const saldo      = einErhalten - ausAnzeige;
 
   // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
   // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
@@ -112,6 +123,10 @@ export default function OverviewSection({ onNavigate }) {
   // sofort als bezahlt, auch bei geteilter Zahlung).
   const offene = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
+  // "Aktuell" = Saldo vor den offenen Zahlungen; Balken: bezahlt ausgefüllt, offen schraffiert
+  const aktuell = saldo + offeneSumme;
+  const paidRatio = einErhalten > 0 ? Math.max(0, (ausAnzeige - offeneSumme) / einErhalten) : 0;
+  const openRatio = einErhalten > 0 ? offeneSumme / einErhalten : 0;
 
   const expiring =
     templates.filter((t) => getTemplateStatus(t) === 'expiring').length +
@@ -136,12 +151,17 @@ export default function OverviewSection({ onNavigate }) {
       <FocusCard>
         <FocusCard.Eyebrow>Saldo</FocusCard.Eyebrow>
         <FocusCard.Value>{loading ? '—' : formatEur(saldo)}</FocusCard.Value>
+        {!loading && offene.length > 0 && (
+          <FocusCard.Meta>
+            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
+          </FocusCard.Meta>
+        )}
+        <FocusCard.Progress value={paidRatio} open={openRatio} />
         <FocusCard.Meta>
           {/* "+" statt "Ein", "−" statt "Aus" */}
-          <span>+ <b>{formatEur(totalEin)}</b></span>
-          <span>− <b>{formatEur(totalAus)}</b></span>
+          <span>+ <b>{formatEur(einErhalten)}</b></span>
+          <span>− <b>{formatEur(ausAnzeige)}</b></span>
         </FocusCard.Meta>
-        <FocusCard.Progress value={spentRatio} />
       </FocusCard>
 
       {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
@@ -210,7 +230,7 @@ export default function OverviewSection({ onNavigate }) {
             label="Buchungen"
             icon="list"
             featured
-            value={`${entries.length} im Monat`}
+            value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
           />
           <AreaRow

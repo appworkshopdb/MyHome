@@ -6,6 +6,7 @@ import { UiProvider } from './core/lib/UiContext';
 import { registerServiceWorker } from './core/lib/pushNotifications';
 import { initAnalytics } from './core/lib/analytics';
 
+import '../design/tokens.css';
 import './styles/base.css';
 import './styles/themes.css';
 import './styles/layout.css';

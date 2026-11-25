@@ -3,6 +3,7 @@
 //   null               → OverviewSection (Übersicht)
 //   'gewohnheiten'     → HabitsView (Meine Gewohnheiten, lazy)
 //   'statistik'        → StatsView (Cockpit mit Zeitraum-/Gewohnheitsfilter)
+//   'archiv'           → HabitArchiveView (gelöschte Gewohnheiten, lazy)
 
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import ModuleTopBar     from '../../core/components/ModuleTopBar.jsx';
@@ -10,6 +11,7 @@ import OverviewSection  from './components/OverviewSection.jsx';
 import StatsView        from './components/StatsView.jsx';
 
 const HabitsView = lazy(() => import('./components/HabitsView.jsx'));
+const HabitArchiveView = lazy(() => import('./components/HabitArchiveView.jsx'));
 
 import { useHabitsStore, loadHabitsData, reloadHabits, reloadEntries } from '../../core/lib/habitsStore.js';
 import './habits.css';
@@ -48,6 +50,22 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
           <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
             <HabitsView
               habits={habits}
+              onHabitsChange={async () => { await fetchHabits(); await fetchEntries(); }}
+            />
+          </Suspense>
+        </div>
+      </>
+    );
+  }
+
+  // ── Archiv ──
+  if (view === 'archiv') {
+    return (
+      <>
+        <ModuleTopBar onBack={() => onNavigateView(null)} hasWarnings={hasWarnings} />
+        <div className="hab-module-content with-topbar-space">
+          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            <HabitArchiveView
               onHabitsChange={async () => { await fetchHabits(); await fetchEntries(); }}
             />
           </Suspense>

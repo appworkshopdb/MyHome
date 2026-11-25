@@ -7,6 +7,12 @@ description: Eine bestehende Nestua-Seite oder einen Bereich ins neue Design (wa
 
 **Reihenfolge:** Mockup (Skill `nestua-mockup`) → Nutzer bestätigt → hier umbauen → prüfen (Skill `nestua-visual-check`) → committen und auf `staging` pushen. Nie ohne Bestätigung umbauen, nie einen Pull Request ohne Aufforderung.
 
+## Design-Werkstatt und Tokens
+
+Das Design wird gerade vereinheitlicht: erst Interface Inventory (`npm run werkstatt`, Zahlen zu Schrift, Abstand, Ecken, Farben, Buttons), dann Skalen als Tokens, dann gemeinsame Bausteine, dann Seite für Seite umstellen. Neue Seiten nicht mit eigenen Pixelwerten bauen, sondern an die Skalen halten, sobald sie festgelegt sind (`CLAUDE.md`, Abschnitt Design-Werkstatt).
+
+**Regelwerk: `design/DESIGN.md`** (Leitlinien, Designrichtung, Tokens, harte Regeln, Prüfung vor dem Merge). Bei Widersprüchen gilt DESIGN.md. Vor dem Merge zählt die Design-Ratsche im Regel-Check feste Farben, Schriftgrößen, Radien und Inline-Styles: unterm Strich mehr als vorher blockiert den Merge. Lokal prüfen mit `npm run pruefer`; das Design-Review des Prüfer-Agenten meldet zusätzlich Empfehlungen nach Discord #pruefer.
+
 ## Grundregeln
 
 - **Nur Gestaltung ändern.** Daten, Logik, Texte, Verlinkungen, Bilder und Symbole bleiben. Ausnahme sind ausdrückliche Wünsche des Nutzers (zum Beispiel "Dauer entfernen").
@@ -51,6 +57,8 @@ Die Liste wird von Hand gepflegt und kann hinter dem Code zurückliegen (andere 
 - Gewohnheiten · Anlegen/Bearbeiten-Formular (laut Commit: Karten Grundlagen, Rhythmus, Ziel, Kategorien).
 - Sport · Pläne mit Plan-Editor, Plan-Wizard (drei Stufen), Plan-Auswahl und aktivem Dauerplan; Einheiten-Galerie und erweiterter Katalog (laut Commits).
 - Einkauf · Abschluss einer Liste (Zahlungsschritt mit Beleg-Scan, "Als Vorlage speichern") in neuer Optik (laut Commits).
+- Finanzen · Verträge (Karten ohne Fokuskarte, drei Symbole) und die Fenster "Einnahme hinzufügen" / "Fixkosten oder Vertrag hinzufügen" / Bearbeiten (`RecurringSheet`), 2026-11-23.
+- Finanzen · Einstellungen (Backup als Fokuskarte, Importieren/Excel, Gefahrenbereich mit Eintipp-Bestätigung "Löschen"), 2026-11-23.
 
 **Entwurf vorhanden, vom Nutzer noch nicht bestätigt** (Mockup neu zeigen oder nachfragen):
 - Finanzen · Buchungen (und Offene Posten): blaue Saldo-Karte, Kategorien als Kacheln mit Anteilsbalken.
@@ -58,7 +66,7 @@ Die Liste wird von Hand gepflegt und kann hinter dem Code zurückliegen (andere 
 - Ernährung · Mahlzeiten: grüne Tageskarte, Einträge nach Mahlzeit gruppiert.
 
 **Noch ohne Entwurf**
-- Finanzen: Verträge, Auswertung, Einstellungen, Sparschwein-Sheet, Posten-Detail.
+- Finanzen: Auswertung, Sparschwein-Sheet, Posten-Detail.
 - Ernährung: Rezepte, Ampel, Tipps, Rezept-Dialog, Mahlzeit-Scan.
 - Sport: Monats- und Wochenkalender (Einheiten-Galerie siehe oben, Zustand prüfen).
 - Gewohnheiten: Statistik.
@@ -74,6 +82,7 @@ Beträge ausblenden (`Money.jsx`) ist bisher nur im Hub eingebaut. Beim Umbau vo
 - [ ] Hell **und** Dunkel angesehen, auch bei 320 px (Skill `nestua-visual-check`, `W=320`).
 - [ ] Keine Konsolenfehler; Klick-Wege (abhaken, öffnen, löschen) einmal im Testlauf durchgespielt.
 - [ ] Keine festen Hex-Farben, kein `filter`/`transform` an Vorfahren der festen Leisten.
+- [ ] `npm run pruefer` ohne Design-Fehler (Ratsche aus `design/DESIGN.md`, Abschnitt 7).
 - [ ] `npx vite build` läuft durch.
 - [ ] In `CLAUDE.md` nur ergänzen, was künftige Sitzungen wissen müssen (kurz). Stand oben in diesem Skill nachziehen.
 - [ ] `dev.sh stop` ausgeführt, `.env.local` weg, `git status` sauber bis auf die gewollten Dateien.

@@ -111,11 +111,11 @@ export const TUTORIALS = {
       { title: 'Training planen und abhaken', text: 'Plane Einheiten, hake sie ab und behalte Gewicht und Verlauf im Blick. Trainingsfokus und Sportarten kommen aus deinem Profil.', stage: { kind: 'tile', chips: chips('Einheiten', 'Gewicht', 'Verlauf') } },
     ],
     action: {
-      kind: 'sport', label: 'Erste Einheit anlegen',
-      hint: 'Einheiten sind deine Bausteine, zum Beispiel „Legday“. Daraus baust du später Trainingspläne.',
-      mission: { kind: 'item', icon: 'sport', title: 'Legday', sub: 'Einheit · 45 Min', trailing: 'Vorlage' },
+      kind: 'sport', label: 'Erstes Training eintragen',
+      hint: 'Einheiten sind Bausteine, zum Beispiel „Push“. Ein Training ist eine Einheit an einem Tag, ein Trainingsplan reiht sie über mehrere Tage.',
+      mission: { kind: 'item', icon: 'sport', title: 'Push', sub: 'Training · heute', trailing: 'Kalender' },
     },
-    success: 'Deine erste Einheit liegt in deiner Bibliothek. Daraus baust du jetzt einen Trainingsplan.',
+    success: 'Dein erstes Training steht im Kalender. Eigene Einheiten und Pläne legst du über denselben Plus-Knopf an.',
   },
   shopping: {
     name: 'Einkauf',

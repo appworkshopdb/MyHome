@@ -6,9 +6,10 @@ import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import * as finData from '../lib/finData';
 import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
+import SavingsPlanRows from './SavingsPlans.jsx';
 
-// Bereich "Sparschwein" in der Finanzen-Übersicht: direkt unter der Saldo-
-// Karte, eine Zeile mit dem aktuellen Stand. Tippen öffnet das Sparschwein-
+// Bereich "Sparen" in der Finanzen-Übersicht: direkt unter der Saldo-
+// Karte, eine Zeile mit dem Sparschwein-Stand, darunter die Sparpläne (SavingsPlans.jsx). Tippen öffnet das Sparschwein-
 // Sheet (Stand, Einzahlen/Entnehmen, Verlauf).
 //
 // Ersetzt den früheren schwebenden Sparschwein-Button über dem "+"
@@ -119,7 +120,7 @@ export default function SparschweinSection({ year, month }) {
 
   return (
     <>
-      <PageSection title="Sparschwein">
+      <PageSection title="Sparen">
         <AreaList>
           <button
             className="area-row"
@@ -128,12 +129,14 @@ export default function SparschweinSection({ year, month }) {
             aria-label={balance === null ? 'Sparschwein' : `Sparschwein, aktueller Stand ${formatEur(balance)}`}
           >
             <img src="./icons/piggy-bank.png" alt="" className="area-row-icon" />
-            <span className="area-row-label">Aktueller Stand</span>
+            <span className="area-row-label">Sparschwein</span>
             <span className="area-row-value area-row-value--neutral">
               {balance === null ? '—' : formatEur(balance)}
             </span>
             <span className="area-row-chevron" aria-hidden="true">›</span>
           </button>
+          {/* Sparpläne (nur mit Migration fin_savings_plans) und "Sparplan anlegen" */}
+          <SavingsPlanRows />
         </AreaList>
       </PageSection>
 

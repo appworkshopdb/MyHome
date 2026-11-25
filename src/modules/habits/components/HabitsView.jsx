@@ -5,7 +5,6 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
-import HabitTemplateLibrary from './HabitTemplateLibrary.jsx';
 import {
   DndContext,
   closestCenter,
@@ -24,11 +23,13 @@ import { CSS } from '@dnd-kit/utilities';
 
 import {
   saveHabit, deleteHabit, toggleHabitActive, updateSortOrder,
-  restoreHabit, loadDeletedHabits, setStatsHidden,
 } from '../lib/habData.js';
 import {
-  HABIT_CATEGORIES, HABIT_ICONS, TIME_SLOTS,
+  HABIT_CATEGORIES, HABIT_UNITS, HABIT_ICONS, TIME_SLOTS,
 } from '../lib/habUtils.js';
+import {
+  catalogEntryByName, goalKind, goalText, qtyStep, formatQty, shiftTime,
+} from '../../../core/lib/habitCatalog.js';
 
 const FREQ_LABELS = {
   daily:    'Täglich',
@@ -38,34 +39,17 @@ const FREQ_LABELS = {
 
 const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-const UNIT_OPTIONS = [
-  { value: '',         label: 'Ja / Nein (kein Zähler)' },
-  { value: 'L',        label: 'L — Liter' },
-  { value: 'ml',       label: 'ml — Milliliter' },
-  { value: 'Glas',     label: 'Glas' },
-  { value: 'Min',      label: 'Min — Minuten' },
-  { value: 'Std',      label: 'Std — Stunden' },
-  { value: '×',        label: '× — Mal / Wiederholungen' },
-  { value: 'Seiten',   label: 'Seiten' },
-  { value: 'Schritte', label: 'Schritte' },
-  { value: 'km',       label: 'km — Kilometer' },
-  { value: 'Ding',     label: 'Ding (z.B. 3 Dinge notieren)' },
-  { value: 'Portion',  label: 'Portion' },
-  { value: 'Mahlzeit', label: 'Mahlzeit' },
-  { value: 'Aufgabe',  label: 'Aufgabe' },
-  { value: 'Satz',     label: 'Satz (Training)' },
-];
-
 const EMPTY_HABIT = {
   name:           '',
   description:    '',
-  category:       'Gesundheit',
-  categories:     [],
+  category:       'Sonstiges',
+  categories:     ['Sonstiges'],
   icon:           '⭐',
   frequency:      'daily',
   frequency_days: [0, 1, 2, 3, 4],
   target_count:   1,
   unit:           '',
+  goal_time:      '',
   reminder_time:  '',
   time_slot:      'anytime',
   active:         true,
@@ -73,18 +57,15 @@ const EMPTY_HABIT = {
 
 export default function HabitsView({ habits, onHabitsChange }) {
   const [showForm, setShowForm]       = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
   const [editHabit, setEditHabit]     = useState(null);
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
   const [deleteHideStats, setDeleteHideStats] = useState(false);
+  // Name der Vorlage, aus der das Formular stammt: Kategorie und Ziel-Art sind dann fest
+  const [lockName, setLockName]       = useState(null);
   const [error, setError]             = useState(null);
-  const [showArchive, setShowArchive] = useState(false);
-  const [archivedHabits, setArchived] = useState([]);
-  const [loadingArchive, setLoadingArchive] = useState(false);
-  const [restoringId, setRestoringId] = useState(null);
   const [iconPicker, setIconPicker]   = useState(false);
 
   // Lokale Reihenfolge für optimistisches UI beim Drag & Drop
@@ -123,10 +104,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
     }
   }
 
-  // openCreate() wurde entfernt — "Neue Gewohnheit" läuft jetzt
-  // ausschließlich über den globalen FAB (HabitQuickSheet). openLibrary/
-  // applyTemplate bleiben unverändert, das ist ein eigenständiges Feature
-  // (Vorlagen durchsuchen), keine manuelle Neuanlage.
+  // Neue Gewohnheiten (auch aus Vorlagen) laufen ausschließlich über den globalen
+  // Plus-Knopf (HabitQuickSheet: "Aus Vorlage" / "Manuelle Eingabe").
 
   function openEdit(habit) {
     setEditHabit(habit);
@@ -134,44 +113,26 @@ export default function HabitsView({ habits, onHabitsChange }) {
       name:           habit.name,
       description:    habit.description ?? '',
       category:       habit.category,
-      categories:     habit.categories ?? (habit.category ? [habit.category] : []),
+      categories:     habit.category ? [habit.category] : [],
       icon:           habit.icon,
       frequency:      habit.frequency,
       frequency_days: habit.frequency_days ?? [0,1,2,3,4],
       target_count:   habit.target_count ?? 1,
       unit:           habit.unit ?? '',
+      goal_time:      habit.goal_time ?? '',
       reminder_time:  habit.reminder_time ?? '',
       time_slot:      habit.time_slot ?? 'anytime',
       active:         habit.active,
     });
-    setShowForm(true);
-    setShowLibrary(false);
-    setError(null);
-  }
-
-  function openLibrary() {
-    setShowLibrary(true);
-    setShowForm(false);
-  }
-
-  function applyTemplate(template) {
-    setEditHabit(null);
-    setForm({
-      ...EMPTY_HABIT,
-      ...template,
-      unit:          template.unit ?? '',
-      reminder_time: '',
-      time_slot:     template.time_slot ?? 'anytime',
-    });
-    setShowLibrary(false);
+    setLockName(habit.name);
     setShowForm(true);
     setError(null);
   }
 
   function cancel() {
     setShowForm(false);
-    setShowLibrary(false);
     setEditHabit(null);
+    setLockName(null);
     setError(null);
     setIconPicker(false);
   }
@@ -193,14 +154,27 @@ export default function HabitsView({ habits, onHabitsChange }) {
   }
 
 
-  function toggleCategory(cat) {
-    setForm((f) => ({
-      ...f,
-      categories: (f.categories ?? []).includes(cat)
-        ? (f.categories ?? []).filter((c) => c !== cat)
-        : [...(f.categories ?? []), cat],
-    }));
+  function setCategory(cat) {
+    setForm((f) => ({ ...f, category: cat, categories: [cat] }));
   }
+
+  // Ziel-Art umschalten (nur bei eigenen Gewohnheiten)
+  function setGoalKind(kind) {
+    setForm((f) => {
+      if (kind === 'check') return { ...f, unit: '', target_count: 1, goal_time: '' };
+      if (kind === 'count') return { ...f, unit: f.unit || HABIT_UNITS[0], target_count: 1, goal_time: '' };
+      return { ...f, unit: '', target_count: 1, goal_time: f.goal_time || '07:00' };
+    });
+  }
+
+  function stepTarget(dir) {
+    setForm((f) => {
+      const step = qtyStep(f.unit);
+      const next = Math.round((Number(f.target_count) + dir * step) * 100) / 100;
+      return { ...f, target_count: Math.min(100, Math.max(step, next)) };
+    });
+  }
+
   async function handleSave() {
     if (!form.name.trim()) { setError('Name ist erforderlich.'); return; }
     setSaving(true);
@@ -213,9 +187,11 @@ export default function HabitsView({ habits, onHabitsChange }) {
         description:    form.description.trim() || null,
         reminder_time:  form.reminder_time || null,
         time_slot:      form.time_slot || 'anytime',
-        categories:     form.categories ?? [],
-        category:       form.categories?.[0] ?? form.category ?? 'Sonstiges',
-        target_count:   Math.max(1, Number(form.target_count)),
+        category:       form.category || 'Sonstiges',
+        categories:     [form.category || 'Sonstiges'],
+        goal_time:      form.goal_time || null,
+        clear_goal_time: !form.goal_time && Boolean(editHabit?.goal_time),
+        target_count:   Math.max(qtyStep(form.unit), Number(form.target_count)),
         frequency_days: form.frequency === 'custom' ? form.frequency_days : null,
         sort_order:     editHabit ? editHabit.sort_order : activeHabits.length,
       });
@@ -256,48 +232,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
       setLocalOrder(null);
     } catch (e) {
       setError('Status konnte nicht geändert werden.');
-    }
-  }
-
-  async function openArchive() {
-    setLoadingArchive(true);
-    setShowArchive(true);
-    setShowForm(false);
-    setShowLibrary(false);
-    try {
-      const data = await loadDeletedHabits();
-      setArchived(data);
-    } catch (e) {
-      setError('Archiv konnte nicht geladen werden.');
-    } finally {
-      setLoadingArchive(false);
-    }
-  }
-
-  async function handleToggleStatsHidden(habit) {
-    setRestoringId(habit.id);
-    try {
-      await setStatsHidden(habit.id, !habit.stats_hidden);
-      setArchived(await loadDeletedHabits());
-    } catch (e) {
-      setError('Konnte nicht geändert werden. Ist die Migration hab_stats_hidden eingespielt?');
-    } finally {
-      setRestoringId(null);
-    }
-  }
-
-  async function handleRestore(habitId) {
-    setRestoringId(habitId);
-    try {
-      await restoreHabit(habitId, { wasHidden: archivedHabits.find((h) => h.id === habitId)?.stats_hidden });
-      await onHabitsChange();
-      setLocalOrder(null);
-      const data = await loadDeletedHabits();
-      setArchived(data);
-    } catch (e) {
-      setError('Wiederherstellen fehlgeschlagen.');
-    } finally {
-      setRestoringId(null);
     }
   }
 
@@ -349,76 +283,11 @@ export default function HabitsView({ habits, onHabitsChange }) {
     </SheetShell>
   );
 
-  // ─── Archiv ──────────────────────────────────────────────
-  if (showArchive) {
-    return (
-      <div className="hab-archive">
-        <div className="hab-form-header">
-          <button className="hab-back-btn" onClick={() => setShowArchive(false)}>← Zurück</button>
-          <h2 className="hab-form-title">Archiv</h2>
-        </div>
-        {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
-        {loadingArchive && <div className="page-loading">Wird geladen …</div>}
-        {!loadingArchive && archivedHabits.length === 0 && (
-          <div className="hab-empty">
-            <div className="hab-empty-icon">📦</div>
-            <div className="hab-empty-title">Archiv ist leer</div>
-            <div className="hab-empty-text">Gelöschte Gewohnheiten erscheinen hier und können wiederhergestellt werden.</div>
-          </div>
-        )}
-        {!loadingArchive && archivedHabits.length > 0 && (
-          <div className="hab-manage-list">
-            {archivedHabits.map((habit) => (
-              <div key={habit.id} className="hab-manage-card hab-manage-card--paused">
-                <div className="hab-manage-card-left">
-                  <span className="hab-item-icon">{habit.icon}</span>
-                  <div>
-                    <div className="hab-manage-name">{habit.name}</div>
-                    <div className="hab-manage-meta">
-                      {habit.category} · Gelöscht am {new Date(habit.deleted_at).toLocaleDateString('de-DE')}
-                      {habit.stats_hidden ? ' · nicht in Statistik' : ' · in Statistik'}
-                    </div>
-                  </div>
-                </div>
-                <div className="hab-manage-card-right">
-                  <button
-                    className="hab-manage-btn hab-manage-btn--text"
-                    onClick={() => handleToggleStatsHidden(habit)}
-                    disabled={restoringId === habit.id}
-                  >
-                    {habit.stats_hidden ? 'In Statistik zeigen' : 'Aus Statistik entfernen'}
-                  </button>
-                  <button
-                    className="hab-manage-btn"
-                    onClick={() => handleRestore(habit.id)}
-                    disabled={restoringId === habit.id}
-                    title="Wiederherstellen"
-                  >
-                    {restoringId === habit.id ? '…' : '↩️'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ─── Bibliothek ─────────────────────────────────────────
-  if (showLibrary) {
-    return (
-      <HabitTemplateLibrary
-        habits={habits}
-        onBack={() => setShowLibrary(false)}
-        onPick={applyTemplate}
-      />
-    );
-  }
-
   // ─── Formular ────────────────────────────────────────────
   if (showForm) {
-    const isCounter = form.unit !== '';
+    const lockEntry = lockName ? catalogEntryByName(lockName) : null; // Vorlage: Kategorie/Ziel-Art fest
+    const kind = goalKind(form);
+    const timeStep = lockEntry?.goal?.step ?? 10;
     const freqOptions = [
       { key: 'daily',    label: 'Täglich' },
       { key: 'weekdays', label: 'Mo–Fr' },
@@ -426,7 +295,8 @@ export default function HabitsView({ habits, onHabitsChange }) {
     ];
     const dayOn = (i) => form.frequency === 'daily'
       || (form.frequency === 'weekdays' ? i < 5 : (form.frequency_days ?? []).includes(i));
-    const units = UNIT_OPTIONS.filter((o) => o.value !== '');
+    const units = form.unit && !HABIT_UNITS.includes(form.unit) ? [form.unit, ...HABIT_UNITS] : HABIT_UNITS;
+    const kindLabels = { check: 'Ja / Nein', count: 'Zähler', time: 'Uhrzeit' };
 
     return (
       <div className="hab-ef">
@@ -551,73 +421,93 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
         {/* Ziel */}
         <div className="hab-ef-card">
-          <div className="hab-ef-ct">Ziel</div>
-          <div className="hab-ef-seg" role="group" aria-label="Art">
-            <button
-              type="button"
-              className={!isCounter ? 'on' : ''}
-              aria-pressed={!isCounter}
-              onClick={() => { setField('unit', ''); setField('target_count', 1); }}
-            >
-              Ja / Nein
-            </button>
-            <button
-              type="button"
-              className={isCounter ? 'on' : ''}
-              aria-pressed={isCounter}
-              onClick={() => { if (!isCounter) setField('unit', '×'); }}
-            >
-              Zähler
-            </button>
-          </div>
-          {isCounter ? (
+          <div className="hab-ef-ct">Ziel{lockEntry && <span>von der Vorlage festgelegt</span>}</div>
+          {lockEntry ? (
+            <div className="hab-ef-locked">{kindLabels[kind]}</div>
+          ) : (
+            <div className="hab-ef-seg" role="group" aria-label="Art">
+              {['check', 'count', 'time'].map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className={kind === k ? 'on' : ''}
+                  aria-pressed={kind === k}
+                  onClick={() => kind !== k && setGoalKind(k)}
+                >
+                  {kindLabels[k]}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {kind === 'count' && (
             <>
+              {/* Vorlagen mit Zähler (Wasser): nur der Zielwert ist änderbar */}
               <div className="hab-ef-row">
                 <div>
                   <b>Ziel pro Tag</b>
-                  <small>{form.target_count} {form.unit}</small>
+                  <small>{formatQty(form.target_count)} {form.unit}</small>
                 </div>
                 <div className="hab-ef-step">
-                  <button type="button" aria-label="Weniger"
-                    onClick={() => setField('target_count', Math.max(1, Number(form.target_count) - 1))}>−</button>
-                  <output>{form.target_count}</output>
-                  <button type="button" aria-label="Mehr"
-                    onClick={() => setField('target_count', Math.min(100, Number(form.target_count) + 1))}>+</button>
+                  <button type="button" aria-label="Weniger" onClick={() => stepTarget(-1)}>−</button>
+                  <output>{formatQty(form.target_count)}</output>
+                  <button type="button" aria-label="Mehr" onClick={() => stepTarget(1)}>+</button>
                 </div>
               </div>
-              <div className="hab-ef-units" role="group" aria-label="Einheit">
-                {units.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    title={o.label}
-                    className={`hab-ef-chip${form.unit === o.value ? ' on' : ''}`}
-                    aria-pressed={form.unit === o.value}
-                    onClick={() => setField('unit', o.value)}
-                  >
-                    {o.value}
-                  </button>
-                ))}
-              </div>
+              {!lockEntry && (
+                <div className="hab-ef-units" role="group" aria-label="Einheit">
+                  {units.map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      className={`hab-ef-chip${form.unit === u ? ' on' : ''}`}
+                      aria-pressed={form.unit === u}
+                      onClick={() => setForm((f) => ({
+                        ...f,
+                        unit: u,
+                        // Liter gibt es in halben Schritten, sonst ganze Zahlen
+                        target_count: u === 'L' ? f.target_count : Math.max(1, Math.round(Number(f.target_count))),
+                      }))}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
-          ) : (
-            <div className="hab-ef-hint">Einfach abhaken, ohne Menge.</div>
           )}
+
+          {kind === 'time' && (
+            <div className="hab-ef-row">
+              <div>
+                <b>Uhrzeit</b>
+                <small>in {timeStep}-Minuten-Schritten</small>
+              </div>
+              <div className="hab-ef-step">
+                <button type="button" aria-label="Früher" onClick={() => setField('goal_time', shiftTime(form.goal_time, -timeStep))}>−</button>
+                <output className="hab-ef-timeout">{form.goal_time}</output>
+                <button type="button" aria-label="Später" onClick={() => setField('goal_time', shiftTime(form.goal_time, timeStep))}>+</button>
+              </div>
+            </div>
+          )}
+
+          {kind === 'check' && <div className="hab-ef-hint">Einfach abhaken, ohne Menge.</div>}
         </div>
 
-        {/* Kategorien */}
+        {/* Kategorie */}
         <div className="hab-ef-card">
-          <div className="hab-ef-ct">Kategorien <span>mehrere möglich</span></div>
-          <div className="hab-ef-chips" role="group" aria-label="Kategorien">
-            {HABIT_CATEGORIES.map((cat) => {
-              const on = (form.categories ?? []).includes(cat);
+          <div className="hab-ef-ct">Kategorie{lockEntry && <span>von der Vorlage festgelegt</span>}</div>
+          <div className="hab-ef-chips" role="group" aria-label="Kategorie">
+            {(lockEntry ? [form.category] : HABIT_CATEGORIES).map((cat) => {
+              const on = form.category === cat;
               return (
                 <button
                   key={cat}
                   type="button"
                   className={`hab-ef-chip${on ? ' on' : ''}`}
                   aria-pressed={on}
-                  onClick={() => toggleCategory(cat)}
+                  disabled={Boolean(lockEntry)}
+                  onClick={() => setCategory(cat)}
                 >
                   {cat}
                 </button>
@@ -643,11 +533,6 @@ export default function HabitsView({ habits, onHabitsChange }) {
   return (
     <div className="hab-habits-view">
 
-      <div className="hab-habits-actions">
-        <button className="hab-pill-btn" onClick={openLibrary}>Vorlagen</button>
-        <button className="hab-archive-btn" onClick={openArchive} title="Archiv" aria-label="Archiv"><span aria-hidden="true">📦</span> Archiv</button>
-      </div>
-
       {showOverloadWarning && (
         <div className="hab-overload-warning">
           <span className="hab-overload-icon">💡</span>
@@ -662,10 +547,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
           <div className="hab-empty-icon">🌱</div>
           <div className="hab-empty-title">Noch keine Gewohnheiten</div>
           <div className="hab-empty-text">Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.</div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={openLibrary}>Aus Vorlagen</button>
-            <div className="hab-empty-fab-hint">oder mit dem <b>＋</b>-Button unten rechts von Grund auf neu</div>
-          </div>
+          <div className="hab-empty-fab-hint">Tippe unten rechts auf <b>＋</b>: dort findest du Vorlagen oder legst selbst eine an.</div>
         </div>
       )}
 
@@ -769,7 +651,7 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
           <div className="hab-manage-name">{habit.name}</div>
           <div className="hab-manage-meta">
             {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
-            {habit.target_count > 1 && ` · ${habit.target_count}× ${habit.unit ?? ''}`}
+            {goalText(habit) && ` · ${goalText(habit)}`}
             {habit.reminder_time && ` · ${habit.reminder_time} Uhr`}
           </div>
         </div>

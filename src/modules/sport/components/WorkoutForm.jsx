@@ -1,8 +1,15 @@
-import { useState } from 'react';
-import { TRAINING_TYPES, TRAINING_TYPE_GROUPS, trainingTypesByGroup } from '../lib/data/trainingTypes';
-import { getSport, sportTypeKey, sportFromTypeKey } from '../../../core/lib/sportsData';
+import { useMemo, useRef, useState } from 'react';
+import SheetShell from '../../../core/components/SheetShell.jsx';
+import UnitPicker from './UnitPicker';
+import UnitSelectCard from './UnitSelectCard';
+import { buildCatalog, unitKindLabel } from '../lib/unitCatalog';
+import { isSymbol } from '../lib/sportSymbols';
+import { resolveTypeLabel } from '../lib/typeLabel';
+import { resolveUnitVisual } from '../lib/planMuscles';
+import { todayIso } from '../../../core/lib/wizardDates';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// Lokales Kalenderdatum (toISOString würde zwischen 0 und 2 Uhr den Vortag liefern)
+const TODAY = todayIso;
 
 // Eine Einheit wird als Ganzes erfasst (kein Satz-für-Satz-Log).
 // initialValues deckt drei Fälle ab:
@@ -16,7 +23,7 @@ const TODAY = () => new Date().toISOString().slice(0, 10);
 // einzelnen Kalendertag. Intern bleibt ein Ruhetag weiterhin
 // status='done' + is_rest=true (dieselbe Kodierung wie beim Anwenden
 // eines Plans, siehe core/lib/sportPlanSync.js buildPlanRows).
-export default function WorkoutForm({ onSave, onCancel, showToast, initialValues, userSports = [], units = [] }) {
+export default function WorkoutForm({ onSave, onCancel, showToast, initialValues, userSports = [], units = [], onCreateOwn }) {
   const iv = initialValues ?? {};
   const isEdit = Boolean(iv.id);
 
@@ -25,28 +32,27 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
   const [title, setTitle] = useState(iv.title ?? '');
   const [notes, setNotes] = useState(iv.notes ?? '');
   const [mode, setMode] = useState(iv.is_rest ? 'rest' : (iv.status ?? 'done'));
+  // Feste Bilder: Muskelgruppen der Einheit. null = aus dem Trainingstyp ableiten (spoData.saveWorkout),
+  // ein Array = ausdrücklich gesetzt (vorhandene Einheit oder gewählte eigene Einheit).
+  const [muscles, setMuscles] = useState(iv.muscle_groups?.length ? iv.muscle_groups : null);
 
-  function handleTypeChange(key) {
-    // "unit:<id>" markiert die Auswahl einer selbst angelegten Einheit
-    // aus der Bibliothek — im Unterschied zu einem reinen Trainingstyp
-    // übernimmt das den Titel mit, nicht nur den Typ.
-    if (key.startsWith('unit:')) {
-      const unit = units.find((u) => u.id === key.slice(5));
-      if (unit) {
-        setTypeKey(unit.type_key ?? '');
-        setTitle(unit.title);
-        return;
-      }
-    }
-    setTypeKey(key);
-    // Titel nur vorbelegen, wenn er noch nicht gesetzt ist — sonst
-    // überschreibt eine spätere Typ-Auswahl einen eigenen Titel.
-    if (!title) {
-      const label = TRAINING_TYPES.find((t) => t.key === key)?.label
-        ?? sportFromTypeKey(key)?.label;
-      if (label) setTitle(label);
-    }
+  // Einheit aus der Galerie (UnitPicker): Typ, Muskeln (Bilder) und, solange der Name
+  // nicht selbst geschrieben wurde, den Namen.
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState(null);
+  const titleAuto = useRef(!iv.title);
+  const catalog = useMemo(() => buildCatalog({ units, userSports }), [units, userSports]);
+
+  function selectUnit(entry) {
+    setPicked(entry);
+    setTypeKey(entry.type_key ?? '');
+    setMuscles(entry.muscle_groups?.length ? entry.muscle_groups : null);
+    if (titleAuto.current || !title) { setTitle(entry.title); titleAuto.current = true; }
+    setPicking(false);
   }
+
+  const shownTitle = picked?.title ?? title;
+  const visual = resolveUnitVisual({ muscle_groups: muscles ?? [], icon: picked ? picked.icon : iv.icon, type_key: typeKey, title: shownTitle }, units);
 
   function submit() {
     if (mode === 'rest') {
@@ -63,7 +69,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       return;
     }
 
-    if (!title.trim()) return showToast('Bitte Bezeichnung eingeben, z.B. "Push" oder "Brust/Bizeps"');
+    if (!title.trim()) return showToast('Bitte einen Namen eingeben, z. B. "Push" oder "Brust & Bizeps"');
     onSave({
       ...(isEdit ? { id: iv.id } : {}),
       occurred_on: occurredOn,
@@ -72,6 +78,9 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
       notes: notes.trim() || null,
       status: mode,
       is_rest: false,
+      ...(muscles ? { muscle_groups: muscles } : {}),
+      // ohne Muskeln das Symbol der gewählten Einheit (feste Bilder)
+      ...(!muscles && isSymbol(picked?.icon) ? { icon: picked.icon } : {}),
     });
   }
 
@@ -113,48 +122,22 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
 
       {mode !== 'rest' && (
         <div className="form-group">
-          <label>Trainingstyp (optional)</label>
-          <select value={typeKey} onChange={(e) => handleTypeChange(e.target.value)}>
-            <option value="">Frei / kein Typ</option>
-            {/* Eigene Einheiten zuerst — meist der schnellste Weg, wenn
-                man bereits eine Bibliothek hat (Tab "Einheiten"). */}
-            {units.length > 0 && (
-              <optgroup label="Deine Einheiten">
-                {units.map((u) => (
-                  <option key={`unit:${u.id}`} value={`unit:${u.id}`}>{u.title}</option>
-                ))}
-              </optgroup>
-            )}
-            {/* Nach Gruppen (Kraft/Ausdauer/Beweglichkeit) statt einer
-                flachen Liste — bei 20+ Typen sonst unlesbar. */}
-            {TRAINING_TYPE_GROUPS.map((group) => (
-              <optgroup key={group} label={group}>
-                {trainingTypesByGroup(group).map((t) => (
-                  <option key={t.key} value={t.key}>{t.label}</option>
-                ))}
-              </optgroup>
-            ))}
-            {/* Nur die im Profil gewählten Sportarten — die volle Liste von
-                70+ Einträgen wäre hier unbenutzbar. Wer Fußball spielt,
-                sieht Fußball; wer nichts gewählt hat, sieht die Gruppe nicht. */}
-            {userSports.length > 0 && (
-              <optgroup label="Deine Sportarten">
-                {userSports.map((key) => {
-                  const sport = getSport(key);
-                  if (!sport) return null;
-                  return <option key={key} value={sportTypeKey(key)}>{sport.label}</option>;
-                })}
-              </optgroup>
-            )}
-          </select>
+          <label>Einheit</label>
+          <UnitSelectCard
+            chosen={Boolean(picked) || Boolean(typeKey) || Boolean(iv.title)}
+            title={shownTitle || resolveTypeLabel(typeKey)}
+            subtitle={picked ? unitKindLabel(picked) : resolveTypeLabel(typeKey)}
+            {...visual}
+            onClick={() => setPicking(true)}
+          />
         </div>
       )}
 
       <div className="form-group">
-        <label>Bezeichnung{mode === 'rest' ? ' (optional)' : ''}</label>
+        <label>Name{mode === 'rest' ? ' (optional)' : ''}</label>
         <input
-          type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-          placeholder={mode === 'rest' ? 'Ruhetag' : 'z.B. Push, Brust/Bizeps, Lauf...'}
+          type="text" value={title} onChange={(e) => { titleAuto.current = false; setTitle(e.target.value); }}
+          placeholder={mode === 'rest' ? 'Ruhetag' : 'z. B. Push, Brust & Bizeps, Lauf'}
         />
       </div>
 
@@ -167,6 +150,17 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
         <button className="btn btn-secondary" onClick={onCancel}>Abbrechen</button>
         <button className="btn btn-primary" onClick={submit}>Speichern</button>
       </div>
+
+      {picking && (
+        <SheetShell onClose={() => setPicking(false)} labelledBy="wf-pick-title">
+          <div className="sheet-header">
+            <span className="sheet-title" id="wf-pick-title">Einheit wählen</span>
+          </div>
+          <div className="up-wrap">
+            <UnitPicker catalog={catalog} selectedKey={picked?.key} onPick={selectUnit} onCreateOwn={onCreateOwn} />
+          </div>
+        </SheetShell>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { PREDEFINED_UNITS } from './data/predefinedUnits';
+import { isSymbol } from './sportSymbols';
 import { resolvePlanIcon, resolvePlanMuscleGroups } from './planMuscles';
 
 // Plan-Tage im Wizard und im Editor. Ein Tag ist entweder ein Ruhetag oder eine
-// Einheit aus dem Katalog (unitCatalog.js). spo_plan_items kennt keine
-// muscle_groups und kein icon, beides dient nur der Anzeige.
+// Einheit aus dem Katalog (unitCatalog.js). muscle_groups und icon werden mit
+// gespeichert (feste Bilder), sofern die Spalten schon migriert sind.
 
 export const emptyDay = () => ({
   unit_id: '', _selectedUnitKey: '', title: '', type_key: '', duration_min: '', muscle_groups: [], icon: '', is_rest: false,
@@ -57,6 +58,8 @@ export function itemsFromDays(days) {
     type_key: d.is_rest ? null : (d.type_key || null),
     duration_min: d.duration_min === '' ? null : parseInt(d.duration_min, 10),
     muscle_groups: d.is_rest ? [] : (d.muscle_groups ?? []),
+    // Symbol nur, wenn es keine Muskelbilder gibt
+    icon: d.is_rest || d.muscle_groups?.length || !isSymbol(d.icon) ? null : d.icon,
     is_rest: d.is_rest,
   }));
 }

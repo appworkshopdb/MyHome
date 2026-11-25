@@ -107,21 +107,19 @@ export const PREDEFINED_UNITS = [
   },
 
   // --- Ausdauer, Beweglichkeit & Erholung — aus den Trainingstypen ------
-  // Noch ohne Muskelbilder: `icon` ist ein Platzhalter (Emoji) bis es feste Bilder
-  // je Einheit gibt. Titel NIE ändern: gespeicherte Plan-Tage finden Bild und Icon
-  // über den Titel.
-  { key: 'pre.lauf', title: 'Lauf', type_key: 'endurance.run', muscle_groups: [], icon: '🏃' },
-  { key: 'pre.langer-lauf', title: 'Langer Lauf', type_key: 'endurance.long', muscle_groups: [], icon: '🏃' },
-  { key: 'pre.intervalle', title: 'Intervalltraining', type_key: 'endurance.intervals', muscle_groups: [], icon: '⏱️' },
-  { key: 'pre.hiit', title: 'HIIT / Zirkel', type_key: 'endurance.hiit', muscle_groups: [], icon: '🔥' },
-  { key: 'pre.rad', title: 'Radfahren', type_key: 'endurance.bike', muscle_groups: [], icon: '🚴' },
-  { key: 'pre.schwimmen', title: 'Schwimmen', type_key: 'endurance.swim', muscle_groups: [], icon: '🏊' },
-  { key: 'pre.rudern', title: 'Rudern / Ergometer', type_key: 'endurance.row', muscle_groups: [], icon: '🚣' },
-  { key: 'pre.walking', title: 'Walking', type_key: 'endurance.walk', muscle_groups: [], icon: '🚶' },
-  { key: 'pre.mobilitaet', title: 'Mobilität', type_key: 'mobility.general', muscle_groups: [], icon: '🤸' },
-  { key: 'pre.dehnen', title: 'Dehnen', type_key: 'mobility.stretching', muscle_groups: [], icon: '🧎' },
-  { key: 'pre.yoga', title: 'Yoga', type_key: 'mobility.yoga', muscle_groups: [], icon: '🧘' },
-  { key: 'pre.erholung', title: 'Aktive Erholung', type_key: 'recovery.active', muscle_groups: [], icon: '🌿' },
+  // Ohne Muskelbilder: `icon` ist ein Symbol-Schlüssel aus lib/sportSymbols.js.
+  { key: 'pre.lauf', title: 'Lauf', type_key: 'endurance.run', muscle_groups: [], icon: 'laufen' },
+  { key: 'pre.langer-lauf', title: 'Langer Lauf', type_key: 'endurance.long', muscle_groups: [], icon: 'laufen' },
+  { key: 'pre.intervalle', title: 'Intervalltraining', type_key: 'endurance.intervals', muscle_groups: [], icon: 'hiit' },
+  { key: 'pre.hiit', title: 'HIIT / Zirkel', type_key: 'endurance.hiit', muscle_groups: [], icon: 'hiit' },
+  { key: 'pre.rad', title: 'Radfahren', type_key: 'endurance.bike', muscle_groups: [], icon: 'rad' },
+  { key: 'pre.schwimmen', title: 'Schwimmen', type_key: 'endurance.swim', muscle_groups: [], icon: 'schwimmen' },
+  { key: 'pre.rudern', title: 'Rudern / Ergometer', type_key: 'endurance.row', muscle_groups: [], icon: 'wasser' },
+  { key: 'pre.walking', title: 'Walking', type_key: 'endurance.walk', muscle_groups: [], icon: 'gehen' },
+  { key: 'pre.mobilitaet', title: 'Mobilität', type_key: 'mobility.general', muscle_groups: [], icon: 'mobility' },
+  { key: 'pre.dehnen', title: 'Dehnen', type_key: 'mobility.stretching', muscle_groups: [], icon: 'mobility' },
+  { key: 'pre.yoga', title: 'Yoga', type_key: 'mobility.yoga', muscle_groups: [], icon: 'mobility' },
+  { key: 'pre.erholung', title: 'Aktive Erholung', type_key: 'recovery.active', muscle_groups: [], icon: 'gehen' },
 ];
 
 export function getPredefinedUnit(key) {

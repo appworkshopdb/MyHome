@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { track } from './analytics';
 
-// Steuert das globale Erfassen-Sheet (siehe core/components/EntrySheet.jsx).
+// Steuert das globale Erfassen-Sheet (siehe modules/finance/components/EntrySheet.jsx).
 // Finance-Views können den aktuell angezeigten Buchungsmonat hinterlegen.
 const EntrySheetContext = createContext(null);
 

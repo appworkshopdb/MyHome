@@ -4,8 +4,10 @@ import { useUi } from '../../../core/lib/UiContext';
 import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { getWeightLogs, addWeightLog, deleteWeightLog } from '../../../core/lib/bodyWeightData';
 import { IconTrash } from '../../../core/components/Icons';
+import { todayIso } from '../../../core/lib/wizardDates';
 
-const TODAY = () => new Date().toISOString().slice(0, 10);
+// Lokales Datum (nicht toISOString: das rechnet über UTC und verschiebt den Tag rund um Mitternacht)
+const TODAY = todayIso;
 
 // + und - bedeuten je nach Ziel etwas anderes:
 //   Abnehmen          → Minus gut (grün), Plus schlecht (rot)
@@ -98,27 +100,30 @@ export default function WeightTimeline() {
 
   return (
     <div className="sa-card">
-      <div className="sa-ch">Gewichtsverlauf</div>
+      <div className="sa-ch">
+        Gewichtsverlauf
+        {showForm && <button type="button" className="sa-wx" onClick={() => setShowForm(false)}>Abbrechen</button>}
+      </div>
 
       {showForm ? (
-        <div style={{ marginBottom: 12 }}>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Datum</label>
+        <div className="sa-wform">
+          <div className="sa-wfields">
+            <label className="sa-wf">
+              <small>Datum</small>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Gewicht (kg)</label>
-              <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="z.B. 75,5" />
-            </div>
+            </label>
+            <label className="sa-wf">
+              <small>Gewicht (kg)</small>
+              <span className="sa-wfi">
+                <input type="number" inputMode="decimal" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="z. B. 75,5" />
+                <em>kg</em>
+              </span>
+            </label>
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-            <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Abbrechen</button>
-            <button className="btn btn-primary" onClick={handleAdd}>Speichern</button>
-          </div>
+          <button type="button" className="sa-wbtn" onClick={handleAdd}>Speichern</button>
         </div>
       ) : (
-        <button className="sa-wbtn" onClick={() => { setDate(TODAY()); setShowForm(true); }}>
+        <button type="button" className="sa-wbtn" onClick={() => { setDate(TODAY()); setShowForm(true); }}>
           + Gewicht eintragen
         </button>
       )}

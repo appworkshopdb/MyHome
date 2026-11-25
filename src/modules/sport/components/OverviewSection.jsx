@@ -9,6 +9,9 @@
 // dem das Formular ohnehin lebt (siehe SportModule.startFromPlan).
 
 import { resolveTypeLabel } from '../lib/typeLabel';
+import RestBadge from './RestBadge';
+import UnitVisual from './UnitVisual';
+import { resolveUnitVisual } from '../lib/planMuscles';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
@@ -92,16 +95,23 @@ export default function OverviewSection({
           <div className="spo-focus-title">Lädt …</div>
         ) : focusWorkout ? (
           <>
-            <div className="spo-focus-title">
-              {focusWorkout.is_rest ? 'Ruhetag' : focusWorkout.title}
+            <div className="spo-focus-row">
+              <div className="spo-focus-main">
+                <div className="spo-focus-title">
+                  {focusWorkout.is_rest ? 'Ruhetag' : focusWorkout.title}
+                </div>
+                <FocusCard.Meta>
+                  <span>
+                    {focusWorkout.is_rest
+                      ? 'Erholung eingeplant'
+                      : `${resolveTypeLabel(focusWorkout.type_key)}${focusPlanText}`}
+                  </span>
+                </FocusCard.Meta>
+              </div>
+              {focusWorkout.is_rest
+                ? <RestBadge size={56} />
+                : <UnitVisual {...resolveUnitVisual(focusWorkout, units)} size={48} />}
             </div>
-            <FocusCard.Meta>
-              <span>
-                {focusWorkout.is_rest
-                  ? 'Erholung eingeplant'
-                  : `${resolveTypeLabel(focusWorkout.type_key)}${focusPlanText}`}
-              </span>
-            </FocusCard.Meta>
             <FocusCard.ActionRow>
               <FocusCard.ActionPrimary onPress={() => onToggleDone(focusWorkout)}>
                 {focusDone ? 'Zurücksetzen' : 'Erledigt'}

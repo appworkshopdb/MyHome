@@ -1,7 +1,8 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
-import { track } from '../../../core/lib/analytics';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
-import { templateAppliesTo, MONTHS_DE, isSparschweinDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, isInstantMethod } from './finance';
+import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
+import { templateAppliesTo, dueDateFor, MONTHS_DE, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, localTodayStr as localTodayStrFin } from './finance';
+import { maxForRate, rateName, rebalanceRates } from './savingsPlans';
 
 function ownerId(session) {
   return session.user.id;
@@ -16,7 +17,8 @@ function ownerId(session) {
 // direkt über die vorhandenen Buchungen, inkl. deren echtem Timestamp.
 export async function getSparschweinLedger(session) {
   const all = await getAllEntries(session);
-  const relevant = all.filter((e) => isSparschweinDeposit(e) || isSparschweinWithdrawal(e));
+  // Offene Sparplan-Raten sind noch nicht im Sparschwein (isCountedDeposit)
+  const relevant = all.filter((e) => isCountedDeposit(e) || isSparschweinWithdrawal(e));
 
   // Chronologisch aufsteigend sortieren, um den laufenden Stand
   // korrekt hochzuzählen (created_at, Fallback auf year/month)
@@ -31,7 +33,7 @@ export async function getSparschweinLedger(session) {
   let totalIn = 0;
   let totalOut = 0;
   const ledger = relevant.map((e) => {
-    const isDeposit = isSparschweinDeposit(e);
+    const isDeposit = isCountedDeposit(e);
     // Bei Teilzahlung: nur den Sparschwein-Anteil verbuchen, nicht Gesamtbetrag
     const effectiveAmount = isDeposit
       ? Number(e.amount)
@@ -120,50 +122,51 @@ export async function getNameSuggestions(session) {
   return Array.from(map.values());
 }
 
-export async function saveEntry(session, entry) {
-  // Bezahlt-Status je Teilzahlung (core/lib/paymentParts.js): Bar, Sparschwein
-  // und Gutschein gelten sofort als bezahlt; sonst zählt das paid-Flag der
-  // Teilzahlung, und ein ausdrücklich übergebenes paid:true der Zeile setzt alle
-  // Teilzahlungen auf bezahlt. `paid` an der Zeile ist dann "alles bezahlt".
-  // Ohne payments-Array gilt ein übergebenes paid unverändert.
-  let resolvedPaid = entry.paid;
-  let resolvedPayments = entry.payments;
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
-    resolvedPayments = entry.payments.map((p) => ({
-      ...p,
-      paid: isInstantMethod(p.method) || entry.paid === true || p.paid === true,
-    }));
-    resolvedPaid = resolvedPayments.every((p) => p.paid);
-  }
+// saveEntry/deleteEntry liegen in core/lib/finEntries.js, damit auch die
+// Brücke für andere Module (core/lib/financeBridge.js) sie nutzen kann, ohne
+// aus modules/ zu importieren. Hier nur weitergereicht.
+export { saveEntry };
 
-  // payment-Feld (alter ENUM) für Abwärtskompatibilität:
-  // Bei payments-Array: erste Zahlungsart eintragen damit alte
-  // Code-Pfade (z.B. PaymentBadge) weiterhin funktionieren.
-  let legacyPayment = entry.payment;
-  if (Array.isArray(entry.payments) && entry.payments.length > 0) {
-    legacyPayment = entry.payments[0].method;
-  }
+// Fehlende Spalte (Migration fin_template_overrides_migration.sql noch nicht
+// eingespielt): Funktionen fallen dann auf das alte Verhalten zurück, statt zu scheitern.
+const isMissingColumn = (e) => Boolean(e)
+  && (e.code === '42703' || e.code === 'PGRST204' || /does not exist|Could not find the .* column/i.test(e.message || ''));
 
-  const payload = {
-    ...entry,
-    owner_id: ownerId(session),
-    paid: resolvedPaid,
-    payment: legacyPayment,
-    ...(resolvedPayments !== undefined ? { payments: resolvedPayments } : {}),
-  };
-  const { data, error } = await getSupabase().from('fin_entries').upsert(payload).select().single();
-  if (error) throw error;
-  track('finance_entry_saved', { category: String(entry.category ?? '') });
-  invalidateHubCache();
-  return data;
-}
+const monthKey = (year, month) => `${year}-${String(month).padStart(2, '0')}`;
 
+// Posten löschen. Stammt er aus einer Vorlage (laufender Vertrag), merkt sich die
+// Vorlage den Monat (`skipped_months`), damit die Prüfung ihn nicht wieder anlegt,
+// und der Posten wird wirklich entfernt. Alle anderen Posten werden wie bisher
+// als gelöscht markiert.
 export async function deleteEntry(id) {
-  const { error } = await getSupabase()
+  const sb = getSupabase();
+  const { data: entry, error } = await sb
     .from('fin_entries')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .select('id, from_template, year, month')
+    .eq('id', id)
+    .maybeSingle();
   if (error) throw error;
+  if (!entry || !entry.from_template) return softDeleteEntry(id);
+
+  const { data: tpl, error: tplErr } = await sb
+    .from('fin_fixtemplates')
+    .select('*')
+    .eq('id', entry.from_template)
+    .maybeSingle();
+  if (tplErr) throw tplErr;
+  if (tpl) {
+    const key = monthKey(entry.year, entry.month);
+    const list = Array.isArray(tpl.skipped_months) ? tpl.skipped_months : [];
+    if (!list.includes(key)) {
+      const { error: upErr } = await sb
+        .from('fin_fixtemplates')
+        .update({ skipped_months: [...list, key] })
+        .eq('id', tpl.id);
+      if (upErr && !isMissingColumn(upErr)) throw upErr;
+    }
+  }
+  const { error: delErr } = await sb.from('fin_entries').delete().eq('id', id);
+  if (delErr) throw delErr;
   invalidateHubCache();
 }
 
@@ -194,6 +197,7 @@ export async function getFixTemplates(session) {
 // Felder die NICHT in fin_fixtemplates gespeichert werden dürfen
 // (React-interne Flags, Join-Felder aus ContractsView etc.)
 const TEMPLATE_STRIP = ['_src', 'updated_at'];
+const CONTRACT_FIELDS = ['is_contract', 'cancellation', 'notes'];
 
 export async function saveFixTemplate(session, tpl) {
   const isUpdate = !!tpl.id;
@@ -203,11 +207,17 @@ export async function saveFixTemplate(session, tpl) {
       .filter(([k]) => !TEMPLATE_STRIP.includes(k))
       .map(([k, v]) => [k, v === '' ? null : v])
   );
-  const { data: saved, error } = await getSupabase()
+  let { data: saved, error } = await getSupabase()
     .from('fin_fixtemplates')
     .upsert(payload)
     .select()
     .single();
+  // Vertragsfelder fehlen noch (Migration fin_contracts_as_templates_migration.sql):
+  // ohne sie speichern, der Vertrag bucht dann als normale Fixkosten
+  if (error && isMissingColumn(error) && CONTRACT_FIELDS.some((k) => k in payload)) {
+    const rest = Object.fromEntries(Object.entries(payload).filter(([k]) => !CONTRACT_FIELDS.includes(k)));
+    ({ data: saved, error } = await getSupabase().from('fin_fixtemplates').upsert(rest).select().single());
+  }
   if (error) throw error;
 
   // Bei einem Update: abhängige fin_entries synchronisieren.
@@ -248,6 +258,11 @@ async function syncTemplateEntries(session, tpl) {
     const isFuture = entry.year > currentYear ||
       (entry.year === currentYear && entry.month > currentMonth);
 
+    if (!applies && entry.paid && !isFuture) {
+      // Bezahlte Posten aus Vergangenheit und laufendem Monat bleiben immer erhalten
+      // (z. B. beim Wechsel von monatlich auf Quartal) — sie sind abgerechnete Wahrheit.
+      continue;
+    }
     if (!applies) {
       // Vorlage gilt für diesen Monat nicht mehr — entweder wegen
       // geändertem Intervall ODER weil der Monat außerhalb von
@@ -260,17 +275,26 @@ async function syncTemplateEntries(session, tpl) {
         .from('fin_entries')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', entry.id);
+    } else if (entry.template_locked) {
+      // Der Nutzer hat diesen Posten von Hand geändert (Name, Betrag, Zahlung):
+      // gilt nur für diesen Monat, die Vorlage fasst ihn nicht mehr an.
+      continue;
     } else {
       // Name, Betrag und Zahlungsart in ALLEN Einträgen nachziehen —
       // auch in bezahlten, damit die Monatsansicht konsistent bleibt.
       // Ausnahme: der amount bezahlter Vergangenheits-Einträge bleibt
       // unverändert (historische Wahrheit), nur Name und Zahlung folgen.
       const isPastPaid = entry.paid && !isFuture;
+      // Fälligkeitsdatum folgt dem Tag der Vorlage (nur laufender/zukünftiger Monat; ein
+      // von Hand geänderter Posten ist gesperrt und kommt hier gar nicht an)
+      const due = isCurrentOrFuture(entry.year, entry.month)
+        ? { due_date: tpl.due_day ? dueDateFor(tpl.due_day, entry.year, entry.month) : null }
+        : {};
       await getSupabase()
         .from('fin_entries')
         .update(isPastPaid
-          ? { name: tpl.name, payment: tpl.payment }          // Betrag bleibt
-          : { name: tpl.name, amount: tpl.amount, payment: tpl.payment }
+          ? { name: tpl.name, payment: tpl.payment, ...due }                       // Betrag bleibt
+          : { name: tpl.name, amount: tpl.amount, payment: tpl.payment, ...due }
         )
         .eq('id', entry.id);
     }
@@ -292,6 +316,7 @@ async function syncTemplateEntries(session, tpl) {
     if (isFutureMonth) continue;
     if (existingKeys.has(key)) continue;
     if (!templateAppliesTo(tpl, y, m)) continue;
+    if (isSkippedMonth(tpl, y, m)) continue; // von Hand gelöscht
     await saveEntry(session, templateToEntry(tpl, y, m));
   }
 }
@@ -323,8 +348,22 @@ export async function deleteFixTemplate(session, id) {
   if (entryErr) throw entryErr;
 }
 
+// Hat der Nutzer den Posten dieses Monats aus der Vorlage gelöscht?
+function isSkippedMonth(t, year, month) {
+  return Array.isArray(t.skipped_months) && t.skipped_months.includes(monthKey(year, month));
+}
+
+// Laufender oder zukünftiger Monat? Nur dort bekommen Posten aus Vorlagen ein Fälligkeitsdatum
+// (rückwirkend angelegte Posten alter Monate bleiben ohne, sonst wären sie sofort überfällig).
+function isCurrentOrFuture(year, month) {
+  const n = new Date();
+  return year * 12 + month >= n.getFullYear() * 12 + n.getMonth() + 1;
+}
+
 function templateToEntry(t, year, month) {
+  const due = t.due_day && isCurrentOrFuture(year, month) ? { due_date: dueDateFor(t.due_day, year, month) } : {};
   return {
+    ...due,
     category: t.category,
     year,
     month,
@@ -353,9 +392,15 @@ export async function applyMissingFixTemplatesWith(session, year, month, templat
   let added = 0;
   for (const t of templates) {
     if (!templateAppliesTo(t, year, month)) continue;
-    const exists = monthEntries.some((e) => e.from_template === t.id);
-    if (!exists) {
+    if (isSkippedMonth(t, year, month)) continue; // der Nutzer hat ihn gelöscht
+    const existing = monthEntries.find((e) => e.from_template === t.id);
+    if (!existing) {
       await saveEntry(session, templateToEntry(t, year, month));
+      added++;
+    } else if (t.due_day && !existing.due_date && !existing.template_locked && isCurrentOrFuture(year, month)) {
+      // Posten aus der Zeit vor dem Datums-Feld: Fälligkeitsdatum aus dem Tag der Vorlage nachtragen
+      await getSupabase().from('fin_entries')
+        .update({ due_date: dueDateFor(t.due_day, year, month) }).eq('id', existing.id);
       added++;
     }
   }
@@ -452,9 +497,10 @@ export async function exportAllData(session) {
 
 export async function deleteAllData(session) {
   const owner = ownerId(session);
-  for (const table of ['fin_entries', 'fin_savings', 'fin_contracts', 'fin_fixtemplates']) {
+  for (const table of ['fin_entries', 'fin_savings', 'fin_contracts', 'fin_fixtemplates', 'fin_savings_plans']) {
     const { error } = await getSupabase().from(table).delete().eq('owner_id', owner);
-    if (error) throw error;
+    // Sparpläne gibt es erst mit der Migration fin_savings_plans_migration.sql
+    if (error && !(table === 'fin_savings_plans' && isMissingTable(error))) throw error;
   }
 }
 
@@ -606,3 +652,212 @@ export async function importLegacyBackup(session, data, currentYear, currentMont
   return counts;
 }
 
+
+// ---------------------------------------------------------------------
+// Sparpläne (fin_savings_plans, Migration supabase/fin_savings_plans_migration.sql)
+// ---------------------------------------------------------------------
+// Raten sind Buchungen in fin_entries mit savings_plan_id (lib/savingsPlans.js).
+// Ohne Migration liefern die Lesefunktionen null bzw. [], die App blendet die
+// Sparpläne dann aus.
+
+const isMissingTable = (e) => Boolean(e)
+  && (e.code === '42P01' || e.code === 'PGRST205' || /fin_savings_plans|schema cache/i.test(e.message || ''));
+
+export async function getSavingsPlans(session) {
+  const { data, error } = await getSupabase()
+    .from('fin_savings_plans')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .eq('status', 'aktiv')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (isMissingTable(error)) return null;
+    throw error;
+  }
+  return data ?? [];
+}
+
+export async function getSavingsPlanRates(session) {
+  const { data, error } = await getSupabase()
+    .from('fin_entries')
+    .select('*')
+    .eq('owner_id', ownerId(session))
+    .not('savings_plan_id', 'is', null)
+    .is('deleted_at', null);
+  if (error) {
+    if (isMissingColumn(error)) return [];
+    throw error;
+  }
+  return data ?? [];
+}
+
+function rateRow(session, plan, r) {
+  return {
+    owner_id: ownerId(session),
+    year: r.year,
+    month: r.month,
+    category: 'variable_kosten',
+    name: rateName(plan.name),
+    payment: 'Bank',
+    payments: [{ method: 'Bank', amount: r.amount, paid: false }],
+    amount: r.amount,
+    paid: false,
+    due_date: r.due_date,
+    savings_plan_id: plan.id,
+  };
+}
+
+// Plan speichern (neu oder geändert). Bei einer Änderung fallen die offenen Raten
+// weg (Soft Delete) und `rates` (geplante Raten: year, month, due_date, amount)
+// werden neu angelegt; eingezahlte Raten bleiben und bekommen den neuen Namen.
+export async function saveSavingsPlan(session, plan, rates) {
+  const sb = getSupabase();
+  const payload = {
+    owner_id: ownerId(session),
+    name: String(plan.name).trim(),
+    target_amount: plan.target_amount,
+    target_date: plan.target_date || null,
+    rhythm: plan.rhythm,
+    rate: plan.rate,
+    due_day: plan.due_day,
+    status: 'aktiv',
+    updated_at: new Date().toISOString(),
+    ...(plan.id ? { id: plan.id } : {}),
+  };
+  const { data: saved, error } = await sb.from('fin_savings_plans').upsert(payload).select().single();
+  if (error) throw error;
+  if (plan.id) {
+    const now = new Date().toISOString();
+    const { error: delErr } = await sb.from('fin_entries').update({ deleted_at: now })
+      .eq('savings_plan_id', saved.id).eq('paid', false).is('deleted_at', null);
+    if (delErr) throw delErr;
+    const { error: nameErr } = await sb.from('fin_entries').update({ name: rateName(saved.name) })
+      .eq('savings_plan_id', saved.id).is('deleted_at', null);
+    if (nameErr) throw nameErr;
+  }
+  if (rates.length) {
+    const { error: insErr } = await sb.from('fin_entries').insert(rates.map((r) => rateRow(session, saved, r)));
+    if (insErr) throw insErr;
+  }
+  invalidateHubCache();
+  return saved;
+}
+
+// Raten auf bezahlt/offen setzen (Einzahlen, Vorziehen, Rückgängig)
+export async function setRatesPaid(rates, paid) {
+  for (const r of rates) {
+    // eslint-disable-next-line no-await-in-loop
+    await togglePaid(r.id, paid, [{ method: r.payment || 'Bank', amount: Number(r.amount), paid }]);
+  }
+}
+
+// Plan beenden: offene Raten fallen weg, Eingezahltes bleibt im Sparschwein
+export async function endSavingsPlan(session, planId) {
+  const sb = getSupabase();
+  const now = new Date().toISOString();
+  const { error: delErr } = await sb.from('fin_entries').update({ deleted_at: now })
+    .eq('owner_id', ownerId(session)).eq('savings_plan_id', planId).eq('paid', false).is('deleted_at', null);
+  if (delErr) throw delErr;
+  const { error } = await sb.from('fin_savings_plans').update({ status: 'beendet', updated_at: now }).eq('id', planId);
+  if (error) throw error;
+  invalidateHubCache();
+}
+
+// Höchstbetrag, den eine Rate bekommen darf (was bis zum Ziel fehlt). Gilt für den Plan-Dialog
+// und für den Stift in den Buchungen, damit die Summe der Raten nie über dem Ziel liegt.
+export async function savingsPlanRateMax(session, planId, rateId) {
+  const { data: plan, error } = await getSupabase().from('fin_savings_plans').select('*')
+    .eq('owner_id', ownerId(session)).eq('id', planId).single();
+  if (error) throw error;
+  const rates = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  if (!rates.some((r) => r.id === rateId)) throw new Error('Rate nicht gefunden');
+  return maxForRate(plan, rates, rateId);
+}
+
+// Nach der Änderung einer Rate (Plan oder Stift in den Buchungen) die übrigen Raten
+// so anpassen, dass die Summe wieder das Ziel ergibt (lib/savingsPlans.js rebalanceRates).
+// Besteht ein Schritt nicht, wird der Stand von vorher wiederhergestellt (siehe unten) und der
+// Fehler weitergegeben. Gibt das Ergebnis des Ausgleichs zurück.
+export async function rebalanceSavingsPlan(session, planId, changedId) {
+  const sb = getSupabase();
+  const owner = ownerId(session);
+  const { data: plan, error: pErr } = await sb.from('fin_savings_plans').select('*')
+    .eq('owner_id', owner).eq('id', planId).single();
+  if (pErr) throw pErr;
+  const rates = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const res = rebalanceRates(plan, rates, changedId, localTodayStrFin());
+  try {
+    for (const u of res.updates) {
+      const r = rates.find((x) => x.id === u.id);
+      // eslint-disable-next-line no-await-in-loop
+      const { error } = await sb.from('fin_entries').update({ amount: u.amount, payments: [{ method: r.payment || 'Bank', amount: u.amount, paid: false }] })
+        .eq('owner_id', owner).eq('id', u.id);
+      if (error) throw error;
+    }
+    if (res.removes.length) {
+      const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() })
+        .eq('owner_id', owner).in('id', res.removes);
+      if (error) throw error;
+    }
+    if (res.inserts.length) {
+      const { error } = await sb.from('fin_entries').insert(res.inserts.map((r) => rateRow(session, plan, r)));
+      if (error) throw error;
+    }
+  } catch (err) {
+    // Halb ausgeglichener Plan = falsche Summe: zurück auf den Stand vor dem Ausgleich.
+    try { await restoreSavingsPlanRates(session, planId, rates); } catch (e2) { console.error('[Sparplan] Zurücksetzen fehlgeschlagen', e2); }
+    throw err;
+  }
+  invalidateHubCache();
+  return res;
+}
+
+// Eine Rate auf einen neuen Betrag setzen und den Plan ausgleichen. Rückgabe: Schnappschuss
+// aller Raten vorher, mit dem restoreSavingsPlanRates alles zurückholt. Schlägt der Ausgleich
+// fehl, steht danach auch die Rate wieder auf dem alten Betrag.
+export async function changeSavingsPlanRate(session, planId, rateId, amount) {
+  const before = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const me = before.find((r) => r.id === rateId);
+  if (!me) throw new Error('Rate nicht gefunden');
+  const { error } = await getSupabase().from('fin_entries')
+    .update({ amount, payments: [{ method: me.payment || 'Bank', amount, paid: !!me.paid }] })
+    .eq('owner_id', ownerId(session)).eq('id', rateId);
+  if (error) throw error;
+  try {
+    await rebalanceSavingsPlan(session, planId, rateId);
+  } catch (err) {
+    try { await restoreSavingsPlanRates(session, planId, before); } catch (e2) { console.error('[Sparplan] Zurücksetzen fehlgeschlagen', e2); }
+    throw err;
+  }
+  return before;
+}
+
+// Raten auf den Stand eines Schnappschusses zurücksetzen ("Rückgängig machen" und Rollback).
+// Eine Rate, die inzwischen bezahlt oder wieder offen gesetzt wurde, bleibt unangetastet
+// (Zahlung während der Rückgängig-Frist geht nicht verloren). Fehler brechen die Schleife nicht
+// ab: es wird so viel wie möglich zurückgesetzt, danach wird der erste Fehler geworfen.
+export async function restoreSavingsPlanRates(session, planId, before) {
+  const sb = getSupabase();
+  const owner = ownerId(session);
+  const now = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const old = new Map(before.map((r) => [r.id, r]));
+  const nowById = new Map(now.map((r) => [r.id, r]));
+  const added = now.filter((r) => !old.has(r.id) && !r.paid).map((r) => r.id);
+  let firstError = null;
+  if (added.length) {
+    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() })
+      .eq('owner_id', owner).in('id', added);
+    if (error) firstError = error;
+  }
+  for (const r of before) {
+    const cur = nowById.get(r.id);
+    if (cur && !!cur.paid !== !!r.paid) continue; // zwischenzeitlich bezahlt/geändert: lassen
+    // eslint-disable-next-line no-await-in-loop
+    const { error } = await sb.from('fin_entries').update({ amount: r.amount, payments: r.payments, paid: r.paid, deleted_at: null })
+      .eq('owner_id', owner).eq('id', r.id);
+    if (error && !firstError) firstError = error;
+  }
+  invalidateHubCache();
+  if (firstError) throw firstError;
+}

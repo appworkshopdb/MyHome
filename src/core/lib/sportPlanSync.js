@@ -61,6 +61,8 @@ export function buildPlanRows({ ownerId, planId, items, startDate, from, to, tak
       plan_id: planId,
       plan_day_index: item.day_index ?? day.index,
       auto_planned: true,
+      muscle_groups: item.is_rest ? [] : (item.muscle_groups ?? []),
+      icon: item.is_rest ? null : (item.icon || null),
     });
   }
   return rows;
@@ -147,7 +149,17 @@ async function fillHorizon(session, active) {
   const rows = buildPlanRows({ ownerId, planId: plan.id, items, startDate: active.start_date, from, to, taken });
   if (rows.length === 0) return 0;
 
-  const { error } = await sb.from('spo_workouts').insert(rows);
+  // Spalten muscle_groups/icon noch nicht migriert: ohne sie schreiben
+  // (spo_muscle_groups_migration.sql, spo_unit_icon_migration.sql)
+  let current = rows;
+  let { error } = await sb.from('spo_workouts').insert(current);
+  for (let i = 0; i < 2; i += 1) {
+    const col = (error?.code === '42703' || error?.code === 'PGRST204')
+      ? ['muscle_groups', 'icon'].find((c) => (error.message ?? '').includes(c)) : null;
+    if (!col) break;
+    current = current.map(({ [col]: _drop, ...r }) => r);
+    ({ error } = await sb.from('spo_workouts').insert(current));
+  }
   // 23505: ein anderes Gerät hat gleichzeitig aufgefüllt — beim nächsten Mal ergänzt es sich.
   if (error && error.code !== '23505') throw error;
   return error ? 0 : rows.length;

@@ -1,0 +1,1444 @@
+{
+  "version": 1,
+  "about": "Register des Leitstands: Knoten, Verbindungen und Prüfungen. Der Scan (scan.mjs) führt die Prüfungen aus und schreibt www/data/leitstand.json. Keine Geheimnisse hier eintragen; envset prüft nur, ob ein Wert gesetzt ist.",
+  "system": [
+    "container",
+    "backup",
+    "cronhttp",
+    "endpoints",
+    "fnsync",
+    "rls",
+    "perms",
+    "tls",
+    "caddy",
+    "disk",
+    "ram",
+    "load",
+    "dbsize",
+    "hook",
+    "reboot"
+  ],
+  "checks": {
+    "container": {
+      "type": "docker",
+      "label": "Container",
+      "hint": "docker ps -a prüfen, Logs des betroffenen Dienstes lesen (docker logs --tail 50 <name>), dann gezielt neu starten."
+    },
+    "backup": {
+      "type": "backup",
+      "label": "Backup",
+      "dir": "/opt/nestua/backups/logs",
+      "maxAgeHours": 26,
+      "hint": "Log in /opt/nestua/backups/logs/ lesen; healthchecks.io zeigt den Fehler ebenfalls. Bei Bedarf von Hand starten: /opt/nestua/backup.sh"
+    },
+    "cronhttp": {
+      "type": "cronhttp",
+      "label": "Cron",
+      "hours": 3,
+      "hint": "Antworten in net._http_response und Logs der Edge Functions prüfen; Schlüssel kommen aus dem Vault-Secret service_role_key."
+    },
+    "endpoints": {
+      "type": "http",
+      "label": "Endpunkte",
+      "targets": [
+        {
+          "url": "https://staging.nestua.de/",
+          "expect": [
+            200
+          ]
+        },
+        {
+          "url": "https://api-staging.nestua.de/rest/v1/",
+          "expect": [
+            401
+          ]
+        },
+        {
+          "url": "https://studio.nestua.de/",
+          "expect": [
+            401
+          ]
+        },
+        {
+          "url": "https://leitstand.nestua.de/",
+          "expect": [
+            401
+          ]
+        }
+      ],
+      "hint": "Caddy (systemctl status caddy) und den betroffenen Dienst prüfen."
+    },
+    "fnsync": {
+      "type": "fnsync",
+      "label": "Functions",
+      "repo": "/opt/nestua/werkstatt/supabase/functions",
+      "live": "/opt/nestua/staging/supabase-project/volumes/functions",
+      "hint": "Abweichung mit tools/deploy-functions.sh <name> --dry-run ansehen; Live-Änderungen zuerst ins Repo holen."
+    },
+    "rls": {
+      "type": "rls",
+      "label": "RLS",
+      "hint": "Neue Tabelle ohne RLS oder anon-Rechte: Migration prüfen, RLS einschalten, Policies ergänzen (nur nach OK)."
+    },
+    "perms": {
+      "type": "perms",
+      "label": "Datei-Rechte",
+      "noOtherRead": [
+        "/opt/nestua/staging/supabase-project/.env",
+        "/opt/nestua/backup.env",
+        "/opt/nestua/produktion/.env",
+        "/opt/nestua/ops/notify.env"
+      ],
+      "noOtherWriteDir": "/opt/nestua/staging/supabase-project/volumes/functions",
+      "hint": "Rechte zurücksetzen (Geheimnis-Dateien 640 root:nestua bzw. 600, Function-Ordner 755)."
+    },
+    "tls": {
+      "type": "tls",
+      "label": "Zertifikate",
+      "hosts": [
+        "staging.nestua.de",
+        "api-staging.nestua.de",
+        "studio.nestua.de",
+        "leitstand.nestua.de"
+      ],
+      "warnDays": 14,
+      "hint": "Caddy erneuert selbst; sonst DNS und Erreichbarkeit von Port 80/443 prüfen."
+    },
+    "caddy": {
+      "type": "same",
+      "label": "Caddy",
+      "a": "/etc/caddy/Caddyfile",
+      "b": "/opt/nestua/ops/reference/Caddyfile",
+      "hint": "Unterschied zwischen /etc/caddy/Caddyfile und der Referenzkopie ansehen; gewollte Änderung: Referenzkopie aktualisieren."
+    },
+    "disk": {
+      "type": "disk",
+      "label": "Platte",
+      "warnPercent": 80,
+      "hint": "Größte Verbraucher suchen, alte Docker-Images auflisten, nichts ohne OK löschen."
+    },
+    "hook": {
+      "type": "envset",
+      "label": "Hook",
+      "file": "/opt/nestua/backup.env",
+      "key": "HC_PING_URL",
+      "missing": "warn",
+      "hint": "HC_PING_URL in der Backup-Konfiguration eintragen (Nutzer)."
+    },
+    "reboot": {
+      "type": "reboot",
+      "label": "Neustart",
+      "hint": "Neustart zu ruhiger Zeit planen (Nutzer, sudo shutdown -r <zeit>)."
+    },
+    "vault": {
+      "type": "sql",
+      "label": "Vault-Secret",
+      "query": "select count(*) from vault.secrets where name = 'service_role_key'",
+      "expect": "1",
+      "hint": "Vault-Secret service_role_key fehlt: Cron-Jobs scheitern. Aus der Umgebung der Edge Functions neu anlegen (ohne Ausgabe)."
+    },
+    "notify": {
+      "type": "envset",
+      "label": "notify.env",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_SERVER",
+      "missing": "bad",
+      "hint": "DISCORD_WEBHOOK_SERVER in /opt/nestua/ops/notify.env eintragen (Nutzer): Discord, Kanal #server, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "reports": {
+      "type": "file",
+      "label": "Berichte",
+      "path": "/opt/nestua/ops/reports"
+    },
+    "srvcheck": {
+      "type": "file",
+      "label": "server-check.sh",
+      "path": "/opt/nestua/ops/server-check.sh"
+    },
+    "srvskill": {
+      "type": "file",
+      "label": "Skill nestua-server-check",
+      "path": "/opt/nestua/werkstatt/.claude/skills/nestua-server-check/SKILL.md"
+    },
+    "srvcron": {
+      "type": "cron",
+      "label": "Cron 06:00",
+      "pattern": "server-check"
+    },
+    "restore": {
+      "type": "file",
+      "label": "restore-test.sh",
+      "path": "/opt/nestua/ops/restore-test.sh"
+    },
+    "scancron": {
+      "type": "cron",
+      "label": "Scan alle 5 Minuten",
+      "pattern": "leitstand/scan.mjs"
+    },
+    "lp_guard": {
+      "type": "file",
+      "label": "Wächter-Hook",
+      "path": "/opt/nestua/werkstatt/.claude/hooks/guard-secrets.py"
+    },
+    "lp_user": {
+      "type": "contains",
+      "label": "Server-Einstellungen",
+      "path": "/home/nestua/.claude/settings.json",
+      "text": "guard-secrets.py",
+      "what": "den Wächter-Hook"
+    },
+    "lp_project": {
+      "type": "contains",
+      "label": "Projekt-Einstellungen",
+      "path": "/opt/nestua/werkstatt/.claude/settings.json",
+      "text": "guard-secrets.py",
+      "what": "den Wächter-Hook"
+    },
+    "lp_start": {
+      "type": "contains",
+      "label": "Start-Hook",
+      "path": "/home/nestua/.claude/settings.json",
+      "text": "session-status.py",
+      "what": "den Start-Hook"
+    },
+    "lp_deploy": {
+      "type": "file",
+      "label": "deploy-functions.sh",
+      "path": "/opt/nestua/werkstatt/tools/deploy-functions.sh"
+    },
+    "lp_sudo": {
+      "type": "file",
+      "label": "sudo-Freigabe (Vorlage)",
+      "path": "/opt/nestua/ops/reference/sudoers-nestua-ops"
+    },
+    "notify_kontext": {
+      "type": "envset",
+      "label": "Discord #kontext",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_KONTEXT",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_KONTEXT in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_pruefer": {
+      "type": "envset",
+      "label": "Discord #pruefer",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_PRUEFER",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_PRUEFER in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_dsgvo": {
+      "type": "envset",
+      "label": "Discord #datenschutz",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_DSGVO",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_DSGVO in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "notify_social": {
+      "type": "envset",
+      "label": "Discord #social",
+      "file": "/opt/nestua/ops/notify.env",
+      "key": "DISCORD_WEBHOOK_SOCIAL",
+      "missing": "warn",
+      "hint": "DISCORD_WEBHOOK_SOCIAL in der Meldungs-Konfiguration eintragen (Nutzer): Discord, Kanal bearbeiten, Integrationen, Webhooks."
+    },
+    "kctx_skript": {
+      "type": "file",
+      "label": "kontext-cron.sh",
+      "path": "/opt/nestua/ops/agenten/kontext/kontext-cron.sh",
+      "hint": "tools/agenten/kontext/deploy.sh ausführen."
+    },
+    "kctx_key": {
+      "type": "file",
+      "label": "Deploy-Key nestua-notes",
+      "path": "/home/nestua/.ssh/github_notes_deploy.pub",
+      "hint": "Schlüssel erzeugen (Nutzer) und in GitHub bei nestua-notes als Deploy-Key mit Schreibrecht eintragen."
+    },
+    "kctx_vault": {
+      "type": "file",
+      "label": "Vault-Klon",
+      "path": "/opt/nestua/ops/vault/.git",
+      "hint": "git clone git@github-notes:appworkshopdb/nestua-notes.git /opt/nestua/ops/vault"
+    },
+    "kctx_cron": {
+      "type": "cron",
+      "label": "Cron Mo 07:00",
+      "pattern": "kontext-cron",
+      "hint": "Cron-Eintrag montags 07:00 ergänzen (nach OK des Nutzers)."
+    },
+    "kctx_repo": {
+      "type": "file",
+      "label": "MyHome-Repo",
+      "path": "/opt/nestua/werkstatt/.git"
+    },
+    "pr_workflow": {
+      "type": "file",
+      "label": "Workflow Prüfer",
+      "path": "/opt/nestua/werkstatt/.github/workflows/pruefer.yml",
+      "hint": "Workflow liegt im Repo; Branch-Schutzregel für main mit Pflicht-Check \"Regel-Check\" setzt der Nutzer in GitHub."
+    },
+    "pr_skript": {
+      "type": "file",
+      "label": "pruefer-cron.sh",
+      "path": "/opt/nestua/ops/agenten/pruefer/pruefer-cron.sh",
+      "hint": "tools/agenten/pruefer/deploy.sh ausführen."
+    },
+    "pr_repo": {
+      "type": "file",
+      "label": "PR-Stände (Bare-Repo)",
+      "path": "/opt/nestua/ops/pruefer/MyHome.git/HEAD",
+      "hint": "/opt/nestua/ops/agenten/pruefer/pruefer-cron.sh --seed legt es an."
+    },
+    "pr_design": {
+      "type": "file",
+      "label": "Design-Regeln (DESIGN.md)",
+      "path": "/opt/nestua/werkstatt/design/DESIGN.md",
+      "hint": "design/DESIGN.md im Repo anlegen: Regelwerk für Design-Ratsche und Design-Review."
+    },
+    "pr_design_seit": {
+      "type": "file",
+      "label": "Stichtag Design-Ratsche",
+      "path": "/opt/nestua/werkstatt/tools/pruefer/design-seit.txt",
+      "hint": "tools/pruefer/design-seit.txt fehlt: dann zählt die Ratsche den ganzen PR, auch alten Bestand."
+    },
+    "pr_design_prompt": {
+      "type": "file",
+      "label": "Design-Prompt",
+      "path": "/opt/nestua/ops/agenten/pruefer/DESIGN-PROMPT.md",
+      "hint": "tools/agenten/pruefer/deploy.sh ausführen."
+    },
+    "pr_cron": {
+      "type": "cron",
+      "label": "Cron alle 15 Min",
+      "pattern": "pruefer-cron",
+      "hint": "Cron-Eintrag */15 ergänzen (nach OK des Nutzers)."
+    },
+    "ds_skript": {
+      "type": "file",
+      "label": "datenschutz-cron.sh",
+      "path": "/opt/nestua/ops/agenten/datenschutz/datenschutz-cron.sh",
+      "hint": "tools/agenten/datenschutz/deploy.sh ausführen."
+    },
+    "ds_cron": {
+      "type": "cron",
+      "label": "Cron am 1. um 08:00",
+      "pattern": "datenschutz-cron",
+      "hint": "Cron-Eintrag monatlich ergänzen (nach OK des Nutzers)."
+    },
+    "ds_db": {
+      "type": "sql",
+      "label": "Datenbank lesbar",
+      "query": "select count(*) > 0 from information_schema.tables where table_schema='public'",
+      "expect": "t"
+    },
+    "soc_skript": {
+      "type": "file",
+      "label": "social-cron.sh",
+      "path": "/opt/nestua/ops/agenten/social/social-cron.sh",
+      "hint": "tools/agenten/social/deploy.sh ausführen."
+    },
+    "soc_mcp": {
+      "type": "contains",
+      "label": "Metricool-Zugang eingetragen",
+      "path": "/home/nestua/.claude.json",
+      "text": "\"metricool\"",
+      "what": "den Metricool-Server",
+      "hint": "cd /opt/nestua/ops/agenten/social && claude mcp add --transport http --scope local metricool https://ai.metricool.com/mcp, dann claude mcp login metricool --no-browser (Nutzer). Ob die Anmeldung noch gilt, zeigt der Lauf: Hinweis \"Metricool nicht verbunden\"."
+    },
+    "soc_cron": {
+      "type": "cron",
+      "label": "Cron Mo 09:00",
+      "pattern": "social-cron",
+      "hint": "Cron-Eintrag montags 09:00 ergänzen (nach OK des Nutzers)."
+    },
+    "ram": {
+      "type": "ram",
+      "label": "RAM",
+      "warnPercent": 85,
+      "badPercent": 95,
+      "hint": "Größte Verbraucher mit docker stats --no-stream ansehen, Log des auffälligen Containers lesen. Nur einzelne Dienste neu starten (docker compose up -d --no-deps <dienst>), nie den ganzen Stack. Ohne Swap droht bei vollem RAM der Abbruch von Prozessen."
+    },
+    "load": {
+      "type": "load",
+      "label": "CPU-Last",
+      "warnPerCore": 1.0,
+      "badPerCore": 2.0,
+      "hint": "Mit docker stats --no-stream und top die Ursache suchen. Kurze Spitzen um das Backup (03:30) und die Cron-Jobs sind normal, anhaltend hohe Last nicht."
+    },
+    "dbsize": {
+      "type": "dbsize",
+      "label": "Datenbank",
+      "warnPercent": 10,
+      "badPercent": 25,
+      "hint": "Größte Tabellen ansehen (pg_total_relation_size), Aufbewahrung der Protokolltabellen prüfen (Löschfristen in cron.job, Job data-retention). Nichts ohne OK löschen."
+    }
+  },
+  "nodes": [
+    {
+      "id": "core",
+      "kind": "core",
+      "pos": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "system",
+      "kind": "system",
+      "pos": [
+        -860,
+        0
+      ]
+    },
+    {
+      "id": "gate",
+      "kind": "gate",
+      "pos": [
+        480,
+        0
+      ]
+    },
+    {
+      "id": "todo",
+      "kind": "todo",
+      "pos": [
+        820,
+        0
+      ]
+    },
+    {
+      "id": "done",
+      "kind": "done",
+      "pos": [
+        1170,
+        0
+      ]
+    },
+    {
+      "id": "server",
+      "kind": "agent",
+      "state": "build",
+      "icon": "server",
+      "name": "Server & DB",
+      "sub": "Hetzner, täglich 06:00",
+      "phase": "Phase 2",
+      "polar": [
+        -90,
+        310
+      ],
+      "builds": [
+        "srvcheck",
+        "srvskill",
+        "srvcron",
+        "restore",
+        "reports",
+        "notify",
+        "hook"
+      ],
+      "info": [
+        [
+          "Auslöser",
+          "täglich 06:00"
+        ],
+        [
+          "KI",
+          "nur bei gelb oder rot"
+        ],
+        [
+          "Rechte",
+          "lesen, Bericht schreiben"
+        ],
+        [
+          "Freiheit",
+          "Stufe 1, nur vorschlagen"
+        ],
+        [
+          "Rundenlimit",
+          "15"
+        ],
+        [
+          "Meldung",
+          "Discord"
+        ]
+      ],
+      "zust": [
+        "Backup",
+        "Container",
+        "Cron-Jobs",
+        "RLS und Rechte",
+        "Functions",
+        "Caddy",
+        "Neustart",
+        "RAM, Last, Datenbankgröße"
+      ],
+      "channel": "#server",
+      "runAt": "06:00",
+      "report": "server",
+      "guard": "leitplanken",
+      "flow": [
+        {
+          "g": "in",
+          "check": "srvcron",
+          "name": "Cron 06:00",
+          "sub": "täglich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "prüft",
+          "node": "docker"
+        },
+        {
+          "g": "prüft",
+          "node": "db"
+        },
+        {
+          "g": "prüft",
+          "node": "caddy"
+        },
+        {
+          "g": "prüft",
+          "node": "fn"
+        },
+        {
+          "g": "prüft",
+          "node": "hc"
+        },
+        {
+          "g": "out",
+          "node": "reports"
+        },
+        {
+          "g": "out",
+          "node": "discord",
+          "name": "Discord #server",
+          "sub": "eine Meldung am Tag"
+        }
+      ]
+    },
+    {
+      "id": "leitplanken",
+      "kind": "tool",
+      "icon": "shield",
+      "name": "Leitplanken",
+      "sub": "Sperren, Hooks, Freigaben",
+      "phase": "Phase 1",
+      "polar": [
+        -114,
+        310
+      ],
+      "builds": [
+        "lp_guard",
+        "lp_user",
+        "lp_project",
+        "lp_start",
+        "lp_deploy",
+        "lp_sudo"
+      ],
+      "info": [
+        [
+          "Sperren",
+          "Geheimnis-Dateien, compose down, Force-Push, Volumes"
+        ],
+        [
+          "Rückfrage",
+          "sudo, Push, compose up, docker restart"
+        ],
+        [
+          "sudo ohne Passwort",
+          "nur systemctl reload caddy"
+        ],
+        [
+          "GitHub",
+          "Deploy-Key nur für MyHome"
+        ]
+      ]
+    },
+    {
+      "id": "backup",
+      "kind": "tool",
+      "icon": "db",
+      "name": "Backup",
+      "sub": "täglich 03:30",
+      "check": "backup",
+      "polar": [
+        -138,
+        310
+      ],
+      "info": [
+        [
+          "Skript",
+          "/opt/nestua/backup.sh"
+        ],
+        [
+          "Aufbewahrung",
+          "7 Tage, 4 Wochen, 6 Monate"
+        ]
+      ]
+    },
+    {
+      "id": "cron",
+      "kind": "tool",
+      "icon": "clock",
+      "name": "Cron-Jobs",
+      "sub": "4 Jobs in pg_cron",
+      "check": "cronhttp",
+      "polar": [
+        -42,
+        310
+      ],
+      "info": [
+        [
+          "send-notifications",
+          "stündlich"
+        ],
+        [
+          "google-calendar-sync",
+          "alle 2 Stunden"
+        ],
+        [
+          "analytics-rollup",
+          "04:15 (Sommer 05:15), pg_cron in GMT"
+        ],
+        [
+          "cron-history-cleanup",
+          "05:45 (Sommer 06:45), pg_cron in GMT"
+        ]
+      ]
+    },
+    {
+      "id": "restore",
+      "kind": "tool",
+      "icon": "box",
+      "name": "Restore-Test",
+      "sub": "vierteljährlich",
+      "check": "restore",
+      "polar": [
+        -160,
+        310
+      ],
+      "info": [
+        [
+          "Skript",
+          "/opt/nestua/ops/restore-test.sh"
+        ],
+        [
+          "Letzter Test",
+          "17.11.2026, bestanden"
+        ],
+        [
+          "Nächster",
+          "Februar 2027"
+        ]
+      ]
+    },
+    {
+      "id": "scan",
+      "kind": "tool",
+      "icon": "pulse",
+      "name": "Leitstand-Scan",
+      "sub": "alle 5 Minuten",
+      "check": "scancron",
+      "polar": [
+        -18,
+        310
+      ],
+      "info": [
+        [
+          "Skript",
+          "/opt/nestua/ops/leitstand/scan.mjs"
+        ],
+        [
+          "Schreibt",
+          "www/data/leitstand.json"
+        ],
+        [
+          "Rechte",
+          "nur lesen"
+        ]
+      ]
+    },
+    {
+      "id": "kontext",
+      "kind": "agent",
+      "icon": "cloud",
+      "name": "Kontext & Status",
+      "sub": "Hetzner, montags 07:00",
+      "polar": [
+        30,
+        310
+      ],
+      "info": [
+        [
+          "Auslöser",
+          "Cron, montags 07:00"
+        ],
+        [
+          "KI",
+          "Wochennotiz und Index-Abgleich"
+        ],
+        [
+          "Rechte",
+          "Vault: nur Betrieb/Wochen und Backlog/Index.md"
+        ],
+        [
+          "Freiheit",
+          "Stufe 3, schreibt ohne Rückfrage"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #kontext"
+        ]
+      ],
+      "zust": [
+        "Wochenübersicht",
+        "Backlog-Index",
+        "Backlog-Pflege (nur markieren)"
+      ],
+      "channel": "#kontext",
+      "flow": [
+        {
+          "g": "in",
+          "check": "kctx_cron",
+          "name": "Cron Mo 07:00",
+          "sub": "wöchentlich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "liest",
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "Commits der Woche (staging, main)",
+          "icon": "git"
+        },
+        {
+          "g": "liest",
+          "node": "notes",
+          "sub": "Backlog und Index"
+        },
+        {
+          "g": "out",
+          "check": "kctx_vault",
+          "name": "Wochennotiz",
+          "sub": "Betrieb/Wochen/<Woche>.md",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "check": "kctx_vault",
+          "name": "Backlog-Index",
+          "sub": "Backlog/Index.md abgleichen",
+          "icon": "file"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "kontext-*.json für den Leitstand"
+        },
+        {
+          "g": "out",
+          "check": "notify_kontext",
+          "name": "Discord #kontext",
+          "sub": "Kurzfassung am Montag",
+          "icon": "send"
+        }
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "kctx_skript",
+        "kctx_key",
+        "kctx_vault",
+        "kctx_cron",
+        "notify_kontext"
+      ],
+      "runAt": "07:00",
+      "runDays": [
+        1
+      ],
+      "runSince": "2026-11-23",
+      "report": "kontext",
+      "guard": "leitplanken"
+    },
+    {
+      "id": "pruefer",
+      "kind": "agent",
+      "icon": "git",
+      "name": "Prüfer",
+      "sub": "GitHub-Check und Server, bei jedem PR",
+      "polar": [
+        72,
+        310
+      ],
+      "info": [
+        [
+          "Auslöser",
+          "neuer Stand eines PR gegen main und jeder neue Stand von staging"
+        ],
+        [
+          "Regel-Check",
+          "GitHub, Fehler blockieren den Merge"
+        ],
+        [
+          "KI",
+          "Review auf dem Server, nur lesen"
+        ],
+        [
+          "Design",
+          "Ratsche blockiert, Review nur Empfehlung (bei UI-Änderungen)"
+        ],
+        [
+          "Freiheit",
+          "Stufe 1, nur vorschlagen"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #pruefer"
+        ]
+      ],
+      "zust": [
+        "Fehlerliste CLAUDE.md",
+        "SQL-Migrationen und RLS",
+        "Secrets",
+        "Abhängigkeiten (npm audit)",
+        "Edge Functions",
+        "Design-Regeln (design/DESIGN.md)"
+      ],
+      "channel": "#pruefer",
+      "flow": [
+        {
+          "g": "in",
+          "check": "pr_cron",
+          "name": "Neuer PR- oder staging-Stand",
+          "sub": "PR gegen main, staging seit letztem Stand, alle 15 Min",
+          "icon": "git"
+        },
+        {
+          "g": "prüft",
+          "check": "pr_workflow",
+          "name": "Regel-Check (GitHub)",
+          "sub": "Fehlerliste, SQL, Secrets, npm audit, Design-Ratsche",
+          "icon": "check"
+        },
+        {
+          "g": "liest",
+          "check": "pr_design",
+          "name": "Design-Regeln",
+          "sub": "DESIGN.md, Review nur bei UI-Änderungen",
+          "icon": "book"
+        },
+        {
+          "g": "liest",
+          "check": "pr_repo",
+          "name": "PR-Stände",
+          "sub": "Bare-Repo mit refs/pull",
+          "icon": "git"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "pruefer-*.json für den Leitstand"
+        },
+        {
+          "g": "out",
+          "check": "notify_pruefer",
+          "name": "Discord #pruefer",
+          "sub": "eine Meldung je PR-Stand",
+          "icon": "send"
+        }
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "pr_workflow",
+        "pr_skript",
+        "pr_repo",
+        "pr_cron",
+        "pr_design",
+        "pr_design_seit",
+        "pr_design_prompt",
+        "notify_pruefer"
+      ],
+      "report": "pruefer",
+      "runText": "bei neuem PR-Stand",
+      "guard": "leitplanken"
+    },
+    {
+      "id": "dsgvo",
+      "kind": "agent",
+      "icon": "shield",
+      "name": "Datenschutz",
+      "sub": "Hetzner, monatlich am 1.",
+      "polar": [
+        112,
+        310
+      ],
+      "info": [
+        [
+          "Auslöser",
+          "Cron, am 1. jedes Monats 08:00"
+        ],
+        [
+          "KI",
+          "Monatsbericht, nur Einschätzung"
+        ],
+        [
+          "Rechte",
+          "DB nur Struktur und Zählungen; Vault: nur Betrieb/Datenschutz"
+        ],
+        [
+          "Freiheit",
+          "Stufe 1, nur vorschlagen"
+        ],
+        [
+          "Rundenlimit",
+          "30"
+        ],
+        [
+          "Meldung",
+          "Discord #datenschutz"
+        ]
+      ],
+      "zust": [
+        "Datenverzeichnis",
+        "Datenschutzerklärung",
+        "Kontolöschung",
+        "Aufbewahrung",
+        "Dienste und Datenflüsse"
+      ],
+      "channel": "#datenschutz",
+      "flow": [
+        {
+          "g": "in",
+          "check": "ds_cron",
+          "name": "Cron am 1. um 08:00",
+          "sub": "monatlich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "prüft",
+          "check": "ds_db",
+          "name": "supabase-db",
+          "sub": "nur Struktur, Löschregeln, Zählungen",
+          "icon": "db"
+        },
+        {
+          "g": "prüft",
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "main (live) und neu in staging",
+          "icon": "git"
+        },
+        {
+          "g": "liest",
+          "node": "notes",
+          "sub": "Backlog Recht und Sicherheit"
+        },
+        {
+          "g": "out",
+          "check": "kctx_vault",
+          "name": "Monatsbericht",
+          "sub": "Betrieb/Datenschutz/<Monat>.md",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "datenschutz-*.json für den Leitstand"
+        },
+        {
+          "g": "out",
+          "check": "notify_dsgvo",
+          "name": "Discord #datenschutz",
+          "sub": "Kurzfassung am Monatsersten",
+          "icon": "send"
+        }
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "ds_skript",
+        "kctx_vault",
+        "ds_db",
+        "ds_cron",
+        "notify_dsgvo"
+      ],
+      "runAt": "08:00",
+      "runMonthDays": [
+        1
+      ],
+      "runSince": "2026-12-01",
+      "report": "datenschutz",
+      "guard": "leitplanken"
+    },
+    {
+      "id": "social",
+      "kind": "agent",
+      "icon": "chat",
+      "name": "Social Media",
+      "sub": "Hetzner, montags 09:00",
+      "polar": [
+        150,
+        310
+      ],
+      "info": [
+        [
+          "Auslöser",
+          "Cron, montags 09:00"
+        ],
+        [
+          "KI",
+          "3 Entwürfe pro Woche"
+        ],
+        [
+          "Netzwerke",
+          "Instagram, TikTok, YouTube Shorts"
+        ],
+        [
+          "Themen",
+          "Build in public, Vibe-Coding"
+        ],
+        [
+          "Rechte",
+          "Metricool nur lesen; Vault nur Betrieb/Social"
+        ],
+        [
+          "Freiheit",
+          "Stufe 1, nur Entwurf, nichts veröffentlicht"
+        ],
+        [
+          "Rundenlimit",
+          "40"
+        ],
+        [
+          "Meldung",
+          "Discord #social"
+        ]
+      ],
+      "zust": [
+        "Beitragsentwürfe",
+        "Ich-Perspektive",
+        "Beste Postzeiten",
+        "Analytics der letzten Beiträge"
+      ],
+      "channel": "#social",
+      "flow": [
+        {
+          "g": "in",
+          "check": "soc_cron",
+          "name": "Cron Mo 09:00",
+          "sub": "wöchentlich, Berlin-Zeit",
+          "icon": "clock"
+        },
+        {
+          "g": "liest",
+          "node": "metricool",
+          "sub": "Beiträge, Analytics, beste Zeiten (nur lesen)"
+        },
+        {
+          "g": "liest",
+          "check": "kctx_vault",
+          "name": "Wochennotiz",
+          "sub": "von Kontext & Status, Basis der Themen",
+          "icon": "book"
+        },
+        {
+          "g": "liest",
+          "check": "kctx_repo",
+          "name": "MyHome-Repo",
+          "sub": "Commits der Vorwoche",
+          "icon": "git"
+        },
+        {
+          "g": "out",
+          "check": "kctx_vault",
+          "name": "Entwürfe",
+          "sub": "Betrieb/Social/<Woche>.md, 3 pro Woche",
+          "icon": "book"
+        },
+        {
+          "g": "out",
+          "node": "reports",
+          "sub": "social-*.json für den Leitstand"
+        },
+        {
+          "g": "out",
+          "check": "notify_social",
+          "name": "Discord #social",
+          "sub": "Kurzfassung am Montag",
+          "icon": "send"
+        }
+      ],
+      "phase": "Phase 3",
+      "builds": [
+        "soc_skript",
+        "soc_mcp",
+        "kctx_vault",
+        "soc_cron",
+        "notify_social"
+      ],
+      "runAt": "09:00",
+      "runDays": [
+        1
+      ],
+      "runSince": "2026-11-23",
+      "report": "social",
+      "guard": "leitplanken"
+    },
+    {
+      "id": "discord",
+      "kind": "res",
+      "icon": "send",
+      "name": "Discord",
+      "where": "/opt/nestua/ops/notify.env",
+      "check": "notify",
+      "note": "Webhook-Adresse trägst du ein",
+      "polar": [
+        -166,
+        560
+      ]
+    },
+    {
+      "id": "reports",
+      "kind": "res",
+      "icon": "folder",
+      "name": "Berichte",
+      "where": "/opt/nestua/ops/reports/",
+      "check": "reports",
+      "polar": [
+        -146,
+        560
+      ]
+    },
+    {
+      "id": "storage",
+      "kind": "res",
+      "icon": "hdd",
+      "name": "Storage Box",
+      "where": "rsync, verschlüsselt (GPG)",
+      "check": "backup",
+      "polar": [
+        -127,
+        560
+      ]
+    },
+    {
+      "id": "docker",
+      "kind": "res",
+      "icon": "box",
+      "name": "Docker",
+      "where": "Container, unless-stopped",
+      "check": "container",
+      "polar": [
+        -108,
+        560
+      ]
+    },
+    {
+      "id": "db",
+      "kind": "res",
+      "icon": "db",
+      "name": "supabase-db",
+      "where": "Postgres 17, RLS, pg_cron",
+      "check": "rls",
+      "polar": [
+        -90,
+        560
+      ]
+    },
+    {
+      "id": "caddy",
+      "kind": "res",
+      "icon": "file",
+      "name": "Caddyfile",
+      "where": "/etc/caddy/Caddyfile",
+      "check": "caddy",
+      "polar": [
+        -72,
+        560
+      ]
+    },
+    {
+      "id": "vault",
+      "kind": "res",
+      "icon": "key",
+      "name": "Vault-Secret",
+      "where": "service_role_key",
+      "check": "vault",
+      "polar": [
+        -54,
+        560
+      ]
+    },
+    {
+      "id": "fn",
+      "kind": "res",
+      "icon": "folder",
+      "name": "Edge Functions",
+      "where": "volumes/functions = Repo",
+      "check": "fnsync",
+      "polar": [
+        -36,
+        560
+      ]
+    },
+    {
+      "id": "hc",
+      "kind": "res",
+      "icon": "pulse",
+      "name": "healthchecks.io",
+      "where": "HC_PING_URL in backup.env",
+      "check": "hook",
+      "note": "trägst du ein",
+      "polar": [
+        -16,
+        560
+      ]
+    },
+    {
+      "id": "notes",
+      "kind": "res",
+      "icon": "book",
+      "name": "Notiz-Vault",
+      "where": "/opt/nestua/ops/vault (Klon von nestua-notes)",
+      "polar": [
+        40,
+        560
+      ],
+      "sub": "Backlog, Wochennotizen",
+      "check": "kctx_vault"
+    },
+    {
+      "id": "github",
+      "kind": "res",
+      "state": "plan",
+      "icon": "git",
+      "name": "GitHub",
+      "where": "appworkshopdb/MyHome",
+      "polar": [
+        90,
+        560
+      ]
+    },
+    {
+      "id": "metricool",
+      "kind": "res",
+      "icon": "chat",
+      "name": "Metricool",
+      "where": "ai.metricool.com/mcp, Anmeldung im Ordner agenten/social",
+      "polar": [
+        140,
+        560
+      ],
+      "check": "soc_mcp",
+      "note": "Nur lesender Zugriff durch den Agenten"
+    }
+  ],
+  "edges": [
+    [
+      "system",
+      "core",
+      "flow"
+    ],
+    [
+      "core",
+      "gate",
+      "flow"
+    ],
+    [
+      "gate",
+      "todo",
+      "warn"
+    ],
+    [
+      "todo",
+      "done",
+      "ok"
+    ],
+    [
+      "server",
+      "core"
+    ],
+    [
+      "backup",
+      "core"
+    ],
+    [
+      "cron",
+      "core"
+    ],
+    [
+      "restore",
+      "core"
+    ],
+    [
+      "scan",
+      "core"
+    ],
+    [
+      "kontext",
+      "core"
+    ],
+    [
+      "pruefer",
+      "core"
+    ],
+    [
+      "dsgvo",
+      "core"
+    ],
+    [
+      "social",
+      "core"
+    ],
+    [
+      "docker",
+      "server"
+    ],
+    [
+      "db",
+      "server"
+    ],
+    [
+      "caddy",
+      "server"
+    ],
+    [
+      "fn",
+      "server"
+    ],
+    [
+      "server",
+      "reports"
+    ],
+    [
+      "server",
+      "discord"
+    ],
+    [
+      "server",
+      "hc"
+    ],
+    [
+      "backup",
+      "storage"
+    ],
+    [
+      "backup",
+      "hc"
+    ],
+    [
+      "db",
+      "backup"
+    ],
+    [
+      "vault",
+      "cron"
+    ],
+    [
+      "cron",
+      "fn"
+    ],
+    [
+      "cron",
+      "db"
+    ],
+    [
+      "db",
+      "restore"
+    ],
+    [
+      "docker",
+      "restore"
+    ],
+    [
+      "docker",
+      "scan"
+    ],
+    [
+      "db",
+      "scan"
+    ],
+    [
+      "caddy",
+      "scan"
+    ],
+    [
+      "fn",
+      "scan"
+    ],
+    [
+      "notes",
+      "kontext"
+    ],
+    [
+      "github",
+      "kontext"
+    ],
+    [
+      "github",
+      "pruefer"
+    ],
+    [
+      "github",
+      "dsgvo"
+    ],
+    [
+      "notes",
+      "dsgvo"
+    ],
+    [
+      "social",
+      "metricool"
+    ],
+    [
+      "leitplanken",
+      "core"
+    ],
+    [
+      "leitplanken",
+      "server"
+    ],
+    [
+      "kontext",
+      "reports"
+    ],
+    [
+      "kontext",
+      "leitplanken"
+    ],
+    [
+      "pruefer",
+      "reports"
+    ],
+    [
+      "pruefer",
+      "leitplanken"
+    ],
+    [
+      "dsgvo",
+      "reports"
+    ],
+    [
+      "dsgvo",
+      "leitplanken"
+    ],
+    [
+      "dsgvo",
+      "db"
+    ],
+    [
+      "social",
+      "reports"
+    ],
+    [
+      "social",
+      "leitplanken"
+    ]
+  ]
+}

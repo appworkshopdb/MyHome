@@ -1,7 +1,7 @@
 // modules/shopping/lib/data/items.js
 // Artikel-Daten der Einkaufsliste: Kategorie-Zuordnung, Vorschläge beim Tippen,
 // Läden und Einheiten. Gemeinsam genutzt von ItemsView.jsx (Liste) und dem
-// Einkaufs-Wizard (core/components/ShoppingQuickSheet.jsx), damit beide Stellen
+// Einkaufs-Wizard (modules/shopping/components/ShoppingQuickSheet.jsx), damit beide Stellen
 // dieselben Werte kennen.
 
 // ─── Kategorie-Zuordnung ──────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { registerRequirement } from '../../core/lib/requiredDataRegistry';
 import { getMissingFields } from '../../core/lib/requiredData';
 import { SPORT_REQUIRED_FIELDS } from './lib/requiredFields';
 import * as db from './lib/spoData';
+import { buildCatalog } from './lib/unitCatalog';
 import { getActivePlan, fillActivePlan, activatePlan, endActivePlan, resyncActivePlan } from '../../core/lib/sportPlanSync';
 import { snapshotGet, snapshotSet } from '../../core/lib/snapshotCache';
 import { todayIso } from '../../core/lib/wizardDates';
@@ -34,7 +35,7 @@ registerRequirement('profile', async (session) => {
 // Screen, auf dem das Formular ohnehin lebt. Kein Scrollen mehr nötig.
 //
 // Einheiten und Pläne neu anlegen läuft weiterhin ausschließlich über
-// den globalen FAB (core/components/GlobalFab.jsx → SportQuickSheet).
+// den globalen FAB (core/components/GlobalFab.jsx → SportQuickSheet über die Sheet-Registry).
 //
 // Hält den gesamten Modul-Zustand: Einheiten (Workouts im Kalender),
 // die Einheiten-Bibliothek, Plan-Vorlagen, die im Profil gewählten
@@ -265,6 +266,13 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
     }
   }
 
+  // Eigene Einheit aus der Galerie ("Neue Einheit" oder "Als eigene Einheit speichern")
+  async function handleCreateOwn(draft) {
+    const row = await db.createOwnUnit(session, draft);
+    setUnits((list) => [...list, row]);
+    return buildCatalog({ units: [row] }).find((e) => e.own);
+  }
+
   // "+ Ruhetag" im Kalender: eigener Eintrag, hat Vorrang vor dem Plan
   async function handleAddRest(date) {
     try {
@@ -300,6 +308,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
               onDelete={handleDelete}
               onPlanNew={handlePlanNew}
               onAddRest={handleAddRest}
+              onCreateOwn={handleCreateOwn}
               formInitial={formInitial}
               onOpenForm={setFormInitial}
               onCancelForm={() => setFormInitial(false)}
@@ -309,7 +318,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
             />
           )}
 
-          {view === 'einheiten' && <EinheitenView units={units} loading={loading} />}
+          {view === 'einheiten' && <EinheitenView units={units} loading={loading} userSports={userSports} onChanged={load} showToast={showToast} />}
 
           {view === 'plaene' && (
             <PlaeneView

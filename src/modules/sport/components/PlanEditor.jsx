@@ -3,13 +3,14 @@ import SheetShell from '../../../core/components/SheetShell.jsx';
 import PlanDaysBoard from './PlanDaysBoard';
 import UnitPicker from './UnitPicker';
 import { buildCatalog } from '../lib/unitCatalog';
+import { createOwnUnit } from '../lib/spoData';
 import { daysAreComplete, daysFromItems, dayFromEntry, itemsFromDays } from '../lib/planDays';
 
 // Plan bearbeiten: Name, darunter die Tage als Kachelraster (PlanDaysBoard).
 // Die Einheit wählt man in der Galerie (UnitPicker) in einem Sheet.
 // onSave(plan, items) ist unverändert; spo_plan_items kennt keine muscle_groups,
 // sie dienen nur der Anzeige.
-export default function PlanEditor({ initialPlan, units = [], userSports = [], isActive = false, onSave, onCancel, showToast }) {
+export default function PlanEditor({ session, initialPlan, units = [], userSports = [], isActive = false, onSave, onCancel, showToast }) {
   const [title, setTitle] = useState(initialPlan?.title ?? '');
   const [notes, setNotes] = useState(initialPlan?.notes ?? '');
   const [showNotes, setShowNotes] = useState(Boolean(initialPlan?.notes));
@@ -17,7 +18,15 @@ export default function PlanEditor({ initialPlan, units = [], userSports = [], i
   const [sel, setSel] = useState(0);
   const [picking, setPicking] = useState(false);
 
-  const catalog = useMemo(() => buildCatalog({ units, userSports }), [units, userSports]);
+  const [ownUnits, setOwnUnits] = useState([]); // hier neu angelegte eigene Einheiten
+  const catalog = useMemo(() => buildCatalog({ units: [...units, ...ownUnits], userSports }), [units, ownUnits, userSports]);
+
+  // Eigene Einheit aus Muskeln anlegen und gleich als Eintrag zurückgeben
+  async function createOwn(draft) {
+    const row = await createOwnUnit(session, draft);
+    setOwnUnits((list) => [...list, row]);
+    return buildCatalog({ units: [row] }).find((e) => e.own);
+  }
 
   function submit() {
     if (!title.trim()) return showToast('Bitte einen Namen für den Plan eingeben');
@@ -77,6 +86,7 @@ export default function PlanEditor({ initialPlan, units = [], userSports = [], i
             <UnitPicker
               catalog={catalog}
               selectedKey={days[sel]?._selectedUnitKey}
+              onCreateOwn={session ? createOwn : undefined}
               onPick={(entry) => { setDays((list) => list.map((d, i) => (i === sel ? dayFromEntry(entry) : d))); setPicking(false); }}
             />
           </div>

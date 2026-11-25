@@ -23,9 +23,7 @@ import { track } from '../lib/analytics';
 import { TUTORIALS, tutorialIdFor } from '../lib/tutorials';
 import Bird from './birds/Bird';
 import TodoSheet from './TodoSheet';
-import HabitTemplatePicker from './HabitTemplatePicker';
-import SportQuickSheet from './SportQuickSheet';
-import ShoppingQuickSheet from './ShoppingQuickSheet';
+import { getSheet } from '../lib/sheetRegistry';
 import NutritionFabMenu from './NutritionFabMenu';
 import { ModuleIcon } from './ModuleIcons';
 import { SlideStage, MissionStage, SuccessStage } from './TutorialStage';
@@ -114,9 +112,13 @@ export default function ModuleTutorial({ activeModule }) {
     const kind = tutorial.action.kind;
     const onSaved = () => { savedRef.current = true; };
     if (kind === 'todo') return <TodoSheet onClose={settle} onSaved={() => { onSaved(); notifySaved(); }} />;
-    if (kind === 'habit') return <HabitTemplatePicker onClose={settle} onSaved={onSaved} />;
-    if (kind === 'sport') return <SportQuickSheet onClose={settle} />;
-    if (kind === 'shopping') return <ShoppingQuickSheet onClose={settle} onSaved={onSaved} />;
+    // Modul-Sheets kommen über die Sheet-Registry (modules/<modul>/sheets.js).
+    const HabitTemplatePicker = kind === 'habit' && getSheet('habits.templates');
+    const SportQuickSheet = kind === 'sport' && getSheet('sport.quick');
+    const ShoppingQuickSheet = kind === 'shopping' && getSheet('shopping.quick');
+    if (HabitTemplatePicker) return <HabitTemplatePicker onClose={settle} onSaved={onSaved} />;
+    if (SportQuickSheet) return <SportQuickSheet onClose={settle} />;
+    if (ShoppingQuickSheet) return <ShoppingQuickSheet onClose={settle} onSaved={onSaved} />;
     if (kind === 'nutrition') return <NutritionFabMenu onClose={settle} />;
     return null; // finance: der EntrySheet rendert sich selbst (App.jsx)
   }

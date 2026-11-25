@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useEntrySheet } from '../lib/EntrySheetContext';
-import HabitQuickSheet    from './HabitQuickSheet';
-import SportQuickSheet    from './SportQuickSheet';
-import ShoppingQuickSheet from './ShoppingQuickSheet';
+import { getSheet } from '../lib/sheetRegistry';
 import NutritionFabMenu   from './NutritionFabMenu';
+
+// Modul → Schlüssel des Sheets, das das Modul in modules/<modul>/sheets.js
+// bei der Sheet-Registry anmeldet.
+const FAB_SHEETS = {
+  habits:   'habits.quick',
+  sport:    'sport.quick',
+  shopping: 'shopping.quick',
+};
 
 // Globaler FAB — rendert sich je nach aktivem Modul anders.
 // Erscheint in den Modulen, nicht im Hub (dort legt "Neue Aufgabe" in der Aufgaben-Karte an),
@@ -16,20 +22,23 @@ import NutritionFabMenu   from './NutritionFabMenu';
 // importieren (core/ darf nicht aus modules/ importieren). Vorher
 // hatten RezepteView/AmpelView je einen eigenen FAB — das ging nur gut,
 // solange nur einer der beiden Tabs gleichzeitig sichtbar war.
+//
+// Die Sheets von Gewohnheiten, Sport und Einkauf liegen in ihren Modulen und
+// kommen über die Sheet-Registry (core/lib/sheetRegistry.js).
 export default function GlobalFab({ activeModule }) {
   const { open: openEntrySheet } = useEntrySheet(); // Finanzen nutzt den bestehenden EntrySheet
-  const [open, setOpen] = useState(null); // null | 'habit' | 'sport' | 'shopping' | 'nutrition'
+  const [open, setOpen] = useState(null); // null | 'habits' | 'sport' | 'shopping' | 'nutrition'
 
   // Kein FAB im Hub (activeModule null) sowie auf Profil und Statistiken (reine Anzeigeseiten)
   if (activeModule === null || activeModule === 'profile' || activeModule === 'statistiken') return null;
 
   function handlePress() {
-    if (activeModule === 'habits')   return setOpen('habit');
     if (activeModule === 'finance')  return openEntrySheet('finance');   // bestehender EntrySheet
-    if (activeModule === 'sport')    return setOpen('sport');
     if (activeModule === 'nutrition') return setOpen('nutrition');
-    if (activeModule === 'shopping') return setOpen('shopping');
+    if (FAB_SHEETS[activeModule]) return setOpen(activeModule);
   }
+
+  const Sheet = open && FAB_SHEETS[open] ? getSheet(FAB_SHEETS[open]) : null;
 
   return (
     <>
@@ -41,26 +50,14 @@ export default function GlobalFab({ activeModule }) {
         <span className="global-fab-plus">+</span>
       </button>
 
-      {open === 'habit' && (
-        <HabitQuickSheet
-          onClose={() => setOpen(null)}
-          onSaved={() => setOpen(null)}
-        />
-      )}
-      {open === 'sport' && (
-        <SportQuickSheet
+      {Sheet && (
+        <Sheet
           onClose={() => setOpen(null)}
           onSaved={() => setOpen(null)}
         />
       )}
       {open === 'nutrition' && (
         <NutritionFabMenu onClose={() => setOpen(null)} />
-      )}
-      {open === 'shopping' && (
-        <ShoppingQuickSheet
-          onClose={() => setOpen(null)}
-          onSaved={() => setOpen(null)}
-        />
       )}
     </>
   );

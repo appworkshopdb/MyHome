@@ -644,10 +644,38 @@ async function checkCategory(category, ownerId, berlin) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Zugangsprüfung
+// ─────────────────────────────────────────────────────────────────────
+
+// Nur interne Aufrufe zulassen: pg_cron (und manuelle Tests mit ?test_owner=)
+// senden "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>". Die Edge Runtime
+// läuft mit VERIFY_JWT=false; ohne diese Prüfung könnte jeder von außen einen
+// Lauf oder eine Test-Push an einen beliebigen Nutzer auslösen.
+function isAuthorized(req: Request): boolean {
+  if (!serviceRoleKey) return false;
+  const header = req.headers.get('authorization') ?? '';
+  const expected = `Bearer ${serviceRoleKey}`;
+  if (header.length !== expected.length) return false;
+  // Vergleich in konstanter Zeit
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= header.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Hauptlogik
 // ─────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const url = new URL(req.url);
   const testOwnerId = url.searchParams.get('test_owner');
   const testCategory = url.searchParams.get('test_category');

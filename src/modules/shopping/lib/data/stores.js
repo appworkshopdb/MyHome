@@ -1,6 +1,6 @@
 // modules/shopping/lib/data/stores.js
 // Geteilte Datenquelle für Läden + Tageszeit-Optionen. Wird sowohl von
-// ListView.jsx (Bearbeiten bestehender Listen) als auch vom core-weiten
+// ListView.jsx (Bearbeiten bestehender Listen) als auch vom
 // ShoppingQuickSheet.jsx (globaler FAB, Neuanlage) genutzt — analog zum
 // Sport-Muster (modules/sport/lib/data/trainingTypes.js), damit beide
 // Stellen garantiert dieselben Werte kennen und nicht auseinanderlaufen.

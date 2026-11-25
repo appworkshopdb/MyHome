@@ -2,7 +2,7 @@
 // Reine Rechenlogik für "Rezept → Einkaufsliste": Zutaten auf Portionen
 // umrechnen, Kategorie bestimmen, mit vorhandenen Artikeln der Liste
 // zusammenführen. Kein Netzwerk — die Schreibzugriffe stehen in shoData.js
-// (applyShoppingPlan), die Oberfläche in core/components/RecipeToShoppingSheet.jsx.
+// (applyShoppingPlan), die Oberfläche in modules/shopping/components/RecipeToShoppingSheet.jsx.
 
 import { CATEGORY_MAP, getCategory } from './data/items.js';
 

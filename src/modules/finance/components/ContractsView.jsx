@@ -4,273 +4,149 @@ import { useUi } from '../../../core/lib/UiContext';
 import * as db from '../lib/finData';
 import {
   formatEur,
-  formatDate,
   getContractStatus,
-  getContractEndDate,
   getTemplateStatus,
-  getTemplateEndDate,
   intervalLabel,
   monthlyAmount,
   INTERVALS,
 } from '../lib/finance';
-import ContractModal from './ContractModal';
-import FixTemplateModal from './FixTemplateModal';
-import PaymentBadge from './PaymentBadge';
+import RecurringSheet from './RecurringSheet';
+import { IconChevron, IconContract, IconFixed, IconIncome, IconPlus } from './ContractIcons';
 
-const STATUS_MAP = {
-  active:   { label: 'Aktiv',      bg: 'var(--status-positive-bg)', fg: 'var(--status-positive)' },
-  expiring: { label: 'Läuft aus',  bg: 'var(--status-caution-bg)',  fg: 'var(--status-caution)'  },
-  expired:  { label: 'Abgelaufen', bg: 'var(--status-critical-bg)', fg: 'var(--status-critical)' },
-};
+const intervalOf = (x) => x.interval ?? (x.quarterly ? 'quarterly' : 'monthly');
 
-function StatusBadge({ status }) {
-  const s = STATUS_MAP[status] || STATUS_MAP.active;
+// "fällig am 16. · monatlich" / "fällig am 1. · alle 6 Monate"; ohne Tag der Rhythmus
+function dueText(x) {
+  const iv = intervalOf(x);
+  const months = INTERVALS[iv]?.months ?? 1;
+  if (x.due_day) return `fällig am ${x.due_day}. · ${months > 1 ? `alle ${months} Monate` : 'monatlich'}`;
+  return months > 1 ? intervalLabel(iv) : '';
+}
+
+// ── Eintrag als Karte ─────────────────────────────────────────────────────────
+// src: 'template' (Einnahme oder Fixkosten) | 'contract'
+function EntryCard({ x, src, expired, onClick }) {
+  const iv = intervalOf(x);
+  // Vertrag = älterer Eintrag aus fin_contracts oder Vorlage mit is_contract (bucht wie Fixkosten)
+  const isContract = src === 'contract' || x.is_contract;
+  const Icon = isContract ? IconContract : (x.category === 'fixeinnahmen' ? IconIncome : IconFixed);
+  const expiring = (src === 'contract' ? getContractStatus(x) : getTemplateStatus(x)) === 'expiring';
+  const sub = [dueText(x), isContract ? x.notes : ''].filter(Boolean).join(' · ');
+
   return (
-    <span className="t-chip" style={{
-      background: s.bg, color: s.fg,
-      padding: '2px 7px', borderRadius: 'var(--r-pill)',
-      whiteSpace: 'nowrap', display: 'inline-block',
-    }}>
-      {s.label}
-    </span>
+    <button type="button" className={`vt-card${expired ? ' is-expired' : ''}`} onClick={() => onClick(x)}>
+      <span className="vt-ic"><Icon /></span>
+      <span className="vt-body">
+        <span className="vt-top">
+          <b className="vt-name">{x.name}</b>
+          {x.payment ? <span className="vt-pay">{x.payment}</span> : null}
+          {expiring ? <span className="vt-flag">Läuft aus</span> : null}
+        </span>
+        {sub ? <span className="vt-sub">{sub}</span> : null}
+      </span>
+      <span className="vt-amt">
+        <b>{formatEur(x.amount)}</b>
+        {iv !== 'monthly' ? <small>≈ {formatEur(monthlyAmount(x.amount, iv))}/Mo.</small> : null}
+      </span>
+    </button>
   );
 }
 
-// Zeigt due_day + Intervall als lesbaren Hinweis
-function DueDayHint({ dueDay, interval }) {
-  if (!dueDay) return null;
-  const iv = INTERVALS[interval];
-  const suffix = iv && iv.months > 1 ? ` · alle ${iv.months} Monate` : ' · monatlich';
+// Eingeklappte Abgelaufene
+function ExpiredToggle({ count, open, onToggle }) {
   return (
-    <span className="t-meta" style={{ color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
-      fällig am {dueDay}.{suffix}
-    </span>
+    <button type="button" className="vt-card vt-more" onClick={onToggle} aria-expanded={open}>
+      <span className="vt-ic vt-ic--quiet"><IconChevron open={open} /></span>
+      <span className="vt-body">
+        <b className="vt-name">Abgelaufen</b>
+        <span className="vt-sub">{count} {count === 1 ? 'Eintrag' : 'Einträge'}</span>
+      </span>
+    </button>
   );
 }
 
-// ── Einzel-Zeile ─────────────────────────────────────────────────────────────
-function TemplateRow({ t, onClick }) {
-  const iv      = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
-  const monthly = monthlyAmount(t.amount, iv);
-  const st      = getTemplateStatus(t);
-  const endDate = getTemplateEndDate(t);
-
+function AddCard({ label, onClick }) {
   return (
-    <div
-      className={`contracts-row ${st === 'expired' ? 'contracts-row--faded' : ''}`}
-      onClick={() => onClick(t)}
-    >
-      <div className="contracts-row-main">
-        <div className="t-body" style={{ fontWeight: 600 }}>{t.name}</div>
-        <DueDayHint dueDay={t.due_day} interval={iv} />
-        {iv !== 'monthly' && (
-          <span className="t-meta" style={{ color: 'var(--text-muted)' }}>
-            {intervalLabel(iv)}
-          </span>
-        )}
-      </div>
-      <div className="contracts-row-right">
-        <PaymentBadge payment={t.payment} />
-        <div style={{ textAlign: 'right' }}>
-          <div className="t-body" style={{ fontWeight: 700 }}>{formatEur(t.amount)}</div>
-          {iv !== 'monthly' && (
-            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>≈ {formatEur(monthly)}/Mo.</div>
-          )}
-        </div>
-      </div>
-    </div>
+    <button type="button" className="vt-add" onClick={onClick}>
+      <IconPlus />{label}
+    </button>
   );
 }
 
-function ContractRow({ c, onClick }) {
-  const iv      = c.interval ?? (c.quarterly ? 'quarterly' : 'monthly');
-  const monthly = monthlyAmount(c.amount, iv);
-  const st      = getContractStatus(c);
-
-  return (
-    <div
-      className={`contracts-row ${st === 'expired' ? 'contracts-row--faded' : ''}`}
-      onClick={() => onClick(c)}
-    >
-      <div className="contracts-row-main">
-        <div className="t-body" style={{ fontWeight: 600 }}>{c.name}</div>
-        <DueDayHint dueDay={c.due_day} interval={iv} />
-        {st === 'expiring' && <StatusBadge status="expiring" />}
-        {c.notes && (
-          <span className="t-meta" style={{ color: 'var(--text-muted)' }}>{c.notes}</span>
-        )}
-      </div>
-      <div className="contracts-row-right">
-        <PaymentBadge payment={c.payment} />
-        <div style={{ textAlign: 'right' }}>
-          <div className="t-body" style={{ fontWeight: 700 }}>{formatEur(c.amount)}</div>
-          {iv !== 'monthly' && (
-            <div className="t-meta" style={{ color: 'var(--text-muted)' }}>≈ {formatEur(monthly)}/Mo.</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Einnahmen-Sektion ─────────────────────────────────────────────────────────
+// ── Einnahmen ─────────────────────────────────────────────────────────────────
 function EinnahmenSection({ templates, onEdit, onAdd }) {
   const [expiredOpen, setExpiredOpen] = useState(false);
 
   const items   = templates.filter((t) => t.category === 'fixeinnahmen');
   const active  = items.filter((t) => getTemplateStatus(t) !== 'expired');
   const expired = items.filter((t) => getTemplateStatus(t) === 'expired');
-
-  const totalMonthly = active.reduce((s, t) => {
-    const iv = t.interval ?? (t.quarterly ? 'quarterly' : 'monthly');
-    return s + monthlyAmount(t.amount, iv);
-  }, 0);
+  const totalMonthly = active.reduce((s, t) => s + monthlyAmount(t.amount, intervalOf(t)), 0);
 
   return (
-    <div className="card">
-      <div className="card-title">Einnahmen</div>
-
-      {items.length === 0 ? (
-        <p className="t-body" style={{ color: 'var(--text-muted)', padding: '6px 0 10px' }}>
-          Noch keine Einnahmequellen angelegt.
-        </p>
-      ) : (
-        <>
-          {/* Aktive — immer sichtbar */}
-          {active.map((t) => (
-            <TemplateRow key={t.id} t={t} onClick={onEdit} />
-          ))}
-
-          {/* Gesamt */}
-          {active.length > 0 && (
-            <div className="contracts-total-row">
-              <span className="t-meta">Gesamt/Monat</span>
-              <span className="t-body" style={{ color: 'var(--status-positive)', fontWeight: 700 }}>
-                {formatEur(totalMonthly)}
-              </span>
-            </div>
-          )}
-
-          {/* Abgelaufene — eingeklappt */}
-          {expired.length > 0 && (
-            <div className="contracts-expired-toggle">
-              <button
-                className="contracts-expired-btn t-meta"
-                onClick={() => setExpiredOpen((o) => !o)}
-              >
-                Abgelaufen ({expired.length}) {expiredOpen ? '▲' : '▼'}
-              </button>
-              {expiredOpen && expired.map((t) => (
-                <TemplateRow key={t.id} t={t} onClick={onEdit} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="contracts-btn-row">
-        <button className="btn btn-primary" onClick={onAdd}>+ Hinzufügen</button>
+    <section className="vt-group">
+      <header className="vt-gh">
+        <h2>Einnahmen</h2>
+        {active.length > 0 ? <span>{formatEur(totalMonthly)} / Monat</span> : null}
+      </header>
+      <div className="vt-list">
+        {items.length === 0 && <p className="vt-empty">Noch keine Einnahmequellen angelegt.</p>}
+        {active.map((t) => <EntryCard key={t.id} x={t} src="template" onClick={onEdit} />)}
+        {expired.length > 0 && (
+          <>
+            <ExpiredToggle count={expired.length} open={expiredOpen} onToggle={() => setExpiredOpen((o) => !o)} />
+            {expiredOpen && expired.map((t) => <EntryCard key={t.id} x={t} src="template" expired onClick={onEdit} />)}
+          </>
+        )}
+        <AddCard label="Einnahme hinzufügen" onClick={onAdd} />
       </div>
-    </div>
+    </section>
   );
 }
 
-// ── Fixkosten & Verträge-Sektion ─────────────────────────────────────────────
-function FixkostenSection({ templates, contracts, onEditTemplate, onAdd, onEditContract, onDeleteContract }) {
+// ── Fixkosten & Verträge ──────────────────────────────────────────────────────
+function FixkostenSection({ templates, contracts, onEditTemplate, onEditContract, onAdd }) {
   const [expiredOpen, setExpiredOpen] = useState(false);
 
-  const fixItems = templates.filter((t) => t.category === 'fixkosten');
   const allItems = [
-    ...fixItems.map((t)  => ({ _src: 'template', ...t })),
-    ...contracts.map((c) => ({ _src: 'contract', ...c })),
+    ...templates.filter((t) => t.category === 'fixkosten').map((t) => ({ src: 'template', x: t })),
+    ...contracts.map((c) => ({ src: 'contract', x: c })),
   ];
+  const statusOf = ({ src, x }) => (src === 'template' ? getTemplateStatus(x) : getContractStatus(x));
+  const active  = allItems.filter((i) => statusOf(i) !== 'expired');
+  const expired = allItems.filter((i) => statusOf(i) === 'expired');
+  const expiringSoon = active.filter((i) => statusOf(i) === 'expiring').length;
+  const totalMonthly = active.reduce((s, { x }) => s + monthlyAmount(x.amount, intervalOf(x)), 0);
 
-  const active  = allItems.filter((x) =>
-    x._src === 'template' ? getTemplateStatus(x) !== 'expired' : getContractStatus(x) !== 'expired'
+  const renderItem = (i, isExpired) => (
+    <EntryCard
+      key={`${i.src}-${i.x.id}`} x={i.x} src={i.src} expired={isExpired}
+      onClick={i.src === 'template' ? onEditTemplate : onEditContract}
+    />
   );
-  const expired = allItems.filter((x) =>
-    x._src === 'template' ? getTemplateStatus(x) === 'expired' : getContractStatus(x) === 'expired'
-  );
-
-  const totalMonthly = active.reduce((s, x) => {
-    const iv = x.interval ?? (x.quarterly ? 'quarterly' : 'monthly');
-    return s + monthlyAmount(x.amount, iv);
-  }, 0);
-
-  const expiringSoon = active.filter((x) =>
-    x._src === 'template' ? getTemplateStatus(x) === 'expiring' : getContractStatus(x) === 'expiring'
-  ).length;
 
   return (
-    <div className="card">
-      <div className="card-title">Fixkosten &amp; Verträge</div>
-
-      {allItems.length > 0 && (
-        <div className="summary-row" style={{ marginBottom: 14 }}>
-          <div className="summary-chip negative">
-            <div className="label">Kosten/Monat</div>
-            <div className="value">{formatEur(totalMonthly)}</div>
-          </div>
-          <div className="summary-chip">
-            <div className="label">Aktiv</div>
-            <div className="value">{active.length}</div>
-          </div>
-          {expiringSoon > 0 && (
-            <div className="summary-chip negative">
-              <div className="label">Läuft aus</div>
-              <div className="value">{expiringSoon}</div>
-            </div>
-          )}
-          <div className="summary-chip neutral">
-            <div className="label">Kosten/Jahr</div>
-            <div className="value">{formatEur(totalMonthly * 12)}</div>
-          </div>
-        </div>
-      )}
-
-      {allItems.length === 0 ? (
-        <p className="t-body" style={{ color: 'var(--text-muted)', padding: '6px 0 10px' }}>
-          Noch keine Einträge angelegt.
+    <section className="vt-group">
+      <header className="vt-gh">
+        <h2>Fixkosten &amp; Verträge</h2>
+        {active.length > 0 ? <span>{formatEur(totalMonthly)} / Monat</span> : null}
+      </header>
+      {active.length > 0 && (
+        <p className="vt-meta">
+          {active.length} aktiv{expiringSoon > 0 ? ` · ${expiringSoon} läuft aus` : ''} · {formatEur(totalMonthly * 12)} pro Jahr
         </p>
-      ) : (
-        <>
-          {active.map((x) =>
-            x._src === 'template'
-              ? <TemplateRow key={`t-${x.id}`} t={x} onClick={onEditTemplate} />
-              : <ContractRow key={`c-${x.id}`} c={x} onClick={onEditContract} />
-          )}
-
-          {active.length > 0 && (
-            <div className="contracts-total-row">
-              <span className="t-meta">Gesamt/Monat</span>
-              <span className="t-body" style={{ color: 'var(--status-critical)', fontWeight: 700 }}>
-                {formatEur(totalMonthly)}
-              </span>
-            </div>
-          )}
-
-          {expired.length > 0 && (
-            <div className="contracts-expired-toggle">
-              <button
-                className="contracts-expired-btn t-meta"
-                onClick={() => setExpiredOpen((o) => !o)}
-              >
-                Abgelaufen ({expired.length}) {expiredOpen ? '▲' : '▼'}
-              </button>
-              {expiredOpen && expired.map((x) =>
-                x._src === 'template'
-                  ? <TemplateRow key={`t-${x.id}`} t={x} onClick={onEditTemplate} />
-                  : <ContractRow key={`c-${x.id}`} c={x} onClick={onEditContract} />
-              )}
-            </div>
-          )}
-        </>
       )}
-
-      <div className="contracts-btn-row">
-        <button className="btn btn-primary" onClick={onAdd}>+ Hinzufügen</button>
+      <div className="vt-list">
+        {allItems.length === 0 && <p className="vt-empty">Noch keine Einträge angelegt.</p>}
+        {active.map((i) => renderItem(i, false))}
+        {expired.length > 0 && (
+          <>
+            <ExpiredToggle count={expired.length} open={expiredOpen} onToggle={() => setExpiredOpen((o) => !o)} />
+            {expiredOpen && expired.map((i) => renderItem(i, true))}
+          </>
+        )}
+        <AddCard label="Fixkosten oder Vertrag hinzufügen" onClick={onAdd} />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -281,7 +157,8 @@ export default function ContractsView() {
 
   const [templates, setTemplates] = useState([]);
   const [contracts, setContracts] = useState([]);
-  const [modal,     setModal]     = useState(null);
+  // Fenster: { kind, choose, item, itemType } — null = zu
+  const [sheet, setSheet] = useState(null);
 
   const now = new Date();
 
@@ -297,86 +174,93 @@ export default function ContractsView() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function handleSaveTemplate(tpl) {
+  // Fehler beim Speichern/Löschen: Fenster bleibt offen, Meldung statt stillem Promise-Fehler.
+  async function run(action, okText, failText) {
+    try {
+      await action();
+    } catch (err) {
+      console.error('[Verträge]', err);
+      showToast(failText);
+      return;
+    }
+    setSheet(null);
+    showToast(okText);
+    load();
+  }
+
+  async function handleSaveTemplate(input) {
+    // legacyContractId: älterer Vertrag aus fin_contracts, der jetzt als Vorlage gespeichert wird
+    const { legacyContractId, ...tpl } = input;
     const isNew = !tpl.id;
-    // eslint-disable-next-line no-unused-vars
-    const { _src, ...cleanTpl } = { _src: undefined, ...tpl };
-    const saved = await db.saveFixTemplate(session, cleanTpl);
-    if (isNew) await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
-    setModal(null);
-    showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
+    let saved;
+    try {
+      saved = await db.saveFixTemplate(session, tpl);
+      if (legacyContractId) await db.deleteContract(legacyContractId);
+    } catch (err) {
+      console.error('[Verträge]', err);
+      showToast('Speichern fehlgeschlagen');
+      return;
+    }
+    if (isNew) {
+      try {
+        await db.applyNewTemplateEverywhere(session, saved, now.getFullYear(), now.getMonth() + 1);
+      } catch (err) {
+        // Die Vorlage steht schon in der Datenbank: Fenster schließen, sonst legt ein
+        // zweiter Klick auf "Speichern" eine doppelte Vorlage an.
+        console.error('[Verträge]', err);
+        setSheet(null);
+        showToast('Gespeichert, Übernahme in die Monate fehlgeschlagen');
+        load();
+        return;
+      }
+    }
+    setSheet(null);
+    if (tpl.is_contract) showToast(isNew ? 'Vertrag hinzugefügt' : 'Vertrag aktualisiert');
+    else showToast(isNew ? 'Posten hinzugefügt' : 'Posten aktualisiert');
     load();
   }
 
   async function handleDeleteTemplate(id) {
     if (!confirm('Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
-    await db.deleteFixTemplate(session, id);
-    setModal(null);
-    showToast('Posten gelöscht');
-    load();
-  }
-
-  async function handleSaveContract(c) {
-    await db.saveContract(session, c);
-    setModal(null);
-    showToast(c.id ? 'Vertrag aktualisiert' : 'Vertrag hinzugefügt');
-    load();
+    await run(() => db.deleteFixTemplate(session, id), 'Posten gelöscht', 'Löschen fehlgeschlagen');
   }
 
   async function handleDeleteContract(id) {
     if (!confirm('Vertrag löschen?')) return;
-    await db.deleteContract(id);
-    showToast('Vertrag gelöscht');
-    load();
+    await run(() => db.deleteContract(id), 'Vertrag gelöscht', 'Löschen fehlgeschlagen');
   }
 
-  // Kombinierter "+" Button öffnet FixTemplateModal mit initialCategory
-  // 'fixkosten' — Nutzer kann oben auf 'fixeinnahmen' wechseln.
-  // Für Verträge: eigenes ContractModal bleibt erhalten, erreichbar über
-  // Antippen eines bestehenden Vertrags (Edit) oder über den kombinierten
-  // Wizard (TODO: könnte in Zukunft in FixTemplateModal integriert werden).
-  // Aktuell: "+" öffnet Fixkosten-Wizard, bestehende Verträge per Tap.
-
   return (
-    <>
+    <div className="vt-page">
       <EinnahmenSection
         templates={templates}
-        onEdit={(t) => setModal({ type: 'template', tpl: t, category: t.category })}
-        onAdd={() => setModal({ type: 'template', tpl: null, category: 'fixeinnahmen' })}
+        onEdit={(t) => setSheet({ item: t, itemType: 'template' })}
+        onAdd={() => setSheet({ kind: 'einnahme' })}
       />
 
       <FixkostenSection
         templates={templates}
         contracts={contracts}
-        onEditTemplate={(t) => setModal({ type: 'template', tpl: t, category: t.category })}
-        onAdd={() => setModal({ type: 'combined', tpl: null })}
-        onEditContract={(c) => setModal({ type: 'contract', contract: c })}
-        onDeleteContract={handleDeleteContract}
+        onEditTemplate={(t) => setSheet({ item: t, itemType: 'template' })}
+        onEditContract={(c) => setSheet({ item: c, itemType: 'contract' })}
+        onAdd={() => setSheet({ kind: 'fixkosten', choose: true })}
       />
 
-      {/* Fixkosten/Einnahme-Wizard (kombiniert) */}
-      {(modal?.type === 'template' || modal?.type === 'combined') && (
-        <FixTemplateModal
-          tpl={modal.tpl}
-          initialCategory={modal.category || 'fixkosten'}
+      {sheet && (
+        <RecurringSheet
+          key={sheet.item?.id || sheet.kind}
+          kind={sheet.kind}
+          choose={sheet.choose}
+          item={sheet.item}
+          itemType={sheet.itemType}
           currentMonth={now.getMonth() + 1}
           currentYear={now.getFullYear()}
-          onSave={handleSaveTemplate}
-          onDelete={handleDeleteTemplate}
-          onClose={() => setModal(null)}
+          onSaveTemplate={handleSaveTemplate}
+          onDelete={sheet.itemType === 'contract' ? handleDeleteContract : handleDeleteTemplate}
+          onClose={() => setSheet(null)}
           showToast={showToast}
         />
       )}
-
-      {/* Vertrag bearbeiten */}
-      {modal?.type === 'contract' && (
-        <ContractModal
-          contract={modal.contract}
-          onSave={handleSaveContract}
-          onClose={() => setModal(null)}
-          showToast={showToast}
-        />
-      )}
-    </>
+    </div>
   );
 }

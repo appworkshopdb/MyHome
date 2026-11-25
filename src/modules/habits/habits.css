@@ -3638,3 +3638,44 @@
 .hab-ef-step button:focus-visible,
 .hab-ef-save:focus-visible,
 .hab-ef-time input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Gesperrte Vorlagen-Werte im Formular */
+.hab-ef-locked {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--m-tint, var(--surface-sunken));
+  box-shadow: inset 0 0 0 1.5px var(--m-ac, var(--action-primary));
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.hab-ef-chip:disabled { cursor: default; }
+.hab-ef-timeout { min-width: 64px !important; }
+
+/* Vorlagen im Wizard (eingebettet): ohne Seitenabstand, Flächen etwas heller abgesetzt */
+.hab-tl--embedded { padding-top: 0; }
+.hab-tl--embedded .hab-tl-search,
+.hab-tl--embedded .hab-tl-fbtn,
+.hab-tl--embedded .hab-tl-cat,
+.hab-tl--embedded .hab-tl-list,
+.hab-tl--embedded .hab-tl-back {
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+.hab-tl--embedded .hab-tl-starters { margin-inline: -4px; padding-inline: 4px; }
+.hab-tl-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-xl);
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+.hab-tl-reset { align-self: flex-start; padding: 0; }
+/* Archiv-Ansicht: Abstände aus der Skala (--sp-3 = 12 px) statt Inline-Styles */
+.hab-archive .toast-error { margin: var(--sp-3) 0; }
+.hab-archive .hab-manage-list { margin-top: var(--sp-3); }
