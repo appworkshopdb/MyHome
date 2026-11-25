@@ -19,8 +19,6 @@ import {
   openAmount,
   isOpenExpense,
   isListedEntry,
-  isIncomePending,
-  offenerZahlungenText,
   localTodayStr,
 } from '../lib/finance';
 import FocusCard from '../../../core/components/FocusCard.jsx';
@@ -28,6 +26,7 @@ import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
+import { available, horizon, plannedUntil } from '../lib/income';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -52,6 +51,7 @@ export default function OverviewSection({ onNavigate }) {
   const [entries,   setEntries]   = useState(snap?.entries ?? []);
   const [templates, setTemplates] = useState(snap?.templates ?? []);
   const [contracts, setContracts] = useState(snap?.contracts ?? []);
+  const [allEntries, setAllEntries] = useState(snap?.allEntries ?? []);
   const [loading,   setLoading]   = useState(!snap);
   const hasData = useRef(Boolean(snap)); // schon etwas anzuzeigen → kein Ladezustand beim Aktualisieren
 
@@ -67,18 +67,20 @@ export default function OverviewSection({ onNavigate }) {
       // diesen Daten berechnet (vorher: zwei zusätzliche Abfragen davor); nur wenn
       // etwas angelegt wurde (selten, z. B. erster Aufruf im Monat), lädt es die
       // Posten noch einmal neu.
-      const [es0, ts, cs] = await Promise.all([
+      const [es0, ts, cs, all] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
         db.getContracts(s),
+        db.getAllEntries(s), // "Verfügbar jetzt" rechnet monatsübergreifend
       ]);
       const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
       const es = added > 0 ? await db.getEntriesByMonth(s, year, month) : es0;
       setEntries(es);
+      setAllEntries(all);
       setTemplates(ts);
       setContracts(cs);
       hasData.current = true;
-      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, templates: ts, contracts: cs });
+      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, allEntries: all, templates: ts, contracts: cs });
     } catch (e) {
       console.error(e);
     } finally {
@@ -103,18 +105,8 @@ export default function OverviewSection({ onNavigate }) {
       .reduce((s, e) => s + Number(e.amount || 0), 0),
   }));
   const totalAus   = spend.reduce((s, c) => s + c.value, 0);
-  const totalGespart = entries
-    .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
-  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
-  const ausAnzeige = totalAus + totalGespart;
-  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
+  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag (lib/income.js, available).
   const today = localTodayStr();
-  const einErhalten = totalEin - entries
-    .filter((e) => isIncomePending(e, today))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const saldo      = einErhalten - ausAnzeige;
 
   // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
   // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
@@ -123,10 +115,13 @@ export default function OverviewSection({ onNavigate }) {
   // sofort als bezahlt, auch bei geteilter Zahlung).
   const offene = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  // "Aktuell" = Saldo vor den offenen Zahlungen; Balken: bezahlt ausgefüllt, offen schraffiert
-  const aktuell = saldo + offeneSumme;
-  const paidRatio = einErhalten > 0 ? Math.max(0, (ausAnzeige - offeneSumme) / einErhalten) : 0;
-  const openRatio = einErhalten > 0 ? offeneSumme / einErhalten : 0;
+
+  // "Verfügbar jetzt": alle Eingänge bis heute minus alles Bezahlte, ohne Monatsgrenze (lib/income.js)
+  const stand = available(allEntries, today);
+  const hz = horizon(templates, allEntries, today);
+  const geplant = plannedUntil(allEntries, hz.date, today);
+  const hzRest = stand.verf - geplant;
+  const hzDate = `${hz.date.slice(8, 10)}.${hz.date.slice(5, 7)}.`;
 
   const expiring =
     templates.filter((t) => getTemplateStatus(t) === 'expiring').length +
@@ -147,22 +142,34 @@ export default function OverviewSection({ onNavigate }) {
         </span>
       </div>
 
-      {/* Fokuskarte: Saldo */}
+      {/* Fokuskarte: Verfügbar jetzt (Einnahmen und Ausgaben getrennt verwaltet, Summen hängen zusammen) */}
       <FocusCard>
-        <FocusCard.Eyebrow>Saldo</FocusCard.Eyebrow>
-        <FocusCard.Value>{loading ? '—' : formatEur(saldo)}</FocusCard.Value>
-        {!loading && offene.length > 0 && (
+        <FocusCard.Eyebrow>Verfügbar jetzt</FocusCard.Eyebrow>
+        <FocusCard.Value>{loading ? '—' : formatEur(stand.verf)}</FocusCard.Value>
+        {!loading && stand.offen.length > 0 && (
           <FocusCard.Meta>
-            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
+            <span>Nach {stand.offen.length === 1 ? '1 offenen Zahlung' : `${stand.offen.length} offenen Zahlungen`}: <b>{formatEur(stand.verf - stand.offenSum)}</b></span>
           </FocusCard.Meta>
         )}
-        <FocusCard.Progress value={paidRatio} open={openRatio} />
         <FocusCard.Meta>
-          {/* "+" statt "Ein", "−" statt "Aus" */}
-          <span>+ <b>{formatEur(einErhalten)}</b></span>
-          <span>− <b>{formatEur(ausAnzeige)}</b></span>
+          <span>+ Eingänge <b>{formatEur(stand.eingaenge)}</b></span>
+          <span>− Bezahltes <b>{formatEur(stand.bezahlt)}</b></span>
         </FocusCard.Meta>
       </FocusCard>
+
+      {!loading && (
+        <div className="fin-cycle">
+          <div className="fin-cycle-h">
+            <b>{hz.kind === 'gehalt' ? 'Bis zum nächsten Eingang' : 'Bis Monatsende'}</b>
+            <span>{hz.kind === 'gehalt' ? `erwartet ${hzDate}` : hzDate}</span>
+          </div>
+          <div className="fin-cycle-g">
+            <div><small>Verfügbar</small><b>{formatEur(stand.verf)}</b></div>
+            <div><small>Geplant</small><b>− {formatEur(geplant)}</b></div>
+            <div><small>Rest</small><b className={hzRest < 0 ? 'neg' : 'pos'}>{formatEur(hzRest)}</b></div>
+          </div>
+        </div>
+      )}
 
       {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
       <SparschweinSection year={year} month={month} />
@@ -232,6 +239,12 @@ export default function OverviewSection({ onNavigate }) {
             featured
             value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
+          />
+          <AreaRow
+            label="Einnahmen"
+            icon="income"
+            value="Eingänge"
+            onPress={() => onNavigate('einnahmen')}
           />
           <AreaRow
             label="Offene Posten"

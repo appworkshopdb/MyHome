@@ -223,7 +223,7 @@ export async function saveFixTemplate(session, tpl) {
   // Bei einem Update: abhängige fin_entries synchronisieren.
   // Nur nicht-bezahlte Einträge werden aktualisiert — bezahlte sind
   // bereits abgerechnet und sollen die historische Wahrheit bewahren.
-  if (isUpdate) {
+  if (isUpdate && saved.category !== 'fixeinnahmen') {
     await syncTemplateEntries(session, saved);
   }
 
@@ -391,6 +391,7 @@ export async function applyMissingFixTemplates(session, year, month) {
 export async function applyMissingFixTemplatesWith(session, year, month, templates, monthEntries) {
   let added = 0;
   for (const t of templates) {
+    if (t.category === 'fixeinnahmen') continue; // Einnahmen werden beim Eingang bestätigt (lib/income.js)
     if (!templateAppliesTo(t, year, month)) continue;
     if (isSkippedMonth(t, year, month)) continue; // der Nutzer hat ihn gelöscht
     const existing = monthEntries.find((e) => e.from_template === t.id);
@@ -410,6 +411,7 @@ export async function applyMissingFixTemplatesWith(session, year, month, templat
 // Beim Anlegen einer neuen Vorlage: auf alle bereits genutzten Monate
 // rückwirkend anwenden, plus den aktuell angezeigten Monat.
 export async function applyNewTemplateEverywhere(session, tpl, currentYear, currentMonth) {
+  if (tpl.category === 'fixeinnahmen') return; // Einnahmen: Eingang bestätigen statt automatisch buchen
   const allEntries = await getAllEntries(session);
   const keys = new Set([
     ...allEntries.map((e) => `${e.year}-${e.month}`),
@@ -860,4 +862,32 @@ export async function restoreSavingsPlanRates(session, planId, before) {
   }
   invalidateHubCache();
   if (firstError) throw firstError;
+}
+
+// ---------------------------------------------------------------------
+// Einnahmen: Eingang bestätigen (lib/income.js)
+// ---------------------------------------------------------------------
+// Der Eingang wird auf den Tag gebucht, an dem der Nutzer bestätigt: normale Einnahme-
+// Buchung im Monat dieses Tages (zählt in Auswertung und Hub im Eingangsmonat).
+export async function confirmIncome(session, tpl, amount, today) {
+  const [y, m] = String(today).slice(0, 10).split('-').map(Number);
+  return saveEntry(session, {
+    category: tpl.category,
+    year: y,
+    month: m,
+    name: tpl.name,
+    payment: tpl.payment || 'Bank',
+    payments: [{ method: tpl.payment || 'Bank', amount, paid: true }],
+    amount,
+    paid: true,
+    due_date: String(today).slice(0, 10),
+    from_template: tpl.id,
+    template_locked: true,
+  });
+}
+
+// Eingang zurücknehmen (Rückgängig): Soft Delete, ohne den Monat für die Vorlage zu sperren
+export async function undoIncome(id) {
+  await softDeleteEntry(id);
+  invalidateHubCache();
 }

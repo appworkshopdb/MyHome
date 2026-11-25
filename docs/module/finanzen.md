@@ -54,6 +54,14 @@ Sparziel mit Raten. Daten: Tabelle `fin_savings_plans` (Name, `target_amount`, `
 
 Einnahmen, Fixkosten, Variable Kosten und Sonstige Ausgaben stehen in jedem Monat da, leere mit "0 Posten · 0,00 €" und beim Aufklappen "Keine Posten in diesem Monat" (`MonthsView.CollapseSection`). Laufende Posten (Fixkosten-Vorlagen) werden beim Öffnen eines Monats angelegt, auch für künftige Monate und Jahre, solange die Vorlage gilt (`templateAppliesTo`: bis auf weiteres oder bis zum Endmonat). Verträge buchen genauso (Vorlage mit `is_contract`, siehe Verträge).
 
+## Einnahmen als Eingänge (seit 25.11.2026)
+
+Einnahmen und Ausgaben werden getrennt verwaltet, die Summen hängen zusammen. Ausgaben (Fix, Variable, Sonstige) bleiben monatlich wie bisher. Regeln in `lib/income.js`, Seite `IncomeView.jsx` (`#/finance/einnahmen`, Kachel "Einnahmen").
+- **Einnahmen-Vorlagen** (`fin_fixtemplates`, `fixeinnahmen`) buchen **nicht mehr automatisch** jeden Monat (`applyMissingFixTemplatesWith`, `applyNewTemplateEverywhere`, Sync beim Speichern überspringen sie). Stattdessen "Eingang bestätigen": `finData.confirmIncome` legt eine normale Einnahme-Buchung an (`from_template`, Monat und `due_date` = heute, `template_locked`). Sie zählt in Auswertung und Hub im **Eingangsmonat**.
+- **Fix** (Vorlage hat `due_day`, beim Anlegen "Jeden Monat am selben Tag"): der Knopf erscheint ab diesem Tag im Monat und bleibt, bis bestätigt. **Unterschiedlich** (kein `due_day`): Knopf immer sichtbar. Beides **höchstens einmal je Kalendermonat und Quelle**: danach steht "Bestätigt am …", kein zweites Bestätigen (auch beim Speichern noch einmal frisch geprüft). Rückgängig 10 Sekunden (`undoIncome`, Soft Delete) oder die Buchung löschen.
+- **Verfügbar jetzt** (Fokuskarte der Übersicht, `income.available`): alle Eingänge bis heute (nicht in der Zukunft, nur bis zum laufenden Monat) minus alles Bezahlte (ohne den Sparschwein-Anteil), monatsübergreifend. "Nach N offenen Zahlungen" zieht die offenen Posten ab. Darunter "Bis zum nächsten Eingang" (nächster Fix-Eingang) oder "Bis Monatsende": Verfügbar − geplante Ausgaben bis dahin = Rest. Der Hub rechnet noch mit dem Monatssaldo.
+- Aus der Zeit vor dem Umbau können in künftigen Monaten noch automatisch angelegte Einnahme-Posten stehen; sie zählen nicht in "Verfügbar" und lassen sich per SQL entfernen (siehe Backlog-Notiz).
+
 ## Saldo-Karte
 
 "+ Ein  − Aus" ergibt immer den Saldo: Aus = Ausgaben + Gespartes (Sparschwein-Einzahlungen minus Entnahmen), Ein ohne Entnahmen (Übersicht und Buchungen). Der Hub rechnet seine Ein/Aus-Zahlen aus den Messwerten (Sparschwein-Bewegungen dort als Aus/Ein) und zeigt daher andere Teilzahlen bei gleichem Saldo.
