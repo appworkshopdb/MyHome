@@ -12,9 +12,9 @@ const EXPENSE = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 const norm = (s) => (s || '').trim().toLowerCase();
 
-// Einzahlung: "Ersparnisse" oder Sparplan-Rate (savings_plan_id); Raten erst nach dem Bezahlen
-const isDeposit = (e) => EXPENSE.has(e.category) && (norm(e.name) === 'ersparnisse' || Boolean(e.savings_plan_id));
-const isCountedDeposit = (e) => isDeposit(e) && (!e.savings_plan_id || e.paid === true);
+const isDeposit = (e) => EXPENSE.has(e.category) && norm(e.name) === 'ersparnisse';
+// Sparplan-Raten (savings_plan_id) sind Variable Ausgaben; im Sparschwein zählen sie erst bezahlt
+const isCountedDeposit = (e) => isDeposit(e) || (EXPENSE.has(e.category) && Boolean(e.savings_plan_id) && e.paid === true);
 
 function withdrawalAmount(e) {
   if (isDeposit(e)) return 0;
@@ -35,7 +35,7 @@ export async function loadSavingsBalance(session) {
     .is('deleted_at', null);
   if (error) throw error;
   return (data ?? []).reduce(
-    (sum, e) => sum + (isCountedDeposit(e) ? Number(e.amount) : isDeposit(e) ? 0 : -withdrawalAmount(e)),
+    (sum, e) => sum + (isCountedDeposit(e) ? Number(e.amount) : -withdrawalAmount(e)),
     0,
   );
 }

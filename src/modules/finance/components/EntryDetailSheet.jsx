@@ -74,8 +74,7 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
   }
 
   const { category } = entry;
-  // Sparplan-Raten haben einen Status (offen bis zur Einzahlung), andere Sparschwein-Einzahlungen nicht
-  const canPay = !INCOME.has(category) && (!isSparschweinDeposit(entry) || Boolean(entry.savings_plan_id));
+  const canPay = !INCOME.has(category) && !isSparschweinDeposit(entry);
   const overdue = canPay && !isFullyPaid(entry) && entry.due_date
     && String(entry.due_date).slice(0, 10) < toDateStr(new Date());
 

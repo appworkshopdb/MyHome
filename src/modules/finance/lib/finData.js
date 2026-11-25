@@ -1,7 +1,7 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
-import { templateAppliesTo, dueDateFor, MONTHS_DE, isSparschweinDeposit, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
+import { templateAppliesTo, dueDateFor, MONTHS_DE, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
 import { rateName } from './savingsPlans';
 
 function ownerId(session) {
@@ -33,7 +33,7 @@ export async function getSparschweinLedger(session) {
   let totalIn = 0;
   let totalOut = 0;
   const ledger = relevant.map((e) => {
-    const isDeposit = isSparschweinDeposit(e);
+    const isDeposit = isCountedDeposit(e);
     // Bei Teilzahlung: nur den Sparschwein-Anteil verbuchen, nicht Gesamtbetrag
     const effectiveAmount = isDeposit
       ? Number(e.amount)

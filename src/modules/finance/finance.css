@@ -239,3 +239,5 @@
 .spw-custom-amt span { font-size: var(--fs-body); }
 .spw-review { margin-top: var(--sp-2); }
 .spw-quick .wz-chip.on { background: var(--mod-fin-ac); border-color: var(--mod-fin-ac); color: var(--mod-fin-on); }
+/* Leerer Bereich in den Buchungen */
+.fin-collapse-empty { padding: var(--sp-4) 0 var(--sp-3); font-size: var(--fs-small); font-weight: 600; color: var(--text-muted); }

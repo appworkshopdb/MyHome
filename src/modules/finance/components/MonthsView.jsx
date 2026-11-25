@@ -73,7 +73,11 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
       <div className="fin-row-info">
         <div className={`fin-row-name ${fully && !isIncome ? 'paid' : ''}`}>{e.name}</div>
         <div className="fin-row-meta">
-          {formatPayments(e)}{e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : ''}
+          {formatPayments(e)}
+          {/* Sparplan-Rate: wann sie fällig ist, sonst wann der Posten erfasst wurde */}
+          {e.savings_plan_id && e.due_date
+            ? ` · fällig ${fmtDue(e.due_date)}`
+            : (e.created_at ? ` · ${formatRelativeDate(e.created_at)}` : '')}
           {partly && !showOpen ? ' · teilweise bezahlt' : ''}
         </div>
         {showOpen && partly && (
@@ -103,6 +107,12 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
       </div>
     </div>
   );
+}
+
+// 'YYYY-MM-DD' -> 'TT.MM.JJJJ' ohne Date-Parsing (keine Zeitzonen-Verschiebung)
+function fmtDue(str) {
+  const [y, m, d] = String(str).slice(0, 10).split('-');
+  return `${d}.${m}.${y}`;
 }
 
 // Flache Offen-Liste — keine Dropdowns, direkte Auflistung aller offenen
@@ -160,7 +170,7 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
       && !isSparschweinDeposit(e)          // Einzahlung raus (Ausgaben-Spalten)
       && !isSparschweinDirectWithdrawal(e) // Entnahme raus (Einnahmen-Spalte)
   );
-  if (visible.length === 0) return null;
+  // Leere Bereiche bleiben sichtbar (0 Posten · 0,00 €), damit jeder Monat gleich aussieht
 
   const total  = visible.reduce((s, e) => s + Number(e.amount || 0), 0);
   const sorted = col.cats.length > 1
@@ -184,6 +194,7 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
 
       {open && (
         <div className="fin-collapse-body">
+          {sorted.length === 0 && <div className="fin-collapse-empty">Keine Posten in diesem Monat</div>}
           {sorted.map((e) => (
             <EntryRow
               key={e.id}

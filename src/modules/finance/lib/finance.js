@@ -41,17 +41,22 @@ function normName(name) {
   return (name || '').trim().toLowerCase();
 }
 
-// Einzahlung ins Sparschwein: Ausgabe "Ersparnisse" oder eine Sparplan-Rate
-// (Buchung mit savings_plan_id, Name "Sparrate · …", siehe lib/savingsPlans.js).
 export function isSparschweinDeposit(entry) {
   return EXPENSE_CATEGORIES.has(entry.category) &&
-    (normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase() || Boolean(entry.savings_plan_id));
+    normName(entry.name) === SPARSCHWEIN_DEPOSIT_NAME.toLowerCase();
 }
 
-// Zählt die Einzahlung schon im Sparschwein-Stand? Sparplan-Raten erst, wenn sie
-// bezahlt sind; bis dahin sind sie offene Posten (zählen aber im Saldo des Monats).
+// Sparplan-Rate (Buchung mit savings_plan_id, Name "Sparrate · …", lib/savingsPlans.js):
+// eine geplante Variable Ausgabe — steht unter Variable Kosten, zählt als Ausgabe im
+// Saldo und in der Auswertung, ist bis zur Einzahlung ein offener Posten.
+export function isSavingsPlanRate(entry) {
+  return EXPENSE_CATEGORIES.has(entry.category) && Boolean(entry.savings_plan_id);
+}
+
+// Was zählt im Sparschwein-Stand als Einzahlung? "Ersparnisse" sofort,
+// Sparplan-Raten erst, wenn sie bezahlt sind.
 export function isCountedDeposit(entry) {
-  return isSparschweinDeposit(entry) && (!entry.savings_plan_id || entry.paid === true);
+  return isSparschweinDeposit(entry) || (isSavingsPlanRate(entry) && entry.paid === true);
 }
 
 // Entnahme aus dem Sparschwein — zwei Wege:
