@@ -59,6 +59,15 @@
 
 .area-row-badge { display: none; }
 
+/* Liste mit Symbolkreis je Zeile (AreaList icons, z. B. Finanzen) */
+.area-list--icons .area-row { gap: var(--sp-3); min-height: 58px; }
+.area-list--icons .area-row-badge {
+  display: grid; place-items: center; flex: none;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--m-tint, var(--surface-sunken)); color: var(--m-deep, var(--text-primary));
+}
+.area-list--icons .area-row-label { font-size: var(--fs-body); font-weight: 800; }
+
 .area-list--tiles {
   display:               grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

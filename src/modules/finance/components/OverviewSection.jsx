@@ -25,6 +25,7 @@ import FocusCard from '../../../core/components/FocusCard.jsx';
 import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import AreaIcon from '../../../core/components/AreaIcons.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
 import { available } from '../lib/income';
 
@@ -156,8 +157,20 @@ export default function OverviewSection({ onNavigate }) {
         </FocusCard.Meta>
       </FocusCard>
 
-      {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
-      <SparschweinSection year={year} month={month} />
+      {/* Offene Posten: was zu erledigen ist, steht gleich unter der Fokuskarte */}
+      <button
+        type="button"
+        className={`fin-open-strip${offene.length > 0 ? ' fin-open-strip--open' : ''}`}
+        onClick={() => onNavigate('offen')}
+      >
+        <span className="fin-open-strip-badge" aria-hidden="true"><AreaIcon id="clock" size={20} /></span>
+        <span className="fin-open-strip-text">
+          <b>{offene.length > 0 ? (offene.length === 1 ? '1 offener Posten' : `${offene.length} offene Posten`) : 'Alles bezahlt'}</b>
+          <small>{offene.length > 0 ? 'noch zu bezahlen' : 'keine offenen Posten'}</small>
+        </span>
+        {offene.length > 0 && <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>}
+        <span className="fin-open-strip-chev" aria-hidden="true">›</span>
+      </button>
 
       {/* ── Schnellübersicht ──────────────────────────────────────────
           Gesamter Block antippbar → navigiert zu Buchungen.
@@ -215,22 +228,14 @@ export default function OverviewSection({ onNavigate }) {
         </button>
       </PageSection>
 
-      {/* ── Bereiche */}
+      {/* ── Bereiche (Offene Posten steht als Streifen unter der Fokuskarte) */}
       <PageSection title="Bereiche">
-        <AreaList variant="tiles">
+        <AreaList icons>
           <AreaRow
             label="Buchungen"
             icon="list"
-            featured
             value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
-          />
-          <AreaRow
-            label="Offene Posten"
-            icon="clock"
-            value={offene.length > 0 ? `${offene.length} · ${formatEur(offeneSumme)}` : 'alles bezahlt'}
-            tone={offene.length > 0 ? 'critical' : 'neutral'}
-            onPress={() => onNavigate('offen')}
           />
           <AreaRow
             label="Verträge"
@@ -252,6 +257,9 @@ export default function OverviewSection({ onNavigate }) {
           />
         </AreaList>
       </PageSection>
+
+      {/* Sparen ganz unten: Sparschwein und Sparpläne */}
+      <SparschweinSection year={year} month={month} />
     </>
   );
 }

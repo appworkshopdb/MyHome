@@ -80,3 +80,7 @@ Alle Fenster dieser Seite = `RecurringSheet.jsx` (ersetzt `FixTemplateModal`, `C
 
 **Fälligkeit bei Vorlagen und Verträgen:** Im Fenster steht "Fällig am" als Kalender-Datum (optional); gespeichert wird weiter nur der Tag im Monat (`due_day`, keine Migration), die Anzeige bleibt im laufenden Monat. Daraus bekommt jeder Monatsposten ein Fälligkeitsdatum (`dueDateFor` in `finance.js`, Tag auf die Monatslänge begrenzt): beim Anlegen, beim Speichern der Vorlage (nur ungesperrte Posten) und als Nachtrag beim Laden des Monats für Posten ohne Datum. **Nur laufender und zukünftiger Monat**; rückwirkend angelegte Posten alter Monate bekommen keins (sonst wären sie sofort überfällig und kämen in die Morgen-Pushes). Ein von Hand geändertes Datum sperrt den Posten wie Name/Betrag (`template_locked`). Folge: Fixkosten aus Vorlagen erscheinen mit Datum im Tagesplan und als überfällig, Einnahmen aus Vorlagen zählen in der Fokuskarte erst ab ihrem Tag.
 
+
+## Aufbau der Übersicht (seit 25.11.2026)
+
+Reihenfolge: Fokuskarte "Verfügbar jetzt" (antippbar, öffnet Einnahmen), Streifen "Offene Posten" (rot mit Summe, bei nichts offen "Alles bezahlt"; führt auf `#/finance/offen`), Schnellübersicht (Umbau zum Kreisdiagramm geplant), Bereiche als Liste mit Symbolkreisen (Buchungen, Verträge, Auswertung, Einstellungen; `AreaList icons`), ganz unten Sparen (Sparschwein, Sparpläne). Offene Posten steht nicht mehr in den Bereichen.

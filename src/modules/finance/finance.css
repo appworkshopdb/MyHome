@@ -297,3 +297,14 @@
 .inc-note { margin: var(--sp-4) 0 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--rad-lg); background: var(--mod-fin-tint); color: var(--mod-fin-ink); font-size: var(--fs-small); font-weight: 600; line-height: 1.45; }
 .inc-note b { font-weight: 800; }
 
+
+/* Offene-Posten-Streifen unter der Fokuskarte */
+.fin-open-strip { display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 58px; margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border-hairline); border-radius: var(--rad-xl); background: var(--surface-raised); box-shadow: var(--shadow-card); color: var(--text-primary); text-align: left; cursor: pointer; font: inherit; }
+.fin-open-strip--open { border-color: color-mix(in srgb, var(--status-critical) 35%, transparent); }
+.fin-open-strip-badge { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--mod-fin-tint); color: var(--mod-fin-deep); }
+.fin-open-strip--open .fin-open-strip-badge { background: color-mix(in srgb, var(--status-critical) 14%, transparent); color: var(--status-critical); }
+.fin-open-strip-text { flex: 1; min-width: 0; }
+.fin-open-strip-text b { display: block; font-size: var(--fs-body); font-weight: 800; }
+.fin-open-strip-text small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--text-muted); }
+.fin-open-strip-sum { font-size: var(--fs-body); font-weight: 900; font-variant-numeric: tabular-nums; color: var(--status-critical); }
+.fin-open-strip-chev { flex: none; color: var(--text-muted); font-weight: 700; }
