@@ -1,8 +1,8 @@
 import { getSupabase } from '../../../core/lib/supabaseClient';
 import { invalidateHubCache } from '../../../core/lib/hubCache';
 import { saveEntry, deleteEntry as softDeleteEntry } from '../../../core/lib/finEntries';
-import { templateAppliesTo, dueDateFor, MONTHS_DE, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount } from './finance';
-import { rateName } from './savingsPlans';
+import { templateAppliesTo, dueDateFor, MONTHS_DE, isCountedDeposit, isSparschweinWithdrawal, getSparschweinWithdrawalAmount, localTodayStr as localTodayStrFin } from './finance';
+import { rateName, rebalanceRates } from './savingsPlans';
 
 function ownerId(session) {
   return session.user.id;
@@ -761,5 +761,61 @@ export async function endSavingsPlan(session, planId) {
   if (delErr) throw delErr;
   const { error } = await sb.from('fin_savings_plans').update({ status: 'beendet', updated_at: now }).eq('id', planId);
   if (error) throw error;
+  invalidateHubCache();
+}
+
+// Nach der Änderung einer Rate (Plan oder Stift in den Buchungen) die übrigen Raten
+// so anpassen, dass die Summe wieder das Ziel ergibt (lib/savingsPlans.js rebalanceRates).
+// Gibt einen Schnappschuss der Raten vorher zurück (für "Rückgängig machen").
+export async function rebalanceSavingsPlan(session, planId, changedId) {
+  const sb = getSupabase();
+  const { data: plan, error: pErr } = await sb.from('fin_savings_plans').select('*').eq('id', planId).single();
+  if (pErr) throw pErr;
+  const rates = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const res = rebalanceRates(plan, rates, changedId, localTodayStrFin());
+  for (const u of res.updates) {
+    const r = rates.find((x) => x.id === u.id);
+    // eslint-disable-next-line no-await-in-loop
+    const { error } = await sb.from('fin_entries').update({ amount: u.amount, payments: [{ method: r.payment || 'Bank', amount: u.amount, paid: false }] }).eq('id', u.id);
+    if (error) throw error;
+  }
+  if (res.removes.length) {
+    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() }).in('id', res.removes);
+    if (error) throw error;
+  }
+  if (res.inserts.length) {
+    const { error } = await sb.from('fin_entries').insert(res.inserts.map((r) => rateRow(session, plan, r)));
+    if (error) throw error;
+  }
+  invalidateHubCache();
+  return res;
+}
+
+// Eine Rate auf einen neuen Betrag setzen und den Plan ausgleichen. Rückgabe: Schnappschuss
+// aller Raten vorher, mit dem restoreSavingsPlanRates alles zurückholt.
+export async function changeSavingsPlanRate(session, planId, rateId, amount) {
+  const before = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const me = before.find((r) => r.id === rateId);
+  const { error } = await getSupabase().from('fin_entries')
+    .update({ amount, payments: [{ method: me.payment || 'Bank', amount, paid: !!me.paid }] }).eq('id', rateId);
+  if (error) throw error;
+  await rebalanceSavingsPlan(session, planId, rateId);
+  return before;
+}
+
+export async function restoreSavingsPlanRates(session, planId, before) {
+  const sb = getSupabase();
+  const now = (await getSavingsPlanRates(session)).filter((r) => r.savings_plan_id === planId);
+  const keep = new Set(before.map((r) => r.id));
+  const added = now.filter((r) => !keep.has(r.id)).map((r) => r.id);
+  if (added.length) {
+    const { error } = await sb.from('fin_entries').update({ deleted_at: new Date().toISOString() }).in('id', added);
+    if (error) throw error;
+  }
+  for (const r of before) {
+    // eslint-disable-next-line no-await-in-loop
+    const { error } = await sb.from('fin_entries').update({ amount: r.amount, payments: r.payments, paid: r.paid, deleted_at: null }).eq('id', r.id);
+    if (error) throw error;
+  }
   invalidateHubCache();
 }

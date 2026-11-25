@@ -218,3 +218,60 @@ export function extendPlan(plan, info, today) {
   const newLast = rates.length ? rates.map((r) => r.due_date).sort().slice(-1)[0] : plan.target_date;
   return { rates, targetDate: plan.target_date ? newLast : null };
 }
+
+// ---------------------------------------------------------------------
+// Rate eines Monats ändern (im Plan oder über den Stift in den Buchungen)
+// ---------------------------------------------------------------------
+// Nach der Änderung einer Rate muss die Summe aller Raten wieder das Ziel ergeben:
+//  - mehr gespart: offene Raten NACH der geänderten fallen von hinten weg bzw. die
+//    letzte wird kleiner → Ziel früher erreicht
+//  - weniger gespart: der Fehlbetrag kommt mit der normalen Rate ans Ende
+// rates: aktive Raten des Plans (mit der neuen Höhe der geänderten Rate).
+// Ergebnis: { updates: [{ id, amount }], removes: [id], inserts: [{ year, month, due_date, amount }] }
+export function rebalanceRates(plan, rates, changedId, today) {
+  const list = rates.map((r) => ({ ...r, amount: Number(r.amount) }));
+  const changed = list.find((r) => r.id === changedId);
+  const out = { updates: [], removes: [], inserts: [] };
+  if (!changed) return out;
+  let diff = r2(sum(list.map((r) => r.amount)) - Number(plan.target_amount));
+  if (diff > 0.004) {
+    const tail = list
+      .filter((r) => !r.paid && r.id !== changedId && rateDue(r) > rateDue(changed))
+      .sort((a, b) => (rateDue(a) < rateDue(b) ? 1 : -1));
+    for (const r of tail) {
+      if (diff <= 0.004) break;
+      if (r.amount <= diff + 0.004) { diff = r2(diff - r.amount); out.removes.push(r.id); }
+      else { out.updates.push({ id: r.id, amount: r2(r.amount - diff) }); diff = 0; }
+    }
+  } else if (diff < -0.004) {
+    const step = plan.rhythm === 'quarterly' ? 3 : 1;
+    const lastM = list.reduce((mx, r) => Math.max(mx, monthIdx(rateDue(r))), monthIdx(rateDue(changed)));
+    const am = rateAmounts(-diff, Number(plan.rate));
+    out.inserts = scheduleRates(am.map((_, j) => lastM + step * (j + 1)), am, plan.due_day, today);
+  }
+  return out;
+}
+
+// Höchstbetrag für eine Rate: was bis zum Ziel fehlt, ohne die Raten danach
+export function maxForRate(plan, rates, rateId) {
+  const me = rates.find((r) => r.id === rateId);
+  const before = rates.filter((r) => r.id !== rateId && (r.paid || rateDue(r) < rateDue(me)));
+  return r2(Number(plan.target_amount) - sum(before.map((r) => Number(r.amount))));
+}
+
+// Vorschau: letzte Fälligkeit und Zahl offener Raten vor/nach einer Änderung
+export function previewRateChange(plan, rates, rateId, newAmount, today) {
+  const next = rates.map((r) => (r.id === rateId ? { ...r, amount: newAmount } : r));
+  const res = rebalanceRates(plan, next, rateId, today);
+  const after = next
+    .filter((r) => !res.removes.includes(r.id))
+    .map((r) => { const u = res.updates.find((x) => x.id === r.id); return u ? { ...r, amount: u.amount } : r; })
+    .concat(res.inserts.map((r, i) => ({ ...r, id: `neu-${i}`, paid: false })));
+  const lastOf = (xs) => xs.map(rateDue).sort().slice(-1)[0];
+  const sortedAfter = after.slice().sort((a, b) => (rateDue(a) < rateDue(b) ? -1 : 1));
+  return {
+    lastBefore: lastOf(rates), lastAfter: lastOf(after),
+    openBefore: rates.filter((r) => !r.paid).length, openAfter: after.filter((r) => !r.paid).length,
+    lastAmount: Number(sortedAfter[sortedAfter.length - 1].amount),
+  };
+}

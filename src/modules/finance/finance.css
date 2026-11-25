@@ -241,3 +241,19 @@
 .spw-quick .wz-chip.on { background: var(--mod-fin-ac); border-color: var(--mod-fin-ac); color: var(--mod-fin-on); }
 /* Leerer Bereich in den Buchungen */
 .fin-collapse-empty { padding: var(--sp-4) 0 var(--sp-3); font-size: var(--fs-small); font-weight: 600; color: var(--text-muted); }
+/* Sparplan: Rate eines Monats ändern */
+.spr-more { display: flex; align-items: center; gap: var(--sp-3); width: 100%; margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--border-strong); border-radius: var(--rad-lg); background: none; color: var(--text-primary); text-align: left; cursor: pointer; }
+.spr-more > span:nth-child(2) { flex: 1; min-width: 0; }
+.spr-more b { display: block; font-size: var(--fs-small); font-weight: 800; color: var(--mod-fin-deep); }
+.spr-more small { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--text-muted); }
+.spr-more-ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: var(--r-pill); background: var(--mod-fin-tint); color: var(--mod-fin-deep); font-size: var(--fs-title); font-weight: 700; line-height: 1; }
+.spr-more:focus-visible, .spr-rate--tap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.spr-rate--tap { display: flex; align-items: center; gap: var(--sp-3); min-height: 42px; font-size: var(--fs-small); width: 100%; padding: 0; border: 0; border-bottom: 1px solid var(--border-hairline); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.spr-rate .spr-rate-chev { width: 12px; flex: none; color: var(--text-muted); font-weight: 700; }
+.spr-chg { margin-left: var(--sp-2); padding: 1px 6px; border-radius: var(--r-pill); background: var(--mod-fin-tint); color: var(--mod-fin-ink); font-style: normal; font-size: var(--fs-caption); font-weight: 800; }
+.spr-pv { display: block; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: var(--rad-lg); }
+.spr-pv b { display: block; font-size: var(--fs-small); font-weight: 800; }
+.spr-pv small { display: block; margin-top: 2px; font-size: var(--fs-meta); font-weight: 600; }
+.spr-pv--ok { background: var(--status-positive-bg); color: var(--status-positive); }
+.spr-pv--warn { background: var(--status-caution-bg); color: var(--status-caution); }
+.spr-pv--same { background: var(--surface-sunken); color: var(--text-muted); }

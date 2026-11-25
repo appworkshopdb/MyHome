@@ -289,6 +289,11 @@ export default function MonthsView({ initialFilter = 'alle' }) {
     const old = entries.find((e) => e.id === entry.id);
     const lock = old?.from_template && !old.template_locked && changedByHand(old, entry);
     const saved = await db.saveEntry(session, { ...entry, year, month, ...(lock ? { template_locked: true } : {}) });
+    // Sparplan-Rate mit neuem Betrag: Schlussraten anpassen, damit das Ziel wieder stimmt
+    // (gleiche Wirkung wie "Rate ändern" im Plan)
+    if (entry.savings_plan_id && old && Math.abs(Number(old.amount) - Number(entry.amount)) > 0.004) {
+      try { await db.rebalanceSavingsPlan(session, entry.savings_plan_id, entry.id); } catch (e) { console.error('[Sparplan] Anpassen fehlgeschlagen', e); }
+    }
     // Sofort sichtbar machen (Ansicht bleibt offen); der Reload holt den Rest nach
     setEntries((prev) => prev.map((e) => (e.id === saved.id ? saved : e)));
     showToast('Eintrag aktualisiert');
