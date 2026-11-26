@@ -224,7 +224,7 @@ function FinanceWizard({ onClose }) {
           <div className="wz-rv-row"><span>Fällig am</span><span>{dueDate ? fmtDate(dueDate) : '—'}</span></div>
           <div className="wz-rv-row"><span>Notiz</span><span>{note.trim() || '—'}</span></div>
         </div>
-        <p className="wz-rv-note">„Gebucht in" ist der Monat, den du gerade unter Buchungen siehst. Das Fälligkeitsdatum ändert daran nichts.</p>
+        <p className="wz-rv-note">„Gebucht in" ist der Monat, den du gerade unter Ausgaben siehst. Das Fälligkeitsdatum ändert daran nichts.</p>
       </WizardFrame>
     );
   }

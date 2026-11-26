@@ -30,7 +30,7 @@ const SummaryView = lazy(() => import('./components/SummaryView'));
 
 // Bereich-Key → Titel für die Detail-TopBar (zentriert, siehe ModuleTopBar.jsx)
 const DETAIL_TITLES = {
-  buchungen:     'Buchungen',
+  buchungen:     'Ausgaben',
   offen:         'Offene Posten',
   einnahmen:     'Einnahmen',
   vertraege:     'Verträge',

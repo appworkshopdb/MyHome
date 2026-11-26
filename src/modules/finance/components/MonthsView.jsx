@@ -15,19 +15,18 @@ import { IconChevronLeft, IconChevronRight, IconEdit, IconTrash } from '../../..
 import Icon from '../../../core/components/Icon';
 import { SkeletonList, confirmDialog } from '../../../core/components/ui';
 
-// 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
+// Die drei Ausgaben-Bereiche (Einnahmen haben ihre eigene Seite, #/finance/einnahmen)
 const COLUMNS = [
-  { key: 'einnahmen', label: 'Einnahmen',        cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
   { key: 'fixkosten', label: 'Fixkosten',         cats: ['fixkosten'] },
   { key: 'variable',  label: 'Variable Kosten',   cats: ['variable_kosten'] },
   { key: 'sonstige',  label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
 ];
 
 const FILTERS = [
-  { key: 'alle',  label: 'Alle'  },
-  { key: 'offen', label: 'Offen' },
-  { key: 'fix',   label: 'Fix'   },
-  { key: 'sonst', label: 'Sonstige' },
+  { key: 'offen',    label: 'Offen' },
+  { key: 'fix',      label: 'Fix' },
+  { key: 'variable', label: 'Variable' },
+  { key: 'sonst',    label: 'Sonstige' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -170,9 +169,9 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
 }
 
 // Aufklappbare Kategorie-Sektion (für alle anderen Filter)
-// defaultOpen: in "Fix" und "Ein" steht der einzelne Bereich gleich aufgeklappt, in "Alle" eingeklappt
-function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
+// Der Bereich steht gleich aufgeklappt (je Filter ein einzelner Bereich)
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
+  const [open, setOpen] = useState(true);
 
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
   // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
@@ -223,8 +222,8 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
 }
 
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
-// showStand: Fokuskarte "Verfügbar jetzt" oben zeigen (Offene Posten ja, Buchungen nein)
-export default function MonthsView({ initialFilter = 'alle', showStand = true }) {
+// showStand: Fokuskarte "Verfügbar jetzt" oben zeigen (Offene Posten ja, Ausgaben nein)
+export default function MonthsView({ initialFilter = 'offen', showStand = true }) {
   const { session }  = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved } = useEntrySheet();
@@ -397,9 +396,8 @@ export default function MonthsView({ initialFilter = 'alle', showStand = true })
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
-    // "Sonstige" = alle Ausgaben außer Fixkosten (Variable Kosten und Sonstige Ausgaben); Einnahmen stehen in "Alle" und über die Fokuskarte
-    if (filter === 'sonst') return COLUMNS.filter((c) => c.key === 'variable' || c.key === 'sonstige');
-    return COLUMNS;
+    if (filter === 'variable') return COLUMNS.filter((c) => c.key === 'variable');
+    return COLUMNS.filter((c) => c.key === 'sonstige');
   }
 
   return (
@@ -415,7 +413,7 @@ export default function MonthsView({ initialFilter = 'alle', showStand = true })
         </button>
       </div>
 
-      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub (nicht in Buchungen) */}
+      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub (nicht in Ausgaben) */}
       {showStand && <AvailableCard stand={stand} loading={loading} flow />}
 
       {/* Filter — abgerundete Pills */}
@@ -447,7 +445,6 @@ export default function MonthsView({ initialFilter = 'alle', showStand = true })
           {visibleColumns().map((col) => (
             <CollapseSection
               key={`${filter}-${col.key}`} // neu starten, wenn der Filter wechselt (Anfangszustand aufgeklappt/eingeklappt)
-              defaultOpen={filter !== 'alle'}
               col={col}
               entries={entries}
               onOpenModal={openEntry}
