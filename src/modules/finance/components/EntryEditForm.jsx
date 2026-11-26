@@ -20,6 +20,7 @@ import { parseMoney } from '../../../core/lib/wizardDates';
 import {
   PAYMENTS, formatDateTime, formatEur, isInstantMethod, isSparschweinDeposit, entryParts,
 } from '../lib/finance';
+import Icon from '../../../core/components/Icon';
 
 const money = (v) => parseMoney(v) || 0; // ungültig → 0
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
@@ -263,7 +264,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
                         value={p.amount} onChange={(e) => patchPart(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
                       />
                       <span>€</span>
-                      <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${p.method} entfernen`}>×</button>
+                      <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${p.method} entfernen`}><Icon name="close" size={null} className="glyph" /></button>
                     </div>
                     {check(i)}
                   </div>

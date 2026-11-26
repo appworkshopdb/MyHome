@@ -450,9 +450,9 @@ export default function HabitsView({ habits, onHabitsChange }) {
                   <small>{formatQty(form.target_count)} {form.unit}</small>
                 </div>
                 <div className="hab-ef-step">
-                  <button type="button" aria-label="Weniger" onClick={() => stepTarget(-1)}>−</button>
+                  <button type="button" aria-label="Weniger" onClick={() => stepTarget(-1)}><Icon name="minus" size={null} className="glyph" /></button>
                   <output>{formatQty(form.target_count)}</output>
-                  <button type="button" aria-label="Mehr" onClick={() => stepTarget(1)}>+</button>
+                  <button type="button" aria-label="Mehr" onClick={() => stepTarget(1)}><Icon name="plus" size={null} className="glyph" /></button>
                 </div>
               </div>
               {!lockEntry && (
@@ -485,9 +485,9 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 <small>in {timeStep}-Minuten-Schritten</small>
               </div>
               <div className="hab-ef-step">
-                <button type="button" aria-label="Früher" onClick={() => setField('goal_time', shiftTime(form.goal_time, -timeStep))}>−</button>
+                <button type="button" aria-label="Früher" onClick={() => setField('goal_time', shiftTime(form.goal_time, -timeStep))}><Icon name="minus" size={null} className="glyph" /></button>
                 <output className="hab-ef-timeout">{form.goal_time}</output>
-                <button type="button" aria-label="Später" onClick={() => setField('goal_time', shiftTime(form.goal_time, timeStep))}>+</button>
+                <button type="button" aria-label="Später" onClick={() => setField('goal_time', shiftTime(form.goal_time, timeStep))}><Icon name="plus" size={null} className="glyph" /></button>
               </div>
             </div>
           )}
@@ -651,9 +651,7 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
         <div className="hab-manage-text">
           <div className="hab-manage-name">{habit.name}</div>
           <div className="hab-manage-meta">
-            {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
-            {goalText(habit) && ` · ${goalText(habit)}`}
-            {habit.reminder_time && ` · ${habit.reminder_time} Uhr`}
+            {[habit.category, FREQ_LABELS[habit.frequency] ?? habit.frequency, goalText(habit), habit.reminder_time && `${habit.reminder_time} Uhr`].filter(Boolean).join(' · ')}
           </div>
         </div>
       </div>

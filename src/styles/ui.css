@@ -302,3 +302,7 @@ textarea.ui-input { min-height: 96px; padding: 12px 14px; line-height: 1.4; resi
 .bs-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: var(--rad-lg); background: var(--surface-raised); box-shadow: var(--sh-sm); color: var(--text-primary); }
 .bs-icon small { font-size: var(--fs-caption); color: var(--text-muted); }
 .bs-sheet-body { padding: 8px 20px 16px; }
+
+/* Symbole im Fließtext und in kleinen Knöpfen (Schritt 3): die Größe folgt der Schrift (1,15 em),
+   Strichstärke und Farbe kommen aus Icon.jsx. Ersetzt getippte Zeichen (× › ‹ ▾ ✓ +). */
+.glyph { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }

@@ -1,4 +1,5 @@
 import { SOURCE_ICON, describeEvent, formatTimeRange } from '../lib/calendarUtils';
+import Icon from './Icon';
 
 // Kompakte Termin-Zeile (Agenda / Woche / Tages-Sheet). Details erst im
 // Detail-Sheet (Tippen). Aufgaben haben eine Checkbox, die direkt die
@@ -22,7 +23,7 @@ export default function CalendarEventRow({ ev, calMap, onOpen, onToggleTodo }) {
           aria-pressed={ev.done}
           onClick={(e) => { e.stopPropagation(); onToggleTodo?.(ev.todoId, ev.done); }}
         >
-          {ev.done ? '✓' : ''}
+          {ev.done ? <Icon name="check" size={null} className="glyph" /> : ''}
         </button>
       ) : (
         <span className="calview-event-icon">{SOURCE_ICON[ev.source_module] ?? '·'}</span>
@@ -38,7 +39,7 @@ export default function CalendarEventRow({ ev, calMap, onOpen, onToggleTodo }) {
         </span>
         <span className="calview-event-time">{formatTimeRange(ev)}</span>
       </div>
-      <span className="calview-event-chevron" aria-hidden="true">›</span>
+      <span className="calview-event-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
     </div>
   );
 }

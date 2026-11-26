@@ -25,6 +25,7 @@ import {
 } from '../lib/savingsPlans';
 import { parseMoney } from '../../../core/lib/wizardDates';
 import SavingsPlanWizard from './SavingsPlanWizard';
+import Icon from '../../../core/components/Icon';
 
 const NF0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
 const eur0 = (n) => `${NF0.format(Math.round(n))} €`;
@@ -145,9 +146,9 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
 
         {!info.done && (info.payable[0] || info.next) && (
           <button type="button" className="spr-more" onClick={() => onEditRate(info.payable[0] || info.next)}>
-            <span className="spr-more-ic" aria-hidden="true">+</span>
+            <span className="spr-more-ic" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
             <span><b>Diesen Monat mehr sparen</b><small>Rate {monthShortLabel(monthIdx(rateDue(info.payable[0] || info.next)))} ändern, nur für diesen Monat</small></span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
         )}
 
@@ -190,7 +191,7 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
               ? <div key={r.id} className="spr-rate">{inner}<span className="spr-rate-chev" /></div>
               : (
                 <button key={r.id} type="button" className="spr-rate spr-rate--tap" onClick={() => onEditRate(r)} aria-label={`Rate ${fmtDay(rateDue(r))} ändern`}>
-                  {inner}<span className="spr-rate-chev" aria-hidden="true">›</span>
+                  {inner}<span className="spr-rate-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
                 </button>
               );
           })}
@@ -372,12 +373,12 @@ export default function SavingsPlanRows() {
               <span className={`spr-bar${info.overdue.length ? ' warn' : ''}`}><i style={{ width: `${info.pct}%` }} /></span>{/* pruefer:ok berechnete Breite */}
               <small>{st.sub}</small>
             </span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
         );
       })}
       <button type="button" className="area-row spr-add" onClick={() => setWizard({ plan: null })}>
-        <span className="spr-ic spr-ic--add" aria-hidden="true">+</span>
+        <span className="spr-ic spr-ic--add" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
         <span className="area-row-label">Sparplan anlegen</span>
       </button>
 

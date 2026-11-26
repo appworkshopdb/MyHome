@@ -11,6 +11,7 @@ import {
 import {
   COVER_MOTIFS, COVER_TONES, CoverArt, formatCover, parseCover, resolveCover,
 } from '../lib/recipeCovers';
+import Icon from '../../../core/components/Icon';
 
 // Neues Rezept — 3 Schritte im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx),
 // Felder und Karten in der bestehenden Optik der Ernährung (form-group, chip, card, result-tile …).
@@ -385,7 +386,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
               </div>
               <div className="wz-rv-row"><span>Portionen</span><span>{por}</span></div>
               <details className="wz-acc" open>
-                <summary><span>Zutaten ({ingredients.length})</span><i>▾</i></summary>
+                <summary><span>Zutaten ({ingredients.length})</span><i><Icon name="expand" size={null} className="glyph" /></i></summary>
                 {ingredients.map((ing, idx) => {
                   const food = foodsById[ing.foodId];
                   if (!food) return null;
@@ -398,7 +399,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
                 })}
               </details>
               <details className="wz-acc" open>
-                <summary><span>Pro Portion</span><i>▾</i></summary>
+                <summary><span>Pro Portion</span><i><Icon name="expand" size={null} className="glyph" /></i></summary>
                 {NUTRIENTS.map(([key, label, unit]) => (
                   <div className="wz-rv-row" key={key}><span>{label}</span><span>{show(key, calc[key] / por)} {unit}</span></div>
                 ))}

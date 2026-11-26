@@ -4,6 +4,7 @@ import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
 import { getSheet } from '../../../core/lib/sheetRegistry';
+import Icon from '../../../core/components/Icon';
 
 // Das Sheet gehört zum Einkauf (modules/shopping/sheets.js); Ernährung und
 // Einkauf importieren sich nicht gegenseitig, deshalb über die Sheet-Registry.
@@ -76,13 +77,13 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
             </div>
           </div>
           <div className="portion-stepper">
-            <button type="button" aria-label="Eine Portion weniger" disabled={portions <= 1} onClick={() => setPortions((p) => Math.max(1, p - 1))}>−</button>
+            <button type="button" aria-label="Eine Portion weniger" disabled={portions <= 1} onClick={() => setPortions((p) => Math.max(1, p - 1))}><Icon name="minus" size={null} className="glyph" /></button>
             <input
               type="number" min="1" max="99" inputMode="numeric" aria-label="Portionen"
               value={portions}
               onChange={(e) => setPortions(Math.min(99, Math.max(1, Math.round(+e.target.value) || 1)))}
             />
-            <button type="button" aria-label="Eine Portion mehr" disabled={portions >= 99} onClick={() => setPortions((p) => Math.min(99, p + 1))}>+</button>
+            <button type="button" aria-label="Eine Portion mehr" disabled={portions >= 99} onClick={() => setPortions((p) => Math.min(99, p + 1))}><Icon name="plus" size={null} className="glyph" /></button>
           </div>
         </div>
       </div>

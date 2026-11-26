@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SPORTS, SPORT_GROUPS, getSport } from '../lib/sportsData';
+import Icon from './Icon';
 
 // Mehrfachauswahl über 70+ Sportarten. Bewusst NICHT als lange
 // Button-Reihe wie Geschlecht/Ziel: bei dieser Menge braucht es Suche
@@ -35,7 +36,7 @@ export default function SportsSelect({ value = [], onChange }) {
               fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
             }}
           >
-            {getSport(key)?.label ?? key} ×
+            {getSport(key)?.label ?? key} <Icon name="close" size={null} className="glyph" />
           </button>
         ))}
       </div>

@@ -16,6 +16,7 @@ import SheetShell from '../../../core/components/SheetShell';
 import { IconEdit } from '../../../core/components/Icons';
 import { ChipGroup, IconDropdown, SegGroup, Stepper, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import HabitTemplateLibrary from './HabitTemplateLibrary';
+import Icon from '../../../core/components/Icon';
 
 const FREQ_OPTIONS = [
   { value: 'daily',    label: 'Täglich' },
@@ -40,9 +41,9 @@ function IconTemplate() {
 function ValueStepper({ text, onMinus, onPlus, minusLabel, plusLabel }) {
   return (
     <div className="wz-stepper">
-      <button type="button" onClick={onMinus} aria-label={minusLabel}>−</button>
+      <button type="button" onClick={onMinus} aria-label={minusLabel}><Icon name="minus" size={null} className="glyph" /></button>
       <span className="val">{text}</span>
-      <button type="button" onClick={onPlus} aria-label={plusLabel}>+</button>
+      <button type="button" onClick={onPlus} aria-label={plusLabel}><Icon name="plus" size={null} className="glyph" /></button>
     </div>
   );
 }

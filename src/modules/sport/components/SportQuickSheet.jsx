@@ -16,6 +16,7 @@ import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { todayIso } from '../../../core/lib/wizardDates';
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
+import Icon from '../../../core/components/Icon';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Begriffe: eine EINHEIT ist ein Baustein (fest aus der App oder selbst angelegt), ein
@@ -175,23 +176,23 @@ export default function SportQuickSheet({ onClose }) {
         <button type="button" className="wz-row-btn" onClick={() => go('e1')}>
           <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4" /></svg></span>
           <span>Training eintragen<small>Eine Einheit an einem Tag</small></span>
-          <span className="chev" aria-hidden="true">›</span>
+          <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
         <button type="button" className="wz-row-btn" onClick={() => go('r1')}>
           <RestBadge size={40} />
           <span>Ruhetag<small>Erholung im Kalender festhalten</small></span>
-          <span className="chev" aria-hidden="true">›</span>
+          <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
         <div className="wz-grp">Neu anlegen</div>
         <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
           <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="10" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="16" width="10" height="4.5" rx="1.5" /></svg></span>
           <span>Trainingsplan<small>Mehrere Tage, füllt den Kalender von selbst</small></span>
-          <span className="chev" aria-hidden="true">›</span>
+          <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
         <button type="button" className="wz-row-btn" onClick={() => go('own')}>
           <span className="wz-row-ico"><SportSymbol name="stern" size={22} /></span>
           <span>Eigene Einheit<small>Baustein mit Symbol oder Muskeln</small></span>
-          <span className="chev" aria-hidden="true">›</span>
+          <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
       </>
     ));

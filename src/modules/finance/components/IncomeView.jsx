@@ -21,6 +21,7 @@ import {
   available, dueOf, incomeMode, incomeState, isIncomeTemplate, suggestedAmount,
 } from '../lib/income';
 import RecurringSheet from './RecurringSheet';
+import Icon from '../../../core/components/Icon';
 
 const NF = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtD = (s) => { const [y, m, d] = String(s).slice(0, 10).split('-'); return `${d}.${m}.${y}`; };
@@ -195,7 +196,7 @@ export default function IncomeView() {
           </div>
         );
       })}
-      <button type="button" className="inc-add" onClick={() => setSheet({})}><span aria-hidden="true">+</span>Einnahme hinzufügen</button>
+      <button type="button" className="inc-add" onClick={() => setSheet({})}><span aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>Einnahme hinzufügen</button>
 
       <div className="inc-sec"><b>Eingänge</b><span>{history.length}</span></div>
       <div className="inc-hist">

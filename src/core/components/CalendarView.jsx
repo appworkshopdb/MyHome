@@ -15,6 +15,8 @@ import { useUi } from '../lib/UiContext';
 import CalendarEventRow from './CalendarEventRow';
 import CalendarEventSheet from './CalendarEventSheet';
 import CalendarFilterSheet from './CalendarFilterSheet';
+import Icon from './Icon';
+import { SkeletonList } from './ui';
 
 const FILTER_STORAGE_KEY = 'nestua.calendarFilter.v1';
 const AGENDA_STEP_DAYS = 30;
@@ -421,7 +423,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
             placeholder="Termine suchen …"
             aria-label="Termine durchsuchen"
           />
-          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren">×</button>}
+          {query && <button type="button" className="calview-search-x" onClick={() => setQuery('')} aria-label="Suche leeren"><Icon name="close" size={null} className="glyph" /></button>}
         </div>
         <button
           type="button"
@@ -440,7 +442,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
         <div className="calview-active-chips">
           {activeChips.map((c) => (
             <button key={c.id} type="button" className="calview-chip removable" onClick={c.remove} aria-label={`${c.label} entfernen`}>
-              {c.label} <i aria-hidden="true">×</i>
+              {c.label} <i aria-hidden="true"><Icon name="close" size={null} className="glyph" /></i>
             </button>
           ))}
         </div>
@@ -468,7 +470,7 @@ export default function CalendarView({ session, todos = [], onToggleTodo, onEdit
 
       {mode === 'agenda' && (
         <div className="calview-day-list">
-          {loading && <div className="calview-loading">Lädt…</div>}
+          {loading && <SkeletonList rows={3} />}
           {!loading && !agendaHasToday && !filterActive && (
             <DayGroup str={todayStr} today={todayStr} events={[]} showEmpty {...rowProps} />
           )}

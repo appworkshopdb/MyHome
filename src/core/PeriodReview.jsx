@@ -19,6 +19,7 @@ import {
   overallRate, periodHeadline, loadPeriodExtras,
 } from './lib/periodStats.js';
 import ModuleTopBar from './components/ModuleTopBar';
+import Icon from './components/Icon';
 
 const pct = (rate) => (rate === null || rate === undefined ? '–' : `${Math.round(rate * 100)} %`);
 const nf = (n) => Math.round(n).toLocaleString('de-DE');
@@ -115,7 +116,7 @@ function Card({ icon, title, delta, onOpen, children }) {
         <span className="wk-card-icon" aria-hidden="true">{icon}</span>
         <span className="wk-card-title">{title}</span>
         {delta}
-        <span className="wk-card-chev" aria-hidden="true">›</span>
+        <span className="wk-card-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
       </button>
       {children}
     </section>
@@ -190,7 +191,7 @@ function SportCard({ data, period, today, copy, onOpen }) {
     return {
       key: c.key,
       label: c.label,
-      node: <span className={`wk-dot is-${state}`}>{state === 'done' ? '✓' : state === 'rest' ? '–' : ''}</span>,
+      node: <span className={`wk-dot is-${state}`}>{state === 'done' ? <Icon name="check" size={null} className="glyph" /> : state === 'rest' ? '–' : ''}</span>,
     };
   });
   return (
@@ -358,13 +359,13 @@ export default function PeriodReview({ kind, onBack, onOpenModule, hasWarnings }
         <h1 className="overview-page-title">{copy.title}</h1>
 
         <div className="wk-nav">
-          <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => o - 1)} aria-label={copy.prevAria}>‹</button>
+          <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => o - 1)} aria-label={copy.prevAria}><Icon name="back" size={null} className="glyph" /></button>
           <div className="wk-nav-label">
             <b>{period.label}</b>
             <span>{period.isCurrent ? copy.now : offset === -1 ? copy.last : copy.ago(-offset)}</span>
           </div>
           <button type="button" className="wk-nav-btn" onClick={() => setOffset((o) => Math.min(0, o + 1))}
-            disabled={offset >= 0} aria-label={copy.nextAria}>›</button>
+            disabled={offset >= 0} aria-label={copy.nextAria}><Icon name="open" size={null} className="glyph" /></button>
         </div>
 
         {!view ? (

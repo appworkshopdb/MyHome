@@ -3,6 +3,7 @@ import SheetShell from '../../../core/components/SheetShell.jsx';
 import { addDaysIso, planDayFor } from '../../../core/lib/sportPlanSync';
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
 import { planCounts } from '../lib/planMuscles';
+import Icon from '../../../core/components/Icon';
 
 // Bottom-Sheets des Dauerplans: aktivieren/wechseln, beenden, Änderung am
 // aktiven Plan bestätigen. Texte bewusst knapp, nur das, was der Nutzer vor
@@ -181,7 +182,7 @@ export function PickPlanSheet({ plans, onPick, onNew, onClose }) {
             </button>
           ))}
           <button type="button" className="pl-pk pl-pk--new" onClick={onNew}>
-            <span className="pl-rd pl-rd--plus" aria-hidden="true">+</span>
+            <span className="pl-rd pl-rd--plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
             <span className="pl-pk-t">
               <b>Neuen Plan anlegen</b>
               <small>Eigene Einheiten zu einem Plan zusammenstellen</small>

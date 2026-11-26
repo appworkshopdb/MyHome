@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useEntrySheet } from '../lib/EntrySheetContext';
 import { getSheet } from '../lib/sheetRegistry';
 import NutritionFabMenu   from './NutritionFabMenu';
+import Icon from './Icon';
 
 // Modul → Schlüssel des Sheets, das das Modul in modules/<modul>/sheets.js
 // bei der Sheet-Registry anmeldet.
@@ -47,7 +48,7 @@ export default function GlobalFab({ activeModule }) {
         onClick={handlePress}
         aria-label="Neuen Eintrag erstellen"
       >
-        <span className="global-fab-plus">+</span>
+        <span className="global-fab-plus"><Icon name="plus" size={null} className="glyph" /></span>
       </button>
 
       {Sheet && (

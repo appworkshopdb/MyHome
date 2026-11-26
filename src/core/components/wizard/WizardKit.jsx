@@ -13,6 +13,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { MONTHS_FULL, fmtDate, isoLocal, parseIso, todayIso } from '../../lib/wizardDates';
 import { fb, primeFeedback } from '../../lib/feedback';
+import Icon from '../Icon';
 
 // ── Icons ────────────────────────────────────────────────────
 const svgProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -70,7 +71,7 @@ export function missingHint(pairs) {
 export function MoreButton({ open, onClick, labelClosed = 'Mehr Details', labelOpen = 'Weniger Details' }) {
   return (
     <button type="button" className="btn btn-secondary" onClick={onClick} aria-expanded={open}>
-      {open ? labelOpen : labelClosed}<span className="wz-caret" aria-hidden="true">▾</span>
+      {open ? labelOpen : labelClosed}<span className="wz-caret" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
     </button>
   );
 }
@@ -122,9 +123,9 @@ export function Stepper({ value, onChange, min = 0, max = 99, step = 1, suffix =
   const set = (v) => onChange(Math.max(min, Math.min(max, v)));
   return (
     <div className="wz-stepper">
-      <button type="button" onClick={() => set(value - step)} aria-label="weniger">−</button>
+      <button type="button" onClick={() => set(value - step)} aria-label="weniger"><Icon name="minus" size={null} className="glyph" /></button>
       <span className="val">{value}{suffix}</span>
-      <button type="button" onClick={() => set(value + step)} aria-label="mehr">+</button>
+      <button type="button" onClick={() => set(value + step)} aria-label="mehr"><Icon name="plus" size={null} className="glyph" /></button>
     </div>
   );
 }
@@ -292,9 +293,9 @@ function CalendarPopup({ value, onPick, onClose, optional }) {
         {pickMonth ? (
           <>
             <div className="wz-cal-head">
-              <button type="button" onClick={() => setView(new Date(y - 1, m, 1))} aria-label="Vorheriges Jahr">‹</button>
+              <button type="button" onClick={() => setView(new Date(y - 1, m, 1))} aria-label="Vorheriges Jahr"><Icon name="back" size={null} className="glyph" /></button>
               <button type="button" className="wz-cal-title" onClick={() => setPickMonth(false)} aria-expanded="true">{y}</button>
-              <button type="button" onClick={() => setView(new Date(y + 1, m, 1))} aria-label="Nächstes Jahr">›</button>
+              <button type="button" onClick={() => setView(new Date(y + 1, m, 1))} aria-label="Nächstes Jahr"><Icon name="open" size={null} className="glyph" /></button>
             </div>
             <div className="wz-cal-months">
               {MONTHS_FULL.map((name, i) => (
@@ -311,11 +312,11 @@ function CalendarPopup({ value, onPick, onClose, optional }) {
           </>
         ) : (
           <div className="wz-cal-head">
-            <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Vorheriger Monat">‹</button>
+            <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Vorheriger Monat"><Icon name="back" size={null} className="glyph" /></button>
             <button type="button" className="wz-cal-title" onClick={() => setPickMonth(true)} aria-expanded="false" aria-label={`${MONTHS_FULL[m]} ${y}, Monat und Jahr wählen`}>
-              {MONTHS_FULL[m]} {y} <span aria-hidden="true">▾</span>
+              {MONTHS_FULL[m]} {y} <span aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
             </button>
-            <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} aria-label="Nächster Monat">›</button>
+            <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} aria-label="Nächster Monat"><Icon name="open" size={null} className="glyph" /></button>
           </div>
         )}
         {!pickMonth && <div className="wz-cal-wd">{['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => <span key={d}>{d}</span>)}</div>}
@@ -356,7 +357,7 @@ export function DateButton({ value, onChange, optional = false, placeholder = 'D
             aria-label="Datum entfernen"
             onClick={(e) => { e.stopPropagation(); onChange(''); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChange(''); } }}
-          >×</span>
+          ><Icon name="close" size={null} className="glyph" /></span>
         ) : null}
       </button>
       {open && (
@@ -389,7 +390,7 @@ export function IconDropdown({ icons, value, onChange, columns = 8, children }) 
     <div className="wz-nm-wrap" ref={ref}>
       <div className="wz-nm-row">
         <button type="button" className="wz-icon-btn" aria-haspopup="true" aria-expanded={open} aria-label="Symbol wählen" onClick={() => setOpen((o) => !o)}>
-          <span>{value}</span><span className="c" aria-hidden="true">▾</span>
+          <span>{value}</span><span className="c" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
         </button>
         {children}
       </div>

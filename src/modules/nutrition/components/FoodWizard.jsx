@@ -3,6 +3,7 @@ import SheetShell from '../../../core/components/SheetShell';
 import { MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import { parseNum } from '../../../core/lib/wizardDates';
 import { AMPEL_CATS, FOOD_ALLERGENS, FOOD_DIETS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
+import Icon from '../../../core/components/Icon';
 
 // Neues Lebensmittel — 3 Schritte im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx),
 // Felder in der bestehenden Optik der Ernährung (form-group, segmented, chip, card …).
@@ -230,7 +231,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
               </div>
               <div className="wz-rv-row"><span>Basis</span><span>{UNIT_LABEL[unit]}</span></div>
               <details className="wz-acc" open>
-                <summary><span>Nährwerte pro {UNIT_LABEL[unit]}</span><i>▾</i></summary>
+                <summary><span>Nährwerte pro {UNIT_LABEL[unit]}</span><i><Icon name="expand" size={null} className="glyph" /></i></summary>
                 {SUMMARY_ROWS.map(([key, label, u]) => (
                   <div className="wz-rv-row" key={key}><span>{label}</span><span>{String(num(key)).replace('.', ',')} {u}</span></div>
                 ))}

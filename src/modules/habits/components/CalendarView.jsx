@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { buildHeatmap, isDueOn, isDone, dateRange, toDateStr, today } from '../lib/habUtils.js';
+import Icon from '../../../core/components/Icon';
 
 const MONTH_NAMES = [
   'Januar','Februar','März','April','Mai','Juni',
@@ -92,13 +93,13 @@ export default function CalendarView({ habits, entries }) {
 
       {/* Monatskalender */}
       <div className="hab-month-nav">
-        <button className="hab-nav-btn" onClick={prevMonth}>‹</button>
+        <button className="hab-nav-btn" onClick={prevMonth}><Icon name="back" size={null} className="glyph" /></button>
         <span className="hab-month-label">{MONTH_NAMES[month]} {year}</span>
         <button
           className="hab-nav-btn"
           onClick={nextMonth}
           disabled={year === nowDate.getFullYear() && month === nowDate.getMonth()}
-        >›</button>
+        ><Icon name="open" size={null} className="glyph" /></button>
       </div>
 
       <div className="hab-month-grid">
@@ -129,7 +130,7 @@ export default function CalendarView({ habits, entries }) {
             >
               <span className="hab-month-day-num">{date.getDate()}</span>
               {!isFuture && status?.total > 0 && intensity === 4 && (
-                <span className="hab-month-day-check">✓</span>
+                <span className="hab-month-day-check"><Icon name="check" size={null} className="glyph" /></span>
               )}
             </div>
           );
@@ -141,13 +142,13 @@ export default function CalendarView({ habits, entries }) {
         <div className="hab-heatmap-header">
           <div className="hab-heatmap-title">Jahresrückblick {year}</div>
           <div className="hab-year-nav">
-            <button className="hab-nav-btn" onClick={() => setYear((y) => y - 1)}>‹</button>
+            <button className="hab-nav-btn" onClick={() => setYear((y) => y - 1)}><Icon name="back" size={null} className="glyph" /></button>
             <span>{year}</span>
             <button
               className="hab-nav-btn"
               onClick={() => setYear((y) => y + 1)}
               disabled={year >= nowDate.getFullYear()}
-            >›</button>
+            ><Icon name="open" size={null} className="glyph" /></button>
           </div>
         </div>
 

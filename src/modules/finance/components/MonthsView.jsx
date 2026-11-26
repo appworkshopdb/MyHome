@@ -12,6 +12,8 @@ import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
 import { IconChevronLeft, IconChevronRight, IconEdit, IconTrash } from '../../../core/components/Icons';
+import Icon from '../../../core/components/Icon';
+import { SkeletonList } from '../../../core/components/ui';
 
 // 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
 const COLUMNS = [
@@ -68,7 +70,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
           role="checkbox"
           aria-checked={partly ? 'mixed' : fully}
         >
-          {fully ? '✓' : partly ? '–' : ''}
+          {fully ? <Icon name="check" size={null} className="glyph" /> : partly ? '–' : ''}
         </div>
       )}
       <div className="fin-row-info">
@@ -197,7 +199,7 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
         <div className="fin-collapse-meta">
           <span className="fin-collapse-count t-meta">{visible.length} Posten</span>
           <span className="fin-collapse-total t-body">{formatEur(total)}</span>
-          <span className={`fin-collapse-chevron ${open ? 'open' : ''}`}>›</span>
+          <span className={`fin-collapse-chevron ${open ? 'open' : ''}`}><Icon name="open" size={null} className="glyph" /></span>
         </div>
       </button>
 
@@ -430,7 +432,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
       {/* Inhaltsbereich: Offen-Filter → flache Liste, sonst Dropdowns */}
       {loading ? (
-        <div className="loading-note">Lädt…</div>
+        <SkeletonList rows={4} />
       ) : filter === 'offen' ? (
         <OffenList
           entries={entries}

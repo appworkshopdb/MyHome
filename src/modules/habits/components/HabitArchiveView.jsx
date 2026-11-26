@@ -5,6 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import { loadDeletedHabits, restoreHabit, setStatsHidden } from '../lib/habData.js';
+import Icon from '../../../core/components/Icon';
+import { SkeletonList } from '../../../core/components/ui';
 
 export default function HabitArchiveView({ onHabitsChange }) {
   const [archived, setArchived] = useState([]);
@@ -57,7 +59,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
         </div>
       </div>
       {error && <div className="toast toast-error">{error}</div>}
-      {loading && <div className="page-loading">Wird geladen …</div>}
+      {loading && <SkeletonList rows={4} />}
       {!loading && archived.length === 0 && (
         <div className="hab-empty">
           <div className="hab-empty-icon">📦</div>
@@ -96,7 +98,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
                   title="Wiederherstellen"
                   aria-label="Wiederherstellen"
                 >
-                  {busyId === habit.id ? '…' : '↩️'}
+                  {busyId === habit.id ? '…' : <Icon name="restore" size={null} className="glyph" />}
                 </button>
               </div>
             </div>

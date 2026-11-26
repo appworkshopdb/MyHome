@@ -5,6 +5,7 @@ import OwnUnitForm from './OwnUnitForm';
 import { KRAFT_SUBS, UNIT_TABS, searchCatalog, tabOf } from '../lib/unitCatalog';
 import { MUSCLE_GROUPS, muscleSinglesByRegion } from '../lib/data/muscleGroups';
 import { muscleLabel } from '../lib/planMuscles';
+import Icon from '../../../core/components/Icon';
 
 // Einheit wählen (Galerie). Kategorien als Kacheln: Kraft, Ausdauer, Mobility zeigen
 // die festen Vorlagen (App-Einheiten), "Eigene" die selbst angelegten Einheiten und die Sportarten
@@ -114,7 +115,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn, 
   };
   const newCard = (inline ? onNewOwn : onCreateOwn) && (
     <button key="new" type="button" className="up-card up-card--new" onClick={() => (inline ? onNewOwn() : setCreating(true))}>
-      <span className="up-vis"><span className="up-plus" aria-hidden="true">+</span></span>
+      <span className="up-vis"><span className="up-plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span></span>
       <b>Neue Einheit</b>
     </button>
   );

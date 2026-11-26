@@ -3,6 +3,7 @@ import {
   MUSCLE_GROUPS, MUSCLE_COMBOS,
   getMuscleVisual, muscleSinglesByRegion, muscleImagePath,
 } from '../lib/data/muscleGroups';
+import Icon from '../../../core/components/Icon';
 
 const REGIONS = ['Vorne', 'Hinten'];
 
@@ -91,7 +92,7 @@ export default function MuscleGroupSelect({ value = [], onChange }) {
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               )}
-              {m?.label ?? key} ×
+              {m?.label ?? key} <Icon name="close" size={null} className="glyph" />
             </button>
           );
         })}

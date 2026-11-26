@@ -10,6 +10,7 @@ import RecipeFilterSheet from './RecipeFilterSheet';
 import RecipeDetailModal from './RecipeDetailModal';
 import TemplateCategories from './TemplateCategories';
 import { TEMPLATE_CAT_BY_KEY, countTemplateCats } from '../lib/templateCategories';
+import Icon from '../../../core/components/Icon';
 
 // Karte bleibt kompakt: statt aller Tags und der ganzen Notiz nur die Anzahl der
 // Tags (eigene, Ziele und aus den Zutaten abgeleitete, ohne Doppelte) und ein
@@ -150,7 +151,7 @@ export default function RezepteView({
             placeholder="Rezept, Zutat oder Tag suchen…"
             aria-label="Rezepte durchsuchen"
           />
-          {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}>×</button>}
+          {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}><Icon name="close" size={null} className="glyph" /></button>}
         </div>
         <button type="button" className={`nut-filter-btn ${activeCount > 0 ? 'active' : ''}`} aria-label={activeCount > 0 ? `Filter, ${activeCount} aktiv` : 'Filter'} onClick={() => setSheetOpen(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -187,7 +188,7 @@ export default function RezepteView({
       {!showCats && items.length > 0 && (
         <div className="rf-info">
           <span>{rows.length}{filtered ? ` von ${items.length}` : ''} Rezept{items.length !== 1 ? 'e' : ''}</span>
-          <button type="button" className="rf-sort-btn" onClick={() => setSheetOpen(true)}>Sortieren: {sortLabel} ▾</button>
+          <button type="button" className="rf-sort-btn" onClick={() => setSheetOpen(true)}>Sortieren: {sortLabel} <Icon name="expand" size={null} className="glyph" /></button>
         </div>
       )}
 

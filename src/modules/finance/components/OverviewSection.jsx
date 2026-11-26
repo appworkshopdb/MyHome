@@ -30,6 +30,7 @@ import SpendDonut from './SpendDonut.jsx';
 import { available, dedupeIncome } from '../lib/income';
 import AvailableCard from '../../../core/components/AvailableCard.jsx';
 import { standSummary } from '../../../core/lib/finAvailable.js';
+import Icon from '../../../core/components/Icon';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -155,7 +156,7 @@ export default function OverviewSection({ onNavigate }) {
             <small>noch zu bezahlen</small>
           </span>
           <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>
-          <span className="fin-open-strip-chev" aria-hidden="true">›</span>
+          <span className="fin-open-strip-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
       )}
 

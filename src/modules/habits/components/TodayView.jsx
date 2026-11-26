@@ -6,6 +6,7 @@ import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } fr
 import { goalText } from '../../../core/lib/habitCatalog.js';
 import { toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
 import { fb } from '../../../core/lib/feedback.js';
+import Icon from '../../../core/components/Icon';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -164,7 +165,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                       ${d === todayStr ? 'hab-week-cell--today' : ''}
                     `}
                   >
-                    {due && done && '✓'}
+                    {due && done && <Icon name="check" size={null} className="glyph" />}
                     {due && !done && !future && '·'}
                   </div>
                 );

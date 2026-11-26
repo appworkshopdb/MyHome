@@ -9,10 +9,12 @@ import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import ReceiptScanChoice from '../../../core/components/ReceiptScanChoice';
 import { formatReceiptDate } from '../../../core/lib/photoScan';
 import { fmtDate, parseMoney } from '../../../core/lib/wizardDates';
+import { formatMoney } from '../../../core/lib/format';
 
 const money = (v) => parseMoney(v) || 0; // ungültig → 0
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
+import Icon from '../../../core/components/Icon';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
@@ -28,7 +30,7 @@ const RECEIPT_PAYMENT_MAP = {
   bar: 'Bar', karte: 'Bank', paypal: 'Paypal', gutschein: 'Gutschein', klarna: 'Klarna',
 };
 
-const eur = (n) => `${n.toFixed(2).replace('.', ',')} €`;
+const eur = (n) => formatMoney(n);
 
 // ── Wizard ───────────────────────────────────────────────────────────────────
 // Ablauf: Auswahl (Beleg scannen / manuell) → Schritt 1 "Eingeben" (alle Pflicht-
@@ -348,7 +350,7 @@ function FinanceWizard({ onClose }) {
                       onChange={(e) => setMid(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
                     />
                     <span>€</span>
-                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}>×</button>
+                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}><Icon name="close" size={null} className="glyph" /></button>
                   </div>
                 </div>
               ))}

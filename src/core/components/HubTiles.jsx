@@ -5,6 +5,7 @@
 // erledigt", "n noch offen", "Serie: n Tage", "Nichts geplant", "Ruhetag").
 import Ring from './Ring';
 import AreaIcon from './AreaIcons';
+import Icon from './Icon';
 
 export function HabitTile({ done, total, streak, onPress }) {
   const headline =
@@ -13,7 +14,7 @@ export function HabitTile({ done, total, streak, onPress }) {
     : `${total - done} noch offen`;
   return (
     <button className="hubt tone-hab" onClick={onPress}>
-      <span className="hubt-chev" aria-hidden="true">›</span>
+      <span className="hubt-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
       <span className="hubt-eyebrow"><span className="hubt-badge"><AreaIcon id="habits" /></span>Gewohnh.</span>
       <span className="hubt-row">
         {total > 0 && <Ring size={50} stroke={5.5} value={done / total}><b>{done}/{total}</b></Ring>}
@@ -39,7 +40,7 @@ export function TrainingTile({ workout, rest, onPress }) {
   }
   return (
     <button className="hubt tone-sport" onClick={onPress}>
-      <span className="hubt-chev" aria-hidden="true">›</span>
+      <span className="hubt-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
       <span className="hubt-eyebrow"><span className="hubt-badge"><AreaIcon id="sport" /></span>Training</span>
       <span className="hubt-text">
         <b>{title}</b>

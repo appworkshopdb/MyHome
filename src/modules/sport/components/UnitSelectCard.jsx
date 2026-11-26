@@ -1,4 +1,5 @@
 import UnitVisual from './UnitVisual';
+import Icon from '../../../core/components/Icon';
 
 // Auswahlfeld für eine Einheit (öffnet die Galerie): leer "Einheit wählen",
 // gewählt mit Bildern, Name, Typ und "Ändern". Gemeinsam für den Eintrag einzelner
@@ -14,9 +15,9 @@ export default function UnitSelectCard({ chosen, title, subtitle, tags, icon, on
         </>
       ) : (
         <>
-          <span className="ep-plus" aria-hidden="true">+</span>
+          <span className="ep-plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
           <span className="ep-tx"><b>Einheit wählen</b><small>Kraft, Ausdauer, Mobility oder eigene</small></span>
-          <span className="ep-chev" aria-hidden="true">›</span>
+          <span className="ep-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </>
       )}
     </button>

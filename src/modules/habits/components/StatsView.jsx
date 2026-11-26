@@ -20,6 +20,7 @@ import {
   calcStreak, calcLongestStreak, getEarnedBadges, BADGES,
   today, dateRange, toDateStr, isDueHistoric, weekdayMon,
 } from '../lib/habUtils.js';
+import Icon from '../../../core/components/Icon';
 
 // ─── Konstanten ───────────────────────────────────────────
 
@@ -235,11 +236,11 @@ function Cockpit({ allHabits, entries }) {
       <div className="hab-cp-fbar">
         <button type="button" className="hab-cp-fpill" onClick={() => setSheet('period')}>
           <span className="hab-cp-fpill-text"><small>Zeitraum</small><b>{rangeLabel(range)}</b></span>
-          <span className="hab-cp-fpill-arrow" aria-hidden="true">▾</span>
+          <span className="hab-cp-fpill-arrow" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
         </button>
         <button type="button" className="hab-cp-fpill" onClick={() => setSheet('habits')}>
           <span className="hab-cp-fpill-text"><small>Gewohnheiten</small><b>{habitPill}</b></span>
-          <span className="hab-cp-fpill-arrow" aria-hidden="true">▾</span>
+          <span className="hab-cp-fpill-arrow" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
         </button>
       </div>
 
@@ -615,9 +616,9 @@ function Rhythm({ habits, doneIdx, endMap, todayStr, firstDate }) {
       </div>
 
       <div className="hab-cp-rnav">
-        <button type="button" className="hab-cp-navb" onClick={() => step(-1)} disabled={!canPrev} aria-label="Zurück">‹</button>
+        <button type="button" className="hab-cp-navb" onClick={() => step(-1)} disabled={!canPrev} aria-label="Zurück"><Icon name="back" size={null} className="glyph" /></button>
         <div>{title}<small>{hint}</small></div>
-        <button type="button" className="hab-cp-navb" onClick={() => step(1)} disabled={!canNext} aria-label="Weiter">›</button>
+        <button type="button" className="hab-cp-navb" onClick={() => step(1)} disabled={!canNext} aria-label="Weiter"><Icon name="open" size={null} className="glyph" /></button>
       </div>
 
       {mode === 'Woche' && (
@@ -759,7 +760,7 @@ function DayDetail({ habits, doneIdx, endMap, dateStr }) {
       <ul>
         {rows.filter((r) => r.due).map(({ h, done: isDone }) => (
           <li key={h.id}>
-            <span className={isDone ? 'ok' : 'no'}>{isDone ? '✓' : '✕'}</span>
+            <span className={isDone ? 'ok' : 'no'}>{isDone ? <Icon name="check" size={null} className="glyph" /> : <Icon name="close" size={null} className="glyph" />}</span>
             <span>{h.icon} {h.name}</span>
           </li>
         ))}

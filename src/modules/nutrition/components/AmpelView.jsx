@@ -5,6 +5,7 @@ import FoodDetailModal from './FoodDetailModal';
 import FoodFormModal from './FoodFormModal';
 import FoodWizard from './FoodWizard';
 import CompareModal from './CompareModal';
+import Icon from '../../../core/components/Icon';
 
 // initialSearch: Startwert des Suchfelds. Ohne Angabe wie bisher leer.
 // Die Ampel-Fokuskarte der Modul-Übersicht (Schritt 9) reicht damit den
@@ -118,7 +119,7 @@ export default function AmpelView({
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
           <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{compare.length} zum Vergleich</span>
           <button className="btn btn-primary" style={{ marginLeft: 'auto', padding: '6px 12px' }} onClick={() => setShowCompare(true)}>Vergleichen</button>
-          <button className="btn-ghost" onClick={() => setCompare([])}>×</button>
+          <button className="btn-ghost" onClick={() => setCompare([])}><Icon name="close" size={null} className="glyph" /></button>
         </div>
       )}
 

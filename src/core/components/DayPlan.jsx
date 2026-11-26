@@ -1,5 +1,6 @@
 import Money from './Money';
 import MacroDial, { hasMacroDial } from './MacroDial';
+import Icon from './Icon';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
 // Handler aus dem Hub — hier wird nur dargestellt.
@@ -14,7 +15,7 @@ function Row({ done, onToggle, icon, title, sub, critical, family, tag }) {
   return (
     <div className={`dayplan-row ${done ? 'done' : ''}`}>
       <button className={`dayplan-check ${done ? 'checked' : ''}`} onClick={onToggle} aria-label={done ? 'Rückgängig' : 'Erledigt'}>
-        {done && '✓'}
+        {done && <Icon name="check" size={null} className="glyph" />}
       </button>
       {icon && <span className="dayplan-icon">{icon}</span>}
       <span className="dayplan-row-body">
@@ -53,7 +54,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
     <div className={`dp-nut tone-food dp-nut--${variant} ${over ? 'over' : ''}`}>
       <div className="dp-nut-head">
         <div className="dp-nut-label">{label}</div>
-        {!hideOpen && <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung ›</button>}
+        {!hideOpen && <button className="dp-nut-open" onClick={() => onOpen?.('nutrition')}>Ernährung <Icon name="open" size={null} className="glyph" /></button>}
       </div>
       {dial ? (
         <MacroDial data={data} approx={hasEstimate} onOpenMeals={openMeals} />
@@ -62,7 +63,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
           <div className="dp-nut-top">
             <div className="dp-nut-text">
               <div className="dp-nut-main">{main}</div>
-              {side && <div className="dp-nut-side">{side} ›</div>}
+              {side && <div className="dp-nut-side">{side} <Icon name="open" size={null} className="glyph" /></div>}
             </div>
           </div>
         </button>
@@ -72,7 +73,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
           <span key={s.key} className={`dp-meal ${s.logged ? 'on' : ''} ${s.next ? 'next' : ''}`}>
             <span aria-hidden="true">{s.emoji}</span>
             <span className="dp-sr">{s.label}{s.logged ? ' eingetragen' : ''}</span>
-            {s.logged && <span aria-hidden="true">✓</span>}
+            {s.logged && <span aria-hidden="true"><Icon name="check" size={null} className="glyph" /></span>}
           </span>
         ))}
       </button>
@@ -130,7 +131,7 @@ export function DayPlanSection({ plan, onToggleTodo, onToggleWorkout, onToggleHa
 
       {doneWorkouts.map((w) => (
         <div key={w.id} className="dayplan-next dayplan-next--done tone-sport">
-          <span className="dayplan-done-check" aria-hidden="true">✓</span>
+          <span className="dayplan-done-check" aria-hidden="true"><Icon name="check" size={null} className="glyph" /></span>
           <div className="dayplan-next-body">
             <span className="dayplan-next-kicker">Erledigt</span>
             <span className="dayplan-next-title">{w.title}</span>

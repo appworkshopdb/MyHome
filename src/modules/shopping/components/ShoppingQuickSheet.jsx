@@ -6,6 +6,8 @@ import { notifyShoppingChanged } from '../../../core/lib/shoppingHandoff';
 import SheetShell from '../../../core/components/SheetShell';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 import { DateButton, IconDropdown, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
+import Icon from '../../../core/components/Icon';
+import { Skeleton } from '../../../core/components/ui';
 
 // „Neue Einkaufsliste“ — 3 Schritte im gemeinsamen Wizard-Rahmen
 // (core/components/wizard/WizardKit.jsx). Der Plus-Knopf (globaler FAB) ist der einzige Weg,
@@ -231,7 +233,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                 <span className="wiz-mode-icon"><IconTemplate /></span>
                 <span className="wiz-mode-title">Aus Vorlage</span>
                 <span className="wiz-mode-sub">
-                  {templates === null ? 'Wird geladen …' : templates.length === 0 ? 'Noch keine Vorlagen' : `${templates.length} ${templates.length === 1 ? 'Vorlage' : 'Vorlagen'}`}
+                  {templates === null ? <Skeleton w={90} h={12} /> : templates.length === 0 ? 'Noch keine Vorlagen' : `${templates.length} ${templates.length === 1 ? 'Vorlage' : 'Vorlagen'}`}
                 </span>
               </button>
               <button type="button" className="wiz-mode" onClick={() => setStep(2)}>
@@ -251,7 +253,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                 <div key={t.id} className="wz-tmpl">
                   <button type="button" className="wz-tmpl-main" disabled={tmplBusy === t.id} onClick={() => useTemplate(t)}>
                     <span className="wz-tmpl-ic">{t.icon || '📋'}</span>
-                    <span className="wz-tmpl-t"><b>{t.name}</b><small>{tmplBusy === t.id ? 'Wird geladen …' : 'Artikel übernehmen und anpassen'}</small></span>
+                    <span className="wz-tmpl-t"><b>{t.name}</b><small>{tmplBusy === t.id ? <Skeleton w={90} h={12} /> : 'Artikel übernehmen und anpassen'}</small></span>
                   </button>
                   <button type="button" className="wz-tmpl-del" onClick={(e) => removeTemplate(e, t)} aria-label={`Vorlage ${t.name} löschen`}><IconTrash size={16} /></button>
                 </div>
@@ -325,7 +327,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                     {(it.quantity != null || it.unit) && (
                       <span>{[it.quantity != null ? String(it.quantity).replace('.', ',') : '', it.unit].filter(Boolean).join(' ')}</span>
                     )}
-                    <button type="button" aria-label={`${it.name} entfernen`} onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}>×</button>
+                    <button type="button" aria-label={`${it.name} entfernen`} onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}><Icon name="close" size={null} className="glyph" /></button>
                   </div>
                 ))}
               </div>

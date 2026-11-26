@@ -8,6 +8,7 @@ import {
 import { markFreshItems } from '../../../core/lib/shoppingHandoff';
 import { recipeRows, planImport, mergeHint, fmtAmount } from '../lib/recipeImport';
 import { fb } from '../../../core/lib/feedback';
+import Icon from '../../../core/components/Icon';
 
 // „Zutaten auf die Liste“ — Rezept-Zutaten (umgerechnet auf die gewählten
 // Portionen) in eine Einkaufsliste übernehmen. Wird vom Rezept-Dialog der
@@ -133,7 +134,7 @@ export default function RecipeToShoppingSheet({ recipe, foodsById, initialPortio
         <span className="rts-nm">
           <b>{r.name}</b>
           {hint
-            ? <small className="merge">steht schon drauf: {hint.from} → {hint.to}</small>
+            ? <small className="merge">steht schon drauf: {hint.from} <Icon name="open" size={null} className="glyph" /> {hint.to}</small>
             : <small>{r.category}</small>}
         </span>
         <span className="rts-am">{fmtAmount(r.amount, r.unit)}</span>

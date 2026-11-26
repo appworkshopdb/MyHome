@@ -5,6 +5,7 @@
 // kommen aus lib/tutorials.js. Das Beispiel-Material ist bewusst fest.
 
 import { ModuleIcon, UiIcon } from './ModuleIcons';
+import Icon from './Icon';
 
 const CONFETTI = [
   { w: 11, h: 11, c: 'var(--warm)', l: 44, t: 54, r: 20 }, { w: 8, h: 15, c: 'var(--data-2)', l: 110, t: 34, r: -30 },
@@ -49,7 +50,7 @@ export function SlideStage({ stage, moduleIcon }) {
         <>
           <div className="tut-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
             <div><div style={{ fontWeight: 800, fontSize: '0.95rem' }}>Statistiken</div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Wochen- und Monatsüberblick</div></div>
-            <span style={{ fontWeight: 800, fontSize: 22, color: 'var(--data-2)' }}>›</span>
+            <span style={{ fontWeight: 800, fontSize: 22, color: 'var(--data-2)' }}><Icon name="open" size={null} className="glyph" /></span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, alignSelf: 'flex-end', marginRight: 20 }}>
             <Chip text="Der Plus-Knopf legt Neues an" />

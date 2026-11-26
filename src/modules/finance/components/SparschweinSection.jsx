@@ -6,6 +6,7 @@ import AreaList from '../../../core/components/AreaList.jsx';
 import * as finData from '../lib/finData';
 import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
 import SavingsPlanRows from './SavingsPlans.jsx';
+import Icon from '../../../core/components/Icon';
 
 // Bereich "Sparen" in der Finanzen-Übersicht: direkt unter der Saldo-
 // Karte, eine Zeile mit dem Sparschwein-Stand, darunter die Sparpläne (SavingsPlans.jsx). Tippen öffnet das Sparschwein-
@@ -132,7 +133,7 @@ export default function SparschweinSection({ year, month }) {
             <span className="area-row-value area-row-value--neutral">
               {balance === null ? '—' : formatEur(balance)}
             </span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
           {/* Sparpläne (nur mit Migration fin_savings_plans) und "Sparplan anlegen" */}
           <SavingsPlanRows />

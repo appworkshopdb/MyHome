@@ -3,6 +3,7 @@ import Modal from '../../../core/components/Modal';
 import { IconSearch } from '../../../core/components/Icons';
 import { fmt, MEAL_TYPES } from '../lib/nutrition';
 import { mealFromScan, defaultMealType, todayStr, isGramFood } from '../lib/meals';
+import Icon from '../../../core/components/Icon';
 
 const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
@@ -168,7 +169,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
                 />
                 <span>g</span>
               </label>
-              <button type="button" className="meal-item-remove" onClick={() => removeItem(it.key)} aria-label={`${it.name} entfernen`}>×</button>
+              <button type="button" className="meal-item-remove" onClick={() => removeItem(it.key)} aria-label={`${it.name} entfernen`}><Icon name="close" size={null} className="glyph" /></button>
             </div>
           ))}
         </div>

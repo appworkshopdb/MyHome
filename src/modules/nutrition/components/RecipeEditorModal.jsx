@@ -3,6 +3,7 @@ import Modal from '../../../core/components/Modal';
 import { IconSearch, IconPlus, IconClose } from '../../../core/components/Icons';
 import { RECIPE_CATS, GOAL_TAGS, CUSTOM_TAGS, computeNutrition, fmt, basis } from '../lib/nutrition';
 import { COVER_MOTIFS, COVER_TONES, CoverArt, parseCover, resolveCover, formatCover } from '../lib/recipeCovers';
+import Icon from '../../../core/components/Icon';
 
 const UNIT_SHORT = { ml: 'ml', Scheibe: 'Sch', Stück: 'Stk', Zehe: 'Zehe', EL: 'EL' };
 const DEFAULT_AMOUNT = { ml: 200, Stück: 1, Scheibe: 1, Zehe: 1, EL: 1 };
@@ -227,7 +228,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
             {extraCustomTags.map((t) => (
               <span key={t} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 {t}
-                <button onClick={() => set('customTags', (draft.customTags || []).filter((x) => x !== t))}>×</button>
+                <button onClick={() => set('customTags', (draft.customTags || []).filter((x) => x !== t))}><Icon name="close" size={null} className="glyph" /></button>
               </span>
             ))}
           </div>

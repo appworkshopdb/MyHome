@@ -8,6 +8,7 @@ import { useState, useMemo } from 'react';
 import { HABIT_LIBRARY, HABIT_CATEGORIES, TIME_SLOTS } from '../lib/habUtils.js';
 import { goalKind, goalText } from '../../../core/lib/habitCatalog.js';
 import '../habits.css';
+import Icon from '../../../core/components/Icon';
 
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -182,7 +183,7 @@ export default function HabitTemplateLibrary({ habits, onPick }) {
                 >
                   <span className="ic">{t.icon}</span>
                   <span className="txt"><b>{t.name}</b><small>{metaLine(t)}</small></span>
-                  {active ? <span className="hab-tl-done">Aktiv</span> : <span className="hab-tl-add" aria-hidden="true">+</span>}
+                  {active ? <span className="hab-tl-done">Aktiv</span> : <span className="hab-tl-add" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>}
                 </button>
               );
             })}
