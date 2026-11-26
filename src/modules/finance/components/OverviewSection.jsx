@@ -22,13 +22,14 @@ import {
   isListedEntry,
   localTodayStr,
 } from '../lib/finance';
-import FocusCard from '../../../core/components/FocusCard.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 import AreaIcon from '../../../core/components/AreaIcons.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
 import SpendDonut from './SpendDonut.jsx';
 import { available, dedupeIncome } from '../lib/income';
+import AvailableCard from '../../../core/components/AvailableCard.jsx';
+import { standSummary } from '../../../core/lib/finAvailable.js';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -135,20 +136,15 @@ export default function OverviewSection({ onNavigate }) {
 
   return (
     <>
-      {/* Fokuskarte: Verfügbar jetzt (Einnahmen und Ausgaben getrennt verwaltet, Summen hängen zusammen) */}
-      <FocusCard onPress={() => onNavigate('einnahmen')} label="Verfügbar jetzt, Einnahmen öffnen">
-        <FocusCard.Eyebrow right="Einnahmen ›">Verfügbar jetzt</FocusCard.Eyebrow>
-        <FocusCard.Value>{loading ? '—' : formatEur(stand.verf)}</FocusCard.Value>
-        {!loading && stand.offen.length > 0 && (
-          <FocusCard.Meta>
-            <span>Nach {stand.offen.length === 1 ? '1 offenen Zahlung' : `${stand.offen.length} offenen Zahlungen`}: <b>{formatEur(stand.verf - stand.offenSum)}</b></span>
-          </FocusCard.Meta>
-        )}
-        <FocusCard.Meta>
-          <span>+ Eingänge <b>{formatEur(stand.eingaenge)}</b></span>
-          <span>− Bezahltes <b>{formatEur(stand.bezahlt)}</b></span>
-        </FocusCard.Meta>
-      </FocusCard>
+      {/* Fokuskarte: Verfügbar jetzt (dieselbe Karte wie in Buchungen, Offene Posten und Hub); antippen öffnet die Einnahmen */}
+      <AvailableCard
+        stand={standSummary(stand)}
+        loading={loading}
+        flow
+        right="Einnahmen ›"
+        onPress={() => onNavigate('einnahmen')}
+        label="Verfügbar jetzt, Einnahmen öffnen"
+      />
 
       {/* Offene Posten: nur sichtbar, wenn wirklich etwas offen ist */}
       {offene.length > 0 && (

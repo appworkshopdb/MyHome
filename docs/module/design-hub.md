@@ -25,7 +25,7 @@ Logik, Texte, Links und Daten sind dieselben wie vorher; die Ernährung steht ni
 Hub-Details: Der Tagesplan zeigt den Fortschritt als Linienbalken unter der Überschrift, Termine stehen in einer
 eigenen kleinen Liste über der übrigen. Das Auge in der Saldo-Karte blendet Beträge aus (`core/lib/privacyStore.js`,
 `components/Money.jsx` zeigt statt des Betrags einen weichgezeichneten Platzhalter, der echte Wert steckt dann nicht im DOM; je Nutzer in `body_profile.hide_amounts`, Migration `supabase/hide_amounts_migration.sql`, ohne sie nur lokal).
-Die Saldo-Karte zeigt unter Ein/Aus auch "Spar" (Sparschwein-Stand, `core/lib/savingsBalance.js`, Regeln aus `finance.js` dupliziert). Bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
+Die Saldo-Karte im Hub ist seit 26.11.2026 dieselbe Karte "Verfügbar jetzt" wie in Finanzen (`core/components/AvailableCard.jsx`, Rechnung `core/lib/finAvailable.js`); Ein/Aus/Spar sind entfallen. Das Muster "Zahlungen im Tagesplan" ist bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
 innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch in der Ernährungs-Hero-Karte. Im Hub gibt es keinen Plus-Knopf (`GlobalFab`), Aufgaben legt der Knopf "Neue Aufgabe" in der Aufgaben-Karte an.
 
 Sport zeigt und fragt KEINE Dauer mehr (weder Einheiten, Hub, Auswertung noch Anlegen-Dialoge); die Spalten `duration_min`

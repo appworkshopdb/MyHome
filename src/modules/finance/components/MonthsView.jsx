@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
-  MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, isIncomePending, offenePostenText, offenerZahlungenText, localTodayStr, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  MONTHS_DE, formatEur, isSparschweinDeposit, isSparschweinDirectWithdrawal, formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, localTodayStr, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
+import { available, standSummary } from '../../../core/lib/finAvailable';
+import AvailableCard from '../../../core/components/AvailableCard';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
@@ -222,6 +223,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]); // alle Monate, für "Verfügbar jetzt"
+  const [startIdx, setStartIdx] = useState(-Infinity);
   const [loading, setLoading] = useState(true);
   // Tipp auf einen Posten öffnet die Ansicht (EntryDetailSheet); "Bearbeiten"
   // schaltet darin auf die Bearbeiten-Ansicht um.
@@ -240,10 +243,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       const s = sessionRef.current;
       // Posten und Vorlagen in einer Runde laden, fehlende Vorlagen daraus
       // berechnen; nur wenn etwas angelegt wurde, die Posten neu laden.
-      const [es0, ts] = await Promise.all([
+      const [es0, ts, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
+        db.getAllEntries(s),
+        db.getFinStartIdx(s, localTodayStr()),
       ]);
+      setAllEntries(all);
+      setStartIdx(st);
       const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
       setEntries(added > 0 ? await db.getEntriesByMonth(s, year, month) : es0);
     } catch (e) {
@@ -365,44 +372,16 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
   const detailEntry = detailId ? entries.find((e) => e.id === detailId) : null;
 
-  // Dynamisches Saldo-Label: "diesen Monat" nur wenn wir im aktuellen Monat sind
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const saldoLabel = isCurrentMonth ? 'Saldo diesen Monat' : `Saldo ${MONTHS_DE[month - 1]}`;
-
-  // Kennzahlen für die Saldo-Karte
-  // Sparschwein-Einlagen nicht als normale Ausgabe mitzählen —
-  // sie sind Transfers zum Sparschwein, keine Ausgaben.
-  // Sparschwein-Entnahmen ("Sparschwein"-Einnahme) sind KEINE echte
-  // Einnahme — sie werden aus totalEin herausgerechnet und stattdessen
-  // mit dem Gespart-Betrag verrechnet: Gespart = Einzahlungen − Entnahmen.
-  const totalEntnommen = entries
-    .filter((e) => isSparschweinDirectWithdrawal(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
-  const totalAus    = entries
-    .filter((e) => ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'].includes(e.category) && !isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalGespart = entries
-    .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
-  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
-  const ausAnzeige  = totalAus + totalGespart;
-  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
-  const heute       = localTodayStr();
-  const einErhalten = totalEin - entries
-    .filter((e) => isIncomePending(e, heute))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const verfuegbar  = einErhalten - ausAnzeige;
-  // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
-  // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
-  // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
-  const offene      = entries.filter(isOpenExpense);
-  const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  // Balken: bezahlt ausgefüllt, offen schraffiert
-  const spentRatio  = einErhalten > 0 ? Math.min(100, Math.max(0, ((ausAnzeige - offeneSumme) / einErhalten) * 100)) : 0;
-  const openRatio   = einErhalten > 0 ? Math.min(100 - spentRatio, (offeneSumme / einErhalten) * 100) : 0;
-  const aktuell     = verfuegbar + offeneSumme;   // Saldo vor den offenen Zahlungen
+  // "Verfügbar jetzt": laufender Stand über alle Monate (nicht der angezeigte Monat). Die Posten des
+  // angezeigten Monats kommen aus dem lokalen Stand, damit Abhaken sofort wirkt.
+  const stand = useMemo(
+    () => standSummary(available(
+      [...allEntries.filter((e) => !(e.year === year && e.month === month)), ...entries],
+      localTodayStr(),
+      startIdx,
+    )),
+    [allEntries, entries, year, month, startIdx],
+  );
 
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
@@ -424,32 +403,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         </button>
       </div>
 
-      {/* Saldo-Karte mit allen Infos in einer Zeile */}
-      <div className="fin-summary-card">
-        <div className="fin-summary-eyebrow t-chip">{saldoLabel}</div>
-        <div className="fin-summary-value t-display">
-          {loading ? '—' : formatEur(verfuegbar)}
-        </div>
-        {!loading && offene.length > 0 && (
-          <div className="fin-summary-sub">
-            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
-          </div>
-        )}
-        {/* Infozeile: + Einnahmen  − Ausgaben  N offen  N Buchungen */}
-        <div className="fin-summary-sub">
-          <span>+ <b>{formatEur(einErhalten)}</b></span>
-          <span>− <b>{formatEur(ausAnzeige)}</b></span>
-          {offene.length > 0 && (
-            <span style={{ color: 'var(--status-critical)' }}>
-              {offene.length} offen
-            </span>
-          )}
-        </div>
-        <div className="fin-bar" role="progressbar" aria-valuenow={Math.round(spentRatio)}>
-          <div className="fin-bar-spent" style={{ width: `${spentRatio}%` }} />
-          <div className="fin-bar-open"  style={{ width: `${openRatio}%`  }} />
-        </div>
-      </div>
+      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub */}
+      <AvailableCard stand={stand} loading={loading} flow />
 
       {/* Filter — abgerundete Pills */}
       <div className="fin-filter-pills">

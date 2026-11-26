@@ -896,20 +896,5 @@ export async function undoIncome(id) {
   invalidateHubCache();
 }
 
-// Startmonat für "Verfügbar jetzt" (body_profile.fin_start_month, Migration
-// fin_income_confirm_migration.sql). Beim ersten Aufruf wird der laufende Monat gesetzt.
-// Rückgabe: Monats-Index (Jahr*12+Monat-1). Ohne die Spalte: laufender Monat (nicht gespeichert).
-export async function getFinStartIdx(session, today) {
-  const [y, m] = String(today).slice(0, 7).split('-').map(Number);
-  const curIdx = y * 12 + m - 1;
-  const sb = getSupabase();
-  const uid = ownerId(session);
-  const { data, error } = await sb.from('body_profile').select('fin_start_month').eq('owner_id', uid).maybeSingle();
-  if (error) { console.warn('[Finanzen] fin_start_month nicht lesbar (Migration fin_income_confirm_migration.sql?):', error.message); return curIdx; }
-  const v = data?.fin_start_month;
-  if (typeof v === 'string' && /^\d{4}-\d{2}$/.test(v)) return Number(v.slice(0, 4)) * 12 + Number(v.slice(5, 7)) - 1;
-  if (!data) return curIdx; // noch keine Profilzeile
-  const { error: upErr } = await sb.from('body_profile').update({ fin_start_month: String(today).slice(0, 7) }).eq('owner_id', uid);
-  if (upErr) console.warn('[Finanzen] fin_start_month nicht speicherbar:', upErr.message);
-  return curIdx;
-}
+// Startmonat für "Verfügbar jetzt": Logik liegt in core/lib/finAvailable.js (gemeinsam mit dem Hub)
+export { getFinStartIdx } from '../../../core/lib/finAvailable.js';

@@ -12,13 +12,9 @@
 // "Verfügbar jetzt" = alle Eingänge bis heute − alles Bezahlte (monatsübergreifend).
 // Reine Funktionen ohne React/Supabase.
 
-import { templateAppliesTo, dueDateFor, isIncomePending, isOpenExpense, openAmount, entryParts } from './finance.js';
+import { templateAppliesTo, dueDateFor } from './finance.js';
 
-const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
-const EXPENSE = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
 const pad = (n) => String(n).padStart(2, '0');
-const r2 = (n) => Math.round(n * 100) / 100;
-const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 
 export const isIncomeTemplate = (t) => t && t.category === 'fixeinnahmen';
 export const incomeMode = (t) => (t.due_day ? 'fix' : 'varies');
@@ -27,20 +23,9 @@ export function parts(today) {
   const [y, m, d] = String(today).slice(0, 10).split('-').map(Number);
   return { y, m, d };
 }
-const monthIdxOf = (y, m) => y * 12 + m - 1;
-const entryIdx = (e) => monthIdxOf(e.year, e.month);
 
 // Fälligkeitstag eines Postens (Posten ohne Datum gelten ab dem 1. ihres Monats)
 export const dueOf = (e) => String(e.due_date || `${e.year}-${pad(e.month)}-01`).slice(0, 10);
-
-// Früher legte die App Einnahmen aus Vorlagen automatisch an (ohne received_on). Wurde der Eingang
-// dieser Quelle im selben Monat inzwischen bestätigt, zählt nur die Bestätigung, sonst stünde das
-// Gehalt doppelt in den Summen. Nicht bestätigte alte Posten bleiben unverändert.
-export function dedupeIncome(entries) {
-  const key = (e) => `${e.from_template}:${e.year}-${e.month}`;
-  const confirmed = new Set(entries.filter((e) => !e.deleted_at && e.from_template && e.received_on).map(key));
-  return entries.filter((e) => !(e.from_template && !e.received_on && INCOME.has(e.category) && confirmed.has(key(e))));
-}
 
 // Bestätigung dieser Quelle im laufenden Kalendermonat (nicht gelöscht). Nur Posten mit
 // received_on (Knopf "Eingang bestätigen") gelten als bestätigt; früher automatisch
@@ -87,27 +72,5 @@ export function suggestedAmount(t, entries) {
   return Number(last ? last.amount : t.amount);
 }
 
-// ---------------------------------------------------------------------
-// Verfügbar jetzt
-// ---------------------------------------------------------------------
-// Einnahmen zählen ab ihrem Eingang (nicht, wenn das Datum in der Zukunft liegt) und nur
-// im Zeitraum vom Startmonat (startIdx) bis zum laufenden Monat. Bezahltes zählt wie in der
-// Monatsrechnung (auch der Sparschwein-Anteil), sonst stimmt "Verfügbar" nicht mit dem
-// bisherigen Saldo überein.
-export function available(entries, today, startIdx = -Infinity) {
-  const { y, m } = parts(today);
-  const cur = monthIdxOf(y, m);
-  const inRange = (e) => entryIdx(e) <= cur && entryIdx(e) >= startIdx;
-  const live = dedupeIncome(entries.filter((e) => !e.deleted_at));
-  const eingaenge = r2(sum(live
-    .filter((e) => INCOME.has(e.category) && inRange(e) && !isIncomePending(e, today))
-    .map((e) => Number(e.amount || 0))));
-  const bezahlt = r2(sum(live
-    // Posten künftiger Monate zählen nicht (Bar-Posten aus Vorlagen sind dort schon beim Anlegen "bezahlt");
-    // nur eine bewusst vorgezogene Sparrate zählt auch im Voraus (Geld ist schon im Sparschwein)
-    .filter((e) => EXPENSE.has(e.category) && entryIdx(e) >= startIdx && (entryIdx(e) <= cur || e.savings_plan_id))
-    .map((e) => sum(entryParts(e).filter((p) => p.paid).map((p) => Number(p.amount || 0))))));
-  const offen = live.filter((e) => isOpenExpense(e) && inRange(e));
-  const offenSum = r2(sum(offen.map((e) => openAmount(e))));
-  return { eingaenge, bezahlt, verf: r2(eingaenge - bezahlt), offen, offenSum };
-}
+// Verfügbar jetzt: Rechnung liegt in core/lib/finAvailable.js (gemeinsam mit dem Hub)
+export { available, dedupeIncome } from '../../../core/lib/finAvailable.js';
