@@ -13,6 +13,7 @@ import {
 import { ago } from './lib/calendarUtils';
 import { setConsent, track } from './lib/analytics';
 import { useAnalyticsConsent } from './lib/useAnalyticsConsent';
+import { Skeleton } from './components/ui';
 
 const NOTIFICATION_CATEGORIES = [
   { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
@@ -130,7 +131,7 @@ export default function AppMenu() {
       </div>
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Kalender</div>
-      {gcalStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
+      {gcalStatus === 'laedt' && <Skeleton w="60%" h={14} />}
       {gcalStatus === 'nicht-verbunden' && <>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Zeige deine Google-Kalender-Termine zusätzlich im Nestua-Kalender an.</p>
         <button className="btn btn-secondary" style={{ width: '100%' }} disabled={gcalBusy} onClick={handleConnectGoogle}>{gcalBusy ? 'Einen Moment…' : 'Google Kalender verbinden'}</button>
@@ -148,7 +149,7 @@ export default function AppMenu() {
       </>}
 
       <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
-      {pushStatus === 'laedt' && <div className="status-note">Wird geladen…</div>}
+      {pushStatus === 'laedt' && <Skeleton w="60%" h={14} />}
       {pushStatus === 'unsupported' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone: erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.</p>}
       {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/Geräte-Einstellungen für diese Seite. {blockedHelp()}</p>}
       {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button>{pushError && <p role="alert" style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 10 }}>{pushError}</p>}</>}

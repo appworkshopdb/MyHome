@@ -11,6 +11,7 @@ import { ALL_SUGGESTIONS, STORE_NAMES, UNIT_OPTIONS, getCategory } from '../lib/
 import { takeFreshItems } from '../../../core/lib/shoppingHandoff.js';
 import { fb } from '../../../core/lib/feedback';
 import CompleteListSheet from './CompleteListSheet.jsx';
+import { SkeletonList } from '../../../core/components/ui';
 
 const CATEGORY_ORDER = [
   'Obst & Gemüse', 'Brot & Backwaren', 'Milch & Eier',
@@ -180,7 +181,7 @@ export default function ItemsView({ list, onBack }) {
   }
 
   if (loading) {
-    return <div className="page-loading">Wird geladen …</div>;
+    return <SkeletonList rows={5} />;
   }
 
   const storeNames = [...new Set(items.map((i) => i.item_store_name || i.store_name).filter(Boolean))].sort();

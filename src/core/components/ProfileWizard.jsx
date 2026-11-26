@@ -30,6 +30,7 @@ import BirdDefs from './birds/BirdDefs';
 import { SPECIES, SPECIES_KEYS, STAGE_NAMES } from './birds/birdArt';
 import EggFill from './EggFill';
 import { ModuleIcon, UiIcon } from './ModuleIcons';
+import { PageSkeleton } from './ui';
 
 const BODY_FIELDS = BODY_REQUIRED_FIELDS.filter((f) => ['gender', 'age', 'height', 'weight'].includes(f.key));
 // Wie Profile.jsx: Trainingsfokus gehört zu den Pflichtangaben.
@@ -88,7 +89,7 @@ export default function ProfileWizard() {
     return () => { aktiv = false; };
   }, [session]);
 
-  if (!body) return <div className="loading-note">Lädt…</div>;
+  if (!body) return <PageSkeleton />;
 
   const finish = step >= STEPS.length;
   const key = finish ? 'finish' : STEPS[step].key;

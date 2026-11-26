@@ -1,3 +1,4 @@
+import { formatNumber } from '../../../core/lib/format';
 // Reine Berechnungs-/Hilfsfunktionen des Ernährungs-Moduls.
 // 1:1 aus der ursprünglichen GoodFood-App übernommen (nur ohne
 // localStorage-Anbindung, die läuft jetzt über lib/nutData.js).
@@ -136,7 +137,7 @@ export function fmtAmount(amount, unit) {
   return v.toLocaleString('de-DE', { maximumFractionDigits: 2 });
 }
 
-export const fmt = (v, digits = 1) => (v == null || isNaN(v) ? '–' : (+v).toFixed(digits));
+export const fmt = (v, digits = 1) => formatNumber(v, digits);
 export const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 // Summiert die Nährwerte einer Zutatenliste (Rezept oder Tagesbilanz)

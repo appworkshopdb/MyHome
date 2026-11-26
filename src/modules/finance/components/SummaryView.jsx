@@ -35,6 +35,7 @@ import {
   IconChevronDown, IconUp, IconDown, IconFilter, IconRows, IconEye, IconEyeOff, IconDownload, IconGrip,
 } from './report/ui.jsx';
 import '../report.css';
+import { SkeletonList } from '../../../core/components/ui';
 
 const PRESET_OPTIONS = [
   { key: 'month', label: 'Monat' }, { key: 'quarter', label: 'Quartal' },
@@ -191,7 +192,7 @@ export default function SummaryView() {
   if (loadError) {
     return <div className="rp-empty">Die Auswertung konnte nicht geladen werden. Bitte später erneut versuchen.</div>;
   }
-  if (!prefs || !data || !ctx) return <div className="loading-note">Lädt…</div>;
+  if (!prefs || !data || !ctx) return <SkeletonList rows={4} />;
 
   // ── Handler ───────────────────────────────────────────────────────────
   const setFilters = (next) => updatePrefs((p) => ({ ...p, filters: next }));

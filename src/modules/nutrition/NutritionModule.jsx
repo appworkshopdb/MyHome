@@ -19,6 +19,7 @@ import { requestOpenList } from '../../core/lib/shoppingHandoff';
 import MealsView from './components/MealsView';
 import * as db from './lib/nutData';
 import { isGramFood } from './lib/meals';
+import { PageSkeleton } from '../../core/components/ui';
 
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
@@ -225,7 +226,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar hasWarnings={hasWarnings} />
-        <div className="loading-note with-topbar-space">Lädt…</div>
+        <PageSkeleton />
       </>
     );
   }

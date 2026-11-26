@@ -3,6 +3,7 @@ import Modal from '../../../core/components/Modal';
 import { IconSearch } from '../../../core/components/Icons';
 import { MEAL_TYPES, computeNutrition, fmt } from '../lib/nutrition';
 import { mealFromRecipe, defaultMealType, todayStr } from '../lib/meals';
+import { formatNumber } from '../../../core/lib/format';
 
 // Ein eigenes Rezept als gegessene Mahlzeit eintragen (Bereich "Mahlzeiten").
 // recipe === null → zuerst ein Rezept aus der Liste wählen; sonst direkt das Formular.
@@ -96,7 +97,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
     <Modal title={recipe.name} onClose={onClose}>
       <div className="result-grid">
         <div className="result-tile" style={{ gridColumn: '1 / -1' }}>
-          <div className="label">Nährwerte für {valid ? +portionsNum.toFixed(2) : '–'} Portion{portionsNum === 1 ? '' : 'en'}</div>
+          <div className="label">Nährwerte für {valid ? formatNumber(portionsNum, 2) : '–'} Portion{portionsNum === 1 ? '' : 'en'}</div>
           <div className="value">{valid ? Math.round(calc.kcal * factor) : '–'}<span>kcal</span></div>
         </div>
         <div className="result-tile"><div className="label">Eiweiß</div><div className="value">{valid ? fmt(calc.protein * factor) : '–'}<span>g</span></div></div>

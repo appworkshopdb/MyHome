@@ -5,6 +5,8 @@ import { computeBody } from '../../../core/lib/bodyCalc';
 import { MEAL_TYPES, fmt } from '../lib/nutrition';
 import { todayStr, shiftDate, formatDayLabel, sumMeals, formatAmount } from '../lib/meals';
 import * as db from '../lib/nutData';
+import { SkeletonList } from '../../../core/components/ui';
+import { formatNumber } from '../../../core/lib/format';
 
 // Bereich "Mahlzeiten": Verlauf dessen, was gegessen wurde — pro Tag mit
 // Tagessumme gegen das Tagesziel (aus dem Profil) und pro Mahlzeit mit Nährwerten.
@@ -132,7 +134,7 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
     }
   }
 
-  if (loading) return <div className="loading-note">Lädt…</div>;
+  if (loading) return <SkeletonList rows={4} />;
 
   const kcalPct = target ? Math.min(100, (total.kcal / target.target) * 100) : 0;
   const over = target && total.kcal > target.target;
@@ -235,7 +237,7 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
                       </span>
                       <span className="meals-entry-sub">
                         {m.source === 'recipe'
-                          ? `Rezept${m.servings ? ` · ${+m.servings.toFixed(2)} Portion${m.servings === 1 ? '' : 'en'}` : ''}`
+                          ? `Rezept${m.servings ? ` · ${formatNumber(m.servings, 2)} Portion${m.servings === 1 ? '' : 'en'}` : ''}`
                           : 'Foto-Schätzung'}
                       </span>
                     </button>

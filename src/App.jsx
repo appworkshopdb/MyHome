@@ -123,13 +123,13 @@ export default function App() {
     return () => { delete el.dataset.module; };
   }, [activeModule]);
 
-  if (ladeVorgang) return <div className="loading-note">Lädt…</div>;
+  if (ladeVorgang) return <PageSkeleton />;
   if (!session) return <Login />;
   // „Passwort vergessen“-Link geöffnet: erst neues Passwort festlegen, dann weiter
   if (recovery) return <ResetPassword />;
   // Neue Konten (E-Mail bestätigt) richten zuerst ihr Profil ein; erst danach
   // wird die App gerendert — und mit ihr der WelcomeWizard (Vogelwahl).
-  if (onboarding.loading) return <div className="loading-note">Lädt…</div>;
+  if (onboarding.loading) return <PageSkeleton />;
   if (onboarding.needed) return <ProfileWizard />;
 
   // 'profile' und 'statistiken' sind Seiten des Cores, keine Module

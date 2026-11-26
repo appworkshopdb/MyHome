@@ -30,6 +30,7 @@ import { useAuth } from '../../core/lib/AuthContext';
 import { snapshotGet, snapshotSet } from '../../core/lib/snapshotCache';
 
 import './shopping.css';
+import { PageSkeleton } from '../../core/components/ui';
 
 const DETAIL_TITLES = {
   listen:  'Alle Listen',
@@ -94,7 +95,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar hasWarnings={hasWarnings} />
-        <div className="page-loading with-topbar-space">Wird geladen …</div>
+        <PageSkeleton />
       </>
     );
   }

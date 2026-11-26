@@ -1,3 +1,4 @@
+import { formatNumber } from '../../../../core/lib/format';
 // Kleine gemeinsame Bausteine der Auswertung (Icons, Zahlenformat, Delta-Anzeige).
 
 const NF0 = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -47,11 +48,11 @@ export function Delta({ value, base, goodWhen, unit = 'pct', label }) {
   let diff; let text;
   if (unit === 'pp') {
     diff = (value - base) * 100;
-    text = `${Math.abs(diff).toFixed(1).replace('.', ',')} PP`;
+    text = `${formatNumber(Math.abs(diff), 1)} PP`;
   } else {
     if (base === 0) return null;
     diff = (value / base - 1) * 100;
-    text = `${Math.abs(diff).toFixed(1).replace('.', ',')} %`;
+    text = `${formatNumber(Math.abs(diff), 1)} %`;
   }
   if (Math.abs(diff) < 0.05) return <span className="rp-delta rp-delta--flat">≈ gleich {label}</span>;
   const up = diff > 0;

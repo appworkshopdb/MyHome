@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { IconPlus } from '../../../core/components/Icons.jsx';
 import { loadFrequentItems, loadLists, saveItem } from '../lib/shoData.js';
+import { SkeletonList } from '../../../core/components/ui';
 
 const LIMITS = [
   { label: 'Top 3',  value: 3  },
@@ -58,7 +59,7 @@ export default function FreqView() {
     }
   }
 
-  if (loading) return <div className="page-loading">Wird geladen …</div>;
+  if (loading) return <SkeletonList rows={5} />;
 
   return (
     <div>

@@ -17,6 +17,8 @@ import { STAGE_NAMES } from './components/birds/birdArt';
 import ModuleTopBar from './components/ModuleTopBar';
 import Modal from './components/Modal';
 import { IconInfo, IconEdit } from './components/Icons';
+import { SkeletonList, Skeleton } from './components/ui';
+import { formatNumber, formatUnit } from './lib/format';
 
 const labelOf = (list, key) => list.find((x) => x.key === key)?.label || '';
 const fmt = (n) => n.toLocaleString('de-DE');
@@ -65,6 +67,7 @@ const PROFILE_REQUIRED_FIELDS = [...BODY_REQUIRED_FIELDS, { key: 'training_focus
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);
+  if (!isoDate || Number.isNaN(start.getTime())) return '';
   const now = new Date();
   const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
   if (months < 1) return 'Diesen Monat dazugekommen';
@@ -175,14 +178,14 @@ export default function Profile({ hasWarnings }) {
   const species = gami.bird_species || 'robin';
   const bp = bodyProfile;
 
-  const bodySummary = !bp ? 'Wird geladen…'
+  const bodySummary = !bp ? <Skeleton w={110} h={12} />
     : missingBody.length ? `${missingBody.map((f) => f.label).join(', ')} fehlt`
-      : `${bp.gender === 'm' ? 'Männlich' : 'Weiblich'} · ${bp.age} J. · ${bp.height} cm · ${bp.weight} kg`;
-  const goalSummary = !bp ? 'Wird geladen…'
+      : `${bp.gender === 'm' ? 'Männlich' : 'Weiblich'} · ${bp.age} J. · ${formatUnit(bp.height, 'cm', 0)} · ${formatUnit(bp.weight, 'kg', 1)}`;
+  const goalSummary = !bp ? <Skeleton w={110} h={12} />
     : missingGoal.length ? `${missingGoal.map((f) => f.label).join(', ')} fehlt`
       : `${labelOf(GOAL, bp.goal)} · ${labelOf(ACTIVITY, bp.activity)} · ${labelOf(TRAINING_FOCUS, bp.training_focus)}`;
-  const dietSummary = dietProfile ? (DIET_OPTIONS.find((d) => d.key === dietProfile.diet)?.label || 'Alles') : 'Wird geladen…';
-  const valuesSummary = body ? `${fmt(body.tdee)} kcal Bedarf · ${body.protein} g Protein · ${body.water} L Wasser` : 'Körperdaten fehlen';
+  const dietSummary = dietProfile ? (DIET_OPTIONS.find((d) => d.key === dietProfile.diet)?.label || 'Alles') : <Skeleton w={110} h={12} />;
+  const valuesSummary = body ? `${fmt(body.tdee)} kcal Bedarf · ${formatUnit(body.protein, 'g', 0)} Protein · ${formatUnit(body.water, 'L', 1)} Wasser` : 'Körperdaten fehlen';
 
   return (
     <div className="hub with-topbar-space">
@@ -199,7 +202,7 @@ export default function Profile({ hasWarnings }) {
           </button>
           <div className="prof-who">
             <div className="prof-mail">{session.user.email}</div>
-            <div className="prof-since">{memberSince(session.user.created_at)}</div>
+            {memberSince(session.user.created_at) && <div className="prof-since">{memberSince(session.user.created_at)}</div>}
             <div className="prof-chips">
               {gami.loaded && (
                 <span className="prof-chip warm">
@@ -294,7 +297,7 @@ export default function Profile({ hasWarnings }) {
                 <ResultTile metricKey="fat" value={body.fatG} unit="g" note="täglich" onInfo={setInfoKey} />
                 <ResultTile metricKey="carb" value={body.carbG} unit="g" note="täglich" onInfo={setInfoKey} />
                 <ResultTile metricKey="water" value={body.water} unit="L" note="täglich" onInfo={setInfoKey} />
-                <ResultTile metricKey="idealweight" value={`${body.wMin}–${body.wMax}`} unit="kg" note="bei deiner Größe" onInfo={setInfoKey} />
+                <ResultTile metricKey="idealweight" value={`${formatNumber(body.wMin, 1)}–${formatNumber(body.wMax, 1)}`} unit="kg" note="bei deiner Größe" onInfo={setInfoKey} />
               </div>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 10 }}>
                 Alle Werte sind rechnerische Schätzungen auf Basis anerkannter Formeln, keine medizinische Beratung.
@@ -304,7 +307,7 @@ export default function Profile({ hasWarnings }) {
         </Row>
       </div>
 
-      {loading && <div className="status-note">Wird geladen…</div>}
+      {loading && <SkeletonList rows={2} />}
 
       {avatarOpen && (
         <AvatarEditor avatar={avatar} initial={initial} onClose={() => setAvatarOpen(false)} />
@@ -351,7 +354,7 @@ function ResultTile({ metricKey, value, unit, note, onInfo }) {
         {METRIC_INFO[metricKey].title}
       </div>
       <div style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: 2 }}>
-        {value}
+        {typeof value === 'number' ? formatNumber(value, 1) : value}
         {unit && <span style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: 3 }}>{unit}</span>}
       </div>
       {note && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{note}</div>}

@@ -36,7 +36,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar hasWarnings={hasWarnings} />
-        <div className="page-loading with-topbar-space">Wird geladen …</div>
+        <PageSkeleton />
       </>
     );
   }

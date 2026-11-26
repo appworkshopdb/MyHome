@@ -17,6 +17,7 @@ import SheetShell from '../../../core/components/SheetShell';
 import { ChipGroup, DateButton, SegGroup, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import { parseMoney } from '../../../core/lib/wizardDates';
 import { IconContract, IconFixed } from './ContractIcons';
+import { formatMoney } from '../../../core/lib/format';
 
 const INTERVAL_OPTIONS = Object.entries(INTERVALS).map(([value, { label }]) => ({ value, label }));
 const CATEGORY_OF = { einnahme: 'fixeinnahmen', fixkosten: 'fixkosten' };
@@ -69,7 +70,7 @@ export default function RecurringSheet({
   const isRecurring  = interval !== 'monthly';
   const intervalMths = INTERVALS[interval]?.months ?? 1;
   const amtNum       = parseMoney(amount) || 0;
-  const monthlyHint  = intervalMths > 1 ? `≈ ${(amtNum / intervalMths).toFixed(2).replace('.', ',')} €/Mo.` : null;
+  const monthlyHint  = intervalMths > 1 ? `≈ ${formatMoney(amtNum / intervalMths)}/Mo.` : null;
 
   const title = editing
     ? { einnahme: 'Einnahme bearbeiten', fixkosten: 'Fixkosten bearbeiten', vertrag: 'Vertrag bearbeiten' }[kind]

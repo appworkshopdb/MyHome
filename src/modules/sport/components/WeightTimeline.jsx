@@ -5,6 +5,8 @@ import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { getWeightLogs, addWeightLog, deleteWeightLog } from '../../../core/lib/bodyWeightData';
 import { IconTrash } from '../../../core/components/Icons';
 import { todayIso } from '../../../core/lib/wizardDates';
+import { SkeletonList } from '../../../core/components/ui';
+import { formatUnit } from '../../../core/lib/format';
 
 // Lokales Datum (nicht toISOString: das rechnet über UTC und verschiebt den Tag rund um Mitternacht)
 const TODAY = todayIso;
@@ -25,7 +27,7 @@ function deltaTone(delta, goal) {
 
 function formatDelta(delta) {
   const sign = delta > 0 ? '+' : delta < 0 ? '−' : '±';
-  return `${sign}${Math.abs(delta).toFixed(1)} kg`;
+  return `${sign}${formatUnit(Math.abs(delta), 'kg', 1)}`;
 }
 
 export default function WeightTimeline() {
@@ -86,7 +88,7 @@ export default function WeightTimeline() {
   }
 
   if (loading) {
-    return <div className="sa-card">Lädt…</div>;
+    return <SkeletonList rows={3} />;
   }
 
   // Deltas chronologisch (älteste zuerst) berechnen — "Vorher" muss der
@@ -139,7 +141,7 @@ export default function WeightTimeline() {
                 {i < display.length - 1 && <span className="sa-line" />}
               </div>
               <div className="sa-wbody">
-                <div className="sa-wv">{Number(log.weight).toFixed(1)} kg</div>
+                <div className="sa-wv">{formatUnit(log.weight, 'kg', 1)}</div>
                 <div className="sa-wd">
                   {new Date(`${log.logged_on}T00:00:00`).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   {log.delta !== null && (

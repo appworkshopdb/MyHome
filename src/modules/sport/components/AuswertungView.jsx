@@ -6,6 +6,7 @@ import BadgesCard from './BadgesCard';
 import ActivityHeatmap from './ActivityHeatmap';
 import FilterBar from './FilterBar';
 import WeightTimeline from './WeightTimeline';
+import { SkeletonList } from '../../../core/components/ui';
 
 function Tile({ icon, value, label, wide }) {
   return (
@@ -40,7 +41,7 @@ export default function AuswertungView({ workouts, loading }) {
   const [customEnd, setCustomEnd] = useState(TODAY);
 
   if (loading) {
-    return <div className="page"><div className="sa-card">Lädt…</div></div>;
+    return <div className="page"><SkeletonList rows={4} /></div>;
   }
 
   const statsAll = computeStats(workouts);

@@ -8,6 +8,7 @@ import { addDaysIso, diffDays, planDayFor, planImpact } from '../../../core/lib/
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
 import { muscleLabels, planCounts, resolvePlanIcon, resolvePlanMuscleGroups } from '../lib/planMuscles';
 import { resolveTypeLabel } from '../lib/typeLabel';
+import { SkeletonList } from '../../../core/components/ui';
 
 // Seite "Pläne" in drei Stufen, oben immer EINE Karte:
 //   1. Kein Plan ausgewählt: gestrichelte Karte mit "Plan auswählen" / "Neuer Plan"
@@ -245,7 +246,7 @@ export default function PlaeneView({
       <div className="card">
         <div className="card-title">Deine Pläne</div>
         {loading ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Lädt…</p>
+          <SkeletonList rows={3} />
         ) : plans.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Noch kein Plan. Mit „Neuer Plan“ oder dem ＋-Button unten rechts legst du einen an und wählst ihn danach hier aus.
