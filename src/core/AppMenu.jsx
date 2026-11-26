@@ -13,24 +13,22 @@ import {
 import { ago } from './lib/calendarUtils';
 import { setConsent, track } from './lib/analytics';
 import { useAnalyticsConsent } from './lib/useAnalyticsConsent';
-import { Skeleton } from './components/ui';
+import { Skeleton, Segmented, Switch, Button } from './components/ui';
 
 const NOTIFICATION_CATEGORIES = [
-  { key: 'daily_plan', label: 'Tagesplan', hint: 'Jeden Morgen um 6 Uhr: was heute ansteht' },
-  { key: 'tasks_habits', label: 'Aufgaben & Gewohnheiten', hint: 'Abends, wenn noch etwas offen ist' },
-  { key: 'finance', label: 'Finanzen', hint: 'Hinweise auf fällige und offene Zahlungen' },
-  { key: 'profile', label: 'Profil & Fortschritt', hint: 'Wenn wichtige Angaben fehlen' },
-  { key: 'weekly_recap', label: 'Wochenüberblick', hint: 'Montagmorgens: dein Rückblick auf die Vorwoche' },
-  { key: 'monthly_recap', label: 'Monatsüberblick', hint: 'Am 1. des Monats: dein Rückblick auf den Vormonat' },
+  { key: 'daily_plan', label: 'Tagesplan', hint: 'Morgens um 6 Uhr' },
+  { key: 'tasks_habits', label: 'Aufgaben & Gewohnheiten', hint: 'Abends, wenn etwas offen ist' },
+  { key: 'finance', label: 'Finanzen', hint: 'Fällige und offene Zahlungen' },
+  { key: 'profile', label: 'Profil & Fortschritt', hint: 'Wenn Angaben fehlen' },
+  { key: 'weekly_recap', label: 'Wochenüberblick', hint: 'Montags: Rückblick' },
+  { key: 'monthly_recap', label: 'Monatsüberblick', hint: 'Am 1.: Rückblick' },
 ];
 
 function NotifToggle({ checked, onChange, label, hint }) {
   return (
-    <div className="notif-toggle-row" onClick={onChange} role="switch" aria-checked={checked} tabIndex={0}
-      onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && onChange()}>
-      <div className="notif-toggle-text"><span className="notif-toggle-label">{label}</span><span className="notif-toggle-hint">{hint}</span></div>
-      <div className={`notif-toggle-track ${checked ? 'on' : ''}`}><div className="notif-toggle-thumb" /></div>
-    </div>
+    <Switch checked={checked} onChange={() => onChange()}>
+      <span className="am-sw"><b>{label}</b><small>{hint}</small></span>
+    </Switch>
   );
 }
 
@@ -119,49 +117,67 @@ export default function AppMenu() {
   return (
     <div className="app-menu">
       <div className="app-menu-heading">Einstellungen</div>
-      <div className="app-menu-section-label">Design</div>
-      <div className="mode-toggle">{MODES.map((m) => <button key={m.key} className={m.key === mode ? 'active' : ''} onClick={() => setMode(m.key)}>{m.label}</button>)}</div>
 
-      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Rückmeldung</div>
-      <div className="notif-toggle-list">
-        <NotifToggle checked={sound} label="Töne" hint="Kurze Klänge beim Abhaken und beim Drehen der Wählregler"
+      <section className="am-sec">
+        <h3 className="app-menu-section-label">Design</h3>
+        <Segmented label="Design" options={MODES.map((m) => ({ value: m.key, label: m.label }))} value={mode} onChange={setMode} />
+      </section>
+
+      <section className="am-sec">
+        <h3 className="app-menu-section-label">Rückmeldung</h3>
+        <NotifToggle checked={sound} label="Töne" hint="Beim Abhaken und Drehen"
           onChange={() => { const v = !sound; setSound(v); setSoundEnabled(v); if (v) fb.todoCheck(); }} />
-        <NotifToggle checked={haptik} label="Haptik" hint="Spürbares Feedback, z. B. beim Drehen der Wählregler"
+        <NotifToggle checked={haptik} label="Haptik" hint="Spürbar beim Drehen"
           onChange={() => { const v = !haptik; setHaptik(v); setHapticEnabled(v); if (v) fb.tick(); }} />
-      </div>
+      </section>
 
-      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Kalender</div>
-      {gcalStatus === 'laedt' && <Skeleton w="60%" h={14} />}
-      {gcalStatus === 'nicht-verbunden' && <>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Zeige deine Google-Kalender-Termine zusätzlich im Nestua-Kalender an.</p>
-        <button className="btn btn-secondary" style={{ width: '100%' }} disabled={gcalBusy} onClick={handleConnectGoogle}>{gcalBusy ? 'Einen Moment…' : 'Google Kalender verbinden'}</button>
-      </>}
-      {gcalStatus === 'verbunden' && gcalConnection && <>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Verbunden mit <strong style={{ color: 'var(--text-primary)' }}>{gcalConnection.google_email}</strong></p>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-          {gcalConnection.last_synced_at
-            ? `Zuletzt synchronisiert: ${ago(gcalConnection.last_synced_at)} (${new Date(gcalConnection.last_synced_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} Uhr)`
-            : 'Noch nicht synchronisiert'}
-        </p>
-        {gcalConnection.sync_error && <p style={{ fontSize: '0.78rem', color: 'var(--status-critical)', marginBottom: 10 }}>{gcalConnection.sync_error}</p>}
-        <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleSyncGoogle}>{gcalBusy ? 'Synchronisiere…' : 'Jetzt synchronisieren'}</button>
-        <button className="btn btn-secondary" style={{ width: '100%', marginTop: 8 }} disabled={gcalBusy} onClick={handleDisconnectGoogle}>{gcalBusy ? 'Einen Moment…' : gcalConnection.sync_error ? 'Erneut verbinden' : 'Trennen'}</button>
-      </>}
+      <section className="am-sec">
+        <h3 className="app-menu-section-label">Kalender</h3>
+        {gcalStatus === 'laedt' && <Skeleton w="60%" h={14} />}
+        {gcalStatus === 'nicht-verbunden' && <>
+          <p className="am-note">Google-Termine im Kalender anzeigen.</p>
+          <Button variant="secondary" block loading={gcalBusy} onClick={handleConnectGoogle}>Verbinden</Button>
+        </>}
+        {gcalStatus === 'verbunden' && gcalConnection && <>
+          <p className="am-note">Verbunden mit <strong>{gcalConnection.google_email}</strong></p>
+          <p className="am-note am-note--mut">
+            {gcalConnection.last_synced_at
+              ? `Zuletzt ${ago(gcalConnection.last_synced_at)} (${new Date(gcalConnection.last_synced_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} Uhr)`
+              : 'Noch nicht synchronisiert'}
+          </p>
+          {gcalConnection.sync_error && <p className="am-note am-note--err">{gcalConnection.sync_error}</p>}
+          <div className="am-btns">
+            <Button variant="secondary" block icon="restore" loading={gcalBusy} onClick={handleSyncGoogle}>Synchronisieren</Button>
+            <Button variant="text" block disabled={gcalBusy} onClick={handleDisconnectGoogle}>{gcalConnection.sync_error ? 'Erneut verbinden' : 'Trennen'}</Button>
+          </div>
+        </>}
+      </section>
 
-      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Benachrichtigungen</div>
-      {pushStatus === 'laedt' && <Skeleton w="60%" h={14} />}
-      {pushStatus === 'unsupported' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wird auf diesem Gerät/Browser nicht unterstützt. Auf dem iPhone: erst über „Zum Home-Bildschirm" installieren, dann von dort aus öffnen.</p>}
-      {pushStatus === 'denied' && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wurden blockiert — änderbar in den Browser-/Geräte-Einstellungen für diese Seite. {blockedHelp()}</p>}
-      {pushStatus === 'unsubscribed' && <><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Erhalte Erinnerungen auch außerhalb der App.</p><button className="btn btn-primary" disabled={pushBusy} onClick={handleEnablePush}>{pushBusy ? 'Einen Moment…' : 'Benachrichtigungen aktivieren'}</button>{pushError && <p role="alert" style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: 10 }}>{pushError}</p>}</>}
-      {pushStatus === 'subscribed' && prefs && <><div className="notif-toggle-list">{NOTIFICATION_CATEGORIES.map((c) => <NotifToggle key={c.key} checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} label={c.label} hint={c.hint} />)}</div><button className="btn btn-secondary" style={{ marginTop: 14, width: '100%' }} disabled={pushBusy} onClick={handleDisablePush}>Deaktivieren</button></>}
+      <section className="am-sec">
+        <h3 className="app-menu-section-label">Benachrichtigungen</h3>
+        {pushStatus === 'laedt' && <Skeleton w="60%" h={14} />}
+        {pushStatus === 'unsupported' && <p className="am-note">Auf diesem Gerät nicht verfügbar. iPhone: erst zum Home-Bildschirm hinzufügen.</p>}
+        {pushStatus === 'denied' && <p className="am-note">Blockiert. In den Geräte-Einstellungen freigeben. {blockedHelp()}</p>}
+        {pushStatus === 'unsubscribed' && <>
+          <p className="am-note">Erinnerungen auch außerhalb der App.</p>
+          <Button block loading={pushBusy} onClick={handleEnablePush}>Aktivieren</Button>
+          {pushError && <p role="alert" className="am-note am-note--err">{pushError}</p>}
+        </>}
+        {pushStatus === 'subscribed' && prefs && <>
+          {NOTIFICATION_CATEGORIES.map((c) => <NotifToggle key={c.key} checked={!!prefs[c.key]} onChange={() => toggleCategory(c.key)} label={c.label} hint={c.hint} />)}
+          <Button variant="text" block disabled={pushBusy} onClick={handleDisablePush}>Deaktivieren</Button>
+        </>}
+      </section>
 
-      <div className="app-menu-section-label" style={{ marginTop: 18 }}>Nutzungsdaten</div>
-      <NotifToggle
-        checked={analyticsConsent === 'granted'}
-        onChange={() => setConsent(analyticsConsent !== 'granted')}
-        label="Nutzungsstatistik teilen"
-        hint="Welche Bereiche du öffnest, Klicks, Fehler — nie Inhalte wie Beträge oder Einträge."
-      />
+      <section className="am-sec">
+        <h3 className="app-menu-section-label">Nutzungsdaten</h3>
+        <NotifToggle
+          checked={analyticsConsent === 'granted'}
+          onChange={() => setConsent(analyticsConsent !== 'granted')}
+          label="Nutzungsstatistik teilen"
+          hint="Nur Bereiche und Fehler, nie Inhalte."
+        />
+      </section>
     </div>
   );
 }

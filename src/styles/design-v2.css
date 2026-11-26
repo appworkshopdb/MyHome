@@ -1588,3 +1588,35 @@ button.cl-row-btn { cursor: pointer; }
 .focus-card-progress { display: flex; }
 .focus-card-progress-fill { flex: none; }
 .focus-card-progress-open { flex: none; height: 100%; background: repeating-linear-gradient(135deg, var(--hero-fg) 0 3px, transparent 3px 6px); }
+
+/* ── Profil (Redesign Schritt 4) ─────────────────────────── */
+.prof-row { border-radius: var(--rad-xl); box-shadow: var(--sh-sm); }
+.prof-ico { width: 40px; height: 40px; border-radius: var(--rad-md); }
+.prof-ico svg { width: 20px; height: 20px; }
+.prof-chev { width: 20px; height: 20px; transition: transform var(--dur-base) var(--ease-std); }
+.prof-row.open .prof-chev { transform: rotate(180deg); }
+.prof-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); }
+.prof-pw { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-3); }
+.prof-hint { margin: var(--sp-3) 0 0; font-size: var(--fs-meta); color: var(--text-muted); }
+.prof-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+.prof-tile { position: relative; padding: var(--sp-3); border-radius: var(--rad-lg); background: var(--surface-sunken); }
+.prof-tile--wide { grid-column: 1 / -1; }
+.prof-tile-info { position: absolute; bottom: 0; right: 0; width: var(--hit-min); height: var(--hit-min); display: grid; place-items: center; color: var(--text-muted); }
+.prof-tile-k { font-size: var(--fs-caption); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.prof-tile-v { margin-top: var(--sp-1); font-size: var(--fs-title); font-weight: 800; font-variant-numeric: tabular-nums; }
+.prof-tile-v small { margin-left: var(--sp-1); font-size: var(--fs-meta); font-weight: 500; color: var(--text-muted); }
+.prof-tile-note { margin-top: var(--sp-1); padding-right: var(--sp-6); font-size: var(--fs-meta); color: var(--text-muted); }
+.prof-info { margin-bottom: var(--sp-3); }
+.prof-info-k { margin-bottom: var(--sp-1); font-size: var(--fs-caption); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.prof-info-v { font-size: var(--fs-small); line-height: 1.5; }
+
+/* ── Einstellungen-Menü (Redesign Schritt 4) ─────────────── */
+.app-menu .am-sec { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-5); }
+.app-menu .am-sec > .app-menu-section-label { margin: 0; }
+.app-menu .am-sw { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.app-menu .am-sw small { font-size: var(--fs-meta); font-weight: 400; color: var(--text-muted); }
+.app-menu .am-note { margin: 0; font-size: var(--fs-small); color: var(--text-secondary); }
+.app-menu .am-note strong { color: var(--text-primary); }
+.app-menu .am-note--mut { font-size: var(--fs-meta); color: var(--text-muted); }
+.app-menu .am-note--err { color: var(--status-critical); }
+.app-menu .am-btns { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2); }
