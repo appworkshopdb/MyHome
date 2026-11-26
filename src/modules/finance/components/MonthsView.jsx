@@ -223,7 +223,8 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
 }
 
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
-export default function MonthsView({ initialFilter = 'alle' }) {
+// showStand: Fokuskarte "Verfügbar jetzt" oben zeigen (Offene Posten ja, Buchungen nein)
+export default function MonthsView({ initialFilter = 'alle', showStand = true }) {
   const { session }  = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved } = useEntrySheet();
@@ -256,8 +257,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       const [es0, ts, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
-        db.getAllEntries(s),
-        db.getFinStartIdx(s, localTodayStr()),
+        showStand ? db.getAllEntries(s) : Promise.resolve([]),
+        showStand ? db.getFinStartIdx(s, localTodayStr()) : Promise.resolve(-Infinity),
       ]);
       setAllEntries(all);
       setStartIdx(st);
@@ -268,7 +269,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       console.error(e);
     }
     setLoading(false);
-  }, [year, month, showToast]);
+  }, [year, month, showToast, showStand]);
 
   useEffect(() => { load(); }, [load, version]);
 
@@ -414,8 +415,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         </button>
       </div>
 
-      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub */}
-      <AvailableCard stand={stand} loading={loading} flow />
+      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub (nicht in Buchungen) */}
+      {showStand && <AvailableCard stand={stand} loading={loading} flow />}
 
       {/* Filter — abgerundete Pills */}
       <div className="fin-filter-pills">

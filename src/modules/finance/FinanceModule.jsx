@@ -50,7 +50,7 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
           {/* "Buchungen" und "Offene Posten" sind derselbe Screen mit
               unterschiedlichem Startfilter — MonthsView kann das bereits,
               der Filter war nur nicht von außen setzbar. */}
-          {view === 'buchungen' && <MonthsView />}
+          {view === 'buchungen' && <MonthsView showStand={false} />}
           {view === 'offen'     && <MonthsView initialFilter="offen" />}
 
           {view === 'einnahmen' && <IncomeView />}
