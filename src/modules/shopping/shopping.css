@@ -1258,3 +1258,29 @@
   border-radius: 99px; background: var(--mod-shop-ac); color: var(--mod-shop-on);
   font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em;
 }
+
+/* ── Alle Listen (Redesign Schritt 4) ───────────────────── */
+.sho-lview { display: flex; flex-direction: column; gap: var(--sp-3); }
+.sho-lview .sho-lrow-ic { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: var(--rad-md); background: var(--m-tint); font-size: var(--fs-title); }
+.sho-lview .sho-lrow--done { opacity: .7; }
+.sho-lview .sho-lsec { display: flex; justify-content: space-between; margin: var(--sp-2) var(--sp-1) var(--sp-1); font-size: var(--fs-caption); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+.sho-lsheet { display: flex; flex-direction: column; gap: var(--sp-3); }
+.sho-lsheet-l { font-size: var(--fs-meta); font-weight: 700; color: var(--text-muted); }
+.sho-lsheet .sho-lopts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* ── Häufig (Redesign Schritt 4) ────────────────────────── */
+.sho-freq-view { display: flex; flex-direction: column; gap: var(--sp-3); }
+.sho-freq-view .sho-freq-filter { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.sho-freq-view .sho-freq-total { margin-left: auto; font-size: var(--fs-meta); color: var(--text-muted); }
+.sho-freq-view .sho-freq-rank { width: 28px; flex: none; text-align: center; font-size: var(--fs-body); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sho-freq-view .sho-freq-rank.is-top { color: var(--m-deep); font-weight: 800; }
+.sho-lview .sho-lwrap { display: flex; align-items: center; padding-right: var(--sp-1); }
+.sho-lview .sho-lwrap + .sho-lwrap { border-top: var(--bd-hair) solid var(--border-subtle, var(--border)); }
+.sho-lview .sho-lwrap .ui-row { flex: 1; min-width: 0; border-top: 0; }
+
+/* ── Artikelliste (Redesign Schritt 4) ──────────────────── */
+.sho-category-label--gap { margin-top: var(--sp-4); }
+.sho-items-wrap .sho-input-bar .sho-add-btn { flex: none; width: var(--hit-min); min-width: var(--hit-min); height: var(--hit-min); padding: 0; border-radius: var(--rad-md); background: var(--m-ac, var(--action-primary)); color: var(--m-on, var(--text-on-accent)); }
+.sho-item-edit .sho-edit-store { flex: 1; }
+.sho-item-edit-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-1); }
+.sho-item-edit-actions .ui-btn--text:first-child { margin-right: auto; }

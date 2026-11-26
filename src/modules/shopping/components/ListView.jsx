@@ -13,7 +13,10 @@ import {
   saveList, deleteList, updateListStatus, releaseListBooking, pickActiveList,
 } from '../lib/shoData.js';
 import { DAY_PARTS } from '../lib/data/stores.js';
-import { confirmDialog } from '../../../core/components/ui';
+import {
+  confirmDialog, ListGroup, ListRow, Segmented, FilterChip, EmptyState, IconButton, Button, TextField,
+  SheetHeader, SheetFooter,
+} from '../../../core/components/ui';
 
 const STATUS = [
   { key: 'offen',      label: 'Offen' },
@@ -71,7 +74,7 @@ function Ring({ list }) {
   const r = 15, c = 2 * Math.PI * r, p = total ? done / total : 0;
   return (
     <span className="sho-lring" aria-hidden="true">
-      <svg viewBox="0 0 38 38">
+      <svg viewBox="0 0 38 38">{/* pruefer:ok Fortschrittsring (Grafik) */}
         <circle cx="19" cy="19" r={r} className="track" />
         <circle cx="19" cy="19" r={r} className="val" strokeDasharray={`${(c * p).toFixed(1)} ${c.toFixed(1)}`} />
       </svg>
@@ -99,7 +102,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   const [sDue,    setSDue]    = useState('');
   const [sTime,   setSTime]   = useState('');
   const [sBusy,   setSBusy]   = useState(false);
-  const [delAsk,  setDelAsk]  = useState(false);
 
   const normal = lists.filter((l) => !l.is_template);
   const isDone = (l) => (l.status || 'offen') === 'erledigt';
@@ -134,7 +136,6 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     setSName(list.name);
     setSDue(list.due_date || '');
     setSTime(list.due_time || '');
-    setDelAsk(false);
   }
 
   async function saveSheet() {
@@ -155,7 +156,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
 
   async function deleteFromSheet() {
     if (!sheetList) return;
-    if (!delAsk) { setDelAsk(true); return; }
+    if (!(await confirmDialog({ title: `Liste „${sheetList.name}“ löschen?` }))) return;
     setSBusy(true); setError(null);
     try {
       await deleteList(sheetList.id);
@@ -169,20 +170,17 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
   function renderRow(l) {
     const fin = isDone(l);
     const due = !fin ? dueText(l) : '';
+    const sub = [l.status === 'im_einkauf' && 'Im Einkauf', progressText(l), due].filter(Boolean).join(' · ');
     return (
-      <div key={l.id} className={`sho-lrow${fin ? ' sho-lrow--done' : ''}`}>
-        <button className="sho-lrow-open" onClick={() => onOpenList(l)}>
-          <span className="sho-lrow-ic">{l.icon || '🛒'}</span>
-          <span className="sho-lrow-t">
-            <b>{l.name}</b>
-            <small>
-              {l.status === 'im_einkauf' && <em>Im Einkauf · </em>}
-              {progressText(l)}{due ? ` · ${due}` : ''}
-            </small>
-          </span>
-        </button>
-        <Ring list={l} />
-        <button className="sho-lmore" onClick={() => openSheet(l)} aria-label={`Aktionen für ${l.name}`} disabled={statusBusy === l.id}>•••</button>
+      <div key={l.id} className={`sho-lwrap${fin ? ' sho-lrow--done' : ''}`}>
+        <ListRow
+          leading={<span className="sho-lrow-ic">{l.icon || '🛒'}</span>}
+          title={l.name}
+          sub={sub}
+          onClick={() => onOpenList(l)}
+          trailing={<Ring list={l} />}
+        />
+        <IconButton icon="more" label={`Aktionen für ${l.name}`} disabled={statusBusy === l.id} onClick={() => openSheet(l)} />
       </div>
     );
   }
@@ -199,27 +197,21 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
 
   let body;
   if (normal.length === 0) {
-    body = (
-      <div className="sho-lempty">
-        <div className="sho-lempty-ic">🛒</div>
-        <div className="sho-lempty-title">Noch keine Liste</div>
-        <div className="sho-lempty-text">Tippe unten rechts auf das Plus — z.B. für REWE, Aldi oder den nächsten Grillabend.</div>
-      </div>
-    );
+    body = <EmptyState icon="cart" title="Noch keine Liste" />;
   } else if (filter === 'offen') {
     body = open.length === 0
-      ? <div className="sho-lempty-text sho-lnone">Keine offenen Listen.</div>
+      ? <EmptyState icon="cart" title="Keine offenen Listen" />
       : groups.map((g) => (
         <div key={g.title}>
           <div className="sho-lsec"><span>{g.title}</span><span>{g.items.length}</span></div>
-          <div className="sho-lrows">{g.items.map(renderRow)}</div>
+          <ListGroup>{g.items.map(renderRow)}</ListGroup>
         </div>
       ));
   } else {
     const shown = filter === 'erledigt' ? done : allSorted;
     body = shown.length === 0
-      ? <div className="sho-lempty-text sho-lnone">Keine Listen in dieser Ansicht.</div>
-      : <div className="sho-lrows sho-lrows--flat">{shown.map(renderRow)}</div>;
+      ? <EmptyState icon="cart" title="Keine Listen" />
+      : <ListGroup>{shown.map(renderRow)}</ListGroup>;
   }
 
   return (
@@ -241,60 +233,57 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
         ) : (
           <>
             <FocusCard.Eyebrow>Keine offene Liste</FocusCard.Eyebrow>
-            <div className="sho-focus-title">Tippe auf das Plus, um deine erste Liste anzulegen</div>
+            <div className="sho-focus-title">Noch keine Liste</div>
           </>
         )}
       </FocusCard>
 
       {/* Filter */}
       {normal.length > 0 && (
-        <div className="sho-lseg" role="group" aria-label="Filter">
-          {[['offen', `Offen (${open.length})`], ['erledigt', `Erledigt (${done.length})`], ['alle', 'Alle']].map(([k, label]) => (
-            <button key={k} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
-          ))}
-        </div>
+        <Segmented
+          label="Filter"
+          options={[{ value: 'offen', label: `Offen ${open.length}` }, { value: 'erledigt', label: `Erledigt ${done.length}` }, { value: 'alle', label: 'Alle' }]}
+          value={filter}
+          onChange={setFilter}
+        />
       )}
 
       {body}
 
-      {/* "•••": Status, Fälligkeit, Name, Löschen */}
+      {/* Status, Fälligkeit, Name, Löschen */}
       {sheetList && (
         <SheetShell onClose={() => setSheetId(null)} labelledBy="sho-lsheet-title">
           <div className="sho-lsheet">
-            <div className="sho-lsheet-head">
-              <span className="sho-lrow-ic">{sheetList.icon || '🛒'}</span>
-              <h3 id="sho-lsheet-title">{sheetList.name}</h3>
-            </div>
+            <SheetHeader id="sho-lsheet-title" title={sheetList.name} onClose={() => setSheetId(null)} />
 
-            <div className="sho-lsheet-l">Status</div>
-            <div className="sho-lopts" role="group" aria-label="Status">
-              {STATUS.map((s) => (
-                <button key={s.key} aria-pressed={(sheetList.status || 'offen') === s.key} disabled={statusBusy === sheetList.id} onClick={() => changeStatus(sheetList, s.key)}>{s.label}</button>
-              ))}
-            </div>
+            <Segmented
+              label="Status"
+              options={STATUS.map((o) => ({ value: o.key, label: o.label }))}
+              value={sheetList.status || 'offen'}
+              onChange={(k) => statusBusy !== sheetList.id && changeStatus(sheetList, k)}
+            />
 
             <div className="sho-lsheet-l">Fällig</div>
             <div className="sho-lopts" role="group" aria-label="Fällig">
               {[['Heute', toDateStr(addDays(0))], ['Morgen', toDateStr(addDays(1))], ['Wochenende', toDateStr(addDays((6 - new Date().getDay() + 7) % 7))], ['Kein Datum', '']].map(([label, val]) => (
-                <button key={label} aria-pressed={sDue === val} onClick={() => setSDue(val)}>{label}</button>
+                <FilterChip key={label} selected={sDue === val} onClick={() => setSDue(val)}>{label}</FilterChip>
               ))}
             </div>
-            <input type="date" className="sho-lfield" value={sDue} onChange={(e) => setSDue(e.target.value)} aria-label="Anderes Datum" />
+            <TextField label="Datum" type="date" value={sDue} onChange={(e) => setSDue(e.target.value)} />
             {sDue && (
               <div className="sho-lopts" role="group" aria-label="Tageszeit">
                 {DAY_PARTS.map((d) => (
-                  <button key={d.value} aria-pressed={sTime === d.value} onClick={() => setSTime(sTime === d.value ? '' : d.value)}>{d.icon} {d.label}</button>
+                  <FilterChip key={d.value} selected={sTime === d.value} onClick={() => setSTime(sTime === d.value ? '' : d.value)}>{d.label}</FilterChip>
                 ))}
               </div>
             )}
 
-            <div className="sho-lsheet-l">Name</div>
-            <input className="sho-lfield" value={sName} onChange={(e) => setSName(e.target.value)} maxLength={60} aria-label="Name der Liste" />
+            <TextField label="Name" value={sName} onChange={(e) => setSName(e.target.value)} maxLength={60} />
 
-            <div className="sho-lsheet-btns">
-              <button className="sho-lbtn danger" onClick={deleteFromSheet} disabled={sBusy}>{delAsk ? 'Wirklich löschen?' : 'Liste löschen'}</button>
-              <button className="sho-lbtn primary" onClick={saveSheet} disabled={sBusy}>{sBusy ? '…' : 'Fertig'}</button>
-            </div>
+            <SheetFooter>
+              <IconButton icon="trash" label="Liste löschen" variant="danger" onClick={deleteFromSheet} disabled={sBusy} />
+              <Button block loading={sBusy} onClick={saveSheet}>Speichern</Button>
+            </SheetFooter>
           </div>
         </SheetShell>
       )}

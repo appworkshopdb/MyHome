@@ -3,7 +3,6 @@
 // (Zahlung, nicht gekaufte Artikel) liegt in CompleteListSheet.jsx.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { IconPlus, IconTrash, IconCheck } from '../../../core/components/Icons.jsx';
 import {
   loadItems, saveItem, toggleItemDone, deleteItem, resetAllItems,
 } from '../lib/shoData.js';
@@ -12,7 +11,8 @@ import { takeFreshItems } from '../../../core/lib/shoppingHandoff.js';
 import { fb } from '../../../core/lib/feedback';
 import { useUi } from '../../../core/lib/UiContext';
 import CompleteListSheet from './CompleteListSheet.jsx';
-import { SkeletonList } from '../../../core/components/ui';
+import Icon from '../../../core/components/Icon.jsx';
+import { SkeletonList, Button, ErrorState, EmptyState } from '../../../core/components/ui';
 
 const CATEGORY_ORDER = [
   'Obst & Gemüse', 'Brot & Backwaren', 'Milch & Eier',
@@ -199,7 +199,7 @@ export default function ItemsView({ list, onBack }) {
   return (
     <div className="sho-items-wrap">
       {error && (
-        <div className="toast toast-error" style={{ marginBottom: 12 }}>{error}</div>
+        <ErrorState title={error} />
       )}
 
       {/* Kopf: Listenname, Fortschritt, Einkauf abschließen — bewusst unabhängig vom
@@ -243,22 +243,14 @@ export default function ItemsView({ list, onBack }) {
       {items.length > 0 && (
         <div className="sho-action-row">
           {doneItems.length > 0 && openItems.length === 0 && (
-            <button className="btn btn-secondary sho-action-btn" onClick={handleResetAll}>
-              Alle zurücksetzen
-            </button>
+            <Button variant="secondary" size="s" icon="restore" onClick={handleResetAll}>Alle zurücksetzen</Button>
           )}
         </div>
       )}
 
       {/* Empty State */}
       {items.length === 0 && (
-        <div className="sho-empty" style={{ paddingTop: 32 }}>
-          <div className="sho-empty-icon">{list.icon || '🛒'}</div>
-          <div className="sho-empty-title">Liste ist leer</div>
-          <div className="sho-empty-text">
-            Tippe unten einen Artikel ein und füge ihn zur Liste hinzu.
-          </div>
-        </div>
+        <EmptyState icon="cart" title="Liste ist leer" />
       )}
 
       {/* Offene Artikel — nach Kategorie */}
@@ -287,7 +279,7 @@ export default function ItemsView({ list, onBack }) {
       {doneItems.length > 0 && (
         <div className="sho-done-section">
           {openItems.length > 0 && (
-            <div className="sho-category-label" style={{ marginTop: 20 }}>
+            <div className="sho-category-label sho-category-label--gap">
               Erledigt ({doneItems.length})
             </div>
           )}
@@ -375,15 +367,14 @@ export default function ItemsView({ list, onBack }) {
             autoCapitalize="sentences"
             maxLength={80}
           />
-          <button
+          <Button
             ref={addBtnRef}
-            className="btn btn-primary"
+            icon="plus"
+            aria-label="Artikel hinzufügen"
+            className="sho-add-btn"
             onClick={() => { handleAdd(); setSuggestions([]); }}
             disabled={saving || !input.trim()}
-            style={{ minWidth: 44, padding: '9px 14px', flexShrink: 0 }}
-          >
-            <span style={{ display: 'flex', width: 18, height: 18 }}><IconPlus /></span>
-          </button>
+          />
         </div>
       </div>
 
@@ -441,7 +432,7 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
         aria-label={item.done ? 'Als offen markieren' : 'Als erledigt markieren'}
       >
         {item.done && (
-          <span style={{ width: 14, height: 14, display: 'flex' }}><IconCheck /></span>
+          <Icon name="check" size={16} strokeWidth={2.6} />
         )}
       </button>
 
@@ -475,8 +466,7 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
             <select
               value={editStore}
               onChange={(e) => setEditStore(e.target.value)}
-              className="sho-unit-select sho-unit-select--sm"
-              style={{ flex: 1 }}
+              className="sho-unit-select sho-unit-select--sm sho-edit-store"
             >
               <option value="">Kein Laden</option>
               {allStores.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -487,11 +477,9 @@ function ItemRow({ item, onToggle, onDelete, onEdit, allStores, mark }) {
           </div>
           {/* Löschen gibt es nur hier, nicht in jeder Zeile (Fehltipps) */}
           <div className="sho-item-edit-actions">
-            <button type="button" className="sho-item-del" onClick={() => onDelete(item.id)}>
-              <IconTrash size={15} /> Löschen
-            </button>
-            <button type="button" className="sho-item-cancel" onClick={() => setEditing(false)}>Abbrechen</button>
-            <button type="button" className="btn btn-primary sho-item-ok" onClick={commitEdit}>OK</button>
+            <Button variant="text" size="s" icon="trash" onClick={() => onDelete(item.id)}>Löschen</Button>
+            <Button variant="text" size="s" onClick={() => setEditing(false)}>Abbrechen</Button>
+            <Button size="s" onClick={commitEdit}>Speichern</Button>
           </div>
         </div>
       ) : (
@@ -531,7 +519,7 @@ function FlyParticle({ startX, startY }) {
   return (
     <div
       className="sho-fly-particle"
-      style={{
+      style={{ /* pruefer:ok berechnete Flugbahn */
         '--fly-start-x': `${startX}px`,
         '--fly-start-y': `${startY}px`,
         '--fly-dx': `${dx}px`,
