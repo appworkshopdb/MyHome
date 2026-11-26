@@ -21,6 +21,8 @@ import {
   today, dateRange, toDateStr, isDueHistoric, weekdayMon,
 } from '../lib/habUtils.js';
 import Icon from '../../../core/components/Icon';
+import HabitIcon from '../../../core/components/HabitIcon';
+import { EmptyState } from '../../../core/components/ui';
 
 // ─── Konstanten ───────────────────────────────────────────
 
@@ -123,13 +125,7 @@ export default function StatsView({ habits, entries }) {
 
   if (allHabits.length === 0) {
     return (
-      <div className="hab-empty" style={{ marginTop: 32 }}>
-        <div className="hab-empty-icon">📊</div>
-        <div className="hab-empty-title">Noch keine Statistik</div>
-        <div className="hab-empty-text">
-          Leg Gewohnheiten an und hak sie ab — hier siehst du dann deine Statistiken.
-        </div>
-      </div>
+      <EmptyState icon="chart" title="Noch keine Statistik" />
     );
   }
 
@@ -289,7 +285,7 @@ function Cockpit({ allHabits, entries }) {
                   onClick={() => focusHabit(habit.id)}
                   aria-label={`Nur ${habit.name} anzeigen`}
                 >
-                  <span className="hab-cp-row-icon">{habit.icon}</span>
+                  <span className="hab-cp-row-icon"><HabitIcon emoji={habit.icon} size={20} /></span>
                   <span className="hab-cp-row-name">
                     {habit.name}
                     {statusOf(habit) && <em>{statusOf(habit)}</em>}
@@ -314,10 +310,7 @@ function Cockpit({ allHabits, entries }) {
       )}
 
       {/* Badges */}
-      <div
-        className="hab-cp-card"
-        style={{ marginBottom: 'calc(var(--nav-height) + 30px + env(safe-area-inset-bottom))' }}
-      >
+      <div className="hab-cp-card hab-cp-card--end">
         <div className="hab-cp-label">Badges <span>{earnedBadges.length} von {BADGES.length}</span></div>
         <div className="hab-badges-grid">
           {earnedBadges.map((badge) => (
@@ -328,8 +321,8 @@ function Cockpit({ allHabits, entries }) {
           ))}
           {lockedBadges.map((badge) => (
             <div key={badge.id} className="hab-badge hab-badge--locked" title={badge.desc}>
-              <span className="hab-badge-icon" style={{ filter: 'grayscale(1)', opacity: 0.35 }}>{badge.icon}</span>
-              <span className="hab-badge-label t-meta" style={{ opacity: 0.4 }}>{badge.label}</span>
+              <span className="hab-badge-icon hab-badge-icon--locked">{badge.icon}</span>
+              <span className="hab-badge-label t-meta hab-badge-label--locked">{badge.label}</span>
             </div>
           ))}
         </div>

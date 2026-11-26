@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { loadDeletedHabits, restoreHabit, setStatsHidden } from '../lib/habData.js';
 import { SkeletonList, ListGroup, ListRow, EmptyState, ErrorState, IconButton } from '../../../core/components/ui';
+import HabitIcon from '../../../core/components/HabitIcon';
 
 export default function HabitArchiveView({ onHabitsChange }) {
   const [archived, setArchived] = useState([]);
@@ -60,7 +61,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
             <ListRow
               key={habit.id}
               className="hab-arow"
-              leading={<span className="hab-lead">{habit.icon}</span>}
+              leading={<span className="hab-lead"><HabitIcon emoji={habit.icon} /></span>}
               title={habit.name}
               sub={[habit.category, `Gelöscht ${new Date(habit.deleted_at).toLocaleDateString('de-DE')}`, habit.stats_hidden && 'ohne Statistik'].filter(Boolean).join(' · ')}
               trailing={(

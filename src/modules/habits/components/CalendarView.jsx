@@ -4,6 +4,7 @@
 import { useState, useMemo } from 'react';
 import { buildHeatmap, isDueOn, isDone, dateRange, toDateStr, today } from '../lib/habUtils.js';
 import Icon from '../../../core/components/Icon';
+import { EmptyState } from '../../../core/components/ui';
 
 const MONTH_NAMES = [
   'Januar','Februar','März','April','Mai','Juni',
@@ -170,11 +171,7 @@ export default function CalendarView({ habits, entries }) {
 
       {/* Leer-Zustand */}
       {activeHabits.length === 0 && (
-        <div className="hab-empty" style={{ marginTop: 24 }}>
-          <div className="hab-empty-icon">📅</div>
-          <div className="hab-empty-title">Noch keine Daten</div>
-          <div className="hab-empty-text">Sobald du Gewohnheiten anlegst und abhakst, siehst du hier deinen Verlauf.</div>
-        </div>
+        <EmptyState icon="calendar" title="Noch keine Daten" />
       )}
     </div>
   );

@@ -17,6 +17,7 @@ import { IconEdit } from '../../../core/components/Icons';
 import { ChipGroup, IconDropdown, SegGroup, Stepper, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import HabitTemplateLibrary from './HabitTemplateLibrary';
 import Icon from '../../../core/components/Icon';
+import HabitIcon from '../../../core/components/HabitIcon';
 
 const FREQ_OPTIONS = [
   { value: 'daily',    label: 'Täglich' },
@@ -24,7 +25,7 @@ const FREQ_OPTIONS = [
   { value: 'custom',   label: 'Eigene Tage' },
 ];
 const DAY_OPTIONS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d, i) => ({ value: i, label: d }));
-const SLOT_OPTIONS = TIME_SLOTS.map((s) => ({ value: s.value, label: `${s.emoji} ${s.label}` }));
+const SLOT_OPTIONS = TIME_SLOTS.map((s) => ({ value: s.value, label: s.label }));
 // "×" = einfach abhaken (keine Einheit gespeichert)
 const UNITS = ['×', ...HABIT_UNITS];
 
@@ -202,15 +203,15 @@ export default function HabitQuickSheet({ onClose, onSaved }) {
 
         {step === 3 && (
           <>
-            <div className="wz-listpill" style={{ marginBottom: 0 }}>
-              <span className="big">{icon}</span>
+            <div className="wz-listpill wz-listpill--flush">
+              <span className="big"><HabitIcon emoji={icon} size={24} /></span>
               <div>{name.trim()}<small>{area}</small></div>
             </div>
 
             <div className="wz-lbl">Wiederholung</div>
             <SegGroup options={FREQ_OPTIONS} value={frequency} onChange={setFrequency} label="Wiederholung" />
             {frequency === 'custom' && (
-              <div style={{ marginTop: 10 }}>
+              <div className="hab-qs-gap">
                 <ChipGroup options={DAY_OPTIONS} value={days} onChange={setDays} multi label="Wochentage" />
               </div>
             )}
@@ -220,10 +221,10 @@ export default function HabitQuickSheet({ onClose, onSaved }) {
 
             {/* Eigene Gewohnheit: Ziel frei wählbar */}
             {!tmpl && (
-              <div className="wz-two" style={{ marginTop: 16 }}>
+              <div className="wz-two hab-qs-gap2">
                 <div>
                   <div className="wz-col-lbl">Ziel pro Tag</div>
-                  <div style={{ height: 180, display: 'grid', placeItems: 'center' }}>
+                  <div className="hab-qs-stepper">
                     <Stepper value={target} onChange={setTarget} min={1} max={99} />
                   </div>
                 </div>

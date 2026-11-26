@@ -32,6 +32,8 @@ import {
 import {
   catalogEntryByName, goalKind, goalText, qtyStep, formatQty, shiftTime,
 } from '../../../core/lib/habitCatalog.js';
+import HabitIcon from '../../../core/components/HabitIcon';
+import { habitIconName } from '../../../core/lib/habitIcons';
 
 const FREQ_LABELS = {
   daily:    'Täglich',
@@ -282,6 +284,17 @@ export default function HabitsView({ habits, onHabitsChange }) {
     </SheetShell>
   );
 
+  // Auswahl ohne doppelte Liniensymbole (mehrere Emoji teilen sich eines); das gewählte bleibt immer sichtbar
+  const seenIcons = new Set();
+  const pickerIcons = HABIT_ICONS.filter((ic) => {
+    const n = habitIconName(ic);
+    if (!n) return true;
+    if (seenIcons.has(n)) return false;
+    seenIcons.add(n);
+    return true;
+  });
+  if (showForm && form.icon && !pickerIcons.includes(form.icon) && !seenIcons.has(habitIconName(form.icon))) pickerIcons.unshift(form.icon);
+
   // ─── Formular ────────────────────────────────────────────
   if (showForm) {
     const lockEntry = lockName ? catalogEntryByName(lockName) : null; // Vorlage: Kategorie/Ziel-Art fest
@@ -321,7 +334,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
               aria-label="Symbol wählen"
               aria-expanded={iconPicker}
             >
-              {form.icon}
+              <HabitIcon emoji={form.icon} />
             </button>
             <div className="hab-ef-field">
               <label htmlFor="hab-ef-name">Name *</label>
@@ -337,14 +350,14 @@ export default function HabitsView({ habits, onHabitsChange }) {
           </div>
           {iconPicker && (
             <div className="hab-ef-emojis">
-              {HABIT_ICONS.map((ic) => (
+              {pickerIcons.map((ic) => (
                 <button
                   key={ic}
                   type="button"
                   className={form.icon === ic ? 'on' : ''}
                   onClick={() => { setField('icon', ic); setIconPicker(false); }}
                 >
-                  {ic}
+                  <HabitIcon emoji={ic} size={22} />
                 </button>
               ))}
             </div>
@@ -382,7 +395,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
             ))}
           </div>
 
-          <div className="hab-ef-ct" style={{ marginTop: 2 }}>Wann</div>
+          <div className="hab-ef-ct hab-ef-ct--tight">Wann</div>
           <div className="hab-ef-chips" role="group" aria-label="Tageszeit">
             {TIME_SLOTS.map((slot) => (
               <button
@@ -641,7 +654,7 @@ function SortableHabitCard({ habit, onMore, paused, noSort }) {
         </button>
       )}
       <ListRow
-        leading={<span className="hab-lead">{habit.icon}</span>}
+        leading={<span className="hab-lead"><HabitIcon emoji={habit.icon} /></span>}
         title={habit.name}
         sub={[habit.category, FREQ_LABELS[habit.frequency] ?? habit.frequency, goalText(habit), habit.reminder_time && `${habit.reminder_time} Uhr`].filter(Boolean).join(' · ')}
         trailing={<IconButton icon="more" label={`Aktionen für ${habit.name}`} onClick={onMore} />}

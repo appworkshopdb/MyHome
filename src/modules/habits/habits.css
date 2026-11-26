@@ -3564,3 +3564,14 @@
 .hab-mrow .hab-drag-handle { width: 32px; height: var(--hit-min); display: grid; place-items: center; flex: none; color: var(--text-muted); touch-action: none; cursor: grab; }
 .hab-overload-warning { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--rad-lg); background: var(--m-tint); color: var(--m-ink); font-size: var(--fs-small); }
 .hab-act { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4) var(--sp-5); }
+
+/* ── Gewohnheiten · Rest (Redesign Schritt 4) ───────────── */
+.hab-cp-card--end { margin-bottom: calc(var(--nav-height) + var(--sp-6) + env(safe-area-inset-bottom)); }
+.hab-badge-icon--locked { filter: grayscale(1); opacity: .35; }
+.hab-badge-label--locked { opacity: .4; }
+.wz-listpill--flush { margin-bottom: 0; }
+.hab-qs-gap { margin-top: var(--sp-3); }
+.hab-qs-gap2 { margin-top: var(--sp-4); }
+.hab-qs-stepper { height: 180px; display: grid; place-items: center; }
+.hab-ef-ct--tight { margin-top: 2px; }
+.hab-ef-iconbtn svg, .hab-ef-emojis svg, .hab-lead svg, .hab-item-icon svg, .hab-cp-row-icon svg { width: 22px; height: 22px; }

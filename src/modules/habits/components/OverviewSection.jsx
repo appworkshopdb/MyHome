@@ -124,7 +124,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 <span className="hab-open-check" aria-hidden="true" />
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
+                  <span className="hab-slot-badge">{badge.label}</span>
                 </span>
               </button>
             );
@@ -143,7 +143,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 <span className="hab-open-check hab-open-check--done" aria-hidden="true"><Icon name="check" size={null} className="glyph" /></span>
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
+                  <span className="hab-slot-badge hab-slot-badge--done">{badge.label}</span>
                 </span>
               </button>
             );

@@ -13,6 +13,7 @@ import { saveHabit } from '../lib/habData';
 import { loadHabitsData } from '../../../core/lib/habitsStore';
 import { HABIT_AREAS, MAX_TEMPLATES, habitMeta } from '../../../core/lib/habitTemplates';
 import { ModuleIcon } from '../../../core/components/ModuleIcons';
+import HabitIcon from '../../../core/components/HabitIcon';
 
 export default function HabitTemplatePicker({ onClose, onSaved }) {
   const [step, setStep] = useState(1);
@@ -79,7 +80,7 @@ export default function HabitTemplatePicker({ onClose, onSaved }) {
                   const on = areaKeys.includes(a.key);
                   return (
                     <button key={a.key} type="button" aria-pressed={on} className={`hp-area${on ? ' on' : ''}`} onClick={() => toggleArea(a.key)}>
-                      <span className="et">{a.icon}</span>
+                      <span className="et"><HabitIcon emoji={a.icon} /></span>
                       <div><strong>{a.label}</strong><span className="d">{a.desc}</span></div>
                       <i className="ck" />
                     </button>
@@ -107,7 +108,7 @@ export default function HabitTemplatePicker({ onClose, onSaved }) {
                       const off = !on && picked.length >= MAX_TEMPLATES;
                       return (
                         <button key={h.name} type="button" aria-pressed={on} disabled={off} className={`hp-area sm${on ? ' on' : ''}${off ? ' off' : ''}`} onClick={() => toggleHabit(h)}>
-                          <span className="et">{h.icon}</span>
+                          <span className="et"><HabitIcon emoji={h.icon} /></span>
                           <div><strong>{h.name}</strong><span className="d">{habitMeta(h)}</span></div>
                           <i className="ck" />
                         </button>

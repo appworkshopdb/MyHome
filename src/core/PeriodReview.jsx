@@ -20,6 +20,7 @@ import {
 } from './lib/periodStats.js';
 import ModuleTopBar from './components/ModuleTopBar';
 import Icon from './components/Icon';
+import HabitIcon from './components/HabitIcon';
 
 const pct = (rate) => (rate === null || rate === undefined ? '–' : `${Math.round(rate * 100)} %`);
 const nf = (n) => Math.round(n).toLocaleString('de-DE');
@@ -152,7 +153,7 @@ function HabitsCard({ data, period, today, copy, onOpen }) {
           <div className="wk-list">
             {ranking.map((r) => (
               <div key={r.habit.id} className="wk-row">
-                <span className="wk-row-icon">{r.habit.icon}</span>
+                <span className="wk-row-icon"><HabitIcon emoji={r.habit.icon} size={20} /></span>
                 <span className="wk-row-name">{r.habit.name}</span>
                 <span className="wk-row-pct">{pct(r.rate)}</span>
                 <Bar rate={r.rate} />
