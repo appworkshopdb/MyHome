@@ -44,6 +44,7 @@ import './modules/sport/sheets';
 import './modules/shopping/sheets';
 import ModuleBottomNav from './core/components/ModuleBottomNav';
 import GlobalFab from './core/components/GlobalFab';
+import { PageSkeleton } from './core/components/ui';
 import Hub from './core/Hub';
 import Profile from './core/Profile';
 import Statistiken from './core/Statistiken';
@@ -63,6 +64,8 @@ const NutritionModule = lazy(() => import('./modules/nutrition/NutritionModule')
 const SportModule     = lazy(() => import('./modules/sport/SportModule'));
 const HabitsModule    = lazy(() => import('./modules/habits/HabitsModule'));
 const ShoppingModule  = lazy(() => import('./modules/shopping/ShoppingModule'));
+// Übersicht aller Bausteine (#/bausteine), nur im Entwicklungsserver; im Build fällt sie weg.
+const Bausteine = import.meta.env.DEV ? lazy(() => import('./core/Bausteine')) : null;
 
 // Module mit eigener Farbfamilie (siehe base.css, "Modul-Kontext")
 const MODULE_IDS = ['finance', 'nutrition', 'sport', 'habits', 'shopping'];
@@ -130,7 +133,7 @@ export default function App() {
   if (onboarding.needed) return <ProfileWizard />;
 
   // 'profile' und 'statistiken' sind Seiten des Cores, keine Module
-  const isModule = activeModule && activeModule !== 'profile' && activeModule !== 'statistiken';
+  const isModule = activeModule && activeModule !== 'profile' && activeModule !== 'statistiken' && activeModule !== 'bausteine';
   const mod = isModule ? getModule(activeModule) : null;
   const ModuleComponent = mod?.built ? MODULE_COMPONENTS[mod.id] : null;
 
@@ -160,11 +163,13 @@ export default function App() {
           {activeModule === null && <Hub onOpenModule={navigate} hasWarnings={hasWarnings} />}
           {activeModule === 'profile' && <Profile hasWarnings={hasWarnings} />}
           {activeModule === 'statistiken' && <Statistiken view={view} onOpenModule={navigate} hasWarnings={hasWarnings} />}
+          {activeModule === 'bausteine' && Bausteine && (
+            <Suspense fallback={<PageSkeleton />}><Bausteine /></Suspense>
+          )}
           {mod && (ModuleComponent ? (
-            // Fallback bewusst leer statt Spinner: der Modul-Chunk ist klein
-            // und lokal gecacht, ein aufblitzender Ladeindikator würde nur
-            // flackern. Die Chrome (TopBar/BottomNav) steht ohnehin schon.
-            <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            // Ladegerüst statt leerer Fläche (Redesign). Es erscheint erst nach
+            // 300 ms (ui.css), ein schnell geladener Chunk flackert also nicht.
+            <Suspense fallback={<PageSkeleton />}>
               <ModuleComponent
                 module={mod}
                 view={view}
@@ -180,7 +185,7 @@ export default function App() {
         <RequiredDataToast warnings={warnings} onFix={navigate} />
         <EntrySheet />
         <AnalyticsConsent />
-        <GlobalFab activeModule={activeModule} />
+        <GlobalFab activeModule={activeModule === 'bausteine' ? null : activeModule} />
         <ModuleBottomNav
           active={activeModule === null || activeModule === 'statistiken' ? '' : activeModule}
           onChange={navigate}

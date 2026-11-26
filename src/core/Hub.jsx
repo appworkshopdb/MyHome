@@ -432,7 +432,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   if (status === 'laedt') {
     return (
       <>
-        <ModuleTopBar hasWarnings={hasWarnings} />
+        <ModuleTopBar hasWarnings={hasWarnings} status />
         <div className="hub with-topbar-space">
           <div className="hub-skeleton-block" style={{ width: 168, height: 24 }} />
           <div className="hub-skeleton-block" style={{ width: 132, height: 11, marginTop: 8 }} />
@@ -451,7 +451,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   if (status === 'fehler') {
     return (
       <>
-        <ModuleTopBar hasWarnings={hasWarnings} />
+        <ModuleTopBar hasWarnings={hasWarnings} status />
         <div className="hub with-topbar-space">
           <div className="hub-error">
             <div className="hub-error-headline">{monatsname} lässt sich gerade nicht laden.</div>
@@ -606,7 +606,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   // ── Übersicht ───────────────────────────────────────────────────
   return (
     <>
-      <ModuleTopBar hasWarnings={hasWarnings} />
+      <ModuleTopBar hasWarnings={hasWarnings} status />
       <div className="hub with-topbar-space">
         {status === 'veraltet' && (
           <div className="hub-stale-bar">

@@ -14,6 +14,7 @@ const HabitsView = lazy(() => import('./components/HabitsView.jsx'));
 const HabitArchiveView = lazy(() => import('./components/HabitArchiveView.jsx'));
 
 import { useHabitsStore, loadHabitsData, reloadHabits, reloadEntries } from '../../core/lib/habitsStore.js';
+import { PageSkeleton } from '../../core/components/ui';
 import './habits.css';
 
 export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
@@ -44,10 +45,10 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   if (view === 'gewohnheiten') {
     return (
       <>
-        <ModuleTopBar onBack={() => onNavigateView(null)} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={() => onNavigateView(null)} title="Meine Gewohnheiten" hasWarnings={hasWarnings} />
         <div className="hab-module-content with-topbar-space">
           {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
-          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+          <Suspense fallback={<PageSkeleton />}>
             <HabitsView
               habits={habits}
               onHabitsChange={async () => { await fetchHabits(); await fetchEntries(); }}
@@ -62,9 +63,9 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   if (view === 'archiv') {
     return (
       <>
-        <ModuleTopBar onBack={() => onNavigateView(null)} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={() => onNavigateView(null)} title="Archiv" hasWarnings={hasWarnings} />
         <div className="hab-module-content with-topbar-space">
-          <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+          <Suspense fallback={<PageSkeleton />}>
             <HabitArchiveView
               onHabitsChange={async () => { await fetchHabits(); await fetchEntries(); }}
             />
@@ -78,7 +79,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
   if (view === 'statistik') {
     return (
       <>
-        <ModuleTopBar onBack={() => onNavigateView(null)} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={() => onNavigateView(null)} title="Statistik" hasWarnings={hasWarnings} />
         <div className="hab-module-content with-topbar-space">
           {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
           <StatsView

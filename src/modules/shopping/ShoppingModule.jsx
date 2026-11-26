@@ -107,7 +107,7 @@ export default function ShoppingModule({ view, onNavigateView, hasWarnings }) {
     }
     return (
       <>
-        <ModuleTopBar onBack={handleBack} hasWarnings={hasWarnings} />
+        <ModuleTopBar onBack={handleBack} title={openList.name} hasWarnings={hasWarnings} />
         <div className="sho-module-content sho-detail-content with-topbar-space">
           {error && (
             <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>

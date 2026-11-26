@@ -60,6 +60,7 @@ Bewegt werden nur `transform` und `opacity`. Seitenwechsel: nur Überblenden. Ge
 
 ## 5. Bausteine und Ort des CSS
 
+- **Bausteine des Redesigns** (`src/core/components/ui`, CSS `src/styles/ui.css`, zuletzt geladen): `Button` (primary, secondary, text, danger; M 48 / S 36; `loading`), `IconButton` (flat, raised, quiet, danger), `Segmented` (gleitende Markierung, Status-Farben), `FilterChip`, `StatusChip`, `Checkbox` (Haken zeichnet sich), `Switch`, `TextField`, `SelectButton`, `Field`, `ListGroup`/`ListRow`, `EmptyState`, `ErrorState`, `Skeleton`/`SkeletonList`/`PageSkeleton` (nach 300 ms, Überblenden), `SheetHeader`/`SheetFooter` (in `SheetShell`), `ConfirmDialog` (nur Endgültiges). Neue Stellen nutzen diese Bausteine; alle Zustände ansehen unter `#/bausteine` (nur Entwicklungsserver). `ModuleTopBar`: `status` nur im Hub (Level/Serie), Detail-Screens mit `title` und höchstens einer `action`.
 - Vorhanden: `FocusCard`, `AreaList`/`AreaRow` (Kacheln), `Ring`, `Money` (Beträge ausblendbar), `EyeToggle`, `SportIcons`, `AreaIcons`, `HubTiles`, `.sa-card`/`.sa-tile`/`.sa-medal`, `.lex-*`. Erst prüfen, ob es den Baustein gibt, dann neu bauen.
 - Neues und Gemeinsames nach `src/styles/design-v2.css` (zuletzt geladen), Klassen mit Bereichspräfix (`.sd-`, `.sa-`, `.dayplan-`, `.hubt-`). In lazy geladenen Modul-CSS-Dateien neue Regeln ans Ende, mit Wrapper-Klasse davor. Keine globalen Klassen wie `.chip`/`.card` umbauen, sonst ändern sich andere Seiten mit.
 - Symbole nur aus dem Symbolset (Abschnitt 5a).

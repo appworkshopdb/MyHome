@@ -78,7 +78,8 @@
 
   --mod-n-tint:     #2C2823; --mod-n-ink:     #E9E1D6; --mod-n-ac:     #B9AB9A; --mod-n-on:     #1A1714; --mod-n-deep:     #B9AB9A;
 
-  --nav-item-active-fg:  var(--text-on-accent);
+  --nav-item-active-bg:  var(--mod-n-ac);
+  --nav-item-active-fg:  var(--mod-n-on);
 
   /* Schatten im Dunkelmodus bleiben, aber subtiler */
   --shadow-card:  0 2px 8px rgba(0, 0, 0, 0.28);

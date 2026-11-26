@@ -24,6 +24,7 @@ import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
 import IncomeView from './components/IncomeView';
+import { PageSkeleton } from '../../core/components/ui';
 
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
@@ -56,7 +57,7 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
           {view === 'vertraege' && <ContractsView />}
 
           {view === 'auswertung' && (
-            <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            <Suspense fallback={<PageSkeleton />}>
               <SummaryView />
             </Suspense>
           )}

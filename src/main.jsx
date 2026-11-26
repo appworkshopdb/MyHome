@@ -16,6 +16,7 @@ import './styles/onboarding.css';
 import './styles/wizard.css';
 import './modules/finance/finance.css';
 import './styles/design-v2.css';
+import './styles/ui.css'; // Bausteine des Redesigns, zuletzt
 
 // Früh registrieren (nicht erst beim Klick auf "Aktivieren" in Profile.jsx)
 // — der Worker muss laufen, bevor überhaupt ein Push-Abo möglich ist.
