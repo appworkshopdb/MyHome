@@ -4,6 +4,7 @@ import { MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '.
 import { parseNum } from '../../../core/lib/wizardDates';
 import { AMPEL_CATS, FOOD_ALLERGENS, FOOD_DIETS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Neues Lebensmittel — 3 Schritte im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx),
 // Felder in der bestehenden Optik der Ernährung (form-group, segmented, chip, card …).
@@ -82,21 +83,21 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
   if (step === 1) {
     footer = (
       <WizardFoot one hint={nameOk ? '' : missingHint([['Name', !name.trim()], ['Gruppe', !groupName]])}>
-        <button type="button" className="btn btn-primary" disabled={!nameOk} onClick={() => setStep(2)}>Weiter</button>
+        <Button disabled={!nameOk} onClick={() => setStep(2)}>Weiter</Button>
       </WizardFoot>
     );
   } else if (step === 2) {
     footer = (
       <WizardFoot>
         <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} labelClosed="Weitere Angaben" labelOpen="Weniger Angaben" />
-        <button type="button" className="btn btn-primary" onClick={() => setStep(3)}>Weiter</button>
+        <Button onClick={() => setStep(3)}>Weiter</Button>
       </WizardFoot>
     );
   } else {
     footer = (
       <WizardFoot>
-        <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setStep(2)}>Ändern</button>
-        <button type="button" className="btn btn-primary" disabled={saving} onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</button>
+        <Button variant="secondary" disabled={saving} onClick={() => setStep(2)}>Ändern</Button>
+        <Button disabled={saving} onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</Button>
       </WizardFoot>
     );
   }
@@ -142,9 +143,9 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
 
             <div className="form-group">
               <label>Basis für die Mengenangabe</label>
-              <div className="segmented" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+              <div className="segmented nut-u-unit5">
                 {UNITS.map((u) => (
-                  <button key={u} type="button" className={unit === u ? 'active' : ''} style={{ padding: '10px 2px', fontSize: '0.68rem' }} onClick={() => setUnit(u)}>
+                  <button key={u} type="button" className={`nut-u-unitbtn${unit === u ? ' active' : ''}`} onClick={() => setUnit(u)}>
                     {UNIT_LABEL[u]}
                   </button>
                 ))}
@@ -157,7 +158,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
           <>
             <div className="card nut-u-m0">
               <div className="card-title">Nährwerte pro {UNIT_LABEL[unit]}</div>
-              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
+              <div className="form-row nut-u-grid2">
                 {MACRO_FIELDS.map(([key, label]) => (
                   <div className="form-group" key={key}>
                     <label htmlFor={`fw-${key}`}>{label}</label>

@@ -1,6 +1,7 @@
 import Modal from '../../../core/components/Modal';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 import { basis, fmt, TAG_COLORS } from '../lib/nutrition';
+import { Button } from '../../../core/components/ui';
 
 const MACRO_ROWS = [
   ['kcal', 'kcal', 0],
@@ -31,10 +32,10 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
     <Modal title={food.name} onClose={onClose}>
       <div className="nut-u-row">
         {canEdit && (
-          <button className="btn btn-secondary" onClick={() => onEdit(food)}><IconEdit /> Bearbeiten</button>
+          <Button variant="secondary" icon="edit" onClick={() => onEdit(food)}>Bearbeiten</Button>
         )}
         {canDelete && (
-          <button className="btn btn-danger" onClick={() => onDelete(food)}><IconTrash /> Löschen</button>
+          <Button variant="danger" icon="trash" onClick={() => onDelete(food)}>Löschen</Button>
         )}
       </div>
 
@@ -50,11 +51,11 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
       </div>
 
       <div className="card nut-u-flush-hidden">
-        <div className="card-title" style={{ padding: '10px 14px', marginBottom: 0, background: 'var(--bg-input)' }}>
+        <div className="card-title nut-facts-head">
           Nährwerte pro {basis(food.unit)}
         </div>
         {MACRO_ROWS.map(([key, label, digits]) => (
-          <div key={key} style={{ display: 'flex', padding: '9px 14px', borderTop: '1px solid var(--border)' }}>
+          <div key={key} className="nut-ing-row">
             <span className="nut-u-grow-sec">{label}</span>
             <span className="nut-u-strong">{fmt(food[key], digits)}</span>
           </div>
@@ -65,7 +66,7 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
         <div>
           <div className="card-title nut-u-mb8">Vitamine &amp; Mineralstoffe</div>
           <div className="nut-u-wrap">
-            {micros.map((m) => <span key={m} className="tag-chip" style={{ background: 'var(--accent-dark)', color: 'var(--on-accent)' }}>{m}</span>)}
+            {micros.map((m) => <span key={m} className="tag-chip tag-chip--accent">{m}</span>)}
           </div>
         </div>
       )}
@@ -88,13 +89,11 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
         </div>
       )}
 
-      <button
-        className="btn btn-secondary btn-block"
+      <Button variant="secondary" block
+       
         disabled={compareCount >= 4 && !inCompare}
         onClick={onCompare}
-      >
-        {inCompare ? 'Im Vergleich' : 'Zum Vergleich hinzufügen'}
-      </button>
+      >{inCompare ? 'Im Vergleich' : 'Zum Vergleich hinzufügen'}</Button>
     </Modal>
   );
 }

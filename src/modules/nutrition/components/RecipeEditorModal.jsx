@@ -5,6 +5,7 @@ import { RECIPE_CATS, GOAL_TAGS, CUSTOM_TAGS, computeNutrition, fmt, basis } fro
 import { COVER_MOTIFS, COVER_TONES, CoverArt, parseCover, resolveCover, formatCover } from '../lib/recipeCovers';
 import Icon from '../../../core/components/Icon';
 import MealIcon from '../../../core/components/MealIcon';
+import { Button } from '../../../core/components/ui';
 
 const UNIT_SHORT = { ml: 'ml', Scheibe: 'Sch', Stück: 'Stk', Zehe: 'Zehe', EL: 'EL' };
 const DEFAULT_AMOUNT = { ml: 200, Stück: 1, Scheibe: 1, Zehe: 1, EL: 1 };
@@ -94,7 +95,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
         <CoverArt motif={resolved.motif} tone={resolved.tone} className="cover-picker-preview" fit="meet" />
         <div className="cover-grid">
           <button type="button" className={`cover-option${!chosen ? ' active' : ''}`} onClick={() => set('cover', null)}>
-            <span className="recipe-cover rc-tone-grau" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)' }}>Auto</span>
+            <span className="recipe-cover rc-tone-grau cover-auto">Auto</span>
             <span className="name">Automatisch</span>
           </button>
           {COVER_MOTIFS.map((m) => (
@@ -130,7 +131,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Lebensmittel suchen…" />
         </div>
         {results.length > 0 && (
-          <div className="card" style={{ margin: '0 0 10px', padding: 0 }}>
+          <div className="card nut-u-flush10">
             {results.map((f) => (
               <div key={f.id} className="ing-pick-row">
                 <div className="ing-pick-info">
@@ -160,7 +161,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
                     value={ing.amount}
                     onChange={(e) => updateAmount(idx, e.target.value)}
                   />
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', width: 32 }}>{UNIT_SHORT[food.unit] || 'g'}</span>
+                  <span className="nut-u-unitlbl">{UNIT_SHORT[food.unit] || 'g'}</span>
                   <button className="btn-icon" onClick={() => removeIngredient(idx)}><IconClose /></button>
                 </div>
               );
@@ -227,7 +228,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
         {extraCustomTags.length > 0 && (
           <div className="nut-u-wrap nut-u-mt6">
             {extraCustomTags.map((t) => (
-              <span key={t} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span key={t} className="chip nut-chip-x">
                 {t}
                 <button onClick={() => set('customTags', (draft.customTags || []).filter((x) => x !== t))}><Icon name="close" size={null} className="glyph" /></button>
               </span>
@@ -242,8 +243,8 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
       </div>
 
       <div className="nut-u-row">
-        <button className="btn btn-primary" disabled={!canSave} onClick={save}>Speichern</button>
-        <button className="btn btn-secondary" onClick={onClose}>Abbrechen</button>
+        <Button disabled={!canSave} onClick={save}>Speichern</Button>
+        <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
       </div>
     </Modal>
   );

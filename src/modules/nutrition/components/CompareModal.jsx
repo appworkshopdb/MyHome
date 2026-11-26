@@ -1,3 +1,4 @@
+import { Button } from '../../../core/components/ui';
 import Modal from '../../../core/components/Modal';
 import { fmt } from '../lib/nutrition';
 
@@ -23,8 +24,8 @@ export default function CompareModal({ items, onRemove, onClose }) {
                 <th></th>
                 {items.map((f) => (
                   <th key={f.id}>
-                    <div style={{ fontWeight: 700, marginBottom: 4 }}>{f.name}</div>
-                    <button className="btn-ghost" style={{ fontSize: '0.7rem' }} onClick={() => onRemove(f.id)}>entfernen</button>
+                    <div className="nut-cmp-name">{f.name}</div>
+                    <Button variant="text" size="s" onClick={() => onRemove(f.id)}>Entfernen</Button>
                   </th>
                 ))}
               </tr>

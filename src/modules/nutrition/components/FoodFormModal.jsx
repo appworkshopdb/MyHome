@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { AMPEL_CATS, FOOD_DIETS, FOOD_ALLERGENS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
+import { Button } from '../../../core/components/ui';
 
 const UNITS = ['g', 'ml', 'Stück', 'Scheibe', 'EL'];
 const UNIT_LABEL = { g: '100 g', ml: '100 ml', Stück: '1 Stück', Scheibe: '1 Scheibe', EL: '1 EL' };
@@ -91,7 +92,7 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
 
       <div className="card nut-u-m0">
         <div className="card-title">Nährwerte pro {UNIT_LABEL[form.unit] || form.unit}</div>
-        <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
+        <div className="form-row nut-u-grid2">
           {MACRO_FIELDS.map(([key, label]) => (
             <div className="form-group" key={key}>
               <label>{label}</label>
@@ -161,8 +162,8 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
       </div>
 
       <div className="nut-u-row">
-        <button className="btn btn-primary" disabled={!canSave} onClick={save}>Speichern</button>
-        <button className="btn btn-secondary" onClick={onClose}>Abbrechen</button>
+        <Button disabled={!canSave} onClick={save}>Speichern</Button>
+        <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
       </div>
     </Modal>
   );

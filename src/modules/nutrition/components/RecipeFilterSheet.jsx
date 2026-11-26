@@ -1,5 +1,6 @@
 import SheetShell from '../../../core/components/SheetShell';
 import { DIET_FILTERS, NUTRI_FILTERS, ART_GROUPS, SORTS } from '../lib/recipeFilter';
+import { Button } from '../../../core/components/ui';
 
 // Filter der Rezeptliste als Bottom-Sheet: Ernährung (eine Wahl), Nährwerte
 // pro Portion (mehrere), Gerichtart (eine Wahl), Sortierung. Es werden nur
@@ -70,9 +71,7 @@ export default function RecipeFilterSheet({
           </div>
         </div>
 
-        <button type="button" className="btn btn-primary rf-sheet-done" onClick={onClose}>
-          {resultCount} Rezept{resultCount !== 1 ? 'e' : ''} anzeigen
-        </button>
+        <Button className="rf-sheet-done" onClick={onClose}>{resultCount} Rezept{resultCount !== 1 ? 'e' : ''} anzeigen</Button>
       </div>
     </SheetShell>
   );

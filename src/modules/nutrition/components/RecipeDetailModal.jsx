@@ -5,6 +5,7 @@ import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
 import { getSheet } from '../../../core/lib/sheetRegistry';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Das Sheet gehört zum Einkauf (modules/shopping/sheets.js); Ernährung und
 // Einkauf importieren sich nicht gegenseitig, deshalb über die Sheet-Registry.
@@ -36,7 +37,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       {(!isTemplate && onLogMeal) || onShoppingAdded ? (
         <div className="recipe-top-actions">
           {!isTemplate && onLogMeal && (
-            <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
+            <Button onClick={() => onLogMeal(recipe)}>Gegessen eintragen</Button>
           )}
           {onShoppingAdded && (
             <button
@@ -52,11 +53,11 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
 
       <div className="nut-u-row">
         {isTemplate ? (
-          <button className="btn btn-primary" onClick={() => onCopy(recipe)}><IconPlus /> Übernehmen</button>
+          <Button icon="plus" onClick={() => onCopy(recipe)}>Übernehmen</Button>
         ) : isOwner ? (
           <>
-            <button className="btn btn-secondary" onClick={() => onEdit(recipe)}><IconEdit /> Bearbeiten</button>
-            <button className="btn btn-danger" onClick={() => onDelete(recipe.id)}><IconTrash /> Löschen</button>
+            <Button variant="secondary" icon="edit" onClick={() => onEdit(recipe)}>Bearbeiten</Button>
+            <Button variant="danger" icon="trash" onClick={() => onDelete(recipe.id)}>Löschen</Button>
           </>
         ) : null}
       </div>
@@ -116,7 +117,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
             const food = foodsById[ing.foodId];
             if (!food) return null;
             return (
-              <div key={idx} style={{ display: 'flex', padding: '9px 14px', borderBottom: idx < recipe.ingredients.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div key={idx} className="nut-ing-row">
                 <span className="nut-u-grow">{food.name}</span>
                 <span className="nut-u-strong">{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
               </div>

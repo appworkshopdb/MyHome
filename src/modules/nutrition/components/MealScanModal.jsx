@@ -4,6 +4,7 @@ import { IconSearch } from '../../../core/components/Icons';
 import { fmt, MEAL_TYPES } from '../lib/nutrition';
 import { mealFromScan, defaultMealType, todayStr, isGramFood } from '../lib/meals';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber', 'salt'];
 
@@ -151,7 +152,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
         <div className="card nut-u-flush">
           {items.length === 0 && <div className="meal-hint nut-u-p14 nut-u-m0">Keine Bestandteile — füge ein Lebensmittel hinzu.</div>}
           {items.map((it, idx) => (
-            <div key={it.key} className="meal-item" style={{ borderBottom: idx < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div key={it.key} className="meal-item">
               <div className="meal-item-main">
                 <span className="meal-item-name">{it.name}</span>
                 <span className="meal-item-kcal">{Math.round(scaled[idx].kcal)} kcal</span>
@@ -175,7 +176,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
         </div>
 
         {gramFoods.length > 0 && !adding && (
-          <button type="button" className="btn btn-secondary meal-add-btn" onClick={() => setAdding(true)}>＋ Zutat hinzufügen</button>
+          <Button variant="secondary" icon="plus" className="meal-add-btn" onClick={() => setAdding(true)}>Zutat hinzufügen</Button>
         )}
         {adding && (
           <div className="meal-add">
@@ -187,19 +188,18 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
                 placeholder="Lebensmittel suchen…"
                 aria-label="Lebensmittel suchen"
               />
-              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><IconSearch /></span>
+              <span className="nut-search-ic"><IconSearch /></span>
             </div>
             {query.trim() && results.length === 0 && (
               <div className="meal-hint">Nichts gefunden. Lege das Lebensmittel zuerst im Bereich „Lebensmittel“ an.</div>
             )}
             {results.length > 0 && (
-              <div className="card" style={{ margin: '8px 0 0', padding: 0 }}>
+              <div className="card nut-u-flush-top">
                 {results.map((f, idx) => (
                   <button
                     key={f.id}
                     type="button"
                     className="meal-pick-row"
-                    style={{ borderBottom: idx < results.length - 1 ? '1px solid var(--border)' : 'none' }}
                     onClick={() => addFood(f)}
                   >
                     <span className="meal-pick-name">{f.name}</span>
@@ -208,7 +208,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
                 ))}
               </div>
             )}
-            <button type="button" className="btn btn-secondary meal-add-btn" onClick={() => { setAdding(false); setQuery(''); }}>Abbrechen</button>
+            <Button variant="secondary" className="meal-add-btn" onClick={() => { setAdding(false); setQuery(''); }}>Abbrechen</Button>
           </div>
         )}
 
@@ -243,10 +243,8 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
       </div>
 
       <div className="nut-u-row">
-        <button className="btn btn-primary" disabled={saving || total.grams <= 0 || !eatenOn} onClick={save}>
-          {saving ? 'Speichert…' : 'Mahlzeit speichern'}
-        </button>
-        <button className="btn btn-secondary" onClick={onClose}>Schließen</button>
+        <Button disabled={saving || total.grams <= 0 || !eatenOn} onClick={save}>{saving ? 'Speichert…' : 'Mahlzeit speichern'}</Button>
+        <Button variant="secondary" onClick={onClose}>Schließen</Button>
       </div>
     </Modal>
   );

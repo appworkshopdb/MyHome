@@ -5,6 +5,7 @@ import { MEAL_TYPES, computeNutrition, fmt } from '../lib/nutrition';
 import { mealFromRecipe, defaultMealType, todayStr } from '../lib/meals';
 import { formatNumber } from '../../../core/lib/format';
 import MealIcon from '../../../core/components/MealIcon';
+import { Button } from '../../../core/components/ui';
 
 // Ein eigenes Rezept als gegessene Mahlzeit eintragen (Bereich "Mahlzeiten").
 // recipe === null → zuerst ein Rezept aus der Liste wählen; sonst direkt das Formular.
@@ -65,7 +66,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
                   placeholder="Rezept suchen…"
                   aria-label="Rezept suchen"
                 />
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><IconSearch /></span>
+                <span className="nut-search-ic"><IconSearch /></span>
               </div>
             </div>
             <div className="card nut-u-flush">
@@ -78,7 +79,6 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
                     key={r.id}
                     type="button"
                     className="meal-pick-row"
-                    style={{ borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}
                     onClick={() => pick(r)}
                   >
                     <span className="meal-pick-name">{r.name}</span>
@@ -130,12 +130,8 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
       </div>
 
       <div className="nut-u-row">
-        <button className="btn btn-primary" disabled={!valid || saving} onClick={save}>
-          {saving ? 'Speichert…' : 'Mahlzeit speichern'}
-        </button>
-        <button className="btn btn-secondary" onClick={initial ? onClose : () => setRecipe(null)}>
-          {initial ? 'Abbrechen' : 'Zurück'}
-        </button>
+        <Button disabled={!valid || saving} onClick={save}>{saving ? 'Speichert…' : 'Mahlzeit speichern'}</Button>
+        <Button variant="secondary" onClick={initial ? onClose : () => setRecipe(null)}>{initial ? 'Abbrechen' : 'Zurück'}</Button>
       </div>
     </Modal>
   );
