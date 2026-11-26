@@ -11,6 +11,7 @@
 //         (nur nötig, wo kein Modul offen ist, z. B. im Hub)
 // featured: Kachel in der Tönung der Familie statt weiß
 import AreaIcon from './AreaIcons';
+import Icon from './Icon';
 
 export default function AreaRow({ label, value, tone = 'neutral', onPress, icon, family, featured = false }) {
   const cls = [
@@ -25,7 +26,7 @@ export default function AreaRow({ label, value, tone = 'neutral', onPress, icon,
       {value != null && (
         <span className={`area-row-value area-row-value--${tone}`}>{value}</span>
       )}
-      <span className="area-row-chevron" aria-hidden="true">›</span>
+      <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
     </button>
   );
 }

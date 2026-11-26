@@ -251,7 +251,7 @@ export default function SportModule({ view, onNavigateView, hasWarnings }) {
       await load();
     } catch (e) {
       console.error(e);
-      showToast(e?.code === 'PGRST205' || e?.code === '42P01' ? 'Dauerplan: Datenbank-Migration fehlt noch' : 'Plan konnte nicht aktiviert werden');
+      showToast('Plan konnte nicht aktiviert werden');
     }
   }
 

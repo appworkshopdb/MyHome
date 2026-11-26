@@ -1,5 +1,8 @@
 // SVG-Pfade 1:1 aus der Original-index.html bzw. den Views übernommen,
 // damit die Optik identisch bleibt.
+// Bedien-Symbole (Stift, Papierkorb, Kreuz, Pfeile, Haken …) kommen seit dem Redesign aus Icon.jsx;
+// die Namen hier bleiben, damit bestehende Aufrufe weiter funktionieren.
+import Icon from './Icon';
 
 export const IconMonth = () => (
   <svg viewBox="0 0 24 24">
@@ -26,55 +29,19 @@ export const IconContracts = () => (
   </svg>
 );
 
-export const IconSettings = () => (
-  <svg viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" fill="none" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="1.8" fill="none" />
-  </svg>
-);
+export const IconSettings = () => <Icon name="settings" size={null} />;
 
-export const IconChevronLeft = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <polyline points="15,18 9,12 15,6" />
-  </svg>
-);
+export const IconChevronLeft = () => <Icon name="back" size={null} />;
 
-export const IconChevronRight = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <polyline points="9,18 15,12 9,6" />
-  </svg>
-);
+export const IconChevronRight = () => <Icon name="open" size={null} />;
 
-export const IconTrash = ({ size = 16 }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: size, height: size }}>
-    <polyline points="3,6 5,6 21,6" />
-    <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" />
-    <path d="M10,11v6" /><path d="M14,11v6" />
-  </svg>
-);
+export const IconTrash = ({ size = 16 }) => <Icon name="trash" size={null} style={{ width: size, height: size }} />;
 
-export const IconEdit = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
+export const IconEdit = () => <Icon name="edit" size={null} />;
 
-export const IconDownload = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 16, height: 16 }}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7,10 12,15 17,10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
+export const IconDownload = () => <Icon name="download" size={null} style={{ width: 16, height: 16 }} />;
 
-export const IconUpload = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 16, height: 16 }}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7,10 12,5 17,10" />
-    <line x1="12" y1="5" x2="12" y2="17" />
-  </svg>
-);
+export const IconUpload = () => <Icon name="upload" size={null} style={{ width: 16, height: 16 }} />;
 
 export const IconFile = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ width: 16, height: 16 }}>
@@ -83,17 +50,9 @@ export const IconFile = () => (
   </svg>
 );
 
-export const IconMenu = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />
-  </svg>
-);
+export const IconMenu = () => <Icon name="menu" size={null} />;
 
-export const IconClose = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" />
-  </svg>
-);
+export const IconClose = () => <Icon name="close" size={null} />;
 
 export const IconHome = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -101,11 +60,7 @@ export const IconHome = () => (
   </svg>
 );
 
-export const IconLock = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ width: 15, height: 15 }}>
-    <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
-  </svg>
-);
+export const IconLock = () => <Icon name="lock" size={null} style={{ width: 15, height: 15 }} />;
 
 export const IconUserRound = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -113,11 +68,7 @@ export const IconUserRound = () => (
   </svg>
 );
 
-export const IconBack = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15,6 9,12 15,18" />
-  </svg>
-);
+export const IconBack = () => <Icon name="back" size={null} />;
 
 export const IconBook = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -133,17 +84,9 @@ export const IconBulb = () => (
   </svg>
 );
 
-export const IconCheck = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="5,13 10,18 19,7" />
-  </svg>
-);
+export const IconCheck = () => <Icon name="check" size={null} strokeWidth={2} />;
 
-export const IconChevronDown = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6,9 12,15 18,9" />
-  </svg>
-);
+export const IconChevronDown = () => <Icon name="expand" size={null} />;
 
 export const IconList = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -154,17 +97,9 @@ export const IconList = () => (
   </svg>
 );
 
-export const IconPlus = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
+export const IconPlus = () => <Icon name="plus" size={null} />;
 
-export const IconSearch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.2" y2="16.2" />
-  </svg>
-);
+export const IconSearch = () => <Icon name="search" size={null} />;
 
 export const IconUtensils = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -226,10 +161,4 @@ export const IconEuro = () => (
   </svg>
 );
 
-export const IconInfo = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" />
-    <line x1="12" y1="11" x2="12" y2="16.5" />
-    <circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none" />
-  </svg>
-);
+export const IconInfo = () => <Icon name="info" size={null} />;

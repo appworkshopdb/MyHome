@@ -17,6 +17,7 @@ import { loadFrequentItems, saveItem, pickActiveList } from '../lib/shoData.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import Icon from '../../../core/components/Icon';
 
 const CHIP_COUNT = 6;
 
@@ -105,7 +106,7 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
                   onClick={() => handleChip(item)}
                   disabled={adding === item.name}
                 >
-                  {added === item.name ? '✓' : '+'} {item.name}
+                  {added === item.name ? <Icon name="check" size={null} className="glyph" /> : <Icon name="plus" size={null} className="glyph" />} {item.name}
                 </button>
               ))}
             </div>

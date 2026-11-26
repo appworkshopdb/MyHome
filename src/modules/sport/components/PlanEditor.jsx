@@ -5,6 +5,8 @@ import UnitPicker from './UnitPicker';
 import { buildCatalog } from '../lib/unitCatalog';
 import { createOwnUnit } from '../lib/spoData';
 import { daysAreComplete, daysFromItems, dayFromEntry, itemsFromDays } from '../lib/planDays';
+import { Button } from '../../../core/components/ui';
+import Icon from '../../../core/components/Icon';
 
 // Plan bearbeiten: Name, darunter die Tage als Kachelraster (PlanDaysBoard).
 // Die Einheit wählt man in der Galerie (UnitPicker) in einem Sheet.
@@ -46,9 +48,7 @@ export default function PlanEditor({ session, initialPlan, units = [], userSport
       {isActive && (
         <div className="pe-note">
           <span className="pe-note-bd" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12a7 7 0 0 1 12-5l3 3M20 12a7 7 0 0 1-12 5l-3-3M19 5v5h-5M5 19v-5h5" />
-            </svg>
+            <Icon name="repeat" size={16} />
           </span>
           Aktiv · Änderungen gelten ab heute
         </div>
@@ -73,8 +73,8 @@ export default function PlanEditor({ session, initialPlan, units = [], userSport
       <PlanDaysBoard days={days} setDays={setDays} sel={sel} setSel={setSel} onChoose={() => setPicking(true)} />
 
       <div className="pe-foot">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>Abbrechen</button>
-        <button type="button" className="btn btn-primary" onClick={submit}>Speichern</button>
+        <Button variant="secondary" onClick={onCancel}>Abbrechen</Button>
+        <Button onClick={submit}>Speichern</Button>
       </div>
 
       {picking && (

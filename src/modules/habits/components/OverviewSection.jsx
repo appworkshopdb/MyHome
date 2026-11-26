@@ -13,6 +13,7 @@ import FocusCard from '../../../core/components/FocusCard.jsx';
 import Ring from '../../../core/components/Ring.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import Icon from '../../../core/components/Icon';
 
 function isoDaysAgo(n) {
   const d = new Date();
@@ -123,7 +124,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 <span className="hab-open-check" aria-hidden="true" />
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  <span className="hab-slot-badge">{badge.emoji} {badge.label}</span>
+                  <span className="hab-slot-badge">{badge.label}</span>
                 </span>
               </button>
             );
@@ -139,10 +140,10 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
                 onClick={() => handleToggle(h)}
                 disabled={busyId === h.id}
               >
-                <span className="hab-open-check hab-open-check--done" aria-hidden="true">✓</span>
+                <span className="hab-open-check hab-open-check--done" aria-hidden="true"><Icon name="check" size={null} className="glyph" /></span>
                 <span className="hab-open-name">{h.name}</span>
                 <span className="hab-open-right">
-                  <span className="hab-slot-badge hab-slot-badge--done">{badge.emoji} {badge.label}</span>
+                  <span className="hab-slot-badge hab-slot-badge--done">{badge.label}</span>
                 </span>
               </button>
             );

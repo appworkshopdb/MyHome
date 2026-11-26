@@ -69,7 +69,7 @@ export default function CalendarHeader({ viewMode, onViewModeChange, referenceDa
       </div>
 
       {/* 2. Ansichtsumschalter Monat / Woche */}
-      <div className="module-tabs" style={{ marginTop: 8 }}>
+      <div className="module-tabs sp-u-mt8">
         {[['month', 'Monat'], ['week', 'Woche']].map(([key, label]) => (
           <button
             key={key}

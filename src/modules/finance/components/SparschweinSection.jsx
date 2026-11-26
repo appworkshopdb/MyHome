@@ -6,6 +6,8 @@ import AreaList from '../../../core/components/AreaList.jsx';
 import * as finData from '../lib/finData';
 import { formatEur, formatDate, MONTHS_DE } from '../lib/finance';
 import SavingsPlanRows from './SavingsPlans.jsx';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Bereich "Sparen" in der Finanzen-Übersicht: direkt unter der Saldo-
 // Karte, eine Zeile mit dem Sparschwein-Stand, darunter die Sparpläne (SavingsPlans.jsx). Tippen öffnet das Sparschwein-
@@ -132,7 +134,7 @@ export default function SparschweinSection({ year, month }) {
             <span className="area-row-value area-row-value--neutral">
               {balance === null ? '—' : formatEur(balance)}
             </span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
           {/* Sparpläne (nur mit Migration fin_savings_plans) und "Sparplan anlegen" */}
           <SavingsPlanRows />
@@ -147,9 +149,9 @@ export default function SparschweinSection({ year, month }) {
             <button className="sheet-cancel" onClick={() => setOpen(false)}>Schließen</button>
           </div>
 
-          <div className="wiz-body sheet-scroll" style={{ paddingTop: 'var(--space-3)' }}>
+          <div className="wiz-body sheet-scroll fin-u-pt3">
             <div className="sparschwein-stat-card">
-              <div className="t-meta" style={{ color: 'var(--text-muted)' }}>Aktueller Stand</div>
+              <div className="t-meta fin-u-mut">Aktueller Stand</div>
               <div className="sparschwein-balance">{formatEur(balance)}</div>
               <div className="sparschwein-stat-row">
                 <div className="sparschwein-stat-chip">
@@ -164,35 +166,27 @@ export default function SparschweinSection({ year, month }) {
             </div>
 
             {/* Einzahlen / Entnehmen */}
-            <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
-              <button
-                className="btn btn-primary"
-                style={{ flex: 1 }}
+            <div className="fin-u-acts">
+              <Button icon="plus" className="fin-u-flex1"
                 onClick={() => { setSaving(true); setOpen(false); }}
-              >
-                + Betrag sparen
-              </button>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
+              >Betrag sparen</Button>
+              <Button variant="secondary" icon="minus" className="fin-u-flex1"
                 onClick={() => { setTaking(true); setOpen(false); }}
                 disabled={balance <= 0}
-              >
-                − Entnehmen
-              </button>
+              >Entnehmen</Button>
             </div>
-            <p className="t-meta" style={{ color: 'var(--text-muted)', marginTop: 'var(--space-2)', textAlign: 'center' }}>
+            <p className="t-meta fin-u-mut-c2">
               Entnahme fließt zurück in den Monat. Alternativ: bei einer Ausgabe die Zahlungsart „Sparschwein" wählen.
             </p>
 
-            <div className="t-meta" style={{ color: 'var(--text-muted)', margin: 'var(--space-5) 0 var(--space-2)' }}>
+            <div className="t-meta fin-u-mut-sec">
               Verlauf
             </div>
 
             {ledger.length === 0 ? (
               <div className="sheet-placeholder">
-                <p className="t-body" style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
-                  Noch keine Buchungen. Tippe auf „+ Betrag sparen", um einzuzahlen.
+                <p className="t-body fin-u-mut-c">
+                  Noch keine Buchungen. Tippe auf „Betrag sparen“, um einzuzahlen.
                 </p>
               </div>
             ) : (
@@ -200,19 +194,19 @@ export default function SparschweinSection({ year, month }) {
                 {ledger.map((tx) => (
                   <div key={tx.id} className="sparschwein-ledger-row">
                     <div>
-                      <div className="t-body" style={{ fontWeight: 600 }}>
+                      <div className="t-body fin-u-w6">
                         {tx.direction === 'in' ? 'Einzahlung' : 'Entnahme'}
                         {tx.name !== 'Ersparnisse' ? ` · ${tx.name}` : ''}
                       </div>
-                      <div className="t-meta" style={{ color: 'var(--text-muted)' }}>
+                      <div className="t-meta fin-u-mut">
                         {tx.created_at ? formatDate(tx.created_at) : `${MONTHS_DE[tx.month - 1]} ${tx.year}`}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div className="fin-u-right">
                       <div className={`sparschwein-ledger-amount ${tx.direction === 'in' ? 'positive' : 'negative'}`}>
                         {tx.direction === 'in' ? '+' : '-'}{formatEur(tx.amount)}
                       </div>
-                      <div className="t-meta" style={{ color: 'var(--text-muted)' }}>
+                      <div className="t-meta fin-u-mut">
                         Stand {formatEur(tx.balanceAfter)}
                       </div>
                     </div>
@@ -235,14 +229,14 @@ export default function SparschweinSection({ year, month }) {
           </div>
 
           <div className="wiz-body">
-            <p className="t-body" style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+            <p className="t-body fin-u-mut-mb4">
               Der Betrag wird direkt ins Sparschwein übertragen und erscheint
               nicht in deinen regulären Ausgaben.
             </p>
 
             <label className="wiz-label t-meta">Betrag (€)</label>
             <input
-              className="wiz-input"
+              className="wiz-input fin-u-f16"
               type="number"
               inputMode="decimal"
               value={amount}
@@ -251,26 +245,22 @@ export default function SparschweinSection({ year, month }) {
               min="0.01"
               step="0.01"
               autoFocus
-              style={{ fontSize: 'max(16px, 1rem)' }}
+             
             />
 
             {saving_status && (
-              <div className={`status-note ${saving_status.type}`} style={{ marginTop: 'var(--space-3)' }}>
+              <div className={`status-note ${saving_status.type} fin-u-mt3`}>
                 {saving_status.text}
               </div>
             )}
           </div>
 
           <div className="entry-modal-actions">
-            <button
-              className="btn btn-secondary"
+            <Button variant="secondary"
+             
               onClick={() => { setSaving(false); setSavingStatus(null); setAmount(''); }}
-            >
-              Abbrechen
-            </button>
-            <button className="btn btn-primary" onClick={handleSaveDeposit}>
-              Sparen
-            </button>
+            >Abbrechen</Button>
+            <Button onClick={handleSaveDeposit}>Sparen</Button>
           </div>
         </SheetShell>
       )}
@@ -286,14 +276,14 @@ export default function SparschweinSection({ year, month }) {
           </div>
 
           <div className="wiz-body">
-            <p className="t-body" style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+            <p className="t-body fin-u-mut-mb4">
               Der Betrag wird aus dem Sparschwein entnommen und fließt zurück
               in den Saldo dieses Monats — ohne einen neuen Ausgaben-Posten.
             </p>
 
             <label className="wiz-label t-meta">Betrag (€)</label>
             <input
-              className="wiz-input"
+              className="wiz-input fin-u-f16"
               type="number"
               inputMode="decimal"
               value={takeAmount}
@@ -303,29 +293,25 @@ export default function SparschweinSection({ year, month }) {
               step="0.01"
               max={balance}
               autoFocus
-              style={{ fontSize: 'max(16px, 1rem)' }}
+             
             />
-            <p className="t-meta" style={{ color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+            <p className="t-meta fin-u-mut-m2">
               Verfügbar: {formatEur(balance)}
             </p>
 
             {take_status && (
-              <div className={`status-note ${take_status.type}`} style={{ marginTop: 'var(--space-3)' }}>
+              <div className={`status-note ${take_status.type} fin-u-mt3`}>
                 {take_status.text}
               </div>
             )}
           </div>
 
           <div className="entry-modal-actions">
-            <button
-              className="btn btn-secondary"
+            <Button variant="secondary"
+             
               onClick={() => { setTaking(false); setTakeStatus(null); setTakeAmount(''); }}
-            >
-              Abbrechen
-            </button>
-            <button className="btn btn-primary" onClick={handleSaveWithdrawal}>
-              Entnehmen
-            </button>
+            >Abbrechen</Button>
+            <Button onClick={handleSaveWithdrawal}>Entnehmen</Button>
           </div>
         </SheetShell>
       )}

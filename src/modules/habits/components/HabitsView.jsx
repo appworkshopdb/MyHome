@@ -5,6 +5,8 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
+import Icon from '../../../core/components/Icon.jsx';
+import { ListGroup, ListRow, IconButton, Button, EmptyState, ErrorState, SheetHeader } from '../../../core/components/ui';
 import {
   DndContext,
   closestCenter,
@@ -30,6 +32,8 @@ import {
 import {
   catalogEntryByName, goalKind, goalText, qtyStep, formatQty, shiftTime,
 } from '../../../core/lib/habitCatalog.js';
+import HabitIcon from '../../../core/components/HabitIcon';
+import { habitIconName } from '../../../core/lib/habitIcons';
 
 const FREQ_LABELS = {
   daily:    'Täglich',
@@ -61,6 +65,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+  const [actionHabit, setActionHabit] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
   const [deleteHideStats, setDeleteHideStats] = useState(false);
   // Name der Vorlage, aus der das Formular stammt: Kategorie und Ziel-Art sind dann fest
@@ -271,17 +276,24 @@ export default function HabitsView({ habits, onHabitsChange }) {
           </button>
         </div>
 
-        <button
-          type="button"
-          className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
-          onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
-        >
+        <Button variant={deleteHideStats ? 'danger' : 'primary'} block onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}>
           {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
-        </button>
-        <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+        </Button>
+        <Button variant="text" block onClick={() => setDeleteTarget(null)}>Abbrechen</Button>
       </div>
     </SheetShell>
   );
+
+  // Auswahl ohne doppelte Liniensymbole (mehrere Emoji teilen sich eines); das gewählte bleibt immer sichtbar
+  const seenIcons = new Set();
+  const pickerIcons = HABIT_ICONS.filter((ic) => {
+    const n = habitIconName(ic);
+    if (!n) return true;
+    if (seenIcons.has(n)) return false;
+    seenIcons.add(n);
+    return true;
+  });
+  if (showForm && form.icon && !pickerIcons.includes(form.icon) && !seenIcons.has(habitIconName(form.icon))) pickerIcons.unshift(form.icon);
 
   // ─── Formular ────────────────────────────────────────────
   if (showForm) {
@@ -309,7 +321,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
           <h2>{editHabit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}</h2>
         </div>
 
-        {error && <div className="toast toast-error" style={{ margin: 0 }}>{error}</div>}
+        {error && <ErrorState title={error} />}
 
         {/* Grundlagen (die Beschreibung wird nicht mehr abgefragt; vorhandene Werte bleiben beim Speichern erhalten) */}
         <div className="hab-ef-card">
@@ -322,7 +334,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
               aria-label="Symbol wählen"
               aria-expanded={iconPicker}
             >
-              {form.icon}
+              <HabitIcon emoji={form.icon} />
             </button>
             <div className="hab-ef-field">
               <label htmlFor="hab-ef-name">Name *</label>
@@ -338,14 +350,14 @@ export default function HabitsView({ habits, onHabitsChange }) {
           </div>
           {iconPicker && (
             <div className="hab-ef-emojis">
-              {HABIT_ICONS.map((ic) => (
+              {pickerIcons.map((ic) => (
                 <button
                   key={ic}
                   type="button"
                   className={form.icon === ic ? 'on' : ''}
                   onClick={() => { setField('icon', ic); setIconPicker(false); }}
                 >
-                  {ic}
+                  <HabitIcon emoji={ic} size={22} />
                 </button>
               ))}
             </div>
@@ -383,7 +395,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
             ))}
           </div>
 
-          <div className="hab-ef-ct" style={{ marginTop: 2 }}>Wann</div>
+          <div className="hab-ef-ct hab-ef-ct--tight">Wann</div>
           <div className="hab-ef-chips" role="group" aria-label="Tageszeit">
             {TIME_SLOTS.map((slot) => (
               <button
@@ -449,9 +461,9 @@ export default function HabitsView({ habits, onHabitsChange }) {
                   <small>{formatQty(form.target_count)} {form.unit}</small>
                 </div>
                 <div className="hab-ef-step">
-                  <button type="button" aria-label="Weniger" onClick={() => stepTarget(-1)}>−</button>
+                  <button type="button" aria-label="Weniger" onClick={() => stepTarget(-1)}><Icon name="minus" size={null} className="glyph" /></button>
                   <output>{formatQty(form.target_count)}</output>
-                  <button type="button" aria-label="Mehr" onClick={() => stepTarget(1)}>+</button>
+                  <button type="button" aria-label="Mehr" onClick={() => stepTarget(1)}><Icon name="plus" size={null} className="glyph" /></button>
                 </div>
               </div>
               {!lockEntry && (
@@ -484,9 +496,9 @@ export default function HabitsView({ habits, onHabitsChange }) {
                 <small>in {timeStep}-Minuten-Schritten</small>
               </div>
               <div className="hab-ef-step">
-                <button type="button" aria-label="Früher" onClick={() => setField('goal_time', shiftTime(form.goal_time, -timeStep))}>−</button>
+                <button type="button" aria-label="Früher" onClick={() => setField('goal_time', shiftTime(form.goal_time, -timeStep))}><Icon name="minus" size={null} className="glyph" /></button>
                 <output className="hab-ef-timeout">{form.goal_time}</output>
-                <button type="button" aria-label="Später" onClick={() => setField('goal_time', shiftTime(form.goal_time, timeStep))}>+</button>
+                <button type="button" aria-label="Später" onClick={() => setField('goal_time', shiftTime(form.goal_time, timeStep))}><Icon name="plus" size={null} className="glyph" /></button>
               </div>
             </div>
           )}
@@ -535,20 +547,15 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
       {showOverloadWarning && (
         <div className="hab-overload-warning">
-          <span className="hab-overload-icon">💡</span>
-          <span>Du hast {activeHabits.length} aktive Gewohnheiten. Für nachhaltigen Erfolg empfehlen Experten max. 3–5.</span>
+          <Icon name="info" size={20} />
+          <span>{activeHabits.length} aktive Gewohnheiten. Empfohlen sind höchstens 5.</span>
         </div>
       )}
 
-      {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+      {error && <ErrorState title={error} />}
 
       {habits.filter((h) => !h.deleted_at).length === 0 && (
-        <div className="hab-empty">
-          <div className="hab-empty-icon">🌱</div>
-          <div className="hab-empty-title">Noch keine Gewohnheiten</div>
-          <div className="hab-empty-text">Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.</div>
-          <div className="hab-empty-fab-hint">Tippe unten rechts auf <b>＋</b>: dort findest du Vorlagen oder legst selbst eine an.</div>
-        </div>
+        <EmptyState icon="habits" title="Noch keine Gewohnheiten" />
       )}
 
       {/* Aktive Habits — sortierbar per Drag & Drop */}
@@ -571,10 +578,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                   <SortableHabitCard
                     key={habit.id}
                     habit={habit}
-                    onEdit={() => openEdit(habit)}
-                    onDelete={() => openDelete(habit)}
-                    onToggleActive={() => handleToggleActive(habit)}
-                    deleting={deletingId === habit.id}
+                    onMore={() => setActionHabit(habit)}
                   />
                 ))}
               </div>
@@ -585,19 +589,29 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
       {deleteSheet}
 
+      {actionHabit && (
+        <SheetShell onClose={() => setActionHabit(null)} labelledBy="hab-act-title">
+          <div className="hab-act">
+            <SheetHeader id="hab-act-title" title={actionHabit.name} onClose={() => setActionHabit(null)} />
+            <ListGroup>
+              <ListRow icon="edit" title="Bearbeiten" onClick={() => { const h = actionHabit; setActionHabit(null); openEdit(h); }} />
+              <ListRow icon={actionHabit.active ? 'pause' : 'play'} title={actionHabit.active ? 'Pausieren' : 'Aktivieren'} onClick={() => { const h = actionHabit; setActionHabit(null); handleToggleActive(h); }} />
+              <ListRow icon="trash" title="Löschen" onClick={() => { const h = actionHabit; setActionHabit(null); openDelete(h); }} />
+            </ListGroup>
+          </div>
+        </SheetShell>
+      )}
+
       {/* Pausierte Habits */}
       {inactiveHabits.length > 0 && (
-        <div className="hab-section" style={{ marginTop: 24 }}>
+        <div className="hab-section hab-section--gap">
           <div className="hab-section-label">Pausiert</div>
           <div className="hab-manage-list">
             {inactiveHabits.map((habit) => (
               <SortableHabitCard
                 key={habit.id}
                 habit={habit}
-                onEdit={() => openEdit(habit)}
-                onDelete={() => openDelete(habit)}
-                onToggleActive={() => handleToggleActive(habit)}
-                deleting={deletingId === habit.id}
+                onMore={() => setActionHabit(habit)}
                 paused
                 noSort
               />
@@ -611,7 +625,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
 // ─── Sortierbare Habit-Karte ──────────────────────────────
 
-function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, paused, noSort }) {
+function SortableHabitCard({ habit, onMore, paused, noSort }) {
   const {
     attributes,
     listeners,
@@ -632,54 +646,19 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
     <div
       ref={setNodeRef}
       style={style}
-      className={`hab-manage-card ${paused ? 'hab-manage-card--paused' : ''} ${isDragging ? 'hab-manage-card--dragging' : ''}`}
+      className={`hab-mrow${paused ? ' hab-mrow--paused' : ''}${isDragging ? ' hab-mrow--dragging' : ''}`}
     >
-      {/* Drag-Handle */}
       {!noSort && (
-        <div className="hab-drag-handle" {...attributes} {...listeners} title="Ziehen zum Sortieren">
-          <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true">
-            <circle cx="4" cy="3" r="1.5" /><circle cx="10" cy="3" r="1.5" />
-            <circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" />
-            <circle cx="4" cy="15" r="1.5" /><circle cx="10" cy="15" r="1.5" />
-          </svg>
-        </div>
+        <button type="button" className="hab-drag-handle" {...attributes} {...listeners} aria-label="Ziehen zum Sortieren" title="Ziehen zum Sortieren">
+          <Icon name="drag" size={20} />
+        </button>
       )}
-
-      <div className="hab-manage-card-left">
-        <span className="hab-item-icon hab-item-icon--tile">{habit.icon}</span>
-        <div className="hab-manage-text">
-          <div className="hab-manage-name">{habit.name}</div>
-          <div className="hab-manage-meta">
-            {habit.category} · {FREQ_LABELS[habit.frequency] ?? habit.frequency}
-            {goalText(habit) && ` · ${goalText(habit)}`}
-            {habit.reminder_time && ` · ${habit.reminder_time} Uhr`}
-          </div>
-        </div>
-      </div>
-
-      <div className="hab-manage-card-right">
-        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'} aria-label={paused ? 'Aktivieren' : 'Pausieren'}>
-          {paused ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-          )}
-        </button>
-        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten" aria-label="Bearbeiten">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
-        </button>
-        <button
-          className="hab-manage-btn hab-manage-btn--del"
-          onClick={onDelete}
-          disabled={deleting}
-          title="Löschen"
-          aria-label="Löschen"
-        >
-          {deleting ? '…' : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
-          )}
-        </button>
-      </div>
+      <ListRow
+        leading={<span className="hab-lead"><HabitIcon emoji={habit.icon} /></span>}
+        title={habit.name}
+        sub={[habit.category, FREQ_LABELS[habit.frequency] ?? habit.frequency, goalText(habit), habit.reminder_time && `${habit.reminder_time} Uhr`].filter(Boolean).join(' · ')}
+        trailing={<IconButton icon="more" label={`Aktionen für ${habit.name}`} onClick={onMore} />}
+      />
     </div>
   );
 }

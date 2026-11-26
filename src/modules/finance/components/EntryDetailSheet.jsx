@@ -24,6 +24,7 @@ import {
 } from '../lib/finance';
 import { toDateStr } from '../lib/analytics';
 import EntryEditForm, { CATEGORY_ITEMS } from './EntryEditForm';
+import { Button } from '../../../core/components/ui';
 
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
 const DOT = {
@@ -99,12 +100,8 @@ export default function EntryDetailSheet({ entry, onClose, onSave, onDelete, onT
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn vw-del" onClick={() => onDelete(entry.id)} aria-label="Eintrag löschen">
-              <IconTrash size={18} /> Löschen
-            </button>
-            <button type="button" className="btn btn-primary vw-edit" onClick={() => startEdit(null)}>
-              <IconEdit /> Bearbeiten
-            </button>
+            <Button variant="secondary" icon="trash" className="vw-del" onClick={() => onDelete(entry.id)} aria-label="Eintrag löschen">Löschen</Button>
+            <Button icon="edit" className="vw-edit" onClick={() => startEdit(null)}>Bearbeiten</Button>
           </WizardFoot>
         )}
       >

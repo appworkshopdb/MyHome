@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../../core/components/Modal';
 import { AMPEL_CATS, FOOD_DIETS, FOOD_ALLERGENS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
+import { Button } from '../../../core/components/ui';
 
 const UNITS = ['g', 'ml', 'Stück', 'Scheibe', 'EL'];
 const UNIT_LABEL = { g: '100 g', ml: '100 ml', Stück: '1 Stück', Scheibe: '1 Scheibe', EL: '1 EL' };
@@ -89,9 +90,9 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
         </div>
       </div>
 
-      <div className="card" style={{ margin: 0 }}>
+      <div className="card nut-u-m0">
         <div className="card-title">Nährwerte pro {UNIT_LABEL[form.unit] || form.unit}</div>
-        <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
+        <div className="form-row nut-u-grid2">
           {MACRO_FIELDS.map(([key, label]) => (
             <div className="form-group" key={key}>
               <label>{label}</label>
@@ -123,7 +124,7 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
 
       <div className="form-group">
         <label>Allergene</label>
-        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+        <div className="chip-row nut-u-fwrap">
           {FOOD_ALLERGENS.map((a) => (
             <button
               key={a}
@@ -135,14 +136,14 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
             </button>
           ))}
         </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+        <div className="nut-u-meta-mt">
           Glutenfrei und Laktosefrei ergeben sich aus „Gluten“ und „Milch“.
         </div>
       </div>
 
       <div className="form-group">
         <label>Tags</label>
-        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+        <div className="chip-row nut-u-fwrap">
           {FOOD_TAGS.map((t) => {
             const on = (form.tags || []).includes(t);
             return (
@@ -160,9 +161,9 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary" disabled={!canSave} onClick={save}>Speichern</button>
-        <button className="btn btn-secondary" onClick={onClose}>Abbrechen</button>
+      <div className="nut-u-row">
+        <Button disabled={!canSave} onClick={save}>Speichern</Button>
+        <Button variant="secondary" onClick={onClose}>Abbrechen</Button>
       </div>
     </Modal>
   );

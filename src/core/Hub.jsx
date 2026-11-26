@@ -27,6 +27,7 @@ import { syncActivePlan } from './lib/sportPlanSync.js';
 import { useHabitsStore, loadHabitsData, toggleHabitOn, getDueToday, isDone, todayStr as habTodayStr } from './lib/habitsStore.js';
 import { awardPoints } from './lib/gamificationData.js';
 import { optimisticUpdate, refreshStore } from './lib/gamificationStore.js';
+import Icon from './components/Icon';
 
 // NEU (UMBAU-PLAN.md Schritt 10): der Hub folgt jetzt derselben Struktur
 // wie die fünf Module — Fokuskarte mit dem Jetzt-Zustand, ein bis zwei
@@ -432,7 +433,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   if (status === 'laedt') {
     return (
       <>
-        <ModuleTopBar hasWarnings={hasWarnings} />
+        <ModuleTopBar hasWarnings={hasWarnings} status />
         <div className="hub with-topbar-space">
           <div className="hub-skeleton-block" style={{ width: 168, height: 24 }} />
           <div className="hub-skeleton-block" style={{ width: 132, height: 11, marginTop: 8 }} />
@@ -451,7 +452,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   if (status === 'fehler') {
     return (
       <>
-        <ModuleTopBar hasWarnings={hasWarnings} />
+        <ModuleTopBar hasWarnings={hasWarnings} status />
         <div className="hub with-topbar-space">
           <div className="hub-error">
             <div className="hub-error-headline">{monatsname} lässt sich gerade nicht laden.</div>
@@ -518,7 +519,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
           </div>
 
           <button className="hub-todo-add-bar" onClick={openNewTodo}>
-            <span className="hub-todo-add-plus">+</span>
+            <span className="hub-todo-add-plus"><Icon name="plus" size={null} className="glyph" /></span>
             <span>Neue Aufgabe</span>
           </button>
 
@@ -556,7 +557,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                     className="hub-todo-delete"
                     onClick={() => handleDeleteTodo(todo.id)}
                     aria-label="Löschen"
-                  >×</button>
+                  ><Icon name="close" size={null} className="glyph" /></button>
                 </div>
               ))}
             </div>
@@ -584,7 +585,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                       className="hub-todo-delete"
                       onClick={() => handleDeleteTodo(todo.id)}
                       aria-label="Löschen"
-                    >×</button>
+                    ><Icon name="close" size={null} className="glyph" /></button>
                   </div>
                 ))
               )}
@@ -606,7 +607,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   // ── Übersicht ───────────────────────────────────────────────────
   return (
     <>
-      <ModuleTopBar hasWarnings={hasWarnings} />
+      <ModuleTopBar hasWarnings={hasWarnings} status />
       <div className="hub with-topbar-space">
         {status === 'veraltet' && (
           <div className="hub-stale-bar">
@@ -666,7 +667,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                 <div className="hub-task-head">
                   <h2 className="hub-task-label">Aufgaben</h2>
                   {todosAlle.length > 0 && (
-                    <button className="hub-task-all" onClick={() => setBereich('aufgaben')}>Alle {todosAlle.length} ›</button>
+                    <button className="hub-task-all" onClick={() => setBereich('aufgaben')}>Alle {todosAlle.length} <Icon name="open" size={null} className="glyph" /></button>
                   )}
                 </div>
                 {naechsteTodos.length === 0 && (
@@ -694,7 +695,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
                   );
                 })}
                 <button className="hub-task-row hub-task-add" onClick={openNewTodo}>
-                  <span className="hub-task-add-plus">+</span>
+                  <span className="hub-task-add-plus"><Icon name="plus" size={null} className="glyph" /></span>
                   <span className="hub-task-title">Neue Aufgabe</span>
                 </button>
               </div>

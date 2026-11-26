@@ -25,15 +25,13 @@ import {
 } from '../lib/savingsPlans';
 import { parseMoney } from '../../../core/lib/wizardDates';
 import SavingsPlanWizard from './SavingsPlanWizard';
+import Icon from '../../../core/components/Icon';
+import { confirmDialog, Button } from '../../../core/components/ui';
 
 const NF0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
 const eur0 = (n) => `${NF0.format(Math.round(n))} €`;
 
-const TargetIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" />
-  </svg>
-);
+const TargetIcon = () => <Icon name="target" size={null} />;
 
 // Kurzstatus für die Zeile in der Übersicht
 function rowStatus(info) {
@@ -88,7 +86,7 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
   }
 
   async function end() {
-    if (busy || !confirm('Sparplan beenden? Eingezahltes bleibt im Sparschwein, offene Raten fallen weg.')) return;
+    if (busy || !(await confirmDialog({ title: 'Sparplan beenden?', text: 'Eingezahltes bleibt im Sparschwein, offene Raten fallen weg.', confirmLabel: 'Beenden' }))) return;
     setBusy(true);
     try {
       await finData.endSavingsPlan(session, plan.id);
@@ -109,10 +107,10 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
   else status = { tone: 'ok', title: 'Im Plan', text: info.next ? `Nächste Rate ${formatEur(Number(info.next.amount))} am ${fmtDay(rateDue(info.next))}` : 'Keine Rate offen' };
 
   let primary;
-  if (info.done) primary = <button type="button" className="btn btn-primary" disabled>Ziel erreicht</button>;
-  else if (info.payable.length > 1) primary = <button type="button" className="btn btn-primary" disabled={busy} onClick={() => pay(info.payable, `${formatEur(info.payableSum)} eingezahlt`)}>{formatEur(info.payableSum)} einzahlen</button>;
-  else if (info.payable.length === 1) primary = <button type="button" className="btn btn-primary" disabled={busy} onClick={() => pay(info.payable, 'Rate eingezahlt')}>Rate einzahlen</button>;
-  else primary = <button type="button" className="btn btn-primary" disabled={busy || !info.next} onClick={() => pay([info.next], 'Rate vorgezogen')}>Rate vorziehen</button>;
+  if (info.done) primary = <Button disabled>Ziel erreicht</Button>;
+  else if (info.payable.length > 1) primary = <Button disabled={busy} onClick={() => pay(info.payable, `${formatEur(info.payableSum)} eingezahlt`)}>{formatEur(info.payableSum)} einzahlen</Button>;
+  else if (info.payable.length === 1) primary = <Button disabled={busy} onClick={() => pay(info.payable, 'Rate eingezahlt')}>Rate einzahlen</Button>;
+  else primary = <Button disabled={busy || !info.next} onClick={() => pay([info.next], 'Rate vorgezogen')}>Rate vorziehen</Button>;
 
   const spreadN = plan.target_date ? Math.max(1, monthIdx(plan.target_date) - monthIdx(today) + 1) : 0;
 
@@ -125,7 +123,7 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn btn-secondary spr-edit" onClick={onEdit} disabled={busy}><IconEdit /> Bearbeiten</button>
+            <Button variant="secondary" icon="edit" className="spr-edit" onClick={onEdit} disabled={busy}>Bearbeiten</Button>
             {primary}
           </WizardFoot>
         )}
@@ -145,9 +143,9 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
 
         {!info.done && (info.payable[0] || info.next) && (
           <button type="button" className="spr-more" onClick={() => onEditRate(info.payable[0] || info.next)}>
-            <span className="spr-more-ic" aria-hidden="true">+</span>
+            <span className="spr-more-ic" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
             <span><b>Diesen Monat mehr sparen</b><small>Rate {monthShortLabel(monthIdx(rateDue(info.payable[0] || info.next)))} ändern, nur für diesen Monat</small></span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
         )}
 
@@ -190,7 +188,7 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
               ? <div key={r.id} className="spr-rate">{inner}<span className="spr-rate-chev" /></div>
               : (
                 <button key={r.id} type="button" className="spr-rate spr-rate--tap" onClick={() => onEditRate(r)} aria-label={`Rate ${fmtDay(rateDue(r))} ändern`}>
-                  {inner}<span className="spr-rate-chev" aria-hidden="true">›</span>
+                  {inner}<span className="spr-rate-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
                 </button>
               );
           })}
@@ -261,8 +259,8 @@ function RateChangeSheet({ plan, rates, rate, onBack, onClose, onSaved }) {
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn btn-secondary" onClick={() => setValue(NF2.format(base))} disabled={busy}>Normale Rate</button>
-            <button type="button" className="btn btn-primary" onClick={save} disabled={!valid || busy}>{busy ? 'Speichert…' : 'Speichern'}</button>
+            <Button variant="secondary" onClick={() => setValue(NF2.format(base))} disabled={busy}>Normale Rate</Button>
+            <Button onClick={save} disabled={!valid || busy}>{busy ? 'Speichert…' : 'Speichern'}</Button>
           </WizardFoot>
         )}
       >
@@ -372,12 +370,12 @@ export default function SavingsPlanRows() {
               <span className={`spr-bar${info.overdue.length ? ' warn' : ''}`}><i style={{ width: `${info.pct}%` }} /></span>{/* pruefer:ok berechnete Breite */}
               <small>{st.sub}</small>
             </span>
-            <span className="area-row-chevron" aria-hidden="true">›</span>
+            <span className="area-row-chevron" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
           </button>
         );
       })}
       <button type="button" className="area-row spr-add" onClick={() => setWizard({ plan: null })}>
-        <span className="spr-ic spr-ic--add" aria-hidden="true">+</span>
+        <span className="spr-ic spr-ic--add" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
         <span className="area-row-label">Sparplan anlegen</span>
       </button>
 

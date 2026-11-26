@@ -22,6 +22,7 @@ import {
   MONTHS_LONG, averages, customOption, fitLevel, fmtDay, idxToYM, lastDayOfIdx, monthIdx,
   monthLabel, monthShortLabel, monthShortName, r2, scheduleRates, suggestions,
 } from '../lib/savingsPlans';
+import { Button } from '../../../core/components/ui';
 
 const NF0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
 const eur0 = (n) => `${NF0.format(Math.round(n))} €`;
@@ -162,8 +163,8 @@ export default function SavingsPlanWizard({ plan = null, rates = [], onClose, on
           onClose={onClose}
           footer={(
             <WizardFoot>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)} disabled={saving}>Ändern</button>
-              <button type="button" className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+              <Button variant="secondary" onClick={() => setStep(1)} disabled={saving}>Ändern</Button>
+              <Button onClick={save} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</Button>
             </WizardFoot>
           )}
         >
@@ -202,8 +203,8 @@ export default function SavingsPlanWizard({ plan = null, rates = [], onClose, on
           onClose={onClose}
           footer={(
             <WizardFoot hint={!chosen && activeKey === 'custom' ? 'Noch nötig: Rate' : ''}>
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Zurück</button>
-              <button type="button" className="btn btn-primary" disabled={!chosen} onClick={() => setStep(3)}>Weiter</button>
+              <Button variant="secondary" onClick={() => setStep(1)}>Zurück</Button>
+              <Button disabled={!chosen} onClick={() => setStep(3)}>Weiter</Button>
             </WizardFoot>
           )}
         >
@@ -269,7 +270,7 @@ export default function SavingsPlanWizard({ plan = null, rates = [], onClose, on
         onClose={onClose}
         footer={(
           <WizardFoot one hint={missing}>
-            <button type="button" className="btn btn-primary" disabled={!valid1} onClick={() => setStep(2)}>Weiter</button>
+            <Button disabled={!valid1} onClick={() => setStep(2)}>Weiter</Button>
           </WizardFoot>
         )}
       >

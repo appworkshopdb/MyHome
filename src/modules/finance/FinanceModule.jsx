@@ -24,12 +24,13 @@ import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
 import IncomeView from './components/IncomeView';
+import { PageSkeleton } from '../../core/components/ui';
 
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
 // Bereich-Key → Titel für die Detail-TopBar (zentriert, siehe ModuleTopBar.jsx)
 const DETAIL_TITLES = {
-  buchungen:     'Buchungen',
+  buchungen:     'Ausgaben',
   offen:         'Offene Posten',
   einnahmen:     'Einnahmen',
   vertraege:     'Verträge',
@@ -49,14 +50,14 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
           {/* "Buchungen" und "Offene Posten" sind derselbe Screen mit
               unterschiedlichem Startfilter — MonthsView kann das bereits,
               der Filter war nur nicht von außen setzbar. */}
-          {view === 'buchungen' && <MonthsView />}
+          {view === 'buchungen' && <MonthsView showStand={false} />}
           {view === 'offen'     && <MonthsView initialFilter="offen" />}
 
           {view === 'einnahmen' && <IncomeView />}
           {view === 'vertraege' && <ContractsView />}
 
           {view === 'auswertung' && (
-            <Suspense fallback={<div className="module-loading" aria-busy="true" />}>
+            <Suspense fallback={<PageSkeleton />}>
               <SummaryView />
             </Suspense>
           )}

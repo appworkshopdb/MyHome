@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { getCalendarEvents } from '../lib/calendarData';
 import SheetShell from './SheetShell';
+import Icon from './Icon';
 
 // Icon-Map pro Modul — klein, erkennbar, kein Emoji-Overhead
 const MODULE_ICON = {
-  sport:    '💪',
-  shopping: '🛒',
-  todo:     '✓',
-  finance:  '€',
-  google:   '📅',
+  sport:    <Icon name="dumbbell" size={null} className="glyph" />,
+  shopping: <Icon name="cart" size={null} className="glyph" />,
+  todo:     <Icon name="check" size={null} className="glyph" />,
+  finance:  <Icon name="euro" size={null} className="glyph" />,
+  google:   <Icon name="calendar" size={null} className="glyph" />,
 };
 
 // Wochentage Mo–So
@@ -56,7 +57,7 @@ function DaySheet({ date, events, onClose }) {
                     <span className="hub-cal-sheet-time">{ev.event_time.slice(0, 5)} Uhr</span>
                   )}
                 </div>
-                {ev.done && <span className="hub-cal-sheet-done">✓</span>}
+                {ev.done && <span className="hub-cal-sheet-done"><Icon name="check" size={null} className="glyph" /></span>}
               </div>
             ))
           )}

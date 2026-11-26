@@ -4,6 +4,7 @@ import { scanMeal, getMealQuota, holdScanAnimation } from '../lib/photoScan';
 import SheetShell from './SheetShell';
 import ScanPreview from './ScanPreview';
 import { UiIcon } from './ModuleIcons';
+import Icon from './Icon';
 
 // Ernährung hat vier Anlege-Wege (Rezept, Lebensmittel, Mahlzeit per Foto,
 // Rezept als gegessene Mahlzeit), die in modules/nutrition/ mit eigenen Dialogen
@@ -19,7 +20,7 @@ const GROUPS = [
   ] },
   { label: 'Deine Sammlung', soft: true, rows: [
     { event: 'nutrition:new-recipe', icon: 'book', title: 'Neues Rezept', sub: 'Zutaten wählen, Nährwerte rechnet die App' },
-    { event: 'nutrition:new-food', icon: 'leaf', title: 'Neues Lebensmittel', sub: 'Eigener Eintrag für die Datenbank' },
+    { event: 'nutrition:new-food', icon: 'leaf', title: 'Neues Lebensmittel', sub: 'Eigener Eintrag' },
   ] },
 ];
 
@@ -112,7 +113,7 @@ export default function NutritionFabMenu({ onClose }) {
                     >
                       <span className={`ax-ico${g.soft ? ' soft' : ''}`}><UiIcon name={r.icon} /></span>
                       <span>{r.title}<small>{r.sub}</small></span>
-                      <span className="chev" aria-hidden="true">›</span>
+                      <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
                     </button>
                   ))}
                 </div>

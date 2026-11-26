@@ -1,6 +1,8 @@
 import RestBadge from './RestBadge';
 import UnitVisual from './UnitVisual';
 import { daysSummary, emptyDay, restDay } from '../lib/planDays';
+import Icon from '../../../core/components/Icon';
+import { Button, IconButton } from '../../../core/components/ui';
 
 // Die Tage eines Plans als Kachelraster mit Detailfeld, gemeinsam für den
 // Plan-Wizard und den Plan-Editor. Ein Tipp wählt den Tag; darunter wird er
@@ -66,7 +68,7 @@ export default function PlanDaysBoard({ days, setDays, sel, setSel, onChoose }) 
       <div className="pe-grid" role="group" aria-label="Tage des Plans">
         {days.map((d, i) => <DayTile key={i} day={d} index={i} selected={i === sel} onSelect={() => setSel(i)} />)}
         <button type="button" className="pe-tile pe-add" onClick={addDay}>
-          <span className="pe-plus" aria-hidden="true">+</span>
+          <span className="pe-plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
           <b>Tag</b>
         </button>
       </div>
@@ -92,13 +94,9 @@ export default function PlanDaysBoard({ days, setDays, sel, setSel, onChoose }) 
         </label>
 
         <div className="pe-move">
-          <button type="button" className="btn btn-secondary" onClick={() => moveDay(-1)} disabled={sel === 0}>← Früher</button>
-          <button type="button" className="btn btn-secondary" onClick={() => moveDay(1)} disabled={sel === days.length - 1}>Später →</button>
-          <button type="button" className="btn btn-secondary pe-trash" onClick={removeDay} disabled={days.length === 1} aria-label="Tag entfernen">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" />
-            </svg>
-          </button>
+          <Button variant="secondary" icon="back" onClick={() => moveDay(-1)} disabled={sel === 0}>Früher</Button>
+          <Button variant="secondary" iconRight="open" onClick={() => moveDay(1)} disabled={sel === days.length - 1}>Später</Button>
+          <IconButton icon="trash" label="Tag entfernen" variant="quiet" className="pe-trash" onClick={removeDay} disabled={days.length === 1} />
         </div>
       </div>
     </>

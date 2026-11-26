@@ -30,7 +30,9 @@ import SpendDonut from './SpendDonut.jsx';
 import { available, dedupeIncome } from '../lib/income';
 import AvailableCard from '../../../core/components/AvailableCard.jsx';
 import { standSummary } from '../../../core/lib/finAvailable.js';
+import Icon from '../../../core/components/Icon';
 
+const EXPENSE_CATS = new Set(['fixkosten', 'variable_kosten', 'sonstige_ausgaben']);
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
   { key: 'variable_kosten',   label: 'Variable Kosten', tone: 'b' },
@@ -155,7 +157,7 @@ export default function OverviewSection({ onNavigate }) {
             <small>noch zu bezahlen</small>
           </span>
           <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>
-          <span className="fin-open-strip-chev" aria-hidden="true">›</span>
+          <span className="fin-open-strip-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
       )}
 
@@ -166,9 +168,9 @@ export default function OverviewSection({ onNavigate }) {
       <section className="page-section">
         <AreaList icons>
           <AreaRow
-            label="Buchungen"
+            label="Ausgaben"
             icon="list"
-            value={`${entries.filter(isListedEntry).length} im Monat`}
+            value={`${entries.filter((e) => isListedEntry(e) && EXPENSE_CATS.has(e.category)).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
           />
           <AreaRow

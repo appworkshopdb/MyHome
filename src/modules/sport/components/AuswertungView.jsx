@@ -6,6 +6,7 @@ import BadgesCard from './BadgesCard';
 import ActivityHeatmap from './ActivityHeatmap';
 import FilterBar from './FilterBar';
 import WeightTimeline from './WeightTimeline';
+import { SkeletonList } from '../../../core/components/ui';
 
 function Tile({ icon, value, label, wide }) {
   return (
@@ -40,7 +41,7 @@ export default function AuswertungView({ workouts, loading }) {
   const [customEnd, setCustomEnd] = useState(TODAY);
 
   if (loading) {
-    return <div className="page"><div className="sa-card">Lädt…</div></div>;
+    return <div className="page"><SkeletonList rows={4} /></div>;
   }
 
   const statsAll = computeStats(workouts);
@@ -51,7 +52,7 @@ export default function AuswertungView({ workouts, loading }) {
         <WeightTimeline />
         <div className="sa-card">
           <div className="sa-ch">Auswertung</div>
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          <p className="sp-u-mut0">
             Noch keine abgeschlossene Einheit. Hake im Kalender ein Training ab,
             dann erscheinen hier deine Zahlen.
           </p>
@@ -99,13 +100,13 @@ export default function AuswertungView({ workouts, loading }) {
 
       {!range ? (
         <div className="sa-card">
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          <p className="sp-u-mut0">
             Das Bis-Datum liegt vor dem Von-Datum. Bitte Zeitraum prüfen.
           </p>
         </div>
       ) : statsFiltered.allCount === 0 && statsFiltered.restCount === 0 ? (
         <div className="sa-card">
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          <p className="sp-u-mut0">
             Keine Einheit in diesem Zeitraum.
           </p>
         </div>

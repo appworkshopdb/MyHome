@@ -12,6 +12,7 @@ import {
 } from '../lib/finance';
 import RecurringSheet from './RecurringSheet';
 import { IconChevron, IconContract, IconFixed, IconIncome, IconPlus } from './ContractIcons';
+import { confirmDialog } from '../../../core/components/ui';
 
 const intervalOf = (x) => x.interval ?? (x.quarterly ? 'quarterly' : 'monthly');
 
@@ -221,12 +222,12 @@ export default function ContractsView() {
   }
 
   async function handleDeleteTemplate(id) {
-    if (!confirm('Posten löschen? Bereits übernommene Monatswerte bleiben erhalten.')) return;
+    if (!(await confirmDialog({ title: 'Posten löschen?', text: 'Bereits übernommene Monatswerte bleiben erhalten.' }))) return;
     await run(() => db.deleteFixTemplate(session, id), 'Posten gelöscht', 'Löschen fehlgeschlagen');
   }
 
   async function handleDeleteContract(id) {
-    if (!confirm('Vertrag löschen?')) return;
+    if (!(await confirmDialog({ title: 'Vertrag löschen?' }))) return;
     await run(() => db.deleteContract(id), 'Vertrag gelöscht', 'Löschen fehlgeschlagen');
   }
 

@@ -26,6 +26,7 @@ import {
 import { PAYMENT_METHODS, INSTANT_PAYMENT_METHODS } from '../lib/data/stores.js';
 import { STORE_NAMES } from '../lib/data/items.js';
 import { fmtAmount, planTransfer, transferHint } from '../lib/recipeImport.js';
+import Icon from '../../../core/components/Icon';
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const qtyLabel = (it) => (it.quantity != null || it.unit ? fmtAmount(it.quantity, it.unit) : '');
@@ -263,13 +264,13 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
         >
           <div className="cl-result-big" aria-hidden="true"><span><IconCheck /></span></div>
           <div className="cl-rlist">
-            <div><i>✓</i><span>{result.bought} {result.bought === 1 ? 'Artikel' : 'Artikel'} gekauft</span></div>
+            <div><i><Icon name="check" size={null} className="glyph" /></i><span>{result.bought} {result.bought === 1 ? 'Artikel' : 'Artikel'} gekauft</span></div>
             {result.moved > 0 && (
               <div><i>↗</i><span>{result.moved} Artikel auf „{result.targetName}“ übertragen
                 <small>{result.merged ? `${result.merged} davon aufgestockt` : 'als neue Zeilen'}{result.newList ? ' · Liste neu angelegt' : ''}</small></span></div>
             )}
             {result.discarded > 0 && (
-              <div><i>🗑</i><span>{result.discarded} Artikel verworfen<small>aus der Liste gelöscht</small></span></div>
+              <div><i><Icon name="trash" size={null} className="glyph" /></i><span>{result.discarded} Artikel verworfen<small>aus der Liste gelöscht</small></span></div>
             )}
             {result.template && (
               <div><i>📋</i><span>Als Vorlage „{result.template}“ gespeichert<small>{result.templateCount} {result.templateCount === 1 ? 'Artikel' : 'Artikel'} · zu finden unter Plus → Aus Vorlage</small></span></div>
@@ -352,13 +353,13 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
             <span className="rd" />
           </button>
           <button type="button" className="cl-lopt warn" role="radio" aria-checked={discard} onClick={() => setTarget('discard')}>
-            <span className="ic">🗑</span>
+            <span className="ic"><Icon name="trash" size={null} className="glyph" /></span>
             <span className="t"><b>Verwerfen</b><small>nicht mehr gebraucht, wird gelöscht</small></span>
             <span className="rd" />
           </button>
         </div>
         {target === 'new' && (
-          <input className="cl-field" style={{ marginTop: 8 }} value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label="Name der neuen Liste" />
+          <input className="cl-field cl-field--gap" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label="Name der neuen Liste" />
         )}
       </>
     );
@@ -371,7 +372,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
               <div key={p.id || `new-${i}`} className="cl-pay">
                 <span className="am">{formatEur(p.amount)}</span>
                 <span className="mt">{p.payment}{p.store_name ? ` · ${p.store_name}` : ''}{p.note ? ` · ${p.note}` : ''}</span>
-                <button type="button" className="x" onClick={() => removePayment(i)} aria-label="Zahlung löschen">×</button>
+                <button type="button" className="x" onClick={() => removePayment(i)} aria-label="Zahlung löschen"><Icon name="close" size={null} className="glyph" /></button>
               </div>
             ))}
           </div>
@@ -380,7 +381,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
         {form ? (
           <div className="cl-form">
             {form.scan && (
-              <div className={`cl-note${form.scan === 'noTotal' ? ' warn' : ''}`} style={{ margin: 0 }}>
+              <div className={`cl-note cl-note--flush${form.scan === 'noTotal' ? ' warn' : ''}`}>
                 {form.scan === 'ok' ? 'Beleg gelesen – bitte prüfen und bei Bedarf ändern.' : 'Betrag nicht erkannt – bitte eingeben.'}
               </div>
             )}
@@ -440,7 +441,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
                 <button type="button" className="cl-aview" onClick={() => setTmplPopup(true)}>
                   <span>Artikel ansehen</span>
                   <span className="cl-q">{tmplItems.length}</span>
-                  <span className="go" aria-hidden="true">›</span>
+                  <span className="go" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
                 </button>
                 {tmplItems.length === 0 && <div className="cl-note warn">Keine Artikel in der Vorlage. Es wird keine Vorlage gespeichert.</div>}
               </>
@@ -454,7 +455,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
             <div className="cl-pop" role="dialog" aria-modal="true" aria-label="Artikel der Vorlage">
               <div className="cl-pop-h">
                 <span className="t"><b>Artikel der Vorlage</b><small>Entfernen gilt nur für die Vorlage, nicht für deine Liste</small></span>
-                <button type="button" className="cl-pop-x" onClick={() => setTmplPopup(false)} aria-label="Schließen">✕</button>
+                <button type="button" className="cl-pop-x" onClick={() => setTmplPopup(false)} aria-label="Schließen"><Icon name="close" size={null} className="glyph" /></button>
               </div>
               <div className="cl-pop-list">
                 {tmplItems.length === 0 && <div className="cl-pop-empty">Keine Artikel mehr in der Vorlage.</div>}

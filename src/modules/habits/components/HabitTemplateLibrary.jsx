@@ -8,6 +8,8 @@ import { useState, useMemo } from 'react';
 import { HABIT_LIBRARY, HABIT_CATEGORIES, TIME_SLOTS } from '../lib/habUtils.js';
 import { goalKind, goalText } from '../../../core/lib/habitCatalog.js';
 import '../habits.css';
+import Icon from '../../../core/components/Icon';
+import HabitIcon from '../../../core/components/HabitIcon';
 
 const DAY_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -147,7 +149,7 @@ export default function HabitTemplateLibrary({ habits, onPick }) {
           <div className="hab-tl-starters">
             {STARTER_NAMES.map((n) => HABIT_LIBRARY.find((t) => t.name === n)).filter(Boolean).map((t) => (
               <button key={t.name} type="button" className="hab-tl-st" onClick={() => onPick(t)}>
-                <span className="ic">{t.icon}</span>
+                <span className="ic"><HabitIcon emoji={t.icon} /></span>
                 <b>{t.name}</b>
                 <small>{metaLine(t)}</small>
                 <span className="go">{isActive(t) ? 'Schon aktiv' : '+ Hinzufügen'}</span>
@@ -159,7 +161,7 @@ export default function HabitTemplateLibrary({ habits, onPick }) {
           <div className="hab-tl-cats">
             {categories.map((c) => (
               <button key={c.name} type="button" className="hab-tl-cat" onClick={() => setCat(c.name)}>
-                <span className="ic">{c.icon}</span>
+                <span className="ic"><HabitIcon emoji={c.icon} /></span>
                 <b>{c.name}</b>
                 <small>{c.total} Vorlagen{c.active > 0 ? ` · ${c.active} aktiv` : ''}</small>
               </button>
@@ -180,9 +182,9 @@ export default function HabitTemplateLibrary({ habits, onPick }) {
                   className={`hab-tl-row${active ? ' is-active' : ''}`}
                   onClick={() => onPick(t)}
                 >
-                  <span className="ic">{t.icon}</span>
+                  <span className="ic"><HabitIcon emoji={t.icon} /></span>
                   <span className="txt"><b>{t.name}</b><small>{metaLine(t)}</small></span>
-                  {active ? <span className="hab-tl-done">Aktiv</span> : <span className="hab-tl-add" aria-hidden="true">+</span>}
+                  {active ? <span className="hab-tl-done">Aktiv</span> : <span className="hab-tl-add" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>}
                 </button>
               );
             })}

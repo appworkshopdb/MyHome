@@ -16,38 +16,26 @@ import Bird from './components/birds/Bird';
 import { STAGE_NAMES } from './components/birds/birdArt';
 import ModuleTopBar from './components/ModuleTopBar';
 import Modal from './components/Modal';
-import { IconInfo, IconEdit } from './components/Icons';
+import Icon from './components/Icon';
+import { SkeletonList, Skeleton, Button, TextField, Segmented } from './components/ui';
+import { formatNumber, formatUnit } from './lib/format';
 
 const labelOf = (list, key) => list.find((x) => x.key === key)?.label || '';
 const fmt = (n) => n.toLocaleString('de-DE');
 
-const Chevron = () => (
-  <svg className="prof-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-);
-const RowIcon = ({ children }) => (
-  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
-);
-const ICONS = {
-  koerper: <RowIcon><circle cx="12" cy="5" r="2.5" /><path d="M12 8v7M7 11h10M9 21l3-6 3 6" /></RowIcon>,
-  // Geschlechtssymbole fürs Körperdaten-Icon (Mars/Venus), je nach Auswahl
-  mars: <RowIcon><circle cx="10" cy="14" r="5.5" /><path d="M14 10l6-6M15 4h5v5" /></RowIcon>,
-  venus: <RowIcon><circle cx="12" cy="9" r="5.5" /><path d="M12 14.5V22M9 18.5h6" /></RowIcon>,
-  ziel: <RowIcon><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></RowIcon>,
-  ernaehrung: <RowIcon><path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15z" /><path d="M5 19l8-8" /></RowIcon>,
-  werte: <RowIcon><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></RowIcon>,
-};
+const ROW_ICON = { koerper: 'person', ziel: 'target', ernaehrung: 'leaf', werte: 'chart' };
 
 // Eine aufklappbare Zeile: Kurzwerte im Kopf, Bearbeiten im Körper.
-function Row({ id, icon, open, onToggle, title, summary, bad, children }) {
+function Row({ id, open, onToggle, title, summary, bad, children }) {
   return (
     <div className={`prof-row${open ? ' open' : ''}`}>
       <button className="prof-row-head" onClick={() => onToggle(id)} aria-expanded={open}>
-        <span className="prof-ico">{icon || ICONS[id]}</span>
+        <span className="prof-ico"><Icon name={ROW_ICON[id]} /></span>
         <span className="prof-row-text">
           <b>{title}</b>
           <span className={bad ? 'bad' : ''}>{summary}</span>
         </span>
-        <Chevron />
+        <Icon name="expand" className="prof-chev" />
       </button>
       <div className="prof-row-body"><div><div className="prof-row-inner">{children}</div></div></div>
     </div>
@@ -65,6 +53,7 @@ const PROFILE_REQUIRED_FIELDS = [...BODY_REQUIRED_FIELDS, { key: 'training_focus
 
 function memberSince(isoDate) {
   const start = new Date(isoDate);
+  if (!isoDate || Number.isNaN(start.getTime())) return '';
   const now = new Date();
   const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
   if (months < 1) return 'Diesen Monat dazugekommen';
@@ -175,14 +164,14 @@ export default function Profile({ hasWarnings }) {
   const species = gami.bird_species || 'robin';
   const bp = bodyProfile;
 
-  const bodySummary = !bp ? 'Wird geladen…'
+  const bodySummary = !bp ? <Skeleton w={110} h={12} />
     : missingBody.length ? `${missingBody.map((f) => f.label).join(', ')} fehlt`
-      : `${bp.gender === 'm' ? 'Männlich' : 'Weiblich'} · ${bp.age} J. · ${bp.height} cm · ${bp.weight} kg`;
-  const goalSummary = !bp ? 'Wird geladen…'
+      : `${bp.gender === 'm' ? 'Männlich' : 'Weiblich'} · ${bp.age} J. · ${formatUnit(bp.height, 'cm', 0)} · ${formatUnit(bp.weight, 'kg', 1)}`;
+  const goalSummary = !bp ? <Skeleton w={110} h={12} />
     : missingGoal.length ? `${missingGoal.map((f) => f.label).join(', ')} fehlt`
       : `${labelOf(GOAL, bp.goal)} · ${labelOf(ACTIVITY, bp.activity)} · ${labelOf(TRAINING_FOCUS, bp.training_focus)}`;
-  const dietSummary = dietProfile ? (DIET_OPTIONS.find((d) => d.key === dietProfile.diet)?.label || 'Alles') : 'Wird geladen…';
-  const valuesSummary = body ? `${fmt(body.tdee)} kcal Bedarf · ${body.protein} g Protein · ${body.water} L Wasser` : 'Körperdaten fehlen';
+  const dietSummary = dietProfile ? (DIET_OPTIONS.find((d) => d.key === dietProfile.diet)?.label || 'Alles') : <Skeleton w={110} h={12} />;
+  const valuesSummary = body ? `${fmt(body.tdee)} kcal Bedarf · ${formatUnit(body.protein, 'g', 0)} Protein · ${formatUnit(body.water, 'L', 1)} Wasser` : 'Körperdaten fehlen';
 
   return (
     <div className="hub with-topbar-space">
@@ -195,11 +184,11 @@ export default function Profile({ hasWarnings }) {
             <span className="profile-avatar">
               {avatar ? <img src={avatar} alt="" /> : initial}
             </span>
-            <span className="profile-avatar-edit" aria-hidden="true"><IconEdit /></span>
+            <span className="profile-avatar-edit" aria-hidden="true"><Icon name="edit" size={14} /></span>
           </button>
           <div className="prof-who">
             <div className="prof-mail">{session.user.email}</div>
-            <div className="prof-since">{memberSince(session.user.created_at)}</div>
+            {memberSince(session.user.created_at) && <div className="prof-since">{memberSince(session.user.created_at)}</div>}
             <div className="prof-chips">
               {gami.loaded && (
                 <span className="prof-chip warm">
@@ -214,28 +203,16 @@ export default function Profile({ hasWarnings }) {
 
         {!pwForm ? (
           <div className="prof-acts">
-            <button className="btn btn-secondary" onClick={() => setPwForm(true)}>Passwort ändern</button>
-            <button className="btn btn-danger" onClick={async () => { await releasePushForLogout(session); rawAuth.signOut(); setSession(null); }}>Abmelden</button>
+            <Button variant="secondary" icon="lock" onClick={() => setPwForm(true)}>Passwort ändern</Button>
+            <Button variant="text" onClick={async () => { await releasePushForLogout(session); rawAuth.signOut(); setSession(null); }}>Abmelden</Button>
           </div>
         ) : (
-          <div style={{ marginTop: 14 }}>
-            <div className="form-group" style={{ marginBottom: 10 }}>
-              <label>Neues Passwort</label>
-              <input type="password" value={pw1} onChange={(e) => setPw1(e.target.value)} />
-            </div>
-            <div className="form-group" style={{ marginBottom: 10 }}>
-              <label>Wiederholen</label>
-              <input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
-            </div>
-            {pwStatus && <div className={`status-note ${pwStatus.type}`}>{pwStatus.text}</div>}
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-              <button className="btn btn-primary" onClick={changePassword}>Speichern</button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => { setPwForm(false); setPwStatus(null); setPw1(''); setPw2(''); }}
-              >
-                Abbrechen
-              </button>
+          <div className="prof-pw">
+            <TextField label="Neues Passwort" type="password" autoComplete="new-password" value={pw1} onChange={(e) => setPw1(e.target.value)} />
+            <TextField label="Wiederholen" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} error={pwStatus?.text} />
+            <div className="prof-acts">
+              <Button onClick={changePassword}>Speichern</Button>
+              <Button variant="secondary" onClick={() => { setPwForm(false); setPwStatus(null); setPw1(''); setPw2(''); }}>Abbrechen</Button>
             </div>
           </div>
         )}
@@ -245,7 +222,7 @@ export default function Profile({ hasWarnings }) {
       {body && (
         <div className="prof-hero">
           <div>
-            <div className="prof-hero-k">Dein Kalorienziel</div>
+            <div className="prof-hero-k">Kalorienziel</div>
             <div className="prof-hero-v">{fmt(body.target)} <small>kcal</small></div>
           </div>
           <div className="prof-hero-mini">
@@ -256,36 +233,26 @@ export default function Profile({ hasWarnings }) {
       )}
 
       <div className="prof-acc">
-        <Row id="koerper" icon={bp?.gender === 'm' ? ICONS.mars : bp?.gender === 'w' ? ICONS.venus : null} open={openRow === 'koerper'} onToggle={toggle} title="Körperdaten" summary={bodySummary} bad={missingBody.length > 0}>
+        <Row id="koerper" open={openRow === 'koerper'} onToggle={toggle} title="Körperdaten" summary={bodySummary} bad={missingBody.length > 0}>
           {bp && <BodyDataForm value={bp} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />}
-          <p className="profile-section-hint">Gilt app-weit — für Ernährung und Sport.</p>
         </Row>
 
         <Row id="ziel" open={openRow === 'ziel'} onToggle={toggle} title="Aktivität & Ziel" summary={goalSummary} bad={missingGoal.length > 0}>
           {bp && <ActivityGoalForm value={bp} onChange={handleBodyChange} requiredFields={PROFILE_REQUIRED_FIELDS} showTitle={false} />}
-          <p className="profile-section-hint">Trainingsfokus und Sportarten steuern das Sport-Modul.</p>
         </Row>
 
         <Row id="ernaehrung" open={openRow === 'ernaehrung'} onToggle={toggle} title="Ernährungsform" summary={dietSummary}>
           {dietProfile && (
-            <div className="segmented cols-4">
-              {DIET_OPTIONS.map((d) => (
-                <button key={d.key} className={dietProfile.diet === d.key ? 'active' : ''} onClick={() => handleDietChange(d.key)}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
+            <Segmented label="Ernährungsform" options={DIET_OPTIONS.map((d) => ({ value: d.key, label: d.label }))} value={dietProfile.diet} onChange={handleDietChange} />
           )}
         </Row>
 
         <Row id="werte" open={openRow === 'werte'} onToggle={toggle} title="Deine Werte" summary={valuesSummary}>
           {!body ? (
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Trag unter „Körperdaten“ Alter, Größe und Gewicht ein, um deine Werte zu sehen.
-            </p>
+            <p className="prof-hint">Alter, Größe und Gewicht fehlen noch.</p>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              <div className="prof-tiles">
                 <ResultTile metricKey="bmi" value={body.bmi} note={body.bmiCat} onInfo={setInfoKey} />
                 <ResultTile metricKey="bmr" value={body.bmr} unit="kcal" note="BMR (Mifflin-St Jeor)" onInfo={setInfoKey} />
                 <ResultTile metricKey="tdee" value={body.tdee} unit="kcal" note="TDEE" onInfo={setInfoKey} />
@@ -294,17 +261,15 @@ export default function Profile({ hasWarnings }) {
                 <ResultTile metricKey="fat" value={body.fatG} unit="g" note="täglich" onInfo={setInfoKey} />
                 <ResultTile metricKey="carb" value={body.carbG} unit="g" note="täglich" onInfo={setInfoKey} />
                 <ResultTile metricKey="water" value={body.water} unit="L" note="täglich" onInfo={setInfoKey} />
-                <ResultTile metricKey="idealweight" value={`${body.wMin}–${body.wMax}`} unit="kg" note="bei deiner Größe" onInfo={setInfoKey} />
+                <ResultTile wide metricKey="idealweight" value={`${formatNumber(body.wMin, 1)}–${formatNumber(body.wMax, 1)}`} unit="kg" note="bei deiner Größe" onInfo={setInfoKey} />
               </div>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 10 }}>
-                Alle Werte sind rechnerische Schätzungen auf Basis anerkannter Formeln, keine medizinische Beratung.
-              </p>
+              <p className="prof-hint">Rechnerische Schätzung, keine medizinische Beratung.</p>
             </>
           )}
         </Row>
       </div>
 
-      {loading && <div className="status-note">Wird geladen…</div>}
+      {loading && <SkeletonList rows={2} />}
 
       {avatarOpen && (
         <AvatarEditor avatar={avatar} initial={initial} onClose={() => setAvatarOpen(false)} />
@@ -323,38 +288,25 @@ export default function Profile({ hasWarnings }) {
 
 function InfoRow({ label, text }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', marginBottom: 3 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>{text}</div>
+    <div className="prof-info">
+      <div className="prof-info-k">{label}</div>
+      <div className="prof-info-v">{text}</div>
     </div>
   );
 }
 
-function ResultTile({ metricKey, value, unit, note, onInfo }) {
+function ResultTile({ metricKey, value, unit, note, onInfo, wide = false }) {
   return (
-    <div style={{ position: 'relative', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
-      <button
-        onClick={() => onInfo(metricKey)}
-        aria-label={`Erklärung zu ${METRIC_INFO[metricKey].title}`}
-        style={{
-          position: 'absolute', top: 8, right: 8,
-          width: 22, height: 22, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--text-muted)',
-        }}
-      >
-        <IconInfo />
+    <div className={`prof-tile${wide ? ' prof-tile--wide' : ''}`}>
+      <button className="prof-tile-info" onClick={() => onInfo(metricKey)} aria-label={`Erklärung zu ${METRIC_INFO[metricKey].title}`}>
+        <Icon name="info" size={18} />
       </button>
-      <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', paddingRight: 20 }}>
-        {METRIC_INFO[metricKey].title}
+      <div className="prof-tile-k">{METRIC_INFO[metricKey].title}</div>
+      <div className="prof-tile-v">
+        {typeof value === 'number' ? formatNumber(value, 1) : value}
+        {unit && <small>{unit}</small>}
       </div>
-      <div style={{ fontSize: '1.3rem', fontWeight: 700, marginTop: 2 }}>
-        {value}
-        {unit && <span style={{ fontSize: '0.78rem', fontWeight: 500, color: 'var(--text-muted)', marginLeft: 3 }}>{unit}</span>}
-      </div>
-      {note && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{note}</div>}
+      {note && <div className="prof-tile-note">{note}</div>}
     </div>
   );
 }

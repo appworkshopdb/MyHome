@@ -4,6 +4,8 @@ import { IconEdit, IconTrash, IconPlus } from '../../../core/components/Icons';
 import { RECIPE_CATS, TAG_COLORS, fmt, fmtAmount } from '../lib/nutrition';
 import { RecipeCover } from '../lib/recipeCovers';
 import { getSheet } from '../../../core/lib/sheetRegistry';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Das Sheet gehört zum Einkauf (modules/shopping/sheets.js); Ernährung und
 // Einkauf importieren sich nicht gegenseitig, deshalb über die Sheet-Registry.
@@ -35,7 +37,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       {(!isTemplate && onLogMeal) || onShoppingAdded ? (
         <div className="recipe-top-actions">
           {!isTemplate && onLogMeal && (
-            <button className="btn btn-primary" onClick={() => onLogMeal(recipe)}>Gegessen eintragen</button>
+            <Button onClick={() => onLogMeal(recipe)}>Gegessen eintragen</Button>
           )}
           {onShoppingAdded && (
             <button
@@ -49,18 +51,18 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         {isTemplate ? (
-          <button className="btn btn-primary" onClick={() => onCopy(recipe)}><IconPlus /> Übernehmen</button>
+          <Button icon="plus" onClick={() => onCopy(recipe)}>Übernehmen</Button>
         ) : isOwner ? (
           <>
-            <button className="btn btn-secondary" onClick={() => onEdit(recipe)}><IconEdit /> Bearbeiten</button>
-            <button className="btn btn-danger" onClick={() => onDelete(recipe.id)}><IconTrash /> Löschen</button>
+            <Button variant="secondary" icon="edit" onClick={() => onEdit(recipe)}>Bearbeiten</Button>
+            <Button variant="danger" icon="trash" onClick={() => onDelete(recipe.id)}>Löschen</Button>
           </>
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="nut-u-wrap">
         <span className="chip">{cat.emoji} {cat.label}</span>
         {isShared && <span className="chip">Vom Haushalt geteilt{!isOwner ? ' (nicht von dir)' : ''}</span>}
       </div>
@@ -76,18 +78,18 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
             </div>
           </div>
           <div className="portion-stepper">
-            <button type="button" aria-label="Eine Portion weniger" disabled={portions <= 1} onClick={() => setPortions((p) => Math.max(1, p - 1))}>−</button>
+            <button type="button" aria-label="Eine Portion weniger" disabled={portions <= 1} onClick={() => setPortions((p) => Math.max(1, p - 1))}><Icon name="minus" size={null} className="glyph" /></button>
             <input
               type="number" min="1" max="99" inputMode="numeric" aria-label="Portionen"
               value={portions}
               onChange={(e) => setPortions(Math.min(99, Math.max(1, Math.round(+e.target.value) || 1)))}
             />
-            <button type="button" aria-label="Eine Portion mehr" disabled={portions >= 99} onClick={() => setPortions((p) => Math.min(99, p + 1))}>+</button>
+            <button type="button" aria-label="Eine Portion mehr" disabled={portions >= 99} onClick={() => setPortions((p) => Math.min(99, p + 1))}><Icon name="plus" size={null} className="glyph" /></button>
           </div>
         </div>
       </div>
 
-      <div className="card nut-facts" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+      <div className="card nut-facts nut-u-flush-hidden">
         <div className="nut-facts-row head">
           <span />
           <span>Pro Portion</span>
@@ -109,15 +111,15 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       </div>
 
       <div>
-        <div className="card-title" style={{ marginBottom: 8 }}>Zutaten für {portions} Portion{portions !== 1 ? 'en' : ''}</div>
-        <div className="card" style={{ margin: 0, padding: 0 }}>
+        <div className="card-title nut-u-mb8">Zutaten für {portions} Portion{portions !== 1 ? 'en' : ''}</div>
+        <div className="card nut-u-flush">
           {recipe.ingredients.map((ing, idx) => {
             const food = foodsById[ing.foodId];
             if (!food) return null;
             return (
-              <div key={idx} style={{ display: 'flex', padding: '9px 14px', borderBottom: idx < recipe.ingredients.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ flex: 1, fontSize: '0.85rem' }}>{food.name}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
+              <div key={idx} className="nut-ing-row">
+                <span className="nut-u-grow">{food.name}</span>
+                <span className="nut-u-strong">{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
               </div>
             );
           })}
@@ -125,7 +127,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       </div>
 
       {((recipe.goalTags || []).length > 0 || (recipe.customTags || []).length > 0 || calc.tags.length > 0) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div className="nut-u-wrap">
           {(recipe.goalTags || []).map((t) => <span key={t} className="goal-tag">{t}</span>)}
           {(recipe.customTags || []).map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
           {calc.tags.map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
@@ -133,9 +135,9 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       )}
 
       {recipe.note && (
-        <div className="lex-detail-block" style={{ background: 'var(--warning-light)' }}>
-          <div className="heading" style={{ color: 'var(--warning)' }}>Notiz</div>
-          <div style={{ fontSize: '0.85rem' }}>{recipe.note}</div>
+        <div className="lex-detail-block nut-u-warnbg">
+          <div className="heading nut-u-warn">Notiz</div>
+          <div className="nut-u-small">{recipe.note}</div>
         </div>
       )}
       {showShop && (

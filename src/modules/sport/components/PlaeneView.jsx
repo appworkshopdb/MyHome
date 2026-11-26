@@ -8,6 +8,7 @@ import { addDaysIso, diffDays, planDayFor, planImpact } from '../../../core/lib/
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
 import { muscleLabels, planCounts, resolvePlanIcon, resolvePlanMuscleGroups } from '../lib/planMuscles';
 import { resolveTypeLabel } from '../lib/typeLabel';
+import { SkeletonList, Button, IconButton } from '../../../core/components/ui';
 
 // Seite "Pläne" in drei Stufen, oben immer EINE Karte:
 //   1. Kein Plan ausgewählt: gestrichelte Karte mit "Plan auswählen" / "Neuer Plan"
@@ -60,7 +61,7 @@ function PlanEmpty({ hasPlans, onPick, onNew }) {
         <span className="pl-hero0-ring"><Icon d={PLUS} size={26} /></span>
       </div>
       <div className="pl-hero0-row">
-        {hasPlans && <button type="button" className="btn btn-primary" onClick={onPick}>Plan auswählen</button>}
+        {hasPlans && <Button onClick={onPick}>Plan auswählen</Button>}
         <button type="button" className={`btn ${hasPlans ? 'btn-secondary' : 'btn-primary'}`} onClick={onNew}>Neuer Plan</button>
       </div>
     </div>
@@ -169,13 +170,9 @@ function PlanRow({ plan, units, onActivate, onEdit, onMore }) {
         </div>
       </div>
       <div className="pl-plan-acts">
-        <button type="button" className="btn btn-primary" onClick={() => onActivate(plan)}>Aktivieren</button>
-        <button type="button" className="btn btn-secondary" onClick={() => onEdit(plan)}>Bearbeiten</button>
-        <button type="button" className="btn btn-secondary pl-more" onClick={() => onMore(plan)} aria-label={`Mehr zu ${plan.title}`}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-            <circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" />
-          </svg>
-        </button>
+        <Button onClick={() => onActivate(plan)}>Aktivieren</Button>
+        <Button variant="secondary" onClick={() => onEdit(plan)}>Bearbeiten</Button>
+        <IconButton icon="more" variant="quiet" className="pl-more" onClick={() => onMore(plan)} label={`Mehr zu ${plan.title}`} />
       </div>
     </details>
   );
@@ -245,13 +242,13 @@ export default function PlaeneView({
       <div className="card">
         <div className="card-title">Deine Pläne</div>
         {loading ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Lädt…</p>
+          <SkeletonList rows={3} />
         ) : plans.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          <p className="sp-u-mut0">
             Noch kein Plan. Mit „Neuer Plan“ oder dem ＋-Button unten rechts legst du einen an und wählst ihn danach hier aus.
           </p>
         ) : others.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          <p className="sp-u-mut0">
             Weitere Pläne erscheinen hier. Mit dem ＋-Button unten rechts legst du einen neuen an.
           </p>
         ) : (

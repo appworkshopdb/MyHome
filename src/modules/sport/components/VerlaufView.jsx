@@ -7,6 +7,7 @@ import CalendarLegend from './CalendarLegend';
 import DayDetail from './DayDetail';
 import WorkoutForm from './WorkoutForm';
 import { todayIso } from '../../../core/lib/wizardDates';
+import { SkeletonList } from '../../../core/components/ui';
 
 // Lokales Kalenderdatum (toISOString würde zwischen 0 und 2 Uhr den Vortag liefern)
 const TODAY = todayIso;
@@ -37,7 +38,7 @@ export default function VerlaufView({
   const [selectedDate, setSelectedDate] = useState(TODAY);
 
   if (loading) {
-    return <div className="page"><div className="card">Lädt…</div></div>;
+    return <div className="page"><SkeletonList rows={4} /></div>;
   }
 
   if (formInitial !== false) {

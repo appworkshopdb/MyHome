@@ -6,6 +6,8 @@ import OwnUnitForm from './OwnUnitForm';
 import * as db from '../lib/spoData';
 import { buildCatalog } from '../lib/unitCatalog';
 import { OWN_CATEGORIES, categoryOfType } from '../lib/sportSymbols';
+import Icon from '../../../core/components/Icon';
+import { SkeletonList, Button } from '../../../core/components/ui';
 
 // Bereich "Einheiten": die Bibliothek. Umschalter Vorlagen | Eigene.
 //   Vorlagen: fest vorgegebene Einheiten aus der App, nur ansehen (gruppiert wie in der Galerie).
@@ -29,7 +31,7 @@ function Row({ entry, sub, onClick }) {
       <span className="eh-tx"><b>{entry.title}</b>{sub && <small>{sub}</small>}</span>
       <span className="eh-vis"><UnitVisual tags={entry.muscle_groups} icon={entry.icon} size={36} max={3} /></span>
       {onClick && (
-        <svg className="eh-edit" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /></svg>
+        <Icon name="edit" size={null} className="eh-edit glyph" />
       )}
     </Tag>
   );
@@ -82,9 +84,9 @@ export default function EinheitenView({ units, loading, userSports = [], onChang
         </>
       ) : (
         <>
-          <button type="button" className="btn btn-secondary btn-block" onClick={() => setEditing(null)}>＋ Neue eigene Einheit</button>
+          <Button variant="secondary" icon="plus" block onClick={() => setEditing(null)}>Neue eigene Einheit</Button>
           {loading ? (
-            <p className="eh-hint">Lädt…</p>
+            <SkeletonList rows={3} />
           ) : own.length === 0 ? (
             <p className="eh-hint">Noch keine eigene Einheit. Lege eine mit Symbol oder Muskeln an, sie steht dann in der Galerie unter „Eigene“.</p>
           ) : (

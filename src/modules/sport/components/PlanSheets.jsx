@@ -3,6 +3,8 @@ import SheetShell from '../../../core/components/SheetShell.jsx';
 import { addDaysIso, planDayFor } from '../../../core/lib/sportPlanSync';
 import { parseIso, todayIso } from '../../../core/lib/wizardDates';
 import { planCounts } from '../lib/planMuscles';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Bottom-Sheets des Dauerplans: aktivieren/wechseln, beenden, Änderung am
 // aktiven Plan bestätigen. Texte bewusst knapp, nur das, was der Nutzer vor
@@ -28,10 +30,8 @@ function Fact({ ok, children }) {
 function Foot({ confirmLabel, onConfirm, onClose, busy, disabled }) {
   return (
     <div className="pl-foot">
-      <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy || disabled}>
-        {busy ? 'Einen Moment …' : confirmLabel}
-      </button>
-      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
+      <Button onClick={onConfirm} disabled={busy || disabled}>{busy ? 'Einen Moment …' : confirmLabel}</Button>
+      <Button variant="secondary" onClick={onClose} disabled={busy}>Abbrechen</Button>
     </div>
   );
 }
@@ -140,10 +140,8 @@ export function DeletePlanSheet({ plan, onConfirm, onClose, busy }) {
           <Fact ok>Bereits eingetragene Einheiten bleiben im Kalender.</Fact>
         </Facts>
         <div className="pl-foot">
-          <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={busy}>
-            {busy ? 'Einen Moment …' : 'Plan löschen'}
-          </button>
-          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
+          <Button variant="danger" onClick={onConfirm} disabled={busy}>{busy ? 'Einen Moment …' : 'Plan löschen'}</Button>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>Abbrechen</Button>
         </div>
       </div>
     </SheetShell>
@@ -181,7 +179,7 @@ export function PickPlanSheet({ plans, onPick, onNew, onClose }) {
             </button>
           ))}
           <button type="button" className="pl-pk pl-pk--new" onClick={onNew}>
-            <span className="pl-rd pl-rd--plus" aria-hidden="true">+</span>
+            <span className="pl-rd pl-rd--plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span>
             <span className="pl-pk-t">
               <b>Neuen Plan anlegen</b>
               <small>Eigene Einheiten zu einem Plan zusammenstellen</small>

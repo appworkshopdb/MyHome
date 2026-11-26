@@ -26,7 +26,7 @@ export default function TemplateCategories({ counts, onPick }) {
             {meals.map((c) => (
               <button key={c.key} type="button" className="tpl-tile" onClick={() => onPick(c.key)}>
                 <span className={`tpl-art tpl-tone-${c.tone}`}>
-                  <RecipeCover recipe={c.cover} className="tpl-cover" style={{ background: 'transparent' }} />
+                  <RecipeCover recipe={c.cover} className="tpl-cover nut-u-transp" />
                 </span>
                 <span className="tpl-tile-t">{c.label}</span>
                 <span className="tpl-tile-s">{counts[c.key]} Rezepte</span>

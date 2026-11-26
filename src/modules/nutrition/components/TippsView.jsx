@@ -3,6 +3,8 @@ import { IconSearch, IconBack, IconChevronDown, IconCheck } from '../../../core/
 import { TIPPS, TIPP_CATS } from '../lib/data/tipps';
 import { BODY_DATA } from '../lib/data/body';
 import { TIPP_ICONS } from '../lib/nutrition';
+import Icon from '../../../core/components/Icon';
+import { Segmented, Button } from '../../../core/components/ui';
 
 const WIRKUNG_STYLE = {
   positiv: { bg: 'var(--success-light)', text: 'var(--success)' },
@@ -39,10 +41,12 @@ export default function TippsView() {
 
   return (
     <>
-      <div className="chip-row" style={{ marginBottom: 12 }}>
-        <button className={`chip ${tab === 'tipps' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => setTab('tipps')}>Ernährungs-Tipps</button>
-        <button className={`chip ${tab === 'body' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => setTab('body')}>Körper &amp; Nährstoffe</button>
-      </div>
+      <Segmented
+        label="Bereich"
+        options={[{ value: 'tipps', label: 'Ernährungs-Tipps' }, { value: 'body', label: 'Körper & Nährstoffe' }]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {tab === 'tipps' && TIPP_CATS.map((c) => {
         const items = TIPPS.filter((t) => t.cat === c.key);
@@ -53,7 +57,7 @@ export default function TippsView() {
               <span className="emoji">{TIPP_ICONS[c.key] || '💡'}</span>
               <span className="title">{c.label}</span>
               <span className="count">{items.length} Tipps</span>
-              <span style={{ transform: isOpen ? 'rotate(180deg)' : 'none', display: 'flex' }}><IconChevronDown /></span>
+              <span className={`tip-chev${isOpen ? ' is-open' : ''}`}><Icon name="expand" size={18} /></span>
             </button>
             {isOpen && items.map((t) => {
               const tipOpen = openTips.has(t.id);
@@ -61,11 +65,11 @@ export default function TippsView() {
                 <div key={t.id} className="tip-item">
                   <button className="tip-item-head" onClick={() => toggleTip(t.id)}>
                     <span className="bullet"><IconCheck /></span>
-                    <span style={{ flex: 1 }}>
+                    <span className="tip-item-text">
                       <div className="tip-item-title">{t.title}</div>
                       <div className="tip-item-sub">{t.short}</div>
                     </span>
-                    <span style={{ transform: tipOpen ? 'rotate(180deg)' : 'none', display: 'flex' }}><IconChevronDown /></span>
+                    <span className={`tip-chev${tipOpen ? ' is-open' : ''}`}><Icon name="expand" size={18} /></span>
                   </button>
                   {tipOpen && <div className="tip-item-body">{t.text}</div>}
                 </div>
@@ -78,11 +82,9 @@ export default function TippsView() {
       {tab === 'body' && (
         organ ? (
           <div>
-            <button className="btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }} onClick={() => setOrgan(null)}>
-              <IconBack /> Zurück zur Übersicht
-            </button>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{organ.name}</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 14 }}>{organ.beschreibung}</p>
+            <Button variant="text" size="s" icon="back" className="organ-back" onClick={() => setOrgan(null)}>Zurück</Button>
+            <h3 className="organ-title">{organ.name}</h3>
+            <p className="organ-desc">{organ.beschreibung}</p>
             {(organ.naehrstoffe || []).map((n, idx) => {
               const style = WIRKUNG_STYLE[n.wirkung] || WIRKUNG_STYLE.neutral;
               return (
@@ -114,8 +116,8 @@ export default function TippsView() {
               </div>
             ) : (
               BODY_DATA.map((c) => (
-                <div key={c.name} style={{ marginBottom: 16 }}>
-                  <div className="card-title" style={{ padding: '0 2px' }}>{c.name}</div>
+                <div key={c.name} className="organ-cat">
+                  <div className="card-title organ-cat-title">{c.name}</div>
                   <div className="organ-grid">
                     {(c.organe || []).map((o) => (
                       <button key={o.id} className="organ-card" onClick={() => setOrgan(o)}>

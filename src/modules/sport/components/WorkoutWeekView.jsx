@@ -24,7 +24,7 @@ export default function WorkoutWeekView({ workouts, weekStart, selectedDate, onS
   });
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+    <div className="sp-u-grid7">
       {days.map((date, i) => {
         const key = iso(date);
         const dayWorkouts = byDate.get(key) ?? [];
@@ -40,8 +40,8 @@ export default function WorkoutWeekView({ workouts, weekStart, selectedDate, onS
               padding: 0, ...style,
             }}
           >
-            <span style={{ fontSize: '0.65rem', opacity: 0.75 }}>{WEEKDAYS[i]}</span>
-            <span style={{ fontSize: '1rem' }}>{date.getDate()}</span>
+            <span className="sp-u-faint">{WEEKDAYS[i]}</span>
+            <span className="sp-u-f1">{date.getDate()}</span>
           </button>
         );
       })}

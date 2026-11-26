@@ -3,6 +3,9 @@ import Modal from '../../../core/components/Modal';
 import { IconSearch } from '../../../core/components/Icons';
 import { MEAL_TYPES, computeNutrition, fmt } from '../lib/nutrition';
 import { mealFromRecipe, defaultMealType, todayStr } from '../lib/meals';
+import { formatNumber } from '../../../core/lib/format';
+import MealIcon from '../../../core/components/MealIcon';
+import { Button } from '../../../core/components/ui';
 
 // Ein eigenes Rezept als gegessene Mahlzeit eintragen (Bereich "Mahlzeiten").
 // recipe === null → zuerst ein Rezept aus der Liste wählen; sonst direkt das Formular.
@@ -56,18 +59,18 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         ) : (
           <>
             <div className="form-group">
-              <div className="search-box" style={{ position: 'relative' }}>
+              <div className="search-box nut-u-rel">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Rezept suchen…"
                   aria-label="Rezept suchen"
                 />
-                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><IconSearch /></span>
+                <span className="nut-search-ic"><IconSearch /></span>
               </div>
             </div>
-            <div className="card" style={{ margin: 0, padding: 0 }}>
-              {filtered.length === 0 && <div className="meal-hint" style={{ padding: 14 }}>Kein Rezept gefunden.</div>}
+            <div className="card nut-u-flush">
+              {filtered.length === 0 && <div className="meal-hint nut-u-p14">Kein Rezept gefunden.</div>}
               {filtered.map((r, idx) => {
                 const c = computeNutrition(r.ingredients, foodsById);
                 const perServing = Math.round(c.kcal / (r.servings || 1));
@@ -76,7 +79,6 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
                     key={r.id}
                     type="button"
                     className="meal-pick-row"
-                    style={{ borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}
                     onClick={() => pick(r)}
                   >
                     <span className="meal-pick-name">{r.name}</span>
@@ -95,8 +97,8 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
   return (
     <Modal title={recipe.name} onClose={onClose}>
       <div className="result-grid">
-        <div className="result-tile" style={{ gridColumn: '1 / -1' }}>
-          <div className="label">Nährwerte für {valid ? +portionsNum.toFixed(2) : '–'} Portion{portionsNum === 1 ? '' : 'en'}</div>
+        <div className="result-tile nut-u-span">
+          <div className="label">Nährwerte für {valid ? formatNumber(portionsNum, 2) : '–'} Portion{portionsNum === 1 ? '' : 'en'}</div>
           <div className="value">{valid ? Math.round(calc.kcal * factor) : '–'}<span>kcal</span></div>
         </div>
         <div className="result-tile"><div className="label">Eiweiß</div><div className="value">{valid ? fmt(calc.protein * factor) : '–'}<span>g</span></div></div>
@@ -115,7 +117,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         <div className="segmented cols-4">
           {MEAL_TYPES.map((t) => (
             <button key={t.key} type="button" className={mealType === t.key ? 'active' : ''} onClick={() => setMealType(t.key)}>
-              <div>{t.emoji}</div>
+              <div><MealIcon type={t.key} /></div>
               <div>{t.label}</div>
             </button>
           ))}
@@ -127,13 +129,9 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         <input type="date" value={eatenOn} onChange={(e) => setEatenOn(e.target.value)} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary" disabled={!valid || saving} onClick={save}>
-          {saving ? 'Speichert…' : 'Mahlzeit speichern'}
-        </button>
-        <button className="btn btn-secondary" onClick={initial ? onClose : () => setRecipe(null)}>
-          {initial ? 'Abbrechen' : 'Zurück'}
-        </button>
+      <div className="nut-u-row">
+        <Button disabled={!valid || saving} onClick={save}>{saving ? 'Speichert…' : 'Mahlzeit speichern'}</Button>
+        <Button variant="secondary" onClick={initial ? onClose : () => setRecipe(null)}>{initial ? 'Abbrechen' : 'Zurück'}</Button>
       </div>
     </Modal>
   );

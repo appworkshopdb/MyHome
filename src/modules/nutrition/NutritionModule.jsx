@@ -19,6 +19,7 @@ import { requestOpenList } from '../../core/lib/shoppingHandoff';
 import MealsView from './components/MealsView';
 import * as db from './lib/nutData';
 import { isGramFood } from './lib/meals';
+import { PageSkeleton } from '../../core/components/ui';
 
 registerRequirement('profile', async (session) => {
   const body = await getBodyProfile(session);
@@ -34,7 +35,7 @@ registerRequirement('profile', async (session) => {
 // und Ernährungsform liegen ausschließlich auf der Profilseite oben
 // rechts (core/Profile.jsx). Das Mockup listet "Mein Profil" als
 // Bereich — bewusst nicht umgesetzt, sonst gäbe es zwei Oberflächen für
-// dieselben Daten. ProfilView.jsx bleibt deshalb ungenutzt liegen.
+// dieselben Daten. (ProfilView.jsx wurde entfernt.)
 //
 // BESONDERHEIT dieses Moduls (unverändert): RezepteView UND AmpelView
 // hatten je einen eigenen fest positionierten "+"-Button. "editing"/
@@ -225,7 +226,7 @@ export default function NutritionModule({ view, onNavigateView, hasWarnings }) {
     return (
       <>
         <ModuleTopBar hasWarnings={hasWarnings} />
-        <div className="loading-note with-topbar-space">Lädt…</div>
+        <PageSkeleton />
       </>
     );
   }

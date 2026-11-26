@@ -12,20 +12,21 @@ import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
 import { IconChevronLeft, IconChevronRight, IconEdit, IconTrash } from '../../../core/components/Icons';
+import Icon from '../../../core/components/Icon';
+import { SkeletonList, confirmDialog } from '../../../core/components/ui';
 
-// 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
+// Die drei Ausgaben-Bereiche (Einnahmen haben ihre eigene Seite, #/finance/einnahmen)
 const COLUMNS = [
-  { key: 'einnahmen', label: 'Einnahmen',        cats: ['fixeinnahmen', 'sonstige_einnahmen'] },
   { key: 'fixkosten', label: 'Fixkosten',         cats: ['fixkosten'] },
   { key: 'variable',  label: 'Variable Kosten',   cats: ['variable_kosten'] },
   { key: 'sonstige',  label: 'Sonstige Ausgaben', cats: ['sonstige_ausgaben'] },
 ];
 
 const FILTERS = [
-  { key: 'alle',  label: 'Alle'  },
-  { key: 'offen', label: 'Offen' },
-  { key: 'fix',   label: 'Fix'   },
-  { key: 'sonst', label: 'Sonstige' },
+  { key: 'offen',    label: 'Offen' },
+  { key: 'fix',      label: 'Fix' },
+  { key: 'variable', label: 'Variable' },
+  { key: 'sonst',    label: 'Sonstige' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -68,7 +69,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
           role="checkbox"
           aria-checked={partly ? 'mixed' : fully}
         >
-          {fully ? '✓' : partly ? '–' : ''}
+          {fully ? <Icon name="check" size={null} className="glyph" /> : partly ? '–' : ''}
         </div>
       )}
       <div className="fin-row-info">
@@ -77,7 +78,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
           {/* Notiz: nur ein kleines Symbol hinter dem Namen; den Text gibt es in der Ansicht des Postens */}
           {e.note && (
             <span className="fin-row-noteicon" role="img" aria-label="Notiz vorhanden">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><polyline points="14 3 14 8 19 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></svg>
+              <Icon name="note" size={14} />
             </span>
           )}
         </div>
@@ -135,7 +136,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
   if (offene.length === 0) {
     return (
       <div className="fin-offen-empty">
-        <span className="t-body" style={{ color: 'var(--status-positive)' }}>✓ Alles bezahlt</span>
+        <span className="t-body fin-u-pos">✓ Alles bezahlt</span>
       </div>
     );
   }
@@ -144,10 +145,10 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
     <div className="fin-offen-list">
       {/* Gesamtbetrag */}
       <div className="fin-offen-header">
-        <span className="t-meta" style={{ color: 'var(--text-muted)' }}>
+        <span className="t-meta fin-u-mut">
           {offenePostenText(offene.length)}
         </span>
-        <span className="t-body" style={{ fontWeight: 700, color: 'var(--status-critical)' }}>
+        <span className="t-body fin-u-crit">
           {formatEur(gesamtOffen)}
         </span>
       </div>
@@ -168,9 +169,9 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
 }
 
 // Aufklappbare Kategorie-Sektion (für alle anderen Filter)
-// defaultOpen: in "Fix" und "Ein" steht der einzelne Bereich gleich aufgeklappt, in "Alle" eingeklappt
-function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete, defaultOpen = false }) {
-  const [open, setOpen] = useState(defaultOpen);
+// Der Bereich steht gleich aufgeklappt (je Filter ein einzelner Bereich)
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
+  const [open, setOpen] = useState(true);
 
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
   // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
@@ -197,7 +198,7 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
         <div className="fin-collapse-meta">
           <span className="fin-collapse-count t-meta">{visible.length} Posten</span>
           <span className="fin-collapse-total t-body">{formatEur(total)}</span>
-          <span className={`fin-collapse-chevron ${open ? 'open' : ''}`}>›</span>
+          <span className={`fin-collapse-chevron ${open ? 'open' : ''}`}><Icon name="open" size={null} className="glyph" /></span>
         </div>
       </button>
 
@@ -221,7 +222,8 @@ function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDe
 }
 
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
-export default function MonthsView({ initialFilter = 'alle' }) {
+// showStand: Fokuskarte "Verfügbar jetzt" oben zeigen (Offene Posten ja, Ausgaben nein)
+export default function MonthsView({ initialFilter = 'offen', showStand = true }) {
   const { session }  = useAuth();
   const { showToast } = useUi();
   const { version, notifySaved } = useEntrySheet();
@@ -254,8 +256,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       const [es0, ts, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
-        db.getAllEntries(s),
-        db.getFinStartIdx(s, localTodayStr()),
+        showStand ? db.getAllEntries(s) : Promise.resolve([]),
+        showStand ? db.getFinStartIdx(s, localTodayStr()) : Promise.resolve(-Infinity),
       ]);
       setAllEntries(all);
       setStartIdx(st);
@@ -266,7 +268,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       console.error(e);
     }
     setLoading(false);
-  }, [year, month, showToast]);
+  }, [year, month, showToast, showStand]);
 
   useEffect(() => { load(); }, [load, version]);
 
@@ -326,7 +328,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Eintrag löschen?')) return;
+    if (!(await confirmDialog({ title: 'Eintrag löschen?' }))) return;
     await db.deleteEntry(id);
     setDetailId(null);
     showToast('Eintrag gelöscht');
@@ -394,9 +396,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
-    // "Sonstige" = alle Ausgaben außer Fixkosten (Variable Kosten und Sonstige Ausgaben); Einnahmen stehen in "Alle" und über die Fokuskarte
-    if (filter === 'sonst') return COLUMNS.filter((c) => c.key === 'variable' || c.key === 'sonstige');
-    return COLUMNS;
+    if (filter === 'variable') return COLUMNS.filter((c) => c.key === 'variable');
+    return COLUMNS.filter((c) => c.key === 'sonstige');
   }
 
   return (
@@ -412,8 +413,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         </button>
       </div>
 
-      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub */}
-      <AvailableCard stand={stand} loading={loading} flow />
+      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub (nicht in Ausgaben) */}
+      {showStand && <AvailableCard stand={stand} loading={loading} flow />}
 
       {/* Filter — abgerundete Pills */}
       <div className="fin-filter-pills">
@@ -430,7 +431,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
       {/* Inhaltsbereich: Offen-Filter → flache Liste, sonst Dropdowns */}
       {loading ? (
-        <div className="loading-note">Lädt…</div>
+        <SkeletonList rows={4} />
       ) : filter === 'offen' ? (
         <OffenList
           entries={entries}
@@ -444,7 +445,6 @@ export default function MonthsView({ initialFilter = 'alle' }) {
           {visibleColumns().map((col) => (
             <CollapseSection
               key={`${filter}-${col.key}`} // neu starten, wenn der Filter wechselt (Anfangszustand aufgeklappt/eingeklappt)
-              defaultOpen={filter !== 'alle'}
               col={col}
               entries={entries}
               onOpenModal={openEntry}

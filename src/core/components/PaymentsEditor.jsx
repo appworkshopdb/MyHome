@@ -2,6 +2,7 @@
 // Wiederverwendbar für EntrySheet (Wizard) und EntryDetailSheet (Bearbeiten).
 
 import { isInstantMethod } from '../lib/paymentParts';
+import Icon from './Icon';
 
 const QUICK_PAYMENTS = ['Bar', 'Bank', 'Paypal', 'SEPA', 'Klarna', 'Sparschwein', 'Gutschein'];
 
@@ -104,7 +105,7 @@ export default function PaymentsEditor({ payments, onChange, totalAmount, showPa
                   onClick={() => removePayment(idx)}
                   aria-label="Zahlungsart entfernen"
                 >
-                  ×
+                  <Icon name="close" size={null} className="glyph" />
                 </button>
               </div>
             )}

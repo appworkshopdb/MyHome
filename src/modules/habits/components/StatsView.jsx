@@ -20,6 +20,9 @@ import {
   calcStreak, calcLongestStreak, getEarnedBadges, BADGES,
   today, dateRange, toDateStr, isDueHistoric, weekdayMon,
 } from '../lib/habUtils.js';
+import Icon from '../../../core/components/Icon';
+import HabitIcon from '../../../core/components/HabitIcon';
+import { EmptyState } from '../../../core/components/ui';
 
 // ─── Konstanten ───────────────────────────────────────────
 
@@ -122,13 +125,7 @@ export default function StatsView({ habits, entries }) {
 
   if (allHabits.length === 0) {
     return (
-      <div className="hab-empty" style={{ marginTop: 32 }}>
-        <div className="hab-empty-icon">📊</div>
-        <div className="hab-empty-title">Noch keine Statistik</div>
-        <div className="hab-empty-text">
-          Leg Gewohnheiten an und hak sie ab — hier siehst du dann deine Statistiken.
-        </div>
-      </div>
+      <EmptyState icon="chart" title="Noch keine Statistik" />
     );
   }
 
@@ -235,11 +232,11 @@ function Cockpit({ allHabits, entries }) {
       <div className="hab-cp-fbar">
         <button type="button" className="hab-cp-fpill" onClick={() => setSheet('period')}>
           <span className="hab-cp-fpill-text"><small>Zeitraum</small><b>{rangeLabel(range)}</b></span>
-          <span className="hab-cp-fpill-arrow" aria-hidden="true">▾</span>
+          <span className="hab-cp-fpill-arrow" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
         </button>
         <button type="button" className="hab-cp-fpill" onClick={() => setSheet('habits')}>
           <span className="hab-cp-fpill-text"><small>Gewohnheiten</small><b>{habitPill}</b></span>
-          <span className="hab-cp-fpill-arrow" aria-hidden="true">▾</span>
+          <span className="hab-cp-fpill-arrow" aria-hidden="true"><Icon name="expand" size={null} className="glyph" /></span>
         </button>
       </div>
 
@@ -288,7 +285,7 @@ function Cockpit({ allHabits, entries }) {
                   onClick={() => focusHabit(habit.id)}
                   aria-label={`Nur ${habit.name} anzeigen`}
                 >
-                  <span className="hab-cp-row-icon">{habit.icon}</span>
+                  <span className="hab-cp-row-icon"><HabitIcon emoji={habit.icon} size={20} /></span>
                   <span className="hab-cp-row-name">
                     {habit.name}
                     {statusOf(habit) && <em>{statusOf(habit)}</em>}
@@ -313,10 +310,7 @@ function Cockpit({ allHabits, entries }) {
       )}
 
       {/* Badges */}
-      <div
-        className="hab-cp-card"
-        style={{ marginBottom: 'calc(var(--nav-height) + 30px + env(safe-area-inset-bottom))' }}
-      >
+      <div className="hab-cp-card hab-cp-card--end">
         <div className="hab-cp-label">Badges <span>{earnedBadges.length} von {BADGES.length}</span></div>
         <div className="hab-badges-grid">
           {earnedBadges.map((badge) => (
@@ -327,8 +321,8 @@ function Cockpit({ allHabits, entries }) {
           ))}
           {lockedBadges.map((badge) => (
             <div key={badge.id} className="hab-badge hab-badge--locked" title={badge.desc}>
-              <span className="hab-badge-icon" style={{ filter: 'grayscale(1)', opacity: 0.35 }}>{badge.icon}</span>
-              <span className="hab-badge-label t-meta" style={{ opacity: 0.4 }}>{badge.label}</span>
+              <span className="hab-badge-icon hab-badge-icon--locked">{badge.icon}</span>
+              <span className="hab-badge-label t-meta hab-badge-label--locked">{badge.label}</span>
             </div>
           ))}
         </div>
@@ -615,9 +609,9 @@ function Rhythm({ habits, doneIdx, endMap, todayStr, firstDate }) {
       </div>
 
       <div className="hab-cp-rnav">
-        <button type="button" className="hab-cp-navb" onClick={() => step(-1)} disabled={!canPrev} aria-label="Zurück">‹</button>
+        <button type="button" className="hab-cp-navb" onClick={() => step(-1)} disabled={!canPrev} aria-label="Zurück"><Icon name="back" size={null} className="glyph" /></button>
         <div>{title}<small>{hint}</small></div>
-        <button type="button" className="hab-cp-navb" onClick={() => step(1)} disabled={!canNext} aria-label="Weiter">›</button>
+        <button type="button" className="hab-cp-navb" onClick={() => step(1)} disabled={!canNext} aria-label="Weiter"><Icon name="open" size={null} className="glyph" /></button>
       </div>
 
       {mode === 'Woche' && (
@@ -759,7 +753,7 @@ function DayDetail({ habits, doneIdx, endMap, dateStr }) {
       <ul>
         {rows.filter((r) => r.due).map(({ h, done: isDone }) => (
           <li key={h.id}>
-            <span className={isDone ? 'ok' : 'no'}>{isDone ? '✓' : '✕'}</span>
+            <span className={isDone ? 'ok' : 'no'}>{isDone ? <Icon name="check" size={null} className="glyph" /> : <Icon name="close" size={null} className="glyph" />}</span>
             <span>{h.icon} {h.name}</span>
           </li>
         ))}

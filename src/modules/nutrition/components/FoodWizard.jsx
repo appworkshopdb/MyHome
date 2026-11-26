@@ -3,6 +3,8 @@ import SheetShell from '../../../core/components/SheetShell';
 import { MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import { parseNum } from '../../../core/lib/wizardDates';
 import { AMPEL_CATS, FOOD_ALLERGENS, FOOD_DIETS, FOOD_TAGS, TAG_COLORS } from '../lib/nutrition';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Neues Lebensmittel — 3 Schritte im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx),
 // Felder in der bestehenden Optik der Ernährung (form-group, segmented, chip, card …).
@@ -81,21 +83,21 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
   if (step === 1) {
     footer = (
       <WizardFoot one hint={nameOk ? '' : missingHint([['Name', !name.trim()], ['Gruppe', !groupName]])}>
-        <button type="button" className="btn btn-primary" disabled={!nameOk} onClick={() => setStep(2)}>Weiter</button>
+        <Button disabled={!nameOk} onClick={() => setStep(2)}>Weiter</Button>
       </WizardFoot>
     );
   } else if (step === 2) {
     footer = (
       <WizardFoot>
         <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} labelClosed="Weitere Angaben" labelOpen="Weniger Angaben" />
-        <button type="button" className="btn btn-primary" onClick={() => setStep(3)}>Weiter</button>
+        <Button onClick={() => setStep(3)}>Weiter</Button>
       </WizardFoot>
     );
   } else {
     footer = (
       <WizardFoot>
-        <button type="button" className="btn btn-secondary" disabled={saving} onClick={() => setStep(2)}>Ändern</button>
-        <button type="button" className="btn btn-primary" disabled={saving} onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</button>
+        <Button variant="secondary" disabled={saving} onClick={() => setStep(2)}>Ändern</Button>
+        <Button disabled={saving} onClick={save}>{saving ? 'Speichert…' : 'Speichern'}</Button>
       </WizardFoot>
     );
   }
@@ -126,7 +128,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
               <label>Gruppe</label>
               <WheelPicker items={groupItems} value={group} onChange={setGroup} label="Gruppe" />
               {group === NEW_GROUP && (
-                <input value={groupNew} onChange={(e) => setGroupNew(e.target.value)} placeholder="Name der neuen Gruppe" aria-label="Name der neuen Gruppe" style={{ marginTop: 6 }} autoComplete="off" />
+                <input className="nut-u-mt6" value={groupNew} onChange={(e) => setGroupNew(e.target.value)} placeholder="Name der neuen Gruppe" aria-label="Name der neuen Gruppe" autoComplete="off" />
               )}
             </div>
 
@@ -141,9 +143,9 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
 
             <div className="form-group">
               <label>Basis für die Mengenangabe</label>
-              <div className="segmented" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+              <div className="segmented nut-u-unit5">
                 {UNITS.map((u) => (
-                  <button key={u} type="button" className={unit === u ? 'active' : ''} style={{ padding: '10px 2px', fontSize: '0.68rem' }} onClick={() => setUnit(u)}>
+                  <button key={u} type="button" className={`nut-u-unitbtn${unit === u ? ' active' : ''}`} onClick={() => setUnit(u)}>
                     {UNIT_LABEL[u]}
                   </button>
                 ))}
@@ -154,9 +156,9 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
 
         {step === 2 && (
           <>
-            <div className="card" style={{ margin: 0 }}>
+            <div className="card nut-u-m0">
               <div className="card-title">Nährwerte pro {UNIT_LABEL[unit]}</div>
-              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
+              <div className="form-row nut-u-grid2">
                 {MACRO_FIELDS.map(([key, label]) => (
                   <div className="form-group" key={key}>
                     <label htmlFor={`fw-${key}`}>{label}</label>
@@ -192,18 +194,18 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
                 </div>
                 <div className="form-group">
                   <label>Allergene</label>
-                  <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="chip-row nut-u-fwrap">
                     {FOOD_ALLERGENS.map((a) => (
                       <button key={a} type="button" className={`chip ${allergens.includes(a) ? 'active' : ''}`} aria-pressed={allergens.includes(a)} onClick={() => toggle(allergens, setAllergens, a)}>{a}</button>
                     ))}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                  <div className="nut-u-meta-mt">
                     Glutenfrei und Laktosefrei ergeben sich aus „Gluten“ und „Milch“.
                   </div>
                 </div>
                 <div className="form-group">
                   <label>Tags</label>
-                  <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="chip-row nut-u-fwrap">
                     {FOOD_TAGS.map((t) => {
                       const on = tags.includes(t);
                       return (
@@ -221,8 +223,8 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
           <>
             <div className="wz-review">
               <div className="wz-rv-top">
-                <b style={{ fontSize: 22 }}>{name.trim()}</b>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{groupName}</span>
+                <b className="nut-u-f22">{name.trim()}</b>
+                <span className="nut-u-muted13">{groupName}</span>
               </div>
               <div className="wz-rv-row">
                 <span>Kategorie</span>
@@ -230,7 +232,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
               </div>
               <div className="wz-rv-row"><span>Basis</span><span>{UNIT_LABEL[unit]}</span></div>
               <details className="wz-acc" open>
-                <summary><span>Nährwerte pro {UNIT_LABEL[unit]}</span><i>▾</i></summary>
+                <summary><span>Nährwerte pro {UNIT_LABEL[unit]}</span><i><Icon name="expand" size={null} className="glyph" /></i></summary>
                 {SUMMARY_ROWS.map(([key, label, u]) => (
                   <div className="wz-rv-row" key={key}><span>{label}</span><span>{String(num(key)).replace('.', ',')} {u}</span></div>
                 ))}

@@ -5,6 +5,8 @@
 //
 // id: hub | habits | finance | sport | nutrition | shopping
 
+import Icon from './Icon';
+
 const stroke = { fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' };
 
 export function ModuleIcon({ id, size = 19, strokeWidth = 1.8 }) {
@@ -62,32 +64,10 @@ export function ModuleIcon({ id, size = 19, strokeWidth = 1.8 }) {
   }
 }
 
-// Kleine Zusatzsymbole für Anlege-Menüs und Touren.
+// Kleine Zusatzsymbole für Anlege-Menüs und Touren. Seit dem Redesign aus dem zentralen Symbolset (Icon.jsx).
 // name: camera | book | leaf | clipcheck | repeat | upload | plus | check | eye | eyeoff | lock
-export function UiIcon({ name, size = 22, strokeWidth = 1.9 }) {
-  const common = { width: size, height: size, viewBox: '0 0 24 24', ...stroke, strokeWidth, 'aria-hidden': true };
-  switch (name) {
-    case 'camera':
-      return <svg {...common}><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><path d="M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></svg>;
-    case 'book':
-      return <svg {...common}><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h11" /></svg>;
-    case 'leaf':
-      return <svg {...common}><path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14z" /><path d="M5 19l7-7" /></svg>;
-    case 'clipcheck':
-      return <svg {...common}><path d="M9 4h6v3H9z" /><path d="M7 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1" /><path d="M9 14l2 2 4-4" /></svg>;
-    case 'repeat':
-      return <svg {...common}><path d="M17 2l4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" /></svg>;
-    case 'upload':
-      return <svg {...common}><path d="M12 16V4" /><path d="M7 9l5-5 5 5" /><path d="M4 20h16" /></svg>;
-    case 'eye':
-      return <svg {...common}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></svg>;
-    case 'eyeoff':
-      return <svg {...common}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><path d="M1 1l22 22" /></svg>;
-    case 'lock':
-      return <svg {...common}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>;
-    case 'plus':
-      return <svg {...common}><path d="M12 5v14M5 12h14" /></svg>;
-    default: // check
-      return <svg {...common}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
-  }
+const UI_TO_ICON = { camera: 'scan', book: 'book', leaf: 'leaf', clipcheck: 'clipcheck', repeat: 'repeat', upload: 'upload', plus: 'plus', check: 'check', eye: 'eye', eyeoff: 'eyeOff', lock: 'lock' };
+
+export function UiIcon({ name, size = 22, strokeWidth }) {
+  return <Icon name={UI_TO_ICON[name] || 'check'} size={size} strokeWidth={strokeWidth} />;
 }

@@ -6,6 +6,9 @@ import { today, isDueOn, isDone, getEntry, calcStreak, dateRange, toDateStr } fr
 import { goalText } from '../../../core/lib/habitCatalog.js';
 import { toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
 import { fb } from '../../../core/lib/feedback.js';
+import Icon from '../../../core/components/Icon';
+import { ErrorState } from '../../../core/components/ui';
+import HabitIcon from '../../../core/components/HabitIcon';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -115,7 +118,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
         )}
       </div>
 
-      {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+      {error && <ErrorState title={error} />}
 
       {/* Wochenübersicht Toggle */}
       {totalDue > 0 && (
@@ -146,7 +149,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
           {habits.filter((h) => h.active && !h.deleted_at).map((habit) => (
             <div key={habit.id} className="hab-week-grid-row">
               <div className="hab-week-grid-name">
-                <span>{habit.icon}</span>
+                <HabitIcon emoji={habit.icon} size={20} />
                 <span className="hab-week-grid-name-text">{habit.name}</span>
               </div>
               {weekDays.map((d) => {
@@ -164,7 +167,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                       ${d === todayStr ? 'hab-week-cell--today' : ''}
                     `}
                   >
-                    {due && done && '✓'}
+                    {due && done && <Icon name="check" size={null} className="glyph" />}
                     {due && !done && !future && '·'}
                   </div>
                 );
@@ -210,7 +213,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
                 className={`hab-item ${done ? 'hab-item--done' : ''} ${busy ? 'hab-item--busy' : ''}`}
               >
                 <div className="hab-item-left">
-                  <div className="hab-item-icon">{habit.icon}</div>
+                  <div className="hab-item-icon"><HabitIcon emoji={habit.icon} /></div>
                   <div className="hab-item-info">
                     <div className="hab-item-name">{habit.name}</div>
                     <div className="hab-item-meta">

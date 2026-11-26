@@ -156,6 +156,9 @@
 
   --border-hairline: var(--raw-sand-200);
   --border-strong:   var(--raw-sand-300);
+  /* Kante für Bedienelemente (Felder, Nebenknöpfe, Chips, Kästchen): mind. 3:1 zur Fläche */
+  --border-control:  #9A8E7B;
+  --surface-control: #F1EBE2;
 
   /* Datenreihen — nie Status-Tokens für Kategorien/Heatmap verwenden */
   --data-1:     var(--raw-navy-800);
@@ -165,7 +168,7 @@
 
   /* ── Ebene 3: Komponente ───────────────────────────────────
      Sparsam, jedes Token ist eine begründete Ausnahme.       */
-  --nav-item-active-bg:  var(--action-primary);
+  --nav-item-active-bg:  var(--mod-n-ac); /* Hub warm-neutral (Redesign) */
 
   /* ── Modulfamilien (Hell) ──────────────────────────────────
      Jedes Modul hat EINE Farbfamilie: tint (Fläche), ink (Text auf tint),
@@ -191,7 +194,7 @@
 
   --mod-n-tint:     #EADFCF; --mod-n-ink:     #3E3A36; --mod-n-ac:     #6B5F52; --mod-n-on:     #FFFFFF; --mod-n-deep:     #6B5F52;
 
-  --nav-item-active-fg:  var(--text-on-accent);
+  --nav-item-active-fg:  var(--mod-n-on);
   --nav-item-idle-fg:    var(--text-muted);
   --chrome-pill-bg:      var(--surface-raised);
   --ampel-erlaubt:       var(--status-positive);

@@ -9,10 +9,13 @@ import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import ReceiptScanChoice from '../../../core/components/ReceiptScanChoice';
 import { formatReceiptDate } from '../../../core/lib/photoScan';
 import { fmtDate, parseMoney } from '../../../core/lib/wizardDates';
+import { formatMoney } from '../../../core/lib/format';
 
 const money = (v) => parseMoney(v) || 0; // ungültig → 0
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
@@ -28,7 +31,7 @@ const RECEIPT_PAYMENT_MAP = {
   bar: 'Bar', karte: 'Bank', paypal: 'Paypal', gutschein: 'Gutschein', klarna: 'Klarna',
 };
 
-const eur = (n) => `${n.toFixed(2).replace('.', ',')} €`;
+const eur = (n) => formatMoney(n);
 
 // ── Wizard ───────────────────────────────────────────────────────────────────
 // Ablauf: Auswahl (Beleg scannen / manuell) → Schritt 1 "Eingeben" (alle Pflicht-
@@ -205,8 +208,8 @@ function FinanceWizard({ onClose }) {
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn btn-secondary" onClick={() => setView('enter')} disabled={saving}>Ändern</button>
-            <button type="button" className="btn btn-primary" onClick={submit} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+            <Button variant="secondary" onClick={() => setView('enter')} disabled={saving}>Ändern</Button>
+            <Button onClick={submit} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</Button>
           </WizardFoot>
         )}
       >
@@ -221,7 +224,7 @@ function FinanceWizard({ onClose }) {
           <div className="wz-rv-row"><span>Fällig am</span><span>{dueDate ? fmtDate(dueDate) : '—'}</span></div>
           <div className="wz-rv-row"><span>Notiz</span><span>{note.trim() || '—'}</span></div>
         </div>
-        <p className="wz-rv-note">„Gebucht in" ist der Monat, den du gerade unter Buchungen siehst. Das Fälligkeitsdatum ändert daran nichts.</p>
+        <p className="wz-rv-note">„Gebucht in" ist der Monat, den du gerade unter Ausgaben siehst. Das Fälligkeitsdatum ändert daran nichts.</p>
       </WizardFrame>
     );
   }
@@ -244,7 +247,7 @@ function FinanceWizard({ onClose }) {
       footer={(
         <WizardFoot hint={hint}>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
-          <button type="button" className="btn btn-primary" disabled={!valid} onClick={toReview}>Weiter</button>
+          <Button disabled={!valid} onClick={toReview}>Weiter</Button>
         </WizardFoot>
       )}
     >
@@ -295,7 +298,7 @@ function FinanceWizard({ onClose }) {
         <span>€</span>
       </div>
 
-      <div className="wz-two" style={{ marginTop: 16 }}>
+      <div className="wz-two fin-u-mt16">
         <div>
           <div className="wz-col-lbl">Kategorie</div>
           <WheelPicker items={CATEGORY_ITEMS} value={category} onChange={setCategory} label="Kategorie" />
@@ -348,7 +351,7 @@ function FinanceWizard({ onClose }) {
                       onChange={(e) => setMid(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
                     />
                     <span>€</span>
-                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}>×</button>
+                    <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${m.method} entfernen`}><Icon name="close" size={null} className="glyph" /></button>
                   </div>
                 </div>
               ))}
@@ -366,7 +369,7 @@ function FinanceWizard({ onClose }) {
             </div>
           )}
 
-          <label className="wz-lbl" htmlFor="wz-fin-note" style={{ marginTop: 14 }}>Notiz <span className="opt">optional</span></label>
+          <label className="wz-lbl fin-u-mt14" htmlFor="wz-fin-note">Notiz <span className="opt">optional</span></label>
           <textarea id="wz-fin-note" className="wz-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Zusatzinfo…" />
         </>
       )}
@@ -379,7 +382,7 @@ function PlaceholderSheetBody({ moduleId, onClose }) {
   return (
     <div className="sheet-placeholder">
       <p className="t-body">Schnellerfassung für {mod?.name || moduleId} ist noch nicht angebunden.</p>
-      <button className="btn btn-secondary btn-block" onClick={onClose}>Schließen</button>
+      <Button variant="secondary" block onClick={onClose}>Schließen</Button>
     </div>
   );
 }

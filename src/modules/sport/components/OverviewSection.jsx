@@ -15,6 +15,8 @@ import { resolveUnitVisual } from '../lib/planMuscles';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import Icon from '../../../core/components/Icon';
+import { Skeleton } from '../../../core/components/ui';
 
 const WEEKDAYS_DE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -62,7 +64,7 @@ export default function OverviewSection({
   const focusPlan = focusWorkout?.auto_planned && focusWorkout.plan_day_index != null
     ? plans.find((p) => p.id === focusWorkout.plan_id)
     : null;
-  const focusPlanText = focusPlan ? ` · Plan Tag ${focusWorkout.plan_day_index + 1} von ${focusPlan.items.length}` : '';
+  const focusPlanText = focusPlan ? `Plan Tag ${focusWorkout.plan_day_index + 1} von ${focusPlan.items.length}` : null;
 
   // ── Wochenraster ───────────────────────────────────────────────
   const monday = mondayOfWeek(today);
@@ -89,7 +91,7 @@ export default function OverviewSection({
         </FocusCard.Eyebrow>
 
         {loading ? (
-          <div className="spo-focus-title">Lädt …</div>
+          <Skeleton w="60%" h={22} />
         ) : focusWorkout ? (
           <>
             <div className="spo-focus-row">
@@ -101,7 +103,7 @@ export default function OverviewSection({
                   <span>
                     {focusWorkout.is_rest
                       ? 'Erholung eingeplant'
-                      : `${resolveTypeLabel(focusWorkout.type_key)}${focusPlanText}`}
+                      : [resolveTypeLabel(focusWorkout.type_key), focusPlanText].filter(Boolean).join(' · ') || 'Training'}
                   </span>
                 </FocusCard.Meta>
               </div>
@@ -147,7 +149,7 @@ export default function OverviewSection({
             <div key={d.key} className="spo-week-day">
               <span className="spo-week-label">{d.label}</span>
               <span className={`spo-week-cell spo-week-cell--${d.state}`}>
-                {d.state === 'done' && '✓'}
+                {d.state === 'done' && <Icon name="check" size={null} className="glyph" />}
                 {d.state === 'rest' && 'Rest'}
                 {d.state === 'planned' && d.dateNum}
               </span>
@@ -160,15 +162,13 @@ export default function OverviewSection({
       {activePlan && (
         <button type="button" className="spo-planstrip" onClick={() => onNavigate('plaene')}>
           <span className="spo-planstrip-bd" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12a7 7 0 0 1 12-5l3 3M20 12a7 7 0 0 1-12 5l-3-3M19 5v5h-5M5 19v-5h5" />
-            </svg>
+            <Icon name="repeat" size={16} />
           </span>
           <span className="spo-planstrip-tx">
             <b>{activePlan.plan.title}</b>
             <span>{activePlan.start_date > todayIso ? `Startet am ${activePlan.start_date.split('-').reverse().slice(0, 2).join('.')}.` : 'Aktiver Plan · bis auf weiteres'}</span>
           </span>
-          <span className="spo-planstrip-chev" aria-hidden="true">›</span>
+          <span className="spo-planstrip-chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
       )}
 

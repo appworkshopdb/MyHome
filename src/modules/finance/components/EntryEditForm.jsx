@@ -20,6 +20,8 @@ import { parseMoney } from '../../../core/lib/wizardDates';
 import {
   PAYMENTS, formatDateTime, formatEur, isInstantMethod, isSparschweinDeposit, entryParts,
 } from '../lib/finance';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 const money = (v) => parseMoney(v) || 0; // ungültig → 0
 const INCOME = new Set(['fixeinnahmen', 'sonstige_einnahmen']);
@@ -180,9 +182,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
       footer={(
         <WizardFoot hint={hint}>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
-          <button type="button" className="btn btn-primary" disabled={!valid || saving} onClick={submit}>
-            {saving ? 'Speichert…' : 'Speichern'}
-          </button>
+          <Button disabled={!valid || saving} onClick={submit}>{saving ? 'Speichert…' : 'Speichern'}</Button>
         </WizardFoot>
       )}
     >
@@ -201,7 +201,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
         <span>€</span>
       </div>
 
-      <div className="wz-two" style={{ marginTop: 16 }}>
+      <div className="wz-two fin-u-mt16">
         <div>
           <div className="wz-col-lbl">Kategorie</div>
           <WheelPicker items={CATEGORY_ITEMS} value={category} onChange={setCategory} label="Kategorie" />
@@ -216,7 +216,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
         <>
           <div className="wz-lbl">Status</div>
           {allInstant ? (
-            <p className="wz-hint" style={{ marginTop: 0 }}>Bezahlt · Bar, Gutschein und Sparschwein gelten sofort als bezahlt</p>
+            <p className="wz-hint fin-u-mt0">Bezahlt · Bar, Gutschein und Sparschwein gelten sofort als bezahlt</p>
           ) : (
             <>
               <SegGroup
@@ -263,7 +263,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
                         value={p.amount} onChange={(e) => patchPart(i, { amount: e.target.value.replace(/[^\d.,]/g, '') })}
                       />
                       <span>€</span>
-                      <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${p.method} entfernen`}>×</button>
+                      <button type="button" className="wz-part-rm" onClick={() => removeMid(i)} aria-label={`${p.method} entfernen`}><Icon name="close" size={null} className="glyph" /></button>
                     </div>
                     {check(i)}
                   </div>
@@ -280,7 +280,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
             </div>
           )}
 
-          <label className="wz-lbl" htmlFor="ed-note" style={{ marginTop: 14 }}>Notiz <span className="opt">optional</span></label>
+          <label className="wz-lbl fin-u-mt14" htmlFor="ed-note">Notiz <span className="opt">optional</span></label>
           <textarea
             id="ed-note" ref={noteRef} className="wz-input" value={note} autoFocus={focus === 'note'}
             onChange={(e) => setNote(e.target.value)} placeholder="Zusatzinfo…"
@@ -290,9 +290,7 @@ export default function EntryEditForm({ entry, focus = null, onClose, onSave, on
             <span>Herkunft</span>
             <b>{entry.from_template ? 'Festposten (aus Vorlage)' : 'Einzelbuchung'}</b>
           </div>
-          <button type="button" className="btn btn-danger btn-block ed-del2" onClick={() => onDelete(entry.id)} disabled={saving}>
-            <IconTrash size={18} /> Eintrag löschen
-          </button>
+          <Button variant="danger" icon="trash" block className="ed-del2" onClick={() => onDelete(entry.id)} disabled={saving}>Eintrag löschen</Button>
         </>
       )}
     </WizardFrame>

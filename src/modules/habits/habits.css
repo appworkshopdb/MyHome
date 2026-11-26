@@ -39,13 +39,6 @@
   line-height: 1.5;
 }
 
-.hab-empty-fab-hint {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  align-self: center;
-  margin-top: 4px;
-}
-
 /* ─── Sektion-Label ───────────────────────────────────────── */
 
 .hab-section {
@@ -325,99 +318,11 @@
   margin-bottom: 8px;
 }
 
-.hab-overload-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-pill);
-  background: var(--surface-raised);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-}
-
 .hab-manage-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
-.hab-manage-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 10px 12px 6px;
-  background: var(--surface-raised);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-card);
-}
-
-.hab-manage-card--paused {
-  opacity: 0.55;
-  padding-left: 12px;
-}
-
-.hab-item-icon--tile {
-  width: 44px;
-  height: 44px;
-  line-height: 44px;
-  border-radius: var(--r-lg);
-  background: var(--surface-sunken);
-  font-size: 1.4rem;
-}
-
-.hab-manage-text { min-width: 0; }
-
-.hab-manage-card-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
-.hab-manage-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hab-manage-meta {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.hab-manage-card-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.hab-manage-btn {
-  width: 36px;
-  height: 36px;
-  background: transparent;
-  border: none;
-  border-radius: var(--r-pill);
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  transition: color var(--motion-fast), background var(--motion-fast);
-}
-
-.hab-manage-btn:hover { color: var(--text-primary); background: var(--surface-sunken); }
-.hab-manage-btn--del:hover { color: var(--status-critical); background: var(--status-critical-bg); }
-.hab-manage-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ─── FORMULAR ────────────────────────────────────────────── */
 
@@ -1358,12 +1263,6 @@
   color: var(--text-primary);
 }
 
-.hab-manage-card--dragging {
-  background: var(--surface-sunken);
-  box-shadow: var(--shadow-float);
-  outline: 1.5px dashed var(--action-primary);
-}
-
 /* ═══════════════════════════════════════════════════════════
    ERINNERUNGS-UI
    ═══════════════════════════════════════════════════════════ */
@@ -1689,7 +1588,6 @@
   color: var(--text-muted);
   margin-left: 2px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    Modul-Übersicht (OverviewSection.jsx)
@@ -3123,13 +3021,6 @@
 }
 .hab-del-confirm.danger { background: var(--status-critical); color: var(--surface-raised); }
 .hab-del-cancel { min-height: 40px; font-weight: 800; }
-.hab-manage-btn--text {
-  width: auto;
-  padding: 0 10px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
 
 /* ═══════════════════════════════════════════════════════════
    MEINE GEWOHNHEITEN — neues Design (Gold-Familie über --m-*)
@@ -3163,25 +3054,7 @@
 }
 .hab-habits-view .hab-section { margin-top: 18px; }
 .hab-habits-view .hab-section-label { font-weight: 800; letter-spacing: 0.09em; margin: 0 4px 8px; }
-.hab-habits-view .hab-manage-card {
-  padding:       10px 8px 10px 6px;
-  border-radius: 24px;
-  gap:           6px;
-}
 .hab-habits-view .hab-drag-handle { color: var(--border-strong); padding: 0 2px 0 4px; }
-.hab-habits-view .hab-item-icon--tile {
-  width:         42px;
-  height:        42px;
-  line-height:   42px;
-  text-align:    center;
-  border-radius: 50%;
-  background:    var(--m-tint);
-}
-.hab-habits-view .hab-manage-card-left { gap: 10px; }
-.hab-habits-view .hab-manage-name { font-size: 1rem; font-weight: 800; }
-.hab-habits-view .hab-manage-meta { font-weight: 700; }
-.hab-habits-view .hab-manage-card-right { gap: 0; }
-.hab-habits-view .hab-manage-btn { width: 32px; }
 
 /* ═══════════════════════════════════════════════════════════════
    Vorlagen-Auswahl (HabitTemplateLibrary)
@@ -3679,3 +3552,26 @@
 /* Archiv-Ansicht: Abstände aus der Skala (--sp-3 = 12 px) statt Inline-Styles */
 .hab-archive .toast-error { margin: var(--sp-3) 0; }
 .hab-archive .hab-manage-list { margin-top: var(--sp-3); }
+
+/* ── Gewohnheiten · Listen und Archiv (Redesign Schritt 4) ── */
+.hab-lead { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: var(--rad-md); background: var(--m-tint); font-size: var(--fs-title); }
+.hab-habits-view .hab-manage-list-v2, .hab-habits-view .hab-section { display: flex; flex-direction: column; gap: var(--sp-2); }
+.hab-section--gap { margin-top: var(--sp-5); }
+.hab-mrow { display: flex; align-items: center; gap: var(--sp-1); margin-bottom: var(--sp-2); padding-left: var(--sp-1); border-radius: var(--rad-lg); background: var(--surface-raised); box-shadow: var(--sh-sm); }
+.hab-mrow .ui-row { flex: 1; min-width: 0; padding-left: 0; }
+.hab-mrow--paused { opacity: .65; }
+.hab-mrow--dragging { box-shadow: var(--sh-md); }
+.hab-mrow .hab-drag-handle { width: 32px; height: var(--hit-min); display: grid; place-items: center; flex: none; color: var(--text-muted); touch-action: none; cursor: grab; }
+.hab-overload-warning { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--rad-lg); background: var(--m-tint); color: var(--m-ink); font-size: var(--fs-small); }
+.hab-act { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4) var(--sp-5); }
+
+/* ── Gewohnheiten · Rest (Redesign Schritt 4) ───────────── */
+.hab-cp-card--end { margin-bottom: calc(var(--nav-height) + var(--sp-6) + env(safe-area-inset-bottom)); }
+.hab-badge-icon--locked { filter: grayscale(1); opacity: .35; }
+.hab-badge-label--locked { opacity: .4; }
+.wz-listpill--flush { margin-bottom: 0; }
+.hab-qs-gap { margin-top: var(--sp-3); }
+.hab-qs-gap2 { margin-top: var(--sp-4); }
+.hab-qs-stepper { height: 180px; display: grid; place-items: center; }
+.hab-ef-ct--tight { margin-top: 2px; }
+.hab-ef-iconbtn svg, .hab-ef-emojis svg, .hab-lead svg, .hab-item-icon svg, .hab-cp-row-icon svg { width: 22px; height: 22px; }

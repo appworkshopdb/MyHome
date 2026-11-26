@@ -2077,7 +2077,6 @@
   border-radius: 6px;
 }
 
-
 /* ============================================================
    Schritt 3 — Chrome-Styles
    Überschreibt/ergänzt ältere .module-topbar-Regeln.
@@ -2222,7 +2221,6 @@
   display: none;
 }
 
-
 /* ============================================================
    Schritt 3-Fixes — Monatsnavigation + Sport-Kalender
    ============================================================ */
@@ -2278,7 +2276,6 @@
 .sho-module-tabs-gap {
   margin-bottom: 6px;
 }
-
 
 /* ============================================================
    FIXES-2B — Chip-Filter, Einkauf-Meta-Zeile, Listenzeile
@@ -2644,7 +2641,6 @@
   color: var(--danger);
   margin-top: 10px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════
    PageSection — Sektions-Überschrift für zusammengelegte Modulseiten
@@ -4671,7 +4667,6 @@
 .wheel.is-empty .wheel-item.sel { color: var(--text-muted); font-weight: 600; font-size: 1.02rem; }
 .form-group.required-empty .wheel::before { border-color: var(--danger); }
 @media (prefers-reduced-motion: reduce) { .wheel-item { transition: none; } }
-
 
 /* ===== Einwilligung Nutzungsdaten ===== */
 

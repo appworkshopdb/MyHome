@@ -6,6 +6,8 @@ import { notifyShoppingChanged } from '../../../core/lib/shoppingHandoff';
 import SheetShell from '../../../core/components/SheetShell';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 import { DateButton, IconDropdown, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
+import Icon from '../../../core/components/Icon';
+import { Skeleton, confirmDialog } from '../../../core/components/ui';
 
 // „Neue Einkaufsliste“ — 3 Schritte im gemeinsamen Wizard-Rahmen
 // (core/components/wizard/WizardKit.jsx). Der Plus-Knopf (globaler FAB) ist der einzige Weg,
@@ -24,14 +26,7 @@ const STORE_GROUPS = STORES.reduce((acc, s) => {
   return acc;
 }, {});
 
-function IconTemplate() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="4" width="14" height="17" rx="2" />
-      <path d="M9 4h6v3H9zM9 12h6M9 16h4" />
-    </svg>
-  );
-}
+const IconTemplate = () => <Icon name="note" size={null} />;
 
 export default function ShoppingQuickSheet({ onClose, onSaved }) {
   const [step,        setStep]        = useState(1);
@@ -102,7 +97,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
 
   async function removeTemplate(e, tmpl) {
     e.stopPropagation();
-    if (!window.confirm(`Vorlage „${tmpl.name}“ löschen?`)) return;
+    if (!(await confirmDialog({ title: `Vorlage „${tmpl.name}“ löschen?` }))) return;
     try {
       await deleteList(tmpl.id);
       setTemplates((prev) => prev.filter((t) => t.id !== tmpl.id));
@@ -231,7 +226,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                 <span className="wiz-mode-icon"><IconTemplate /></span>
                 <span className="wiz-mode-title">Aus Vorlage</span>
                 <span className="wiz-mode-sub">
-                  {templates === null ? 'Wird geladen …' : templates.length === 0 ? 'Noch keine Vorlagen' : `${templates.length} ${templates.length === 1 ? 'Vorlage' : 'Vorlagen'}`}
+                  {templates === null ? <Skeleton w={90} h={12} /> : templates.length === 0 ? 'Noch keine Vorlagen' : `${templates.length} ${templates.length === 1 ? 'Vorlage' : 'Vorlagen'}`}
                 </span>
               </button>
               <button type="button" className="wiz-mode" onClick={() => setStep(2)}>
@@ -251,7 +246,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                 <div key={t.id} className="wz-tmpl">
                   <button type="button" className="wz-tmpl-main" disabled={tmplBusy === t.id} onClick={() => useTemplate(t)}>
                     <span className="wz-tmpl-ic">{t.icon || '📋'}</span>
-                    <span className="wz-tmpl-t"><b>{t.name}</b><small>{tmplBusy === t.id ? 'Wird geladen …' : 'Artikel übernehmen und anpassen'}</small></span>
+                    <span className="wz-tmpl-t"><b>{t.name}</b><small>{tmplBusy === t.id ? <Skeleton w={90} h={12} /> : 'Artikel übernehmen und anpassen'}</small></span>
                   </button>
                   <button type="button" className="wz-tmpl-del" onClick={(e) => removeTemplate(e, t)} aria-label={`Vorlage ${t.name} löschen`}><IconTrash size={16} /></button>
                 </div>
@@ -293,7 +288,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
               </optgroup>
             </select>
             {store === '__custom' && (
-              <input className="wz-input" style={{ marginTop: 8 }} type="text" placeholder="Name des Ladens" aria-label="Name des Ladens" value={storeCustom} onChange={(e) => setStoreCustom(e.target.value)} maxLength={60} autoFocus />
+              <input className="wz-input wz-input--gap" type="text" placeholder="Name des Ladens" aria-label="Name des Ladens" value={storeCustom} onChange={(e) => setStoreCustom(e.target.value)} maxLength={60} autoFocus />
             )}
 
             <div className="wz-lbl">Wann <span className="opt">optional</span></div>
@@ -325,7 +320,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
                     {(it.quantity != null || it.unit) && (
                       <span>{[it.quantity != null ? String(it.quantity).replace('.', ',') : '', it.unit].filter(Boolean).join(' ')}</span>
                     )}
-                    <button type="button" aria-label={`${it.name} entfernen`} onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}>×</button>
+                    <button type="button" aria-label={`${it.name} entfernen`} onClick={() => setItems((prev) => prev.filter((_, j) => j !== i))}><Icon name="close" size={null} className="glyph" /></button>
                   </div>
                 ))}
               </div>

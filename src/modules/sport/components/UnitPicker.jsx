@@ -5,6 +5,8 @@ import OwnUnitForm from './OwnUnitForm';
 import { KRAFT_SUBS, UNIT_TABS, searchCatalog, tabOf } from '../lib/unitCatalog';
 import { MUSCLE_GROUPS, muscleSinglesByRegion } from '../lib/data/muscleGroups';
 import { muscleLabel } from '../lib/planMuscles';
+import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Einheit wählen (Galerie). Kategorien als Kacheln: Kraft, Ausdauer, Mobility zeigen
 // die festen Vorlagen (App-Einheiten), "Eigene" die selbst angelegten Einheiten und die Sportarten
@@ -114,7 +116,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn, 
   };
   const newCard = (inline ? onNewOwn : onCreateOwn) && (
     <button key="new" type="button" className="up-card up-card--new" onClick={() => (inline ? onNewOwn() : setCreating(true))}>
-      <span className="up-vis"><span className="up-plus" aria-hidden="true">+</span></span>
+      <span className="up-vis"><span className="up-plus" aria-hidden="true"><Icon name="plus" size={null} className="glyph" /></span></span>
       <b>Neue Einheit</b>
     </button>
   );
@@ -139,9 +141,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn, 
   return (
     <div className={`up${inline ? ' up--inline' : ''}`}>
       {!inline && <div className="up-search">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" />
-        </svg>
+        <Icon name="search" size={18} />
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Suchen, z. B. Brust oder Lauf" aria-label="Einheit suchen" />
       </div>}
 
@@ -212,7 +212,7 @@ export default function UnitPicker({ catalog, selectedKey, onPick, onCreateOwn, 
           </>
         )}
         {error && <p className="up-error" role="alert">{error}</p>}
-        <button type="button" className="btn btn-primary" disabled={!ready || busy} onClick={confirm}>{busy ? 'Speichert…' : 'Auswählen'}</button>
+        <Button disabled={!ready || busy} onClick={confirm}>{busy ? 'Speichert…' : 'Auswählen'}</Button>
       </div>}
     </div>
   );
