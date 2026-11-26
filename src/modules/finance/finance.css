@@ -260,12 +260,6 @@
 
 /* Einnahmen-Seite (IncomeView.jsx) */
 .inc-page { padding-bottom: var(--sp-5); }
-.inc-stand { margin-top: var(--sp-3); padding: var(--sp-4) 18px; border-radius: var(--rad-hero); background: var(--mod-fin-tint); color: var(--mod-fin-ink); }
-.inc-stand-h { font-size: var(--fs-meta); font-weight: 800; }
-.inc-stand-v { margin-top: 2px; font-size: var(--fs-display); font-weight: 900; line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.inc-stand-e { display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); margin-top: 6px; font-size: var(--fs-meta); }
-.inc-stand-e b { font-weight: 800; }
-.inc-stand small { display: block; margin-top: 6px; font-size: var(--fs-meta); font-weight: 600; opacity: .8; }
 .inc-sec { display: flex; justify-content: space-between; align-items: baseline; margin: var(--sp-5) 4px var(--sp-2); font-size: var(--fs-body); }
 .inc-sec b { font-weight: 900; }
 .inc-sec span { font-size: var(--fs-meta); color: var(--text-muted); font-weight: 600; }

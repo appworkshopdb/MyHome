@@ -1,8 +1,7 @@
 // modules/finance/components/IncomeView.jsx
 //
 // Seite "Einnahmen" (#/finance/einnahmen): Einnahmen sind von den Ausgaben getrennt und
-// hängen an keinem Monat. Oben der aktuelle Stand (Verfügbar jetzt = alle Eingänge minus
-// alles Bezahlte), darunter jede Einnahmequelle mit eigenem Knopf "Eingang bestätigen":
+// hängen an keinem Monat. Oben jede Einnahmequelle mit eigenem Knopf "Eingang bestätigen":
 // Fix (jeden Monat am selben Tag): der Knopf erscheint ab dem Tag; Unterschiedlich: immer
 // sichtbar. Je Quelle und Kalendermonat nur EINMAL bestätigen — danach steht dort
 // "Bestätigt am …" statt des Knopfs. Der Eingang wird auf den Bestätigungstag gebucht
@@ -119,7 +118,6 @@ export default function IncomeView() {
   }, [showToast]);
   useEffect(() => { load(); }, [load, version]);
 
-  const stand = available(entries, today, startIdx);
   const active = templates.filter((t) => getTemplateStatus(t) !== 'expired');
   const history = entries
     // Sparschwein-Entnahmen sind Umbuchungen, keine Eingänge
@@ -168,16 +166,6 @@ export default function IncomeView() {
 
   return (
     <div className="inc-page">
-      <div className="inc-stand">
-        <div className="inc-stand-h">Aktueller Stand</div>
-        <div className="inc-stand-v">{loading ? '—' : formatEur(stand.verf)}</div>
-        <div className="inc-stand-e">
-          <span>+ Eingänge <b>{formatEur(stand.eingaenge)}</b></span>
-          <span>− bezahlte Ausgaben <b>{formatEur(stand.bezahlt)}</b></span>
-        </div>
-        <small>gilt heute, unabhängig vom Monat</small>
-      </div>
-
       <div className="inc-sec"><b>Einnahmequellen</b></div>
       {!loading && active.length === 0 && <p className="inc-empty">Noch keine Einnahme angelegt.</p>}
       {active.map((t) => {
