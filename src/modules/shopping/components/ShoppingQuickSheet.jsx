@@ -7,7 +7,7 @@ import SheetShell from '../../../core/components/SheetShell';
 import { IconEdit, IconTrash } from '../../../core/components/Icons';
 import { DateButton, IconDropdown, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import Icon from '../../../core/components/Icon';
-import { Skeleton } from '../../../core/components/ui';
+import { Skeleton, confirmDialog } from '../../../core/components/ui';
 
 // „Neue Einkaufsliste“ — 3 Schritte im gemeinsamen Wizard-Rahmen
 // (core/components/wizard/WizardKit.jsx). Der Plus-Knopf (globaler FAB) ist der einzige Weg,
@@ -104,7 +104,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
 
   async function removeTemplate(e, tmpl) {
     e.stopPropagation();
-    if (!window.confirm(`Vorlage „${tmpl.name}“ löschen?`)) return;
+    if (!(await confirmDialog({ title: `Vorlage „${tmpl.name}“ löschen?` }))) return;
     try {
       await deleteList(tmpl.id);
       setTemplates((prev) => prev.filter((t) => t.id !== tmpl.id));

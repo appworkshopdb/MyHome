@@ -265,7 +265,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
               {query.trim() && results.length === 0 && onSaveFood && (
                 <div className="card" style={{ margin: '0 0 10px' }}>
                   <div className="wz-newfood">
-                    <div style={{ fontSize: 13 }}><b>„{query.trim()}"</b> ist nicht in deiner Datenbank.</div>
+                    <div style={{ fontSize: 13 }}><b>„{query.trim()}"</b> gibt es noch nicht.</div>
                     {!nfOpen ? (
                       <button type="button" className="btn btn-secondary" onClick={() => setNfOpen(true)}>Neu anlegen, ohne das Rezept zu verlassen</button>
                     ) : (

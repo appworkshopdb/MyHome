@@ -20,7 +20,7 @@ const GROUPS = [
   ] },
   { label: 'Deine Sammlung', soft: true, rows: [
     { event: 'nutrition:new-recipe', icon: 'book', title: 'Neues Rezept', sub: 'Zutaten wählen, Nährwerte rechnet die App' },
-    { event: 'nutrition:new-food', icon: 'leaf', title: 'Neues Lebensmittel', sub: 'Eigener Eintrag für die Datenbank' },
+    { event: 'nutrition:new-food', icon: 'leaf', title: 'Neues Lebensmittel', sub: 'Eigener Eintrag' },
   ] },
 ];
 

@@ -26,6 +26,7 @@ import {
 import { parseMoney } from '../../../core/lib/wizardDates';
 import SavingsPlanWizard from './SavingsPlanWizard';
 import Icon from '../../../core/components/Icon';
+import { confirmDialog } from '../../../core/components/ui';
 
 const NF0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
 const eur0 = (n) => `${NF0.format(Math.round(n))} €`;
@@ -89,7 +90,7 @@ function PlanSheet({ plan, rates, onClose, onEdit, onPaid, onEditRate }) {
   }
 
   async function end() {
-    if (busy || !confirm('Sparplan beenden? Eingezahltes bleibt im Sparschwein, offene Raten fallen weg.')) return;
+    if (busy || !(await confirmDialog({ title: 'Sparplan beenden?', text: 'Eingezahltes bleibt im Sparschwein, offene Raten fallen weg.', confirmLabel: 'Beenden' }))) return;
     setBusy(true);
     try {
       await finData.endSavingsPlan(session, plan.id);

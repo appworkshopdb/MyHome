@@ -30,7 +30,7 @@ export default function HabitArchiveView({ onHabitsChange }) {
       await setStatsHidden(habit.id, !habit.stats_hidden);
       setArchived(await loadDeletedHabits());
     } catch {
-      setError('Konnte nicht geändert werden. Ist die Migration hab_stats_hidden eingespielt?');
+      setError('Konnte nicht geändert werden.');
     } finally {
       setBusyId(null);
     }

@@ -7,3 +7,4 @@ export { Field, TextField, SelectButton } from './Field.jsx';
 export { ListGroup, ListRow } from './List.jsx';
 export { EmptyState, ErrorState, Skeleton, SkeletonList, PageSkeleton } from './States.jsx';
 export { SheetHeader, SheetFooter, ConfirmDialog } from './Sheet.jsx';
+export { confirmDialog } from './confirm.jsx';

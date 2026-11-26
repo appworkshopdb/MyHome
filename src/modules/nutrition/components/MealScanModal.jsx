@@ -9,7 +9,7 @@ const NUTRIENTS = ['kcal', 'protein', 'carbs', 'sugar', 'fat', 'satfat', 'fiber'
 
 // Herkunft der Nährwerte je Bestandteil: aus der Lebensmittel-Datenbank (auch bei
 // selbst hinzugefügten Zutaten) oder von der KI geschätzt
-const SRC_LABEL = { db: 'Aus Datenbank', user: 'Aus Datenbank', ai: 'KI-Schätzung' };
+const SRC_LABEL = { db: 'Gespeichert', user: 'Gespeichert', ai: 'KI-Schätzung' };
 
 // Bestandteil aus dem Scan. base = Menge und Nährwerte so, wie sie ankamen; geändert
 // wird nur die Menge, die Nährwerte werden proportional umgerechnet.

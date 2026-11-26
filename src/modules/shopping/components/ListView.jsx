@@ -13,6 +13,7 @@ import {
   saveList, deleteList, updateListStatus, releaseListBooking, pickActiveList,
 } from '../lib/shoData.js';
 import { DAY_PARTS } from '../lib/data/stores.js';
+import { confirmDialog } from '../../../core/components/ui';
 
 const STATUS = [
   { key: 'offen',      label: 'Offen' },
@@ -115,7 +116,7 @@ export default function ListView({ lists, onListsChange, onOpenList }) {
     // erneuten Abschließen doppelt entstehen.
     const hasBooking = Boolean(list.fin_entry_id || list.fin_entry_id_open);
     if (current === 'erledigt' && hasBooking
-        && !window.confirm('Die Liste wurde ins Finanzmodul gebucht. Beim Wiederöffnen wird diese Buchung storniert. Fortfahren?')) {
+        && !(await confirmDialog({ title: 'Liste wieder öffnen?', text: 'Die Buchung im Finanzmodul wird storniert.', confirmLabel: 'Öffnen', danger: false }))) {
       return;
     }
     setStatusBusy(list.id);

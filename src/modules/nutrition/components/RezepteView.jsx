@@ -11,6 +11,7 @@ import RecipeDetailModal from './RecipeDetailModal';
 import TemplateCategories from './TemplateCategories';
 import { TEMPLATE_CAT_BY_KEY, countTemplateCats } from '../lib/templateCategories';
 import Icon from '../../../core/components/Icon';
+import { confirmDialog } from '../../../core/components/ui';
 
 // Karte bleibt kompakt: statt aller Tags und der ganzen Notiz nur die Anzahl der
 // Tags (eigene, Ziele und aus den Zutaten abgeleitete, ohne Doppelte) und ein
@@ -103,7 +104,7 @@ export default function RezepteView({
   }
 
   async function handleDelete(id) {
-    if (!confirm('Rezept wirklich löschen?')) return;
+    if (!(await confirmDialog({ title: 'Rezept löschen?' }))) return;
     await onDeleteRecipe(id);
     setDetail(null);
   }

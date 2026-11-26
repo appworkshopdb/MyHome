@@ -22,6 +22,7 @@ import {
 } from '../lib/income';
 import RecurringSheet from './RecurringSheet';
 import Icon from '../../../core/components/Icon';
+import { confirmDialog } from '../../../core/components/ui';
 
 const NF = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtD = (s) => { const [y, m, d] = String(s).slice(0, 10).split('-'); return `${d}.${m}.${y}`; };
@@ -51,7 +52,7 @@ function ConfirmSheet({ tpl, entries, today, startIdx, onClose, onDone }) {
       onDone(saved, tpl);
     } catch (e) {
       console.error(e);
-      showToast(e.message?.startsWith('Datenbank-Update') ? e.message : 'Bestätigen fehlgeschlagen');
+      showToast('Bestätigen fehlgeschlagen');
       setBusy(false);
     }
   }
@@ -152,7 +153,7 @@ export default function IncomeView() {
   }
 
   async function deleteTemplate(id) {
-    if (!confirm('Einnahme löschen? Bereits bestätigte Eingänge bleiben erhalten.')) return;
+    if (!(await confirmDialog({ title: 'Einnahme löschen?', text: 'Bestätigte Eingänge bleiben erhalten.' }))) return;
     try {
       await finData.deleteFixTemplate(session, id);
     } catch (e) {

@@ -13,7 +13,7 @@ import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
 import { IconChevronLeft, IconChevronRight, IconEdit, IconTrash } from '../../../core/components/Icons';
 import Icon from '../../../core/components/Icon';
-import { SkeletonList } from '../../../core/components/ui';
+import { SkeletonList, confirmDialog } from '../../../core/components/ui';
 
 // 4 Spalten — Einnahmen + 3 Ausgaben-Kategorien
 const COLUMNS = [
@@ -328,7 +328,7 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Eintrag löschen?')) return;
+    if (!(await confirmDialog({ title: 'Eintrag löschen?' }))) return;
     await db.deleteEntry(id);
     setDetailId(null);
     showToast('Eintrag gelöscht');

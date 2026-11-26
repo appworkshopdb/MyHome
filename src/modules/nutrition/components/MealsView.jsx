@@ -5,7 +5,7 @@ import { computeBody } from '../../../core/lib/bodyCalc';
 import { MEAL_TYPES, fmt } from '../lib/nutrition';
 import { todayStr, shiftDate, formatDayLabel, sumMeals, formatAmount } from '../lib/meals';
 import * as db from '../lib/nutData';
-import { SkeletonList } from '../../../core/components/ui';
+import { SkeletonList, confirmDialog } from '../../../core/components/ui';
 import { formatNumber } from '../../../core/lib/format';
 
 // Bereich "Mahlzeiten": Verlauf dessen, was gegessen wurde — pro Tag mit
@@ -123,7 +123,7 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
   }
 
   async function removeMeal(meal) {
-    if (!window.confirm(`„${meal.name}" aus dem Verlauf löschen?`)) return;
+    if (!(await confirmDialog({ title: `„${meal.name}“ aus dem Verlauf löschen?` }))) return;
     try {
       await db.deleteMeal(meal.id);
       setRows((prev) => prev.filter((m) => m.id !== meal.id));

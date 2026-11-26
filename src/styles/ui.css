@@ -306,3 +306,7 @@ textarea.ui-input { min-height: 96px; padding: 12px 14px; line-height: 1.4; resi
 /* Symbole im Fließtext und in kleinen Knöpfen (Schritt 3): die Größe folgt der Schrift (1,15 em),
    Strichstärke und Farbe kommen aus Icon.jsx. Ersetzt getippte Zeichen (× › ‹ ▾ ✓ +). */
 .glyph { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
+
+/* ── Seitenwechsel: nur Überblenden (Deckkraft, kein transform; Fixed-Nav-Regel bleibt heil) ── */
+.main-content > * { animation: ui-fade var(--dur-base) var(--ease-std); }
+@media (prefers-reduced-motion: reduce) { .main-content > * { animation: none; } }

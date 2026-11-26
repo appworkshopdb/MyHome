@@ -10,6 +10,7 @@ import {
 import { ALL_SUGGESTIONS, STORE_NAMES, UNIT_OPTIONS, getCategory } from '../lib/data/items.js';
 import { takeFreshItems } from '../../../core/lib/shoppingHandoff.js';
 import { fb } from '../../../core/lib/feedback';
+import { useUi } from '../../../core/lib/UiContext';
 import CompleteListSheet from './CompleteListSheet.jsx';
 import { SkeletonList } from '../../../core/components/ui';
 
@@ -38,6 +39,7 @@ function groupByCategory(items) {
 
 // ─── Komponente ───────────────────────────────────────────────────────
 export default function ItemsView({ list, onBack }) {
+  const { showToast } = useUi();
   const [items,            setItems]            = useState([]);
   const [fresh,            setFresh]            = useState({}); // id → 'new' | 'merged' (gerade aus einem Rezept dazugekommen)
   const [activeStore,      setActiveStore]      = useState('');
@@ -162,10 +164,10 @@ export default function ItemsView({ list, onBack }) {
   }
 
   async function handleResetAll() {
-    if (!window.confirm('Alle Artikel auf "nicht erledigt" zurücksetzen?')) return;
     try {
       await resetAllItems(list.id);
       setItems((prev) => prev.map((i) => ({ ...i, done: false })));
+      showToast('Alle Artikel zurückgesetzt');
     } catch (e) {
       setError('Zurücksetzen fehlgeschlagen.');
     }

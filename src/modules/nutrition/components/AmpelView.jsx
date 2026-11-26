@@ -6,6 +6,7 @@ import FoodFormModal from './FoodFormModal';
 import FoodWizard from './FoodWizard';
 import CompareModal from './CompareModal';
 import Icon from '../../../core/components/Icon';
+import { confirmDialog } from '../../../core/components/ui';
 
 // initialSearch: Startwert des Suchfelds. Ohne Angabe wie bisher leer.
 // Die Ampel-Fokuskarte der Modul-Übersicht (Schritt 9) reicht damit den
@@ -74,7 +75,7 @@ export default function AmpelView({
   }
 
   async function handleDelete(food) {
-    if (!confirm(`"${food.name}" wirklich löschen?`)) return;
+    if (!(await confirmDialog({ title: `„${food.name}“ löschen?` }))) return;
     await onDeleteFood(food);
     setSelected(null);
   }
