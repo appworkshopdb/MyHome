@@ -26,6 +26,10 @@ export function sanitize(input, base) {
   for (const k of Object.keys(base.radius)) out.radius[k] = num(input?.radius?.[k], base.radius[k], 0, 64);
   for (const k of Object.keys(base.size)) out.size[k] = num(input?.size?.[k], base.size[k], 24, 96);
   out.shadow = base.shadow; // Schatten sind (noch) nicht in der Werkstatt editierbar
+  if (base.motion) {
+    out.motion = { duration: {}, easing: base.motion.easing }; // Kurven sind nicht editierbar
+    for (const k of Object.keys(base.motion.duration)) out.motion.duration[k] = num(input?.motion?.duration?.[k], base.motion.duration[k], 0, 2000);
+  }
   out.colors = { light: {}, dark: {} };
   for (const theme of ['light', 'dark']) {
     for (const [group, vals] of Object.entries(input?.colors?.[theme] ?? {})) {
@@ -46,11 +50,21 @@ export function toCss(t) {
   }
   for (const [k, v] of Object.entries(t.space)) lines.push(`  --sp-${k}: ${v}px;`);
   for (const [k, v] of Object.entries(t.radius)) lines.push(`  --rad-${k}: ${v}px;`);
+  lines.push('  --rad-pill: 999px;');
   lines.push(`  --hit-min: ${t.size.hit}px; --ctl-h: ${t.size.control}px; --ctl-h-sm: ${t.size.controlSm}px; --bd-hair: ${t.size.hair}px;`);
   for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.light};`);
+  if (t.motion) {
+    for (const [k, v] of Object.entries(t.motion.duration)) lines.push(`  --dur-${k}: ${v}ms;`);
+    for (const [k, v] of Object.entries(t.motion.easing)) lines.push(`  --ease-${k}: ${v};`);
+  }
   lines.push('}', '', '/* Dunkelmodus: Klasse .dark auf <html> (core/lib/theme.js) */', '.dark {');
   for (const [k, v] of Object.entries(t.shadow)) lines.push(`  --sh-${k}: ${v.dark};`);
   lines.push('}', '');
+  if (t.motion) {
+    lines.push('/* Bewegung reduzieren: alle Dauern auf 0 */', '@media (prefers-reduced-motion: reduce) {', '  :root {');
+    for (const k of Object.keys(t.motion.duration)) lines.push(`    --dur-${k}: 0ms;`);
+    lines.push('  }', '}', '');
+  }
   const overrides = JSON.stringify(t.colors);
   lines.push(`/* Farb-Abweichungen (noch nicht ausgegeben, siehe tokens.json): ${overrides} */`, '');
   return lines.join('\n');

@@ -51,6 +51,8 @@
 
   --border-hairline: var(--raw-night-700);
   --border-strong:   #4A4139;
+  --border-control:  #776D62;
+  --surface-control: #332E29;
 
   --data-1:     var(--raw-navy-300);
   --data-2:     #5D77AE;

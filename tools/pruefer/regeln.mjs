@@ -92,7 +92,16 @@ const DESIGN = [
     tipp: 'Radius aus der Skala nehmen: var(--rad-sm|md|lg|xl|hero); 999px nur für Pillen (Chips, Status, Werte).' },
   { regel: 'design-inline', titel: 'Neuer Inline-Style', datei: /^src\/.*\.(jsx|tsx)$/,
     re: /style=\{\{/g,
-    tipp: 'Gestaltung in die CSS-Datei des Bausteins legen. Inline nur für wirklich berechnete Werte (z. B. Breite in %), dann mit pruefer:ok markieren.' }
+    tipp: 'Gestaltung in die CSS-Datei des Bausteins legen. Inline nur für wirklich berechnete Werte (z. B. Breite in %), dann mit pruefer:ok markieren.' },
+  // Redesign (26.11.2026): ein Symbolset für alles. Getippte Zeichen und Emoji als Bedienelement fallen weg,
+  // eigene <svg> in Komponenten auch; Symbole kommen aus src/core/components/Icon.jsx.
+  { regel: 'design-zeichen', titel: 'Getipptes Zeichen oder Emoji als Symbol', datei: /^src\/.*\.(jsx|tsx)$/,
+    re: /(?:>|\s)[×✕✖✓✔›‹»«▾▴▸◂➕➜→]️?\s*(?=<|\{|$)|[↩🗑✏⏸▶]️?/g,
+    tipp: 'Symbol aus dem Symbolset nehmen: <Icon name="close|check|open|back|expand|plus|trash|edit|restore|pause|play" /> (src/core/components/Icon.jsx).' },
+  { regel: 'design-symbol', titel: 'Eigenes <svg> statt Symbolset', datei: /^src\/.*\.(jsx|tsx)$/,
+    skip: /^src\/(core\/components\/(Icon|Icons|ModuleIcons|AreaIcons|GamificationIcons|EggFill|EnvelopeArt)\.jsx|core\/components\/birds\/|modules\/[^/]+\/components\/[A-Za-z]*Icons\.jsx)/,
+    re: /<svg\b/g,
+    tipp: 'Symbol in src/core/components/Icon.jsx ergänzen und mit <Icon name="…" /> einsetzen. Grafiken und Diagramme mit pruefer:ok markieren.' }
 ];
 // Stichtag: Die Ratsche zählt nur Änderungen nach dem Commit in tools/pruefer/design-seit.txt (Bestand vor der Regel
 // wird im Umbauplan abgebaut, nicht beim nächsten Merge blockiert). Liegt der Stichtag nicht zwischen merge-base und HEAD,

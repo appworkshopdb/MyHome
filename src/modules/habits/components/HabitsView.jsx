@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
+import Icon from '../../../core/components/Icon.jsx';
 import {
   DndContext,
   closestCenter,
@@ -659,14 +660,10 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
 
       <div className="hab-manage-card-right">
         <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'} aria-label={paused ? 'Aktivieren' : 'Pausieren'}>
-          {paused ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-          )}
+          <Icon name={paused ? 'play' : 'pause'} size={18} />
         </button>
         <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten" aria-label="Bearbeiten">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+          <Icon name="edit" size={18} />
         </button>
         <button
           className="hab-manage-btn hab-manage-btn--del"
@@ -675,9 +672,7 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
           title="Löschen"
           aria-label="Löschen"
         >
-          {deleting ? '…' : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /></svg>
-          )}
+          {deleting ? '…' : <Icon name="trash" size={18} />}
         </button>
       </div>
     </div>

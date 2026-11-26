@@ -156,6 +156,9 @@
 
   --border-hairline: var(--raw-sand-200);
   --border-strong:   var(--raw-sand-300);
+  /* Kante für Bedienelemente (Felder, Nebenknöpfe, Chips, Kästchen): mind. 3:1 zur Fläche */
+  --border-control:  #9A8E7B;
+  --surface-control: #F1EBE2;
 
   /* Datenreihen — nie Status-Tokens für Kategorien/Heatmap verwenden */
   --data-1:     var(--raw-navy-800);
