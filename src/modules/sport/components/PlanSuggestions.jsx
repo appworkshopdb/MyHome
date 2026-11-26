@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBodyProfile } from '../../../core/lib/bodyProfileData';
 import { suggestPlans } from '../lib/matching';
+import { Button } from '../../../core/components/ui';
 
 // Ruft die bereits vorhandene, aber bislang ungenutzte matching.js auf.
 // Lädt das Profil selbst (statt es von SportModule durchgereicht zu
@@ -44,10 +45,10 @@ export default function PlanSuggestions({ session, onStartFromPlan }) {
           }}
         >
           <div>
-            <div style={{ fontWeight: 600 }}>{plan.title}</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{reason}</div>
+            <div className="sp-u-w6">{plan.title}</div>
+            <div className="sp-u-sec">{reason}</div>
           </div>
-          <button className="btn btn-secondary" onClick={() => onStartFromPlan(plan)}>Starten</button>
+          <Button variant="secondary" onClick={() => onStartFromPlan(plan)}>Starten</Button>
         </div>
       ))}
     </div>

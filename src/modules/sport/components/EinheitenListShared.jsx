@@ -24,7 +24,7 @@ export function MusclePreview({ tags, size = 40 }) {
   const fontSize = size <= 30 ? 9 : 11;
 
   return (
-    <div style={{ display: 'flex', flexShrink: 0 }}>
+    <div className="sp-u-noshrink">
       {visible.map((key, i) => {
         const m = getMuscleVisual(key);
         if (!m) return null;

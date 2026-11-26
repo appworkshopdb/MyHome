@@ -17,6 +17,7 @@ import { todayIso } from '../../../core/lib/wizardDates';
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, SegGroup, WheelPicker, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // Sport (FAB) — im gemeinsamen Wizard-Rahmen (core/components/wizard/WizardKit.jsx).
 // Begriffe: eine EINHEIT ist ein Baustein (fest aus der App oder selbst angelegt), ein
@@ -174,7 +175,7 @@ export default function SportQuickSheet({ onClose }) {
       <>
         <div className="wz-grp">Im Kalender eintragen</div>
         <button type="button" className="wz-row-btn" onClick={() => go('e1')}>
-          <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4" /></svg></span>
+          <span className="wz-row-ico"><Icon name="calendar" size={22} /></span>
           <span>Training eintragen<small>Eine Einheit an einem Tag</small></span>
           <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
@@ -185,7 +186,7 @@ export default function SportQuickSheet({ onClose }) {
         </button>
         <div className="wz-grp">Neu anlegen</div>
         <button type="button" className="wz-row-btn" onClick={() => { setPlanTitle(''); go('p1'); }}>
-          <span className="wz-row-ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="10" width="17" height="4.5" rx="1.5" /><rect x="3.5" y="16" width="10" height="4.5" rx="1.5" /></svg></span>
+          <span className="wz-row-ico"><Icon name="repeat" size={22} /></span>
           <span>Trainingsplan<small>Mehrere Tage, füllt den Kalender von selbst</small></span>
           <span className="chev" aria-hidden="true"><Icon name="open" size={null} className="glyph" /></span>
         </button>
@@ -228,7 +229,7 @@ export default function SportQuickSheet({ onClose }) {
           )}
           {error && <p className="wz-hint err tr-full" role="alert">{error}</p>}
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} labelClosed="Mehr" labelOpen="Weniger" />
-          <button type="button" className="btn btn-primary" disabled={!ready || saving} onClick={saveWorkout}>{saving ? 'Speichert…' : 'Speichern'}</button>
+          <Button disabled={!ready || saving} onClick={saveWorkout}>{saving ? 'Speichert…' : 'Speichern'}</Button>
         </WizardFoot>
       ),
     }, (
@@ -268,7 +269,7 @@ export default function SportQuickSheet({ onClose }) {
       step: 1, total: 3, onBack: back,
       footer: (
         <WizardFoot one>
-          <button type="button" className="btn btn-primary" disabled={!ok} onClick={() => go('p2')}>Weiter</button>
+          <Button disabled={!ok} onClick={() => go('p2')}>Weiter</Button>
         </WizardFoot>
       ),
     }, (
@@ -296,7 +297,7 @@ export default function SportQuickSheet({ onClose }) {
       footer: (
         <WizardFoot>
           <MoreButton open={planMore} onClick={() => setPlanMore((o) => !o)} />
-          <button type="button" className="btn btn-primary" disabled={!planDaysOk} onClick={() => go('p3')}>Weiter</button>
+          <Button disabled={!planDaysOk} onClick={() => go('p3')}>Weiter</Button>
         </WizardFoot>
       ),
     }, (
@@ -304,7 +305,7 @@ export default function SportQuickSheet({ onClose }) {
         <PlanDaysBoard days={planDays} setDays={setPlanDays} sel={planSel} setSel={setPlanSel} onChoose={() => go('p2pick')} />
         {planMore && (
           <>
-            <label className="wz-lbl" htmlFor="wz-plan-note" style={{ marginTop: 4 }}>Notiz <span className="opt">optional</span></label>
+            <label className="wz-lbl sp-u-mt4" htmlFor="wz-plan-note">Notiz <span className="opt">optional</span></label>
             <textarea id="wz-plan-note" className="wz-input" value={planNotes} onChange={(e) => setPlanNotes(e.target.value)} placeholder="z. B. für Einsteiger, 3× pro Woche" />
           </>
         )}
@@ -333,8 +334,8 @@ export default function SportQuickSheet({ onClose }) {
       step: 3, total: 3, onBack: back,
       footer: (
         <WizardFoot>
-          <button type="button" className="btn btn-secondary" onClick={back} disabled={saving}>Ändern</button>
-          <button type="button" className="btn btn-primary" onClick={savePlan} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+          <Button variant="secondary" onClick={back} disabled={saving}>Ändern</Button>
+          <Button onClick={savePlan} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</Button>
         </WizardFoot>
       ),
     }, (
@@ -361,7 +362,7 @@ export default function SportQuickSheet({ onClose }) {
       onBack: back,
       footer: (
         <WizardFoot one>
-          <button type="button" className="btn btn-primary" disabled={!restDate || saving} onClick={saveRest}>{saving ? 'Speichert…' : 'Speichern'}</button>
+          <Button disabled={!restDate || saving} onClick={saveRest}>{saving ? 'Speichert…' : 'Speichern'}</Button>
         </WizardFoot>
       ),
     }, (

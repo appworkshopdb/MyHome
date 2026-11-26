@@ -1578,3 +1578,38 @@ button.cl-row-btn { cursor: pointer; }
 .app-menu .am-note--mut { font-size: var(--fs-meta); color: var(--text-muted); }
 .app-menu .am-note--err { color: var(--status-critical); }
 .app-menu .am-btns { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2); }
+
+/* Sport: kleine Hilfsklassen statt Inline-Styles (Redesign Schritt 4) */
+.sp-u-mut0 { color:var(--text-secondary); margin:0; }
+.sp-u-mt8 { margin-top:8px; }
+.sp-u-legend { display:flex; gap:16px; margin-top:12px; font-size:var(--fs-meta); color:var(--text-secondary); flex-wrap:wrap; }
+.sp-u-noshrink { display:flex; flex-shrink:0; }
+.sp-u-grid76 { display:grid; grid-template-columns:repeat(auto-fill,minmax(76px,1fr)); gap:6px; }
+.sp-u-cap { font-size:var(--fs-caption); font-weight:600; text-align:center; line-height:1.2; }
+.sp-u-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.sp-u-mut { font-size:var(--fs-small); color:var(--text-muted); }
+.sp-u-scroll { margin-top:8px; max-height:320px; overflow-y:auto; }
+.sp-u-mb10 { margin-bottom:10px; }
+.sp-u-lbl { font-size:var(--fs-meta); color:var(--text-muted); margin-bottom:4px; }
+.sp-u-w6 { font-weight:600; }
+.sp-u-sec { font-size:var(--fs-small); color:var(--text-secondary); }
+.sp-u-mt4 { margin-top:4px; }
+.sp-u-acts { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+.sp-u-mut10 { color:var(--text-secondary); margin:10px 0 0; }
+.sp-u-grid7s { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.sp-u-grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.sp-u-p0 { padding:0; }
+.sp-u-mut2 { font-size:var(--fs-small); color:var(--text-muted); margin-top:2px; }
+.sp-u-grid7 { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.sp-u-faint { font-size:var(--fs-caption); opacity:.75; }
+.sp-u-f1 { font-size:var(--fs-body); }
+.sp-dot { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: var(--rad-sm); }
+.sp-dot--done { background: var(--accent); }
+.sp-dot--plan { border: 2px solid var(--accent); }
+.sp-dot--rest { background: repeating-linear-gradient(135deg, var(--bg-input), var(--bg-input) 2px, var(--border-strong) 2px, var(--border-strong) 4px); }
+/* Sport · Tageskarte bei 320 px: Titel behält Platz, Aktionen rutschen darunter */
+@media (max-width: 359px) {
+  .sd-row { flex-wrap: wrap; }
+  .sd-row .sd-body { flex: 1 1 96px; }
+}
+.spo-year-select { padding-right: 24px; background-repeat: no-repeat; background-position: right 4px center; background-size: 14px; }

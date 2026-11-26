@@ -2,6 +2,7 @@ import RestBadge from './RestBadge';
 import UnitVisual from './UnitVisual';
 import { daysSummary, emptyDay, restDay } from '../lib/planDays';
 import Icon from '../../../core/components/Icon';
+import { Button, IconButton } from '../../../core/components/ui';
 
 // Die Tage eines Plans als Kachelraster mit Detailfeld, gemeinsam für den
 // Plan-Wizard und den Plan-Editor. Ein Tipp wählt den Tag; darunter wird er
@@ -93,11 +94,9 @@ export default function PlanDaysBoard({ days, setDays, sel, setSel, onChoose }) 
         </label>
 
         <div className="pe-move">
-          <button type="button" className="btn btn-secondary" onClick={() => moveDay(-1)} disabled={sel === 0}><Icon name="back" size={null} className="glyph" /> Früher</button>
-          <button type="button" className="btn btn-secondary" onClick={() => moveDay(1)} disabled={sel === days.length - 1}>Später <Icon name="open" size={null} className="glyph" /></button>
-          <button type="button" className="btn btn-secondary pe-trash" onClick={removeDay} disabled={days.length === 1} aria-label="Tag entfernen">
-            <Icon name="trash" size={null} className="glyph" />
-          </button>
+          <Button variant="secondary" icon="back" onClick={() => moveDay(-1)} disabled={sel === 0}>Früher</Button>
+          <Button variant="secondary" iconRight="open" onClick={() => moveDay(1)} disabled={sel === days.length - 1}>Später</Button>
+          <IconButton icon="trash" label="Tag entfernen" variant="quiet" className="pe-trash" onClick={removeDay} disabled={days.length === 1} />
         </div>
       </div>
     </>

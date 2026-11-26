@@ -67,7 +67,7 @@ export default function WorkoutCalendar({ workouts, year, monthIndex, selectedDa
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+    <div className="sp-u-grid7s">
       {WEEKDAYS.map((d) => (
         <div key={d} style={{
           textAlign: 'center',

@@ -4,6 +4,7 @@ import MusclePicker from './MusclePicker';
 import SportSymbol from './SportSymbol';
 import { muscleLabel, resolveUnitVisual } from '../lib/planMuscles';
 import { OWN_CATEGORIES, SYMBOL_CATEGORY, SYMBOL_KEYS, SYMBOL_LABELS, categoryOfType } from '../lib/sportSymbols';
+import { Button } from '../../../core/components/ui';
 
 // Eigene Einheit anlegen oder bearbeiten — EIN Formular für alle Stellen (Plus-Menü
 // "Eigene Einheit", Galerie "Eigene" › "Neue Einheit", Bereich "Einheiten").
@@ -109,8 +110,8 @@ export default function OwnUnitForm({ initial, onSave, onCancel, saveLabel = 'Sp
       )}
       {error && <p className="up-error" role="alert">{error}</p>}
       <div className="up-foot up-foot--two">
-        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={busy}>{cancelLabel}</button>
-        <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>{busy ? 'Speichert…' : saveLabel}</button>
+        <Button variant="secondary" onClick={onCancel} disabled={busy}>{cancelLabel}</Button>
+        <Button onClick={save} disabled={busy}>{busy ? 'Speichert…' : saveLabel}</Button>
       </div>
     </div>
   );

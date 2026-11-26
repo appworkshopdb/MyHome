@@ -7,6 +7,7 @@ import { isSymbol } from '../lib/sportSymbols';
 import { resolveTypeLabel } from '../lib/typeLabel';
 import { resolveUnitVisual } from '../lib/planMuscles';
 import { todayIso } from '../../../core/lib/wizardDates';
+import { Button } from '../../../core/components/ui';
 
 // Lokales Kalenderdatum (toISOString würde zwischen 0 und 2 Uhr den Vortag liefern)
 const TODAY = todayIso;
@@ -101,7 +102,7 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
             in modules/nutrition/nutrition.css und wäre eine versteckte
             Abhängigkeit von Sport auf Ernährung (Architektur-Regel:
             Module importieren nie voneinander). */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        <div className="sp-u-grid3">
           {[['planned', 'Geplant'], ['done', 'Erledigt'], ['rest', 'Ruhetag']].map(([key, label]) => (
             <button
               key={key}
@@ -146,9 +147,9 @@ export default function WorkoutForm({ onSave, onCancel, showToast, initialValues
         <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="z.B. gut lief's, Knie gespürt..." />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-        <button className="btn btn-secondary" onClick={onCancel}>Abbrechen</button>
-        <button className="btn btn-primary" onClick={submit}>Speichern</button>
+      <div className="sp-u-acts">
+        <Button variant="secondary" onClick={onCancel}>Abbrechen</Button>
+        <Button onClick={submit}>Speichern</Button>
       </div>
 
       {picking && (

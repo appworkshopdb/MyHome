@@ -131,7 +131,7 @@ export default function WeightTimeline() {
       )}
 
       {display.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', margin: '10px 0 0' }}>Noch kein Gewicht eingetragen.</p>
+        <p className="sp-u-mut10">Noch kein Gewicht eingetragen.</p>
       ) : (
         <div className={`sa-wlist${display.length > 3 ? ' scroll' : ''}`}>
           {display.map((log, i) => (

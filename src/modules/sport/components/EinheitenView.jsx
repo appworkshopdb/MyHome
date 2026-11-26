@@ -7,7 +7,7 @@ import * as db from '../lib/spoData';
 import { buildCatalog } from '../lib/unitCatalog';
 import { OWN_CATEGORIES, categoryOfType } from '../lib/sportSymbols';
 import Icon from '../../../core/components/Icon';
-import { SkeletonList } from '../../../core/components/ui';
+import { SkeletonList, Button } from '../../../core/components/ui';
 
 // Bereich "Einheiten": die Bibliothek. Umschalter Vorlagen | Eigene.
 //   Vorlagen: fest vorgegebene Einheiten aus der App, nur ansehen (gruppiert wie in der Galerie).
@@ -84,7 +84,7 @@ export default function EinheitenView({ units, loading, userSports = [], onChang
         </>
       ) : (
         <>
-          <button type="button" className="btn btn-secondary btn-block" onClick={() => setEditing(null)}>＋ Neue eigene Einheit</button>
+          <Button variant="secondary" icon="plus" block onClick={() => setEditing(null)}>Neue eigene Einheit</Button>
           {loading ? (
             <SkeletonList rows={3} />
           ) : own.length === 0 ? (
