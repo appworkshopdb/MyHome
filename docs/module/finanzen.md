@@ -92,3 +92,5 @@ Der frühere Balken der Schnellübersicht (Tippen öffnete Buchungen) und die Ko
 Doppelte Gehälter: alte, automatisch angelegte Einnahme-Posten (aus Vorlage, ohne `received_on`) zählen nicht mit, sobald dieselbe Quelle im selben Monat bestätigt wurde (`income.dedupeIncome`, genutzt in "Verfügbar jetzt" und im Kreisdiagramm). Nicht bestätigte alte Posten zählen weiter; zum Aufräumen siehe das SQL im Verlauf der Vault-Notiz "Einnahmen am Monatsende - Gehalt für den Folgemonat".
 
 Buchungen/Offene Posten: Filter sind Alle, Offen, Fix, Sonstige ("Ein" entfiel, Einnahmen stehen in "Alle" und über die Fokuskarte; "Sonstige" zeigt Variable Kosten und Sonstige Ausgaben). In "Fix" und "Sonstige" stehen die Bereiche gleich aufgeklappt, in "Offen" ist die Liste offen, in "Alle" sind alle vier Bereiche eingeklappt (`CollapseSection defaultOpen`, beim Filterwechsel neu gestartet).
+
+Posten-Zeilen (Buchungen, Offene Posten, alle Filter) zeigen eine Notiz nur als Hinweis "Notiz" mit kleinem Symbol (`.fin-row-notehint`), nicht mehr ausgeschrieben; den Text gibt es in der Ansicht des Postens.
