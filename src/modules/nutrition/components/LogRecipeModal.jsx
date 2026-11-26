@@ -4,6 +4,7 @@ import { IconSearch } from '../../../core/components/Icons';
 import { MEAL_TYPES, computeNutrition, fmt } from '../lib/nutrition';
 import { mealFromRecipe, defaultMealType, todayStr } from '../lib/meals';
 import { formatNumber } from '../../../core/lib/format';
+import MealIcon from '../../../core/components/MealIcon';
 
 // Ein eigenes Rezept als gegessene Mahlzeit eintragen (Bereich "Mahlzeiten").
 // recipe === null → zuerst ein Rezept aus der Liste wählen; sonst direkt das Formular.
@@ -116,7 +117,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         <div className="segmented cols-4">
           {MEAL_TYPES.map((t) => (
             <button key={t.key} type="button" className={mealType === t.key ? 'active' : ''} onClick={() => setMealType(t.key)}>
-              <div>{t.emoji}</div>
+              <div><MealIcon type={t.key} /></div>
               <div>{t.label}</div>
             </button>
           ))}

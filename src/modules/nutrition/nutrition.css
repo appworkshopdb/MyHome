@@ -911,3 +911,31 @@
 .tpl-back svg { width: 20px; height: 20px; display: block; }
 .tpl-top-t { font-size: 20px; font-weight: 800; line-height: 1.15; }
 .tpl-top-s { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+/* ── Rezepte (Redesign Schritt 4) ───────────────────────── */
+.recipe-main { flex: 1; min-width: 0; }
+.rf-meals { margin-bottom: var(--sp-2); }
+.recipe-card .rf-copy { margin-top: var(--sp-3); }
+.recipe-box svg, .meta-pill svg { flex: none; }
+
+/* ── Mahlzeiten (Redesign Schritt 4) ────────────────────── */
+.meals-card { margin: 0; padding: 0; }
+.meals-card .meals-entry + .meals-entry, .meals-card .meals-history-row + .meals-history-row { border-top: var(--bd-hair) solid var(--border-subtle, var(--border)); }
+.meals-group-lbl { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.meal-hint--flush { margin-top: 0; }
+
+/* ── Ampel und Tipps (Redesign Schritt 4) ───────────────── */
+.ampel-chips { margin-bottom: var(--sp-2); }
+.ampel-compare { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-small); font-weight: 600; }
+.ampel-compare .ui-btn { margin-left: auto; }
+.food-group-chev, .tip-chev { display: flex; transition: transform var(--dur-base) var(--ease-std); }
+.food-group-chev.is-closed { transform: rotate(-90deg); }
+.tip-chev.is-open { transform: rotate(180deg); }
+.tip-item-text { flex: 1; text-align: left; }
+.organ-back { margin-bottom: var(--sp-3); }
+.organ-title { margin: 0 0 var(--sp-1); font-size: var(--fs-title); }
+.organ-desc { margin: 0 0 var(--sp-3); font-size: var(--fs-small); color: var(--text-muted); }
+.organ-cat { margin-bottom: var(--sp-4); }
+.organ-cat-title { padding: 0 2px; }
+.food-row .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.food-row .info .name { display: flex; align-items: center; gap: var(--sp-2); }

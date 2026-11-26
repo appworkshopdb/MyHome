@@ -6,7 +6,7 @@ import FoodFormModal from './FoodFormModal';
 import FoodWizard from './FoodWizard';
 import CompareModal from './CompareModal';
 import Icon from '../../../core/components/Icon';
-import { confirmDialog } from '../../../core/components/ui';
+import { confirmDialog, FilterChip, Button, IconButton, EmptyState } from '../../../core/components/ui';
 
 // initialSearch: Startwert des Suchfelds. Ohne Angabe wie bisher leer.
 // Die Ampel-Fokuskarte der Modul-Übersicht (Schritt 9) reicht damit den
@@ -91,44 +91,32 @@ export default function AmpelView({
         />
       </div>
 
-      <div className="chip-row" style={{ marginBottom: 6 }}>
-        <button className={`chip ${category === 'all' ? 'active' : ''}`} onClick={() => setCategory('all')}>Alle</button>
+      <div className="chip-row ampel-chips">
+        <FilterChip selected={category === 'all'} onClick={() => setCategory('all')}>Alle</FilterChip>
         {AMPEL_CATS.map((c) => (
-          <button key={c.key} className={`chip ${category === c.key ? 'active' : ''}`} onClick={() => setCategory(c.key)}>
-            {c.label}
-          </button>
+          <FilterChip key={c.key} selected={category === c.key} onClick={() => setCategory(c.key)}>{c.label}</FilterChip>
         ))}
-        <button className={`chip ${glutenfrei ? 'active' : ''}`} onClick={() => setGlutenfrei((v) => !v)}>GF</button>
-        <button className={`chip ${laktosefrei ? 'active' : ''}`} onClick={() => setLaktosefrei((v) => !v)}>LF</button>
+        <FilterChip selected={glutenfrei} onClick={() => setGlutenfrei((v) => !v)}>GF</FilterChip>
+        <FilterChip selected={laktosefrei} onClick={() => setLaktosefrei((v) => !v)}>LF</FilterChip>
       </div>
 
-      <div className="chip-row" style={{ marginBottom: 10 }}>
-        <button className={`chip ${tag === 'all' ? 'active' : ''}`} onClick={() => setTag('all')}>Alle Tags</button>
+      <div className="chip-row ampel-chips">
+        <FilterChip selected={tag === 'all'} onClick={() => setTag('all')}>Alle Tags</FilterChip>
         {FOOD_TAGS.map((t) => (
-          <button
-            key={t}
-            className="chip"
-            style={tag === t ? { background: TAG_COLORS[t], color: '#fff' } : {}}
-            onClick={() => setTag(tag === t ? 'all' : t)}
-          >
-            {t}
-          </button>
+          <FilterChip key={t} selected={tag === t} onClick={() => setTag(tag === t ? 'all' : t)}>{t}</FilterChip>
         ))}
       </div>
 
       {compare.length > 0 && (
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{compare.length} zum Vergleich</span>
-          <button className="btn btn-primary" style={{ marginLeft: 'auto', padding: '6px 12px' }} onClick={() => setShowCompare(true)}>Vergleichen</button>
-          <button className="btn-ghost" onClick={() => setCompare([])}><Icon name="close" size={null} className="glyph" /></button>
+        <div className="card ampel-compare">
+          <span>{compare.length} zum Vergleich</span>
+          <Button size="s" onClick={() => setShowCompare(true)}>Vergleichen</Button>
+          <IconButton icon="close" label="Auswahl leeren" onClick={() => setCompare([])} />
         </div>
       )}
 
       {groupNames.length === 0 && (
-        <div className="empty-state">
-          <IconSearch />
-          <p>Keine Treffer</p>
-        </div>
+        <EmptyState icon="search" title="Keine Treffer" />
       )}
 
       {groupNames.map((name) => {
@@ -140,7 +128,7 @@ export default function AmpelView({
               <span className="dot" style={{ background: GROUP_COLORS[name] || '#94a3b8' }} />
               <span className="name">{name}</span>
               <span className="count">{items.length}</span>
-              <span style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', display: 'flex' }}><IconChevronDown /></span>
+              <span className={`food-group-chev${isCollapsed ? ' is-closed' : ''}`}><Icon name="expand" size={18} /></span>
             </button>
             {!isCollapsed && items.map((f) => {
               const cat = AMPEL_CATS.find((c) => c.key === f.category) || AMPEL_CATS[0];

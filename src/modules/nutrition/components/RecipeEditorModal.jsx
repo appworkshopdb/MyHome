@@ -4,6 +4,7 @@ import { IconSearch, IconPlus, IconClose } from '../../../core/components/Icons'
 import { RECIPE_CATS, GOAL_TAGS, CUSTOM_TAGS, computeNutrition, fmt, basis } from '../lib/nutrition';
 import { COVER_MOTIFS, COVER_TONES, CoverArt, parseCover, resolveCover, formatCover } from '../lib/recipeCovers';
 import Icon from '../../../core/components/Icon';
+import MealIcon from '../../../core/components/MealIcon';
 
 const UNIT_SHORT = { ml: 'ml', Scheibe: 'Sch', Stück: 'Stk', Zehe: 'Zehe', EL: 'EL' };
 const DEFAULT_AMOUNT = { ml: 200, Stück: 1, Scheibe: 1, Zehe: 1, EL: 1 };
@@ -81,7 +82,7 @@ export default function RecipeEditorModal({ recipe, foods, foodsById, onSave, on
         <div className="segmented cols-4">
           {RECIPE_CATS.filter((c) => c.key !== 'all').map((c) => (
             <button key={c.key} type="button" className={draft.category === c.key ? 'active' : ''} onClick={() => set('category', c.key)}>
-              <div>{c.emoji}</div>
+              <div><MealIcon type={c.key} /></div>
               <div>{c.label}</div>
             </button>
           ))}

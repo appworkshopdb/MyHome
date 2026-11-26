@@ -35,7 +35,7 @@ registerRequirement('profile', async (session) => {
 // und Ernährungsform liegen ausschließlich auf der Profilseite oben
 // rechts (core/Profile.jsx). Das Mockup listet "Mein Profil" als
 // Bereich — bewusst nicht umgesetzt, sonst gäbe es zwei Oberflächen für
-// dieselben Daten. ProfilView.jsx bleibt deshalb ungenutzt liegen.
+// dieselben Daten. (ProfilView.jsx wurde entfernt.)
 //
 // BESONDERHEIT dieses Moduls (unverändert): RezepteView UND AmpelView
 // hatten je einen eigenen fest positionierten "+"-Button. "editing"/

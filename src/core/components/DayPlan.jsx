@@ -1,6 +1,7 @@
 import Money from './Money';
 import MacroDial, { hasMacroDial } from './MacroDial';
 import Icon from './Icon';
+import MealIcon from './MealIcon';
 
 // Tagesplan im Hub: DayPlanSection (der Plan selbst, abhakbar, immer sichtbar). Abhaken läuft über die
 // Handler aus dem Hub — hier wird nur dargestellt.
@@ -71,7 +72,7 @@ export function NutritionBlock({ data, onOpen, label = 'Ernährung', hideOpen = 
       <button className="dp-meals" onClick={openMeals} aria-label="Mahlzeiten öffnen">
         {slots.map((s) => (
           <span key={s.key} className={`dp-meal ${s.logged ? 'on' : ''} ${s.next ? 'next' : ''}`}>
-            <span aria-hidden="true">{s.emoji}</span>
+            <span aria-hidden="true"><MealIcon type={s.key} size={18} /></span>
             <span className="dp-sr">{s.label}{s.logged ? ' eingetragen' : ''}</span>
             {s.logged && <span aria-hidden="true"><Icon name="check" size={null} className="glyph" /></span>}
           </span>

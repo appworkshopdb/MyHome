@@ -5,8 +5,9 @@ import { computeBody } from '../../../core/lib/bodyCalc';
 import { MEAL_TYPES, fmt } from '../lib/nutrition';
 import { todayStr, shiftDate, formatDayLabel, sumMeals, formatAmount } from '../lib/meals';
 import * as db from '../lib/nutData';
-import { SkeletonList, confirmDialog } from '../../../core/components/ui';
+import { SkeletonList, confirmDialog, Button, EmptyState } from '../../../core/components/ui';
 import { formatNumber } from '../../../core/lib/format';
+import MealIcon from '../../../core/components/MealIcon';
 
 // Bereich "Mahlzeiten": Verlauf dessen, was gegessen wurde — pro Tag mit
 // Tagessumme gegen das Tagesziel (aus dem Profil) und pro Mahlzeit mit Nährwerten.
@@ -200,17 +201,12 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
       </div>
 
       <div className="meals-actions">
-        <button className="btn btn-primary" onClick={onLogRecipe}><IconPlus /> Rezept eintragen</button>
-      </div>
-      <div className="meal-hint" style={{ marginTop: 0, marginBottom: 14 }}>
-        Mahlzeit per Foto: über das Plus unten rechts → „Mahlzeit scannen".
+        <Button icon="plus" onClick={onLogRecipe}>Rezept eintragen</Button>
       </div>
 
       {/* Einträge nach Mahlzeit-Typ */}
       {groups.length === 0 && (
-        <div className="empty-state">
-          <p>{date === today ? 'Heute noch nichts eingetragen.' : 'An diesem Tag ist nichts eingetragen.'}</p>
-        </div>
+        <EmptyState icon="food" title={date === today ? 'Heute noch nichts' : 'Nichts eingetragen'} />
       )}
 
       {groups.map((g) => {
@@ -219,14 +215,14 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
         return (
           <section key={g.key} className="meals-group">
             <div className="meals-group-head">
-              <span>{g.emoji} {g.label}</span>
+              <span className="meals-group-lbl"><MealIcon type={g.key} size={18} /> {g.label}</span>
               <span>{gEst ? '≈ ' : ''}{int(gk)} kcal</span>
             </div>
-            <div className="card" style={{ margin: 0, padding: 0 }}>
+            <div className="card meals-card">
               {g.meals.map((m, idx) => {
                 const open = openId === m.id;
                 return (
-                  <div key={m.id} className="meals-entry" style={{ borderBottom: idx < g.meals.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div key={m.id} className="meals-entry">
                     <button className="meals-entry-main" aria-expanded={open} onClick={() => setOpenId(open ? null : m.id)}>
                       <span className="meals-entry-title">
                         {m.name}
@@ -245,7 +241,7 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
                     {open && (
                       <div className="meals-entry-detail">
                         {m.isEstimate && m.kcalLow != null && m.kcalHigh != null && m.kcalHigh - m.kcalLow >= 20 && (
-                          <div className="meal-hint" style={{ marginTop: 0 }}>Geschätzte Spanne: ≈ {int(m.kcalLow)}–{int(m.kcalHigh)} kcal</div>
+                          <div className="meal-hint meal-hint--flush">Geschätzte Spanne: ≈ {int(m.kcalLow)}–{int(m.kcalHigh)} kcal</div>
                         )}
                         <div className="meals-facts">
                           <span>Zucker {fmt(m.sugar)} g</span>
@@ -275,7 +271,7 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
                             <input type="date" value={m.eatenOn} onChange={(e) => e.target.value && changeMeal(m, { eatenOn: e.target.value })} />
                           </label>
                         </div>
-                        <button className="btn btn-danger" onClick={() => removeMeal(m)}><IconTrash /> Löschen</button>
+                        <Button variant="danger" size="s" icon="trash" onClick={() => removeMeal(m)}>Löschen</Button>
                       </div>
                     )}
                   </div>
@@ -290,12 +286,11 @@ export default function MealsView({ session, focusDate, refreshKey, onLogRecipe,
       {history.length > 0 && (
         <section className="meals-history">
           <div className="meals-group-head"><span>Letzte Tage</span></div>
-          <div className="card" style={{ margin: 0, padding: 0 }}>
+          <div className="card meals-card">
             {history.map((h, idx) => (
               <button
                 key={h.day}
                 className={`meals-history-row ${h.day === date ? 'is-active' : ''}`}
-                style={{ borderBottom: idx < history.length - 1 ? '1px solid var(--border)' : 'none' }}
                 onClick={() => { goTo(h.day); window.scrollTo?.({ top: 0 }); }}
               >
                 <span>{formatDayLabel(h.day, today)}</span>

@@ -11,7 +11,7 @@ import RecipeDetailModal from './RecipeDetailModal';
 import TemplateCategories from './TemplateCategories';
 import { TEMPLATE_CAT_BY_KEY, countTemplateCats } from '../lib/templateCategories';
 import Icon from '../../../core/components/Icon';
-import { confirmDialog } from '../../../core/components/ui';
+import { confirmDialog, Segmented, FilterChip, EmptyState, Button } from '../../../core/components/ui';
 
 // Karte bleibt kompakt: statt aller Tags und der ganzen Notiz nur die Anzahl der
 // Tags (eigene, Ziele und aus den Zutaten abgeleitete, ohne Doppelte) und ein
@@ -23,13 +23,13 @@ function RecipeMeta({ recipe, calc }) {
     <div className="meta-pills">
       {tagCount > 0 && (
         <span className="meta-pill">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" /><circle cx="8" cy="8" r="1.4" /></svg>
+          <Icon name="tag" size={16} />
           {tagCount} Tag{tagCount !== 1 ? 's' : ''}
         </span>
       )}
       {recipe.note && (
         <span className="meta-pill">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 3h10l4 4v14H5z" /><path d="M9 12h6M9 16h6" /></svg>
+          <Icon name="note" size={16} />
           Notiz
         </span>
       )}
@@ -129,7 +129,7 @@ export default function RezepteView({
       {catDef ? (
         <div className="tpl-top">
           <button type="button" className="tpl-back" aria-label="Zurück zu den Kategorien" onClick={() => { setCat(null); setMeal('all'); resetSheetFilters(); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+            <Icon name="back" size={20} />
           </button>
           <div>
             <div className="tpl-top-t">{catDef.label}</div>
@@ -137,10 +137,12 @@ export default function RezepteView({
           </div>
         </div>
       ) : (
-      <div className="chip-row" style={{ marginBottom: 12 }}>
-        <button className={`chip ${tab === 'eigene' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => { setTab('eigene'); setCat(null); }}>Eigene Rezepte</button>
-        <button className={`chip ${tab === 'vorlagen' ? 'active' : ''}`} style={{ flex: 1, textAlign: 'center' }} onClick={() => { setTab('vorlagen'); setCat(null); }}>Vorlagen</button>
-      </div>
+      <Segmented
+        label="Rezepte"
+        options={[{ value: 'eigene', label: 'Eigene Rezepte' }, { value: 'vorlagen', label: 'Vorlagen' }]}
+        value={tab}
+        onChange={(v) => { setTab(v); setCat(null); }}
+      />
       )}
 
       <div className="nut-searchbar">
@@ -149,15 +151,13 @@ export default function RezepteView({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rezept, Zutat oder Tag suchen…"
+            placeholder="Rezept suchen…"
             aria-label="Rezepte durchsuchen"
           />
           {query && <button type="button" className="nut-search-clear" aria-label="Suche leeren" onClick={() => setQuery('')}><Icon name="close" size={null} className="glyph" /></button>}
         </div>
         <button type="button" className={`nut-filter-btn ${activeCount > 0 ? 'active' : ''}`} aria-label={activeCount > 0 ? `Filter, ${activeCount} aktiv` : 'Filter'} onClick={() => setSheetOpen(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" />
-          </svg>
+          <Icon name="filter" size={20} />
           {activeCount > 0 && <b>{activeCount}</b>}
         </button>
       </div>
@@ -165,11 +165,11 @@ export default function RezepteView({
       {showCats && <TemplateCategories counts={catCounts} onPick={(k) => { setCat(k); setMeal('all'); }} />}
 
       {!showCats && catDef?.kind !== 'meal' && (!catDef || mealChips.length > 2) && (
-      <div className="chip-row" style={{ marginBottom: 8 }}>
+      <div className="chip-row rf-meals">
         {mealChips.map((c) => (
-          <button key={c.key} className={`chip ${meal === c.key ? 'active' : ''}`} onClick={() => setMeal(c.key)}>
+          <FilterChip key={c.key} selected={meal === c.key} onClick={() => setMeal(c.key)}>
             {c.key === 'all' ? 'Alle' : c.label}
-          </button>
+          </FilterChip>
         ))}
       </div>
       )}
@@ -194,49 +194,39 @@ export default function RezepteView({
       )}
 
       {!showCats && items.length === 0 && (
-        <div className="empty-state">
-          <div style={{ fontSize: '2.5rem' }}>🍽️</div>
-          <p>{tab === 'eigene' ? 'Noch keine Rezepte' : 'Keine Vorlagen vorhanden'}</p>
-          {tab === 'eigene' && <button className="btn btn-primary" style={{ marginTop: 10 }} onClick={() => setEditing(null)}>+ Erstes Rezept</button>}
-        </div>
+        <EmptyState
+          icon="food"
+          title={tab === 'eigene' ? 'Noch keine Rezepte' : 'Keine Vorlagen'}
+          action={tab === 'eigene' ? { label: 'Erstes Rezept', onClick: () => setEditing(null) } : undefined}
+        />
       )}
 
       {!showCats && items.length > 0 && rows.length === 0 && (
-        <div className="empty-state">
-          <IconSearch />
-          <p>Keine Treffer</p>
-          <button className="btn btn-secondary" style={{ marginTop: 10 }} onClick={resetFilters}>Filter zurücksetzen</button>
-        </div>
+        <EmptyState icon="search" title="Keine Treffer" action={{ label: 'Filter zurücksetzen', icon: 'restore', onClick: resetFilters }} />
       )}
 
       {!showCats && rows.map(({ recipe: r, calc, facts }) => (
         <div key={r.id} className="card recipe-card" onClick={() => setDetail(r)}>
           <div className="head">
             <RecipeCover recipe={r} className="thumb" />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="recipe-main">
               <div className="title">{r.name}</div>
               <div className="macros">{Math.round(facts.kcal)} kcal · {fmt(facts.protein)}g Eiweiß pro Portion</div>
               <RecipeMeta recipe={r} calc={calc} />
             </div>
             <div className="recipe-side">
               <span className="recipe-box" title={`${r.servings} Portion${Number(r.servings) !== 1 ? 'en' : ''}`} aria-label={`${r.servings} Portion${Number(r.servings) !== 1 ? 'en' : ''}`}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M3 11h18c0 5.2-4 8.5-9 8.5S3 16.2 3 11z" /><path d="M8.5 22h7" /><path d="M9 7.5c0-1 .8-1.2.8-2.2M12.5 7.5c0-1 .8-1.2.8-2.2" />
-                </svg>
+                <Icon name="pan" size={18} />
                 {r.servings}
               </span>
               <span className="recipe-box" title={`${r.ingredients.length} Zutat${r.ingredients.length !== 1 ? 'en' : ''}`} aria-label={`${r.ingredients.length} Zutat${r.ingredients.length !== 1 ? 'en' : ''}`}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 19C4 11 8 5 20 4c.5 11-4.5 16-12 15.2" /><path d="M5 19c3-4 6-7 10-9.5" />
-                </svg>
+                <Icon name="leaf" size={18} />
                 {r.ingredients.length}
               </span>
             </div>
           </div>
           {tab === 'vorlagen' && (
-            <button className="btn btn-primary" style={{ marginTop: 10, width: '100%' }} onClick={(e) => { e.stopPropagation(); copyTemplate(r); }}>
-              <IconPlus /> Zu meinen Rezepten
-            </button>
+            <Button block icon="plus" className="rf-copy" onClick={(e) => { e.stopPropagation(); copyTemplate(r); }}>Zu meinen Rezepten</Button>
           )}
         </div>
       ))}
