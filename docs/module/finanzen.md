@@ -90,3 +90,5 @@ Ohne Überschriften (kein Titel "Finanzen", keine Abschnittstitel), nur Elemente
 Der frühere Balken der Schnellübersicht (Tippen öffnete Buchungen) und die Kopfzeile mit Monat sind entfallen; Buchungen bleibt unter den Bereichen.
 
 Doppelte Gehälter: alte, automatisch angelegte Einnahme-Posten (aus Vorlage, ohne `received_on`) zählen nicht mit, sobald dieselbe Quelle im selben Monat bestätigt wurde (`income.dedupeIncome`, genutzt in "Verfügbar jetzt" und im Kreisdiagramm). Nicht bestätigte alte Posten zählen weiter; zum Aufräumen siehe das SQL im Verlauf der Vault-Notiz "Einnahmen am Monatsende - Gehalt für den Folgemonat".
+
+Buchungen/Offene Posten: in "Fix" und "Ein" steht der einzelne Bereich gleich aufgeklappt, in "Offen" ist die Liste offen, in "Alle" sind alle vier Bereiche eingeklappt (`CollapseSection defaultOpen`, beim Filterwechsel neu gestartet).

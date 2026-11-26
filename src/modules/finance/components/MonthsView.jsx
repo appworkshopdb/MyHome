@@ -161,8 +161,9 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
 }
 
 // Aufklappbare Kategorie-Sektion (für alle anderen Filter)
-function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
-  const [open, setOpen] = useState(false);
+// defaultOpen: in "Fix" und "Ein" steht der einzelne Bereich gleich aufgeklappt, in "Alle" eingeklappt
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
   // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
@@ -434,7 +435,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         <div className="fin-collapse-list">
           {visibleColumns().map((col) => (
             <CollapseSection
-              key={col.key}
+              key={`${filter}-${col.key}`} // neu starten, wenn der Filter wechselt (Anfangszustand aufgeklappt/eingeklappt)
+              defaultOpen={filter !== 'alle'}
               col={col}
               entries={entries}
               onOpenModal={openEntry}
