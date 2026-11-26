@@ -36,6 +36,7 @@ import {
 } from './report/ui.jsx';
 import '../report.css';
 import { SkeletonList } from '../../../core/components/ui';
+import Icon from '../../../core/components/Icon';
 
 const PRESET_OPTIONS = [
   { key: 'month', label: 'Monat' }, { key: 'quarter', label: 'Quartal' },
@@ -288,14 +289,14 @@ export default function SummaryView() {
 
       <div className="rp-nav">
         <button type="button" className="month-nav-btn" aria-label="Zurück" onClick={() => setPeriod((p) => shiftPeriod(p, -1))}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+          <Icon name="back" size={20} />
         </button>
         <div className="rp-nav-mid">
           <b>{periodLabel(period)}</b>
           <small>{rangeText(eff)}{includesNow ? ' · Monat läuft' : ''}</small>
         </div>
         <button type="button" className="month-nav-btn" aria-label="Weiter" onClick={() => setPeriod((p) => shiftPeriod(p, 1))}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+          <Icon name="open" size={20} />
         </button>
         <div className="rp-tools">
           <button type="button" className="rp-iconbtn" aria-label={`Filter${groups.length ? `, ${groups.length} aktiv` : ''}`} onClick={() => setFilterOpen(true)}>
@@ -327,7 +328,6 @@ export default function SummaryView() {
         </div>
       )}
 
-      <p className="rp-fnote">Die Filter wirken auf die meisten Bereiche. Wo ein Bereich abweicht, steht es in seiner Kopfzeile.</p>
 
       {visible.map((id) => (
         <SectionCard

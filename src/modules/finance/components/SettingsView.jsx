@@ -7,6 +7,7 @@ import FocusCard from '../../../core/components/FocusCard';
 import SheetShell from '../../../core/components/SheetShell';
 import { WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 // SheetJS erst bei Bedarf nachladen — spart Ladezeit solange niemand
 // die XLSX-Migration nutzt.
@@ -32,8 +33,8 @@ function DeleteSheet({ onConfirm, onClose, busy }) {
   const ok = isDeleteWord(typed);
   const footer = (
     <WizardFoot>
-      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
-      <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={!ok || busy}>Alle Daten löschen</button>
+      <Button variant="secondary" onClick={onClose} disabled={busy}>Abbrechen</Button>
+      <Button variant="danger" onClick={onConfirm} disabled={!ok || busy}>Alle Daten löschen</Button>
     </WizardFoot>
   );
   return (
@@ -59,8 +60,8 @@ function DeleteSheet({ onConfirm, onClose, busy }) {
 function ExcelSheet({ fileName, preview, onConfirm, onClose, busy }) {
   const footer = (
     <WizardFoot>
-      <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
-      <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy}>Jetzt importieren</button>
+      <Button variant="secondary" onClick={onClose} disabled={busy}>Abbrechen</Button>
+      <Button onClick={onConfirm} disabled={busy}>Jetzt importieren</Button>
     </WizardFoot>
   );
   return (

@@ -22,7 +22,7 @@ import {
 } from '../lib/income';
 import RecurringSheet from './RecurringSheet';
 import Icon from '../../../core/components/Icon';
-import { confirmDialog } from '../../../core/components/ui';
+import { confirmDialog, Button } from '../../../core/components/ui';
 
 const NF = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtD = (s) => { const [y, m, d] = String(s).slice(0, 10).split('-'); return `${d}.${m}.${y}`; };
@@ -66,8 +66,8 @@ function ConfirmSheet({ tpl, entries, today, startIdx, onClose, onDone }) {
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>Abbrechen</button>
-            <button type="button" className="btn btn-primary" onClick={save} disabled={!(v > 0) || busy}>{busy ? 'Speichert…' : 'Bestätigen'}</button>
+            <Button variant="secondary" onClick={onClose} disabled={busy}>Abbrechen</Button>
+            <Button onClick={save} disabled={!(v > 0) || busy}>{busy ? 'Speichert…' : 'Bestätigen'}</Button>
           </WizardFoot>
         )}
       >

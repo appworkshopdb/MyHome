@@ -15,6 +15,7 @@ const money = (v) => parseMoney(v) || 0; // ungültig → 0
 import SheetShell from '../../../core/components/SheetShell';
 import { DateButton, MoreButton, WheelPicker, WizardFoot, WizardFrame, missingHint } from '../../../core/components/wizard/WizardKit';
 import Icon from '../../../core/components/Icon';
+import { Button } from '../../../core/components/ui';
 
 const QUICK_CATEGORIES = [
   { key: 'sonstige_einnahmen', label: 'Einnahme'  },
@@ -207,8 +208,8 @@ function FinanceWizard({ onClose }) {
         onClose={onClose}
         footer={(
           <WizardFoot>
-            <button type="button" className="btn btn-secondary" onClick={() => setView('enter')} disabled={saving}>Ändern</button>
-            <button type="button" className="btn btn-primary" onClick={submit} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+            <Button variant="secondary" onClick={() => setView('enter')} disabled={saving}>Ändern</Button>
+            <Button onClick={submit} disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</Button>
           </WizardFoot>
         )}
       >
@@ -246,7 +247,7 @@ function FinanceWizard({ onClose }) {
       footer={(
         <WizardFoot hint={hint}>
           <MoreButton open={showMore} onClick={() => setShowMore((o) => !o)} />
-          <button type="button" className="btn btn-primary" disabled={!valid} onClick={toReview}>Weiter</button>
+          <Button disabled={!valid} onClick={toReview}>Weiter</Button>
         </WizardFoot>
       )}
     >
@@ -297,7 +298,7 @@ function FinanceWizard({ onClose }) {
         <span>€</span>
       </div>
 
-      <div className="wz-two" style={{ marginTop: 16 }}>
+      <div className="wz-two fin-u-mt16">
         <div>
           <div className="wz-col-lbl">Kategorie</div>
           <WheelPicker items={CATEGORY_ITEMS} value={category} onChange={setCategory} label="Kategorie" />
@@ -368,7 +369,7 @@ function FinanceWizard({ onClose }) {
             </div>
           )}
 
-          <label className="wz-lbl" htmlFor="wz-fin-note" style={{ marginTop: 14 }}>Notiz <span className="opt">optional</span></label>
+          <label className="wz-lbl fin-u-mt14" htmlFor="wz-fin-note">Notiz <span className="opt">optional</span></label>
           <textarea id="wz-fin-note" className="wz-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Zusatzinfo…" />
         </>
       )}
@@ -381,7 +382,7 @@ function PlaceholderSheetBody({ moduleId, onClose }) {
   return (
     <div className="sheet-placeholder">
       <p className="t-body">Schnellerfassung für {mod?.name || moduleId} ist noch nicht angebunden.</p>
-      <button className="btn btn-secondary btn-block" onClick={onClose}>Schließen</button>
+      <Button variant="secondary" block onClick={onClose}>Schließen</Button>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { ChipGroup, DateButton, SegGroup, WizardFoot, WizardFrame } from '../../
 import { parseMoney } from '../../../core/lib/wizardDates';
 import { IconContract, IconFixed } from './ContractIcons';
 import { formatMoney } from '../../../core/lib/format';
+import { Button } from '../../../core/components/ui';
 
 const INTERVAL_OPTIONS = Object.entries(INTERVALS).map(([value, { label }]) => ({ value, label }));
 const CATEGORY_OF = { einnahme: 'fixeinnahmen', fixkosten: 'fixkosten' };
@@ -132,12 +133,12 @@ export default function RecurringSheet({
 
   const footer = editing ? (
     <WizardFoot>
-      <button type="button" className="btn btn-danger" onClick={() => onDelete(item.id)}>Löschen</button>
-      <button type="button" className="btn btn-primary" onClick={submit}>Speichern</button>
+      <Button variant="danger" onClick={() => onDelete(item.id)}>Löschen</Button>
+      <Button onClick={submit}>Speichern</Button>
     </WizardFoot>
   ) : (
     <WizardFoot one>
-      <button type="button" className="btn btn-primary" onClick={submit}>Speichern</button>
+      <Button onClick={submit}>Speichern</Button>
     </WizardFoot>
   );
 

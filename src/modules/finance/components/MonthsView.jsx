@@ -79,7 +79,7 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
           {/* Notiz: nur ein kleines Symbol hinter dem Namen; den Text gibt es in der Ansicht des Postens */}
           {e.note && (
             <span className="fin-row-noteicon" role="img" aria-label="Notiz vorhanden">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><polyline points="14 3 14 8 19 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></svg>
+              <Icon name="note" size={14} />
             </span>
           )}
         </div>
@@ -137,7 +137,7 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
   if (offene.length === 0) {
     return (
       <div className="fin-offen-empty">
-        <span className="t-body" style={{ color: 'var(--status-positive)' }}>✓ Alles bezahlt</span>
+        <span className="t-body fin-u-pos">✓ Alles bezahlt</span>
       </div>
     );
   }
@@ -146,10 +146,10 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
     <div className="fin-offen-list">
       {/* Gesamtbetrag */}
       <div className="fin-offen-header">
-        <span className="t-meta" style={{ color: 'var(--text-muted)' }}>
+        <span className="t-meta fin-u-mut">
           {offenePostenText(offene.length)}
         </span>
-        <span className="t-body" style={{ fontWeight: 700, color: 'var(--status-critical)' }}>
+        <span className="t-body fin-u-crit">
           {formatEur(gesamtOffen)}
         </span>
       </div>

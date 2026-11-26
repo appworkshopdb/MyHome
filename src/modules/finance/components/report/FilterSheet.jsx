@@ -9,6 +9,7 @@ import {
   ALL_CATS, TYPES, PAYMENTS, PAYMENT_LABEL, DEFAULT_FILTERS,
 } from '../../lib/analytics.js';
 import { CATEGORIES } from '../../lib/finance.js';
+import { Button } from '../../../../core/components/ui';
 
 const TYPE_LABEL = { einnahme: 'Einnahmen', ausgabe: 'Ausgaben', sparen: 'Sparen' };
 
@@ -139,8 +140,8 @@ export default function FilterSheet({ filters, onApply, onClose }) {
       </div>
 
       <div className="entry-modal-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose} style={{ marginLeft: 'auto' }}>Abbrechen</button>
-        <button type="button" className="btn btn-primary" onClick={() => onApply(d)}>Speichern</button>
+        <Button variant="secondary" className="fin-u-mlauto" onClick={onClose}>Abbrechen</Button>
+        <Button onClick={() => onApply(d)}>Speichern</Button>
       </div>
     </SheetShell>
   );
