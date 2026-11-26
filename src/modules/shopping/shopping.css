@@ -24,33 +24,6 @@
 
 /* ─── Empty-State ─────────────────────────────────────────── */
 
-.sho-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 48px 24px;
-  text-align: center;
-}
-
-.sho-empty-icon {
-  font-size: 2.5rem;
-  line-height: 1;
-}
-
-.sho-empty-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.sho-empty-text {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  max-width: 280px;
-  line-height: 1.5;
-}
-
 /* ─── Listen-Übersicht ────────────────────────────────────── */
 
 .sho-lists {
@@ -227,13 +200,6 @@
 }
 
 /* ─── Erfolgs-Meldung ─────────────────────────────────────── */
-
-.sho-msg-success {
-  font-size: 0.85rem;
-  color: var(--success);
-  padding: 8px 0;
-  margin-bottom: 8px;
-}
 
 /* ─── Zahlungen ───────────────────────────────────────────── */
 
@@ -413,12 +379,6 @@
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 8px;
-}
-
-.sho-action-btn {
-  font-size: 0.82rem;
-  min-height: 36px;
-  padding: 6px 12px;
 }
 
 /* ─── Kategorie-Gruppe ────────────────────────────────────── */
@@ -715,88 +675,6 @@
 
 /* ─── Häufig-Ansicht ──────────────────────────────────────── */
 
-.sho-freq-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.sho-freq-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.sho-freq-item:last-child {
-  border-bottom: none;
-}
-
-.sho-freq-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.sho-freq-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.sho-freq-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.sho-freq-cat {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: var(--bg-card);
-  padding: 1px 6px;
-}
-
-.sho-freq-count {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--accent-dark);
-}
-
-.sho-freq-qty {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.sho-freq-add {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--border-strong);
-  background: none;
-  color: var(--text-primary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.12s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sho-freq-add:active {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: var(--accent);
-}
-
-.sho-freq-add svg {
-  width: 16px;
-  height: 16px;
-}
-
 /* ─── Status-Badge ────────────────────────────────────────── */
 
 .sho-status-badge {
@@ -838,44 +716,12 @@
 
 /* ─── FreqView Filter + Rang ──────────────────────────────── */
 
-.sho-freq-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.sho-freq-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
 .sho-freq-filter {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 16px;
   flex-wrap: wrap;
-}
-
-.sho-freq-pill {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--surface-sunken);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-family: var(--font);
-  transition: background 0.12s, color 0.12s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sho-freq-pill.active {
-  background: var(--action-primary);
-  color: var(--text-on-accent);
 }
 
 .sho-freq-total {
@@ -888,16 +734,6 @@
   width: 28px;
   text-align: center;
   flex-shrink: 0;
-}
-
-.sho-freq-medal {
-  font-size: 1.1rem;
-}
-
-.sho-freq-ranknum {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-muted);
 }
 
 /* ─── Status-Wrap (Badge + Hint nebeneinander) ────────────── */
@@ -1284,3 +1120,10 @@
 .sho-item-edit .sho-edit-store { flex: 1; }
 .sho-item-edit-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--sp-1); }
 .sho-item-edit-actions .ui-btn--text:first-child { margin-right: auto; }
+
+/* ── Sheets im Einkauf (Redesign Schritt 4) ─────────────── */
+.wz-input--gap, .cl-field--gap { margin-top: var(--sp-2); }
+.cl-note--flush { margin: 0; }
+.wz-lbl--flush { margin: 0; }
+.ui-btn.rts-cta { background: var(--mod-shop-ac); color: var(--mod-shop-on); }
+.rts-ic svg { width: 20px; height: 20px; }

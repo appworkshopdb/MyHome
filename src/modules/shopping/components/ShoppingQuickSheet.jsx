@@ -26,14 +26,7 @@ const STORE_GROUPS = STORES.reduce((acc, s) => {
   return acc;
 }, {});
 
-function IconTemplate() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="4" width="14" height="17" rx="2" />
-      <path d="M9 4h6v3H9zM9 12h6M9 16h4" />
-    </svg>
-  );
-}
+const IconTemplate = () => <Icon name="note" size={null} />;
 
 export default function ShoppingQuickSheet({ onClose, onSaved }) {
   const [step,        setStep]        = useState(1);
@@ -295,7 +288,7 @@ export default function ShoppingQuickSheet({ onClose, onSaved }) {
               </optgroup>
             </select>
             {store === '__custom' && (
-              <input className="wz-input" style={{ marginTop: 8 }} type="text" placeholder="Name des Ladens" aria-label="Name des Ladens" value={storeCustom} onChange={(e) => setStoreCustom(e.target.value)} maxLength={60} autoFocus />
+              <input className="wz-input wz-input--gap" type="text" placeholder="Name des Ladens" aria-label="Name des Ladens" value={storeCustom} onChange={(e) => setStoreCustom(e.target.value)} maxLength={60} autoFocus />
             )}
 
             <div className="wz-lbl">Wann <span className="opt">optional</span></div>

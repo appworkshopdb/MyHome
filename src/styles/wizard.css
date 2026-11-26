@@ -125,7 +125,7 @@
   transition: border-color var(--motion-fast);
 }
 .wz-input:focus { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--action-quiet-bg); }
-select.wz-input { padding-right: 36px; }
+select.wz-input { padding-right: 36px; background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; }
 .wz-input.hero { font-weight: 700; font-size: 18px; }
 textarea.wz-input { height: auto; min-height: 72px; padding: 12px 14px; line-height: 1.45; resize: none; }
 

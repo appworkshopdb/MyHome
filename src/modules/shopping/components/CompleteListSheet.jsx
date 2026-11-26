@@ -359,7 +359,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
           </button>
         </div>
         {target === 'new' && (
-          <input className="cl-field" style={{ marginTop: 8 }} value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label="Name der neuen Liste" />
+          <input className="cl-field cl-field--gap" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60} aria-label="Name der neuen Liste" />
         )}
       </>
     );
@@ -381,7 +381,7 @@ export default function CompleteListSheet({ list, items, onClose, onFinished }) 
         {form ? (
           <div className="cl-form">
             {form.scan && (
-              <div className={`cl-note${form.scan === 'noTotal' ? ' warn' : ''}`} style={{ margin: 0 }}>
+              <div className={`cl-note cl-note--flush${form.scan === 'noTotal' ? ' warn' : ''}`}>
                 {form.scan === 'ok' ? 'Beleg gelesen – bitte prüfen und bei Bedarf ändern.' : 'Betrag nicht erkannt – bitte eingeben.'}
               </div>
             )}

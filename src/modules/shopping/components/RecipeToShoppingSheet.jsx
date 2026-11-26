@@ -25,10 +25,10 @@ import Icon from '../../../core/components/Icon';
 // den Hinweis mit „Rückgängig“ / „Liste öffnen“; undo() macht genau diese
 // Änderung rückgängig (auch eine dafür angelegte Liste).
 
+import { Button, SkeletonList } from '../../../core/components/ui';
+
 const NEW = 'new';
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-);
+const CheckIcon = () => <Icon name="check" size={14} strokeWidth={3} />;
 
 export default function RecipeToShoppingSheet({ recipe, foodsById, initialPortions, onClose, onDone }) {
   const [portions, setPortions] = useState(initialPortions || recipe.servings || 1);
@@ -150,9 +150,9 @@ export default function RecipeToShoppingSheet({ recipe, foodsById, initialPortio
 
   const footer = (
     <WizardFoot one hint={error || summary}>
-      <button type="button" className="btn rts-cta" disabled={!total || saving || lists === null} onClick={submit}>
-        {saving ? 'Wird hinzugefügt …' : !total ? 'Nichts ausgewählt' : `${total} ${total === 1 ? 'Zutat' : 'Zutaten'} hinzufügen`}
-      </button>
+      <Button block className="rts-cta" loading={saving} disabled={!total || lists === null} onClick={submit}>
+        {!total ? 'Nichts ausgewählt' : `${total} ${total === 1 ? 'Zutat' : 'Zutaten'} hinzufügen`}
+      </Button>
     </WizardFoot>
   );
 
@@ -160,13 +160,13 @@ export default function RecipeToShoppingSheet({ recipe, foodsById, initialPortio
     <SheetShell onClose={onClose} wizard>
       <WizardFrame title="Zutaten auf die Liste" sub={recipe.name} onClose={onClose} footer={footer}>
         <div className="rts-portions">
-          <span className="wz-lbl" style={{ margin: 0 }}>Portionen</span>
+          <span className="wz-lbl wz-lbl--flush">Portionen</span>
           <Stepper value={portions} onChange={setPortions} min={1} max={99} />
         </div>
 
         <div className="wz-lbl">Auf welche Liste?</div>
         {lists === null ? (
-          <div className="rts-muted">Listen werden geladen …</div>
+          <SkeletonList rows={2} />
         ) : (
           <div className="rts-lists" role="radiogroup" aria-label="Einkaufsliste">
             {lists.map((l) => {
@@ -180,7 +180,7 @@ export default function RecipeToShoppingSheet({ recipe, foodsById, initialPortio
               );
             })}
             <button type="button" className="rts-list" role="radio" aria-checked={listKey === NEW} onClick={() => setListKey(NEW)}>
-              <span className="rts-ic">＋</span>
+              <span className="rts-ic"><Icon name="plus" size={20} /></span>
               <span className="rts-nm"><b>Neue Liste „{recipe.name}“</b><small>Neue Liste anlegen</small></span>
               <span className="rts-radio" />
             </button>
