@@ -58,7 +58,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         ) : (
           <>
             <div className="form-group">
-              <div className="search-box" style={{ position: 'relative' }}>
+              <div className="search-box nut-u-rel">
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -68,8 +68,8 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
                 <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}><IconSearch /></span>
               </div>
             </div>
-            <div className="card" style={{ margin: 0, padding: 0 }}>
-              {filtered.length === 0 && <div className="meal-hint" style={{ padding: 14 }}>Kein Rezept gefunden.</div>}
+            <div className="card nut-u-flush">
+              {filtered.length === 0 && <div className="meal-hint nut-u-p14">Kein Rezept gefunden.</div>}
               {filtered.map((r, idx) => {
                 const c = computeNutrition(r.ingredients, foodsById);
                 const perServing = Math.round(c.kcal / (r.servings || 1));
@@ -97,7 +97,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
   return (
     <Modal title={recipe.name} onClose={onClose}>
       <div className="result-grid">
-        <div className="result-tile" style={{ gridColumn: '1 / -1' }}>
+        <div className="result-tile nut-u-span">
           <div className="label">Nährwerte für {valid ? formatNumber(portionsNum, 2) : '–'} Portion{portionsNum === 1 ? '' : 'en'}</div>
           <div className="value">{valid ? Math.round(calc.kcal * factor) : '–'}<span>kcal</span></div>
         </div>
@@ -129,7 +129,7 @@ export default function LogRecipeModal({ recipe: initial, recipes, foodsById, on
         <input type="date" value={eatenOn} onChange={(e) => setEatenOn(e.target.value)} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         <button className="btn btn-primary" disabled={!valid || saving} onClick={save}>
           {saving ? 'Speichert…' : 'Mahlzeit speichern'}
         </button>

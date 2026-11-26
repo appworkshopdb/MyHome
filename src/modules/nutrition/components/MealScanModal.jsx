@@ -121,7 +121,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
   return (
     <Modal title={meal.name || 'Mahlzeit'} onClose={onClose}>
       <div className="result-grid">
-        <div className="result-tile" style={{ gridColumn: '1 / -1' }}>
+        <div className="result-tile nut-u-span">
           <div className="label">{anyEstimate ? 'Geschätzt gesamt' : 'Gesamt'}</div>
           <div className="value">
             {hasRange ? `≈ ${low}–${high}` : `${anyEstimate ? '≈ ' : ''}${kcal}`}<span>kcal</span>
@@ -147,9 +147,9 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
       </div>
 
       <div>
-        <div className="card-title" style={{ marginBottom: 8 }}>Erkannte Bestandteile</div>
-        <div className="card" style={{ margin: 0, padding: 0 }}>
-          {items.length === 0 && <div className="meal-hint" style={{ padding: 14, margin: 0 }}>Keine Bestandteile — füge ein Lebensmittel hinzu.</div>}
+        <div className="card-title nut-u-mb8">Erkannte Bestandteile</div>
+        <div className="card nut-u-flush">
+          {items.length === 0 && <div className="meal-hint nut-u-p14 nut-u-m0">Keine Bestandteile — füge ein Lebensmittel hinzu.</div>}
           {items.map((it, idx) => (
             <div key={it.key} className="meal-item" style={{ borderBottom: idx < items.length - 1 ? '1px solid var(--border)' : 'none' }}>
               <div className="meal-item-main">
@@ -179,7 +179,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
         )}
         {adding && (
           <div className="meal-add">
-            <div className="search-box" style={{ position: 'relative' }}>
+            <div className="search-box nut-u-rel">
               <input
                 autoFocus
                 value={query}
@@ -242,7 +242,7 @@ export default function MealScanModal({ meal, foods = [], onSaveMeal, onClose })
         <input type="date" value={eatenOn} onChange={(e) => setEatenOn(e.target.value)} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         <button className="btn btn-primary" disabled={saving || total.grams <= 0 || !eatenOn} onClick={save}>
           {saving ? 'Speichert…' : 'Mahlzeit speichern'}
         </button>

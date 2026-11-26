@@ -243,7 +243,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
           <>
             <div className="form-group">
               <label>Zutaten ({ingredients.length})</label>
-              <div className="nut-search" style={{ marginBottom: 6 }}>
+              <div className="nut-search nut-u-mb6">
                 <IconSearch />
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Lebensmittel suchen…" aria-label="Lebensmittel suchen" autoComplete="off" />
               </div>
@@ -265,7 +265,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
               {query.trim() && results.length === 0 && onSaveFood && (
                 <div className="card" style={{ margin: '0 0 10px' }}>
                   <div className="wz-newfood">
-                    <div style={{ fontSize: 13 }}><b>„{query.trim()}"</b> gibt es noch nicht.</div>
+                    <div className="nut-u-f13"><b>„{query.trim()}"</b> gibt es noch nicht.</div>
                     {!nfOpen ? (
                       <button type="button" className="btn btn-secondary" onClick={() => setNfOpen(true)}>Neu anlegen, ohne das Rezept zu verlassen</button>
                     ) : (
@@ -287,9 +287,9 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
                 </div>
               )}
               {ingredients.length === 0 ? (
-                <div className="empty-state" style={{ padding: 20 }}>Zutaten oben suchen und hinzufügen</div>
+                <div className="empty-state nut-u-p20">Zutaten oben suchen und hinzufügen</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="nut-u-col">
                   {ingredients.map((ing, idx) => {
                     const food = foodsById[ing.foodId];
                     if (!food) return null;
@@ -312,9 +312,9 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
             </div>
 
             {ingredients.length > 0 && (
-              <div className="card" style={{ margin: 0 }}>
+              <div className="card nut-u-m0">
                 <div className="card-title">Nährwerte gesamt ({por} Port.)</div>
-                <div className="result-grid" style={{ marginBottom: 6 }}>
+                <div className="result-grid nut-u-mb6">
                   {TILES.map(([key, label, unit]) => (
                     <div className="result-tile" key={key} style={{ padding: '9px 12px' }}>
                       <div className="label">{label}</div>
@@ -336,7 +336,7 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
                 </div>
                 <div className="form-group">
                   <label>Tags</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div className="nut-u-wrap">
                     {allTags.map((t) => {
                       const on = tags.includes(t);
                       return (
@@ -381,8 +381,8 @@ export default function RecipeWizard({ foods, foodsById, onSave, onSaveFood, onC
             <CoverArt motif={resolved.motif} tone={resolved.tone} className="wz-sumcover" fit="meet" />
             <div className="wz-review">
               <div className="wz-rv-top">
-                <b style={{ fontSize: 22 }}>{name.trim()}</b>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{catLabel ? `${catLabel.emoji} ${catLabel.label}` : ''}</span>
+                <b className="nut-u-f22">{name.trim()}</b>
+                <span className="nut-u-muted13">{catLabel ? `${catLabel.emoji} ${catLabel.label}` : ''}</span>
               </div>
               <div className="wz-rv-row"><span>Portionen</span><span>{por}</span></div>
               <details className="wz-acc" open>

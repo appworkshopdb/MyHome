@@ -29,7 +29,7 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
 
   return (
     <Modal title={food.name} onClose={onClose}>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         {canEdit && (
           <button className="btn btn-secondary" onClick={() => onEdit(food)}><IconEdit /> Bearbeiten</button>
         )}
@@ -38,7 +38,7 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="nut-u-wrap">
         <span className={`ampel-badge ${food.category}`}>
           {food.category === 'erlaubt' ? 'Erlaubt' : food.category === 'okay' ? 'OKAY' : 'Tabu'}
         </span>
@@ -49,22 +49,22 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
         {food.laktosefrei && <span className="ampel-badge erlaubt">Laktosefrei</span>}
       </div>
 
-      <div className="card" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+      <div className="card nut-u-flush-hidden">
         <div className="card-title" style={{ padding: '10px 14px', marginBottom: 0, background: 'var(--bg-input)' }}>
           Nährwerte pro {basis(food.unit)}
         </div>
         {MACRO_ROWS.map(([key, label, digits]) => (
           <div key={key} style={{ display: 'flex', padding: '9px 14px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{label}</span>
-            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{fmt(food[key], digits)}</span>
+            <span className="nut-u-grow-sec">{label}</span>
+            <span className="nut-u-strong">{fmt(food[key], digits)}</span>
           </div>
         ))}
       </div>
 
       {micros.length > 0 && (
         <div>
-          <div className="card-title" style={{ marginBottom: 8 }}>Vitamine &amp; Mineralstoffe</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div className="card-title nut-u-mb8">Vitamine &amp; Mineralstoffe</div>
+          <div className="nut-u-wrap">
             {micros.map((m) => <span key={m} className="tag-chip" style={{ background: 'var(--accent-dark)', color: 'var(--on-accent)' }}>{m}</span>)}
           </div>
         </div>
@@ -72,17 +72,17 @@ export default function FoodDetailModal({ food, currentUserId, onEdit, onDelete,
 
       {(food.allergens || []).length > 0 && (
         <div>
-          <div className="card-title" style={{ marginBottom: 8 }}>Allergene</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {food.allergens.map((a) => <span key={a} className="tag-chip" style={{ background: 'var(--danger)' }}>{a}</span>)}
+          <div className="card-title nut-u-mb8">Allergene</div>
+          <div className="nut-u-wrap">
+            {food.allergens.map((a) => <span key={a} className="tag-chip nut-u-dangerbg">{a}</span>)}
           </div>
         </div>
       )}
 
       {(food.tags || []).length > 0 && (
         <div>
-          <div className="card-title" style={{ marginBottom: 8 }}>Tags</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div className="card-title nut-u-mb8">Tags</div>
+          <div className="nut-u-wrap">
             {food.tags.map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
           </div>
         </div>

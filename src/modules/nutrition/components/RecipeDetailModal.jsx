@@ -50,7 +50,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         {isTemplate ? (
           <button className="btn btn-primary" onClick={() => onCopy(recipe)}><IconPlus /> Übernehmen</button>
         ) : isOwner ? (
@@ -61,7 +61,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="nut-u-wrap">
         <span className="chip">{cat.emoji} {cat.label}</span>
         {isShared && <span className="chip">Vom Haushalt geteilt{!isOwner ? ' (nicht von dir)' : ''}</span>}
       </div>
@@ -88,7 +88,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
         </div>
       </div>
 
-      <div className="card nut-facts" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+      <div className="card nut-facts nut-u-flush-hidden">
         <div className="nut-facts-row head">
           <span />
           <span>Pro Portion</span>
@@ -110,15 +110,15 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       </div>
 
       <div>
-        <div className="card-title" style={{ marginBottom: 8 }}>Zutaten für {portions} Portion{portions !== 1 ? 'en' : ''}</div>
-        <div className="card" style={{ margin: 0, padding: 0 }}>
+        <div className="card-title nut-u-mb8">Zutaten für {portions} Portion{portions !== 1 ? 'en' : ''}</div>
+        <div className="card nut-u-flush">
           {recipe.ingredients.map((ing, idx) => {
             const food = foodsById[ing.foodId];
             if (!food) return null;
             return (
               <div key={idx} style={{ display: 'flex', padding: '9px 14px', borderBottom: idx < recipe.ingredients.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ flex: 1, fontSize: '0.85rem' }}>{food.name}</span>
-                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
+                <span className="nut-u-grow">{food.name}</span>
+                <span className="nut-u-strong">{fmtAmount(ing.amount * factor, food.unit)} {UNIT_LABEL[food.unit] || 'g'}</span>
               </div>
             );
           })}
@@ -126,7 +126,7 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       </div>
 
       {((recipe.goalTags || []).length > 0 || (recipe.customTags || []).length > 0 || calc.tags.length > 0) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div className="nut-u-wrap">
           {(recipe.goalTags || []).map((t) => <span key={t} className="goal-tag">{t}</span>)}
           {(recipe.customTags || []).map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
           {calc.tags.map((t) => <span key={t} className="tag-chip" style={{ background: TAG_COLORS[t] || 'var(--text-muted)' }}>{t}</span>)}
@@ -134,9 +134,9 @@ export default function RecipeDetailModal({ recipe, calc, foodsById, currentUser
       )}
 
       {recipe.note && (
-        <div className="lex-detail-block" style={{ background: 'var(--warning-light)' }}>
-          <div className="heading" style={{ color: 'var(--warning)' }}>Notiz</div>
-          <div style={{ fontSize: '0.85rem' }}>{recipe.note}</div>
+        <div className="lex-detail-block nut-u-warnbg">
+          <div className="heading nut-u-warn">Notiz</div>
+          <div className="nut-u-small">{recipe.note}</div>
         </div>
       )}
       {showShop && (

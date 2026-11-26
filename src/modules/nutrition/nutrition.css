@@ -939,3 +939,33 @@
 .organ-cat-title { padding: 0 2px; }
 .food-row .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .food-row .info .name { display: flex; align-items: center; gap: var(--sp-2); }
+
+/* Kleine Hilfsklassen statt Inline-Styles (Redesign Schritt 4) */
+.nut-u-scrollx { overflow-x:auto; }
+.nut-u-row { display:flex; gap:var(--sp-2); }
+.nut-u-flush-hidden { margin:0; padding:0; overflow:hidden; }
+.nut-u-grow-sec { flex:1; font-size:var(--fs-small); color:var(--text-secondary); }
+.nut-u-strong { font-weight:600; font-size:var(--fs-small); }
+.nut-u-mb8 { margin-bottom:var(--sp-2); }
+.nut-u-wrap { display:flex; flex-wrap:wrap; gap:6px; }
+.nut-u-dangerbg { background:var(--danger); }
+.nut-u-m0 { margin:0; }
+.nut-u-fwrap { flex-wrap:wrap; }
+.nut-u-meta-mt { font-size:var(--fs-meta); color:var(--text-muted); margin-top:6px; }
+.nut-u-mt6 { margin-top:6px; }
+.nut-u-f22 { font-size:var(--fs-title); }
+.nut-u-muted13 { font-size:var(--fs-meta); color:var(--text-muted); }
+.nut-u-mb12 { margin-bottom:var(--sp-3); }
+.nut-u-rel { position:relative; }
+.nut-u-flush { margin:0; padding:0; }
+.nut-u-p14 { padding:14px; }
+.nut-u-span { grid-column:1/-1; }
+.nut-u-grow { flex:1; font-size:var(--fs-small); }
+.nut-u-warnbg { background:var(--warning-light); }
+.nut-u-warn { color:var(--warning); }
+.nut-u-small { font-size:var(--fs-small); }
+.nut-u-mb6 { margin-bottom:6px; }
+.nut-u-p20 { padding:20px; }
+.nut-u-col { display:flex; flex-direction:column; gap:6px; }
+.nut-u-f13 { font-size:var(--fs-meta); }
+.nut-u-transp { background:transparent; }

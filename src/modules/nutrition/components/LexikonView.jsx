@@ -76,7 +76,7 @@ export default function LexikonView() {
         <IconSearch />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Im Lexikon suchen…" />
       </div>
-      <div className="chip-row" style={{ marginBottom: 12 }}>
+      <div className="chip-row nut-u-mb12">
         <button className={`chip ${cat === 'all' ? 'active' : ''}`} onClick={() => setCat('all')}>Alle</button>
         {LEX_CATS.map((c) => (
           <button

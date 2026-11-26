@@ -89,7 +89,7 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
         </div>
       </div>
 
-      <div className="card" style={{ margin: 0 }}>
+      <div className="card nut-u-m0">
         <div className="card-title">Nährwerte pro {UNIT_LABEL[form.unit] || form.unit}</div>
         <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
           {MACRO_FIELDS.map(([key, label]) => (
@@ -123,7 +123,7 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
 
       <div className="form-group">
         <label>Allergene</label>
-        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+        <div className="chip-row nut-u-fwrap">
           {FOOD_ALLERGENS.map((a) => (
             <button
               key={a}
@@ -135,14 +135,14 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
             </button>
           ))}
         </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+        <div className="nut-u-meta-mt">
           Glutenfrei und Laktosefrei ergeben sich aus „Gluten“ und „Milch“.
         </div>
       </div>
 
       <div className="form-group">
         <label>Tags</label>
-        <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+        <div className="chip-row nut-u-fwrap">
           {FOOD_TAGS.map((t) => {
             const on = (form.tags || []).includes(t);
             return (
@@ -160,7 +160,7 @@ export default function FoodFormModal({ food, allGroups, onSave, onClose }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="nut-u-row">
         <button className="btn btn-primary" disabled={!canSave} onClick={save}>Speichern</button>
         <button className="btn btn-secondary" onClick={onClose}>Abbrechen</button>
       </div>

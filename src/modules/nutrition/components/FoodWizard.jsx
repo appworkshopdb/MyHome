@@ -127,7 +127,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
               <label>Gruppe</label>
               <WheelPicker items={groupItems} value={group} onChange={setGroup} label="Gruppe" />
               {group === NEW_GROUP && (
-                <input value={groupNew} onChange={(e) => setGroupNew(e.target.value)} placeholder="Name der neuen Gruppe" aria-label="Name der neuen Gruppe" style={{ marginTop: 6 }} autoComplete="off" />
+                <input className="nut-u-mt6" value={groupNew} onChange={(e) => setGroupNew(e.target.value)} placeholder="Name der neuen Gruppe" aria-label="Name der neuen Gruppe" autoComplete="off" />
               )}
             </div>
 
@@ -155,7 +155,7 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
 
         {step === 2 && (
           <>
-            <div className="card" style={{ margin: 0 }}>
+            <div className="card nut-u-m0">
               <div className="card-title">Nährwerte pro {UNIT_LABEL[unit]}</div>
               <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', rowGap: 10 }}>
                 {MACRO_FIELDS.map(([key, label]) => (
@@ -193,18 +193,18 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
                 </div>
                 <div className="form-group">
                   <label>Allergene</label>
-                  <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="chip-row nut-u-fwrap">
                     {FOOD_ALLERGENS.map((a) => (
                       <button key={a} type="button" className={`chip ${allergens.includes(a) ? 'active' : ''}`} aria-pressed={allergens.includes(a)} onClick={() => toggle(allergens, setAllergens, a)}>{a}</button>
                     ))}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 6 }}>
+                  <div className="nut-u-meta-mt">
                     Glutenfrei und Laktosefrei ergeben sich aus „Gluten“ und „Milch“.
                   </div>
                 </div>
                 <div className="form-group">
                   <label>Tags</label>
-                  <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="chip-row nut-u-fwrap">
                     {FOOD_TAGS.map((t) => {
                       const on = tags.includes(t);
                       return (
@@ -222,8 +222,8 @@ export default function FoodWizard({ allGroups, onSave, onClose }) {
           <>
             <div className="wz-review">
               <div className="wz-rv-top">
-                <b style={{ fontSize: 22 }}>{name.trim()}</b>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{groupName}</span>
+                <b className="nut-u-f22">{name.trim()}</b>
+                <span className="nut-u-muted13">{groupName}</span>
               </div>
               <div className="wz-rv-row">
                 <span>Kategorie</span>

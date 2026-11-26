@@ -16,7 +16,7 @@ export default function CompareModal({ items, onRemove, onClose }) {
       {items.length === 0 ? (
         <div className="empty-state">Noch keine Lebensmittel zum Vergleich ausgewählt.</div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="nut-u-scrollx">
           <table className="compare-table">
             <thead>
               <tr>
