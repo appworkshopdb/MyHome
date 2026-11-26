@@ -1298,12 +1298,6 @@
   color: var(--text-muted);
   margin-top: 5px;
 }
-.fin-row-note {
-  font-size: 11.5px;
-  color: var(--text-secondary);
-  margin-top: 3px;
-  line-height: 1.35;
-}
 .fin-row-amount { font-size: 13.5px; font-weight: 700; flex-shrink: 0; }
 .fin-row-amount.paid { color: var(--text-muted); }
 .fin-row-empty {
@@ -3098,62 +3092,6 @@
   border-radius:   var(--r-pill);
 }
 
-.fin-split-card {
-  background:    var(--surface-raised);
-  border:        1px solid var(--border-hairline);
-  border-radius: var(--r-2xl);
-  box-shadow:    var(--shadow-card);
-  padding:       18px;
-}
-
-.fin-split-bar {
-  display:       flex;
-  height:        12px;
-  border-radius: var(--r-sm);
-  overflow:      hidden;
-  background:    var(--data-track);
-}
-.fin-split-seg      { height: 100%; }
-.fin-split-seg--a   { background: var(--data-1); }
-.fin-split-seg--b   { background: var(--data-2); }
-.fin-split-seg--c   { background: var(--data-3); }
-
-.fin-split-legend {
-  display:   flex;
-  flex-wrap: wrap;
-  gap:       6px 16px;
-  margin-top: 13px;
-}
-.fin-split-legend-item {
-  display:     flex;
-  align-items: center;
-  gap:         7px;
-  font-size:   12px;
-  font-weight: 700;
-  color:       var(--text-muted);
-}
-.fin-split-legend-item b {
-  color:                var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-.fin-split-dot {
-  width:         9px;
-  height:        9px;
-  border-radius: 3px;
-  flex-shrink:   0;
-}
-.fin-split-dot--a { background: var(--data-1); }
-.fin-split-dot--b { background: var(--data-2); }
-.fin-split-dot--c { background: var(--data-3); }
-
-.fin-split-empty {
-  font-size:   13px;
-  font-weight: 600;
-  color:       var(--text-muted);
-  text-align:  center;
-  padding:     6px 0;
-}
-
 /* ═══════════════════════════════════════════════════════════════
    Schritt 7 — Sport-Übersicht (modules/sport/components/
    OverviewSection.jsx): Titelzeile der Heute-Fokuskarte und das
@@ -4755,3 +4693,8 @@
 .consent-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
 .consent-text { font-size: 0.8rem; line-height: 1.45; color: var(--text-secondary); margin: 0 0 12px; }
 .consent-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Fokuskarte antippbar (FocusCard onPress) */
+.focus-card--tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.focus-card--tap:active { opacity: .94; }
+.focus-card--tap:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }

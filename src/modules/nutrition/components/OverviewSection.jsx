@@ -15,7 +15,6 @@ import { LEXIKON } from '../lib/data/lexikon';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { loadNutritionDay } from '../../../core/lib/nutritionDay';
 import { NutritionBlock } from '../../../core/components/DayPlan.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
@@ -43,8 +42,6 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
 
   return (
     <>
-      <h1 className="overview-page-title">Ernährung</h1>
-
       {/* Tagesstand wie im Tagesplan; Antippen → Mahlzeiten */}
       {day && (
         <NutritionBlock
@@ -57,10 +54,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
       )}
 
       {/* Rezepte */}
-      <PageSection
-        title="Rezepte"
-        action={{ label: `Alle ${recipes.length} ›`, onPress: () => onNavigate('rezepte') }}
-      >
+      <section className="page-section">
         {latest.length === 0 ? (
           <div className="nut-recipe-empty">
             Noch keine eigenen Rezepte — über das Plus unten rechts anlegen.
@@ -80,10 +74,10 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
             ))}
           </div>
         )}
-      </PageSection>
+      </section>
 
-      {/* Bereiche */}
-      <PageSection title="Bereiche">
+      {/* Bereiche, ohne Überschrift */}
+      <section className="page-section">
         <AreaList variant="tiles">
           <AreaRow
             label="Ampel"
@@ -116,7 +110,7 @@ export default function OverviewSection({ foods, recipes, onNavigate }) {
             onPress={() => onNavigate('tipps')}
           />
         </AreaList>
-      </PageSection>
+      </section>
     </>
   );
 }

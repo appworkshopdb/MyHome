@@ -9,14 +9,14 @@ import { getTodos, toggleTodo, deleteTodo } from './lib/todoData';
 import { getCalendarEvents } from './lib/calendarData';
 import { buildDayPlan, setWorkoutDone, setEntryPaid } from './lib/dayPlan';
 import { useGamificationStore } from './lib/gamificationStore.js';
-import { openAmount, isOpenExpense, isIncomePending, offeneZahlungenText, offenerZahlungenText } from './lib/paymentParts';
+import { openAmount, isOpenExpense } from './lib/paymentParts';
+import { loadAvailable } from './lib/finAvailable';
 import { HUB_CACHE_KEY } from './lib/hubCache';
 import { DayPlanSection, NutritionBlock } from './components/DayPlan';
 import { HabitTile, TrainingTile } from './components/HubTiles';
 import { loadNutritionDay } from './lib/nutritionDay';
-import { loadSavingsBalance } from './lib/savingsBalance';
 import ModuleTopBar from './components/ModuleTopBar';
-import FocusCard from './components/FocusCard';
+import AvailableCard from './components/AvailableCard';
 import AreaList from './components/AreaList';
 import AreaRow from './components/AreaRow';
 import TodoSheet from './components/TodoSheet';
@@ -155,24 +155,6 @@ async function loadOpenPosten() {
     .sort((a, b) => b.amount - a.amount);
 }
 
-// Einnahmen dieses Monats mit Fälligkeitsdatum in der Zukunft: zählen erst ab diesem Tag,
-// werden also vom Einnahmen-Messwert abgezogen (dieselbe Regel wie in Finanzen).
-async function loadPendingIncome() {
-  const sb = getSupabase();
-  const now = new Date();
-  const today = habTodayStr();
-  const { data, error } = await sb
-    .from('fin_entries')
-    .select('name, amount, category, due_date')
-    .eq('year', now.getFullYear())
-    .eq('month', now.getMonth() + 1)
-    .in('category', ['fixeinnahmen', 'sonstige_einnahmen'])
-    .gt('due_date', today)
-    .is('deleted_at', null);
-  if (error) throw error;
-  return (data ?? []).filter((e) => isIncomePending(e, today)).reduce((s, e) => s + Number(e.amount || 0), 0);
-}
-
 export default function Hub({ onOpenModule, hasWarnings }) {
   const { session } = useAuth();
 
@@ -184,7 +166,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
   const [status, setStatus]       = useState(initialCache ? 'daten' : 'laedt');
   const [income, setIncome]       = useState(initialCache?.income ?? 0);
   const [expense, setExpense]     = useState(initialCache?.expense ?? 0);
-  const [pendingIncome, setPendingIncome] = useState(initialCache?.pendingIncome ?? 0);
+  const [stand, setStand]       = useState(initialCache?.stand ?? null); // Verfügbar jetzt (core/lib/finAvailable.js)
   const [cacheZeit, setCacheZeit] = useState(null);
 
   // Welcher Bereich als Vollbild-Screen offen ist (null = Übersicht)
@@ -234,16 +216,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     return () => { aktiv = false; document.removeEventListener('visibilitychange', onVisible); };
   }, [session]);
 
-  // Sparschwein-Stand ("Spar" in der Saldo-Karte). Fehlertolerant: bei einem Fehler fehlt nur die Zeile.
-  const [spar, setSpar] = useState(null);
-  useEffect(() => {
-    let aktiv = true;
-    loadSavingsBalance(session)
-      .then((v) => { if (aktiv) setSpar(v); })
-      .catch(() => { if (aktiv) setSpar(null); });
-    return () => { aktiv = false; };
-  }, [session]);
-
   const load = useCallback(async (opts = {}) => {
     // Beim Hintergrund-Aktualisieren bleibt der gecachte Stand stehen —
     // sonst würde der sichtbare Hub kurz durch das Skelett ersetzt, was
@@ -251,7 +223,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     if (!opts.imHintergrund) setStatus('laedt');
     const now = new Date();
     try {
-      const [inc, exp, , sport, posten, todoList, pending] = await Promise.all([
+      const [inc, exp, , sport, posten, todoList, verfuegbar] = await Promise.all([
         getMonthSum(session, 'finance.income',  now.getFullYear(), now.getMonth() + 1),
         getMonthSum(session, 'finance.expense', now.getFullYear(), now.getMonth() + 1),
         // Habits kommen aus dem gemeinsamen Store (force = frischer Stand)
@@ -259,15 +231,15 @@ export default function Hub({ onOpenModule, hasWarnings }) {
         loadTodaySport(session),
         loadOpenPosten(),
         getTodos(session),
-        loadPendingIncome().catch(() => 0),
+        loadAvailable(session, habTodayStr()).catch(() => null),
       ]);
-      setPendingIncome(pending);
+      setStand(verfuegbar);
       setIncome(inc);
       setExpense(exp);
       setTodaySport(sport);
       setOpenPosten(posten);
       setTodos(todoList);
-      writeCache({ income: inc, expense: exp, pendingIncome: pending, todaySport: sport, openPosten: posten, todos: todoList });
+      writeCache({ income: inc, expense: exp, stand: verfuegbar, todaySport: sport, openPosten: posten, todos: todoList });
       setCacheZeit(null);
       setStatus(inc > 0 || exp > 0 || sport.length > 0 || todoList.length > 0 ? 'daten' : 'leer');
     } catch (e) {
@@ -297,7 +269,7 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     if (!cached) return;
     setIncome(cached.income ?? 0);
     setExpense(cached.expense ?? 0);
-    setPendingIncome(cached.pendingIncome ?? 0);
+    setStand(cached.stand ?? null);
     setTodaySport(cached.todaySport ?? []);
     setOpenPosten(cached.openPosten ?? []);
     setTodos(cached.todos ?? []);
@@ -305,9 +277,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     setStatus('veraltet');
   }
 
-  // Einnahmen mit Datum in der Zukunft zählen noch nicht; "Aktuell" = Saldo vor den offenen Zahlungen
-  const einErhalten = income - pendingIncome;
-  const saldo = einErhalten - expense;
   const monatsname = new Date().toLocaleDateString('de-DE', { month: 'long' });
   const datumLang  = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -396,7 +365,9 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     fb.todoCheck();
     try {
       await setEntryPaid(id, true);
-      writeCache({ income, expense, pendingIncome, todaySport, openPosten: neu, todos });
+      writeCache({ income, expense, stand, todaySport, openPosten: neu, todos });
+      // bezahlt ändert "Verfügbar jetzt" und die offenen Zahlungen
+      loadAvailable(session, habTodayStr()).then(setStand).catch(() => {});
     } catch (e) {
       console.error('[Hub] Posten als bezahlt markieren fehlgeschlagen:', e);
       setOpenPosten(vorher);
@@ -452,7 +423,6 @@ export default function Hub({ onOpenModule, hasWarnings }) {
     return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
   }).slice(0, 3);
 
-  const offeneSumme = openPosten.reduce((s, p) => s + Number(p.amount || 0), 0);
 
   const dayPlan = buildDayPlan({
     todos, habits: habHabits, habEntries, workouts: todaySport, events, openPosten, today: todayStr,
@@ -667,26 +637,14 @@ export default function Hub({ onOpenModule, hasWarnings }) {
 
             {/* Saldo (Kachel, links hoch) + Gewohnheiten + Training */}
             <div className="hub-grid">
-              <FocusCard family="fin" className="hub-saldo">
-                <FocusCard.Eyebrow right={<EyeToggle hidden={hideAmounts} onToggle={toggleHideAmounts} />}>Saldo {monatsname}</FocusCard.Eyebrow>
-                <FocusCard.Value><Money value={saldo} hide={hideAmounts} /></FocusCard.Value>
-                {openPosten.length > 0 && (
-                  <FocusCard.Meta>
-                    <span>Aktuell inkl. {offenerZahlungenText(openPosten.length)}: <b><Money value={saldo + offeneSumme} hide={hideAmounts} /></b></span>
-                  </FocusCard.Meta>
-                )}
-                <FocusCard.Meta>
-                  <span>Ein <b><Money value={einErhalten} hide={hideAmounts} /></b></span>
-                  <span>Aus <b><Money value={expense} hide={hideAmounts} /></b></span>
-                  {spar !== null && <span>Spar <b><Money value={spar} hide={hideAmounts} /></b></span>}
-                </FocusCard.Meta>
-                {openPosten.length > 0 && (
-                  <FocusCard.Footer>
-                    <span>{offeneZahlungenText(openPosten.length)} · <Money value={offeneSumme} hide={hideAmounts} /></span>
-                    <FocusCard.Pill onPress={() => onOpenModule('finance/offen')}>Ansehen</FocusCard.Pill>
-                  </FocusCard.Footer>
-                )}
-              </FocusCard>
+              <AvailableCard
+                className="hub-saldo"
+                stand={stand}
+                loading={status === 'laedt'}
+                hide={hideAmounts}
+                right={<EyeToggle hidden={hideAmounts} onToggle={toggleHideAmounts} />}
+                onOpenPosten={() => onOpenModule('finance/offen')}
+              />
               <HabitTile done={habDone} total={habTotal} streak={streak} onPress={() => onOpenModule('habits')} />
               <TrainingTile
                 workout={dayPlan.workouts[0] ?? null}

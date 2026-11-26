@@ -25,9 +25,11 @@ Logik, Texte, Links und Daten sind dieselben wie vorher; die Ernährung steht ni
 Hub-Details: Der Tagesplan zeigt den Fortschritt als Linienbalken unter der Überschrift, Termine stehen in einer
 eigenen kleinen Liste über der übrigen. Das Auge in der Saldo-Karte blendet Beträge aus (`core/lib/privacyStore.js`,
 `components/Money.jsx` zeigt statt des Betrags einen weichgezeichneten Platzhalter, der echte Wert steckt dann nicht im DOM; je Nutzer in `body_profile.hide_amounts`, Migration `supabase/hide_amounts_migration.sql`, ohne sie nur lokal).
-Die Saldo-Karte zeigt unter Ein/Aus auch "Spar" (Sparschwein-Stand, `core/lib/savingsBalance.js`, Regeln aus `finance.js` dupliziert). Bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
+Die Saldo-Karte im Hub ist seit 26.11.2026 dieselbe Karte "Verfügbar jetzt" wie in Finanzen (`core/components/AvailableCard.jsx`, Rechnung `core/lib/finAvailable.js`); Ein/Aus/Spar sind entfallen. Das Muster "Zahlungen im Tagesplan" ist bisher nur im Hub angewendet (Saldo-Karte, Zahlungen im Tagesplan), Module folgen. Kacheln tragen ihre Überschrift
 innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch in der Ernährungs-Hero-Karte. Im Hub gibt es keinen Plus-Knopf (`GlobalFab`), Aufgaben legt der Knopf "Neue Aufgabe" in der Aufgaben-Karte an.
 
 Sport zeigt und fragt KEINE Dauer mehr (weder Einheiten, Hub, Auswertung noch Anlegen-Dialoge); die Spalten `duration_min`
 bleiben in der DB und werden nur durchgereicht, nichts anzeigen oder neu abfragen. Auswertung (`AuswertungView`, `BadgesCard`,
 `SportIcons.jsx`, Klassen `.sa-*` in `design-v2.css`): Zahlen auf ruhigen Kacheln, Erfolge als Medaillen mit Symbol je Badge-Schlüssel. Aktivität = 12 Monatsspalten mit Wochenzellen, vorgewählt ist immer die aktuelle Woche.
+
+Modul-Startseiten ohne Überschriften (26.11.2026, wie Hub und Finanzen): Weder Seitentitel (`overview-page-title`) noch Abschnittsüberschriften ("Heute", "Diese Woche", "Rezepte", "Häufig", "Bereiche") in Gewohnheiten, Sport, Ernährung und Einkauf; Abschnitte sind `<section className="page-section">` ohne Kopf. Die früheren Kopf-Links sind ersetzt: Sport-Wochenkarte öffnet den Kalender (Antippen), Einkauf hat die Kachel "Häufig" statt "Mehr ›", Gewohnheiten "Alle N ›" entfällt (Kachel "Eigene"), Ernährung "Alle N ›" entfällt (Rezeptkarten öffnen die Rezepte).

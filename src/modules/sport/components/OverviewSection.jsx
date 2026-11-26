@@ -13,7 +13,6 @@ import RestBadge from './RestBadge';
 import UnitVisual from './UnitVisual';
 import { resolveUnitVisual } from '../lib/planMuscles';
 import FocusCard from '../../../core/components/FocusCard.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
@@ -83,8 +82,6 @@ export default function OverviewSection({
 
   return (
     <>
-      <h1 className="overview-page-title">Sport</h1>
-
       {/* Fokuskarte: Heute */}
       <FocusCard>
         <FocusCard.Eyebrow right={focusWorkout ? (focusDone ? 'ERLEDIGT' : focusWorkout.is_rest ? 'RUHETAG' : 'GEPLANT') : null}>
@@ -136,12 +133,16 @@ export default function OverviewSection({
         )}
       </FocusCard>
 
-      {/* Diese Woche */}
-      <PageSection
-        title="Diese Woche"
-        action={{ label: 'Kalender ›', onPress: () => onNavigate('kalender') }}
-      >
-        <div className="spo-week-card">
+      {/* Diese Woche, ohne Überschrift; Antippen öffnet den Kalender */}
+      <section className="page-section">
+        <div
+          className="spo-week-card"
+          role="button"
+          tabIndex={0}
+          aria-label="Wochenübersicht, Kalender öffnen"
+          onClick={() => onNavigate('kalender')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('kalender'); } }}
+        >
           {week.map((d) => (
             <div key={d.key} className="spo-week-day">
               <span className="spo-week-label">{d.label}</span>
@@ -153,7 +154,7 @@ export default function OverviewSection({
             </div>
           ))}
         </div>
-      </PageSection>
+      </section>
 
       {/* Aktiver Plan (nur wenn einer läuft, sonst bleibt die Übersicht ruhig) */}
       {activePlan && (
@@ -171,8 +172,8 @@ export default function OverviewSection({
         </button>
       )}
 
-      {/* Bereiche */}
-      <PageSection title="Bereiche">
+      {/* Bereiche, ohne Überschrift */}
+      <section className="page-section">
         <AreaList variant="tiles">
           <AreaRow
             label="Einheiten"
@@ -200,7 +201,7 @@ export default function OverviewSection({
             onPress={() => onNavigate('gewicht')}
           />
         </AreaList>
-      </PageSection>
+      </section>
     </>
   );
 }

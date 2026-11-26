@@ -31,9 +31,22 @@
 // family: Farbfamilie der Karte ('fin' | 'food' | 'sport' | 'hab' | 'shop').
 // Ohne Angabe nimmt sie die Familie des offenen Moduls (data-module auf
 // <html>); im Hub ohne Modul bleibt sie Navy.
-export default function FocusCard({ children, className = '', family }) {
-  const cls = ['focus-card', family ? `tone-${family}` : '', className].filter(Boolean).join(' ');
-  return <div className={cls}>{children}</div>;
+// onPress: die ganze Karte ist antippbar (z. B. Finanzen: Fokuskarte öffnet die Einnahmen).
+export default function FocusCard({ children, className = '', family, onPress, label }) {
+  const cls = ['focus-card', family ? `tone-${family}` : '', onPress ? 'focus-card--tap' : '', className].filter(Boolean).join(' ');
+  if (!onPress) return <div className={cls}>{children}</div>;
+  return (
+    <div
+      className={cls}
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={onPress}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPress(); } }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // Kleine Versal-Zeile oben, optional mit Element rechts (Store-Name,

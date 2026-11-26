@@ -23,6 +23,7 @@ import OverviewSection from './components/OverviewSection';
 import MonthsView from './components/MonthsView';
 import ContractsView from './components/ContractsView';
 import SettingsView from './components/SettingsView';
+import IncomeView from './components/IncomeView';
 
 const SummaryView = lazy(() => import('./components/SummaryView'));
 
@@ -30,6 +31,7 @@ const SummaryView = lazy(() => import('./components/SummaryView'));
 const DETAIL_TITLES = {
   buchungen:     'Buchungen',
   offen:         'Offene Posten',
+  einnahmen:     'Einnahmen',
   vertraege:     'Verträge',
   auswertung:    'Auswertung',
   einstellungen: 'Einstellungen',
@@ -50,6 +52,7 @@ export default function FinanceModule({ view, onNavigateView, hasWarnings }) {
           {view === 'buchungen' && <MonthsView />}
           {view === 'offen'     && <MonthsView initialFilter="offen" />}
 
+          {view === 'einnahmen' && <IncomeView />}
           {view === 'vertraege' && <ContractsView />}
 
           {view === 'auswertung' && (

@@ -18,16 +18,18 @@ import {
   isSparschweinDirectWithdrawal,
   openAmount,
   isOpenExpense,
-  isListedEntry,
   isIncomePending,
-  offenerZahlungenText,
+  isListedEntry,
   localTodayStr,
 } from '../lib/finance';
-import FocusCard from '../../../core/components/FocusCard.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
+import AreaIcon from '../../../core/components/AreaIcons.jsx';
 import SparschweinSection from './SparschweinSection.jsx';
+import SpendDonut from './SpendDonut.jsx';
+import { available, dedupeIncome } from '../lib/income';
+import AvailableCard from '../../../core/components/AvailableCard.jsx';
+import { standSummary } from '../../../core/lib/finAvailable.js';
 
 const SPEND_CATS = [
   { key: 'fixkosten',         label: 'Fixkosten',       tone: 'a' },
@@ -52,6 +54,8 @@ export default function OverviewSection({ onNavigate }) {
   const [entries,   setEntries]   = useState(snap?.entries ?? []);
   const [templates, setTemplates] = useState(snap?.templates ?? []);
   const [contracts, setContracts] = useState(snap?.contracts ?? []);
+  const [allEntries, setAllEntries] = useState(snap?.allEntries ?? []);
+  const [startIdx, setStartIdx] = useState(snap?.startIdx ?? -Infinity);
   const [loading,   setLoading]   = useState(!snap);
   const hasData = useRef(Boolean(snap)); // schon etwas anzuzeigen → kein Ladezustand beim Aktualisieren
 
@@ -67,18 +71,22 @@ export default function OverviewSection({ onNavigate }) {
       // diesen Daten berechnet (vorher: zwei zusätzliche Abfragen davor); nur wenn
       // etwas angelegt wurde (selten, z. B. erster Aufruf im Monat), lädt es die
       // Posten noch einmal neu.
-      const [es0, ts, cs] = await Promise.all([
+      const [es0, ts, cs, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
         db.getContracts(s),
+        db.getAllEntries(s), // "Verfügbar jetzt" rechnet monatsübergreifend ab dem Startmonat
+        db.getFinStartIdx(s, localTodayStr()),
       ]);
       const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
       const es = added > 0 ? await db.getEntriesByMonth(s, year, month) : es0;
       setEntries(es);
+      setAllEntries(all);
+      setStartIdx(st);
       setTemplates(ts);
       setContracts(cs);
       hasData.current = true;
-      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, templates: ts, contracts: cs });
+      snapshotSet(s?.user?.id, `fin:overview:${year}-${month}`, { entries: es, allEntries: all, startIdx: st, templates: ts, contracts: cs });
     } catch (e) {
       console.error(e);
     } finally {
@@ -95,26 +103,18 @@ export default function OverviewSection({ onNavigate }) {
   const totalEntnommen = entries
     .filter((e) => isSparschweinDirectWithdrawal(e))
     .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalEin = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
+  // Nur schon eingegangene Einnahmen: Posten mit Datum in der Zukunft zählen erst ab diesem Tag
+  // (wie "+ Eingänge" in der Fokuskarte, lib/income.js).
+  const arrived = dedupeIncome(entries).filter((e) => !isIncomePending(e, localTodayStr()));
+  const totalEin = sumCat(arrived, 'fixeinnahmen') + sumCat(arrived, 'sonstige_einnahmen') - totalEntnommen;
   const spend    = SPEND_CATS.map((c) => ({
     ...c,
     value: entries
       .filter((e) => e.category === c.key && !isSparschweinDeposit(e))
       .reduce((s, e) => s + Number(e.amount || 0), 0),
   }));
-  const totalAus   = spend.reduce((s, c) => s + c.value, 0);
-  const totalGespart = entries
-    .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
-  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
-  const ausAnzeige = totalAus + totalGespart;
-  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
+  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag (lib/income.js, available).
   const today = localTodayStr();
-  const einErhalten = totalEin - entries
-    .filter((e) => isIncomePending(e, today))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const saldo      = einErhalten - ausAnzeige;
 
   // Sparschwein-Einlagen sind KEINE offenen Posten — sofort verbucht,
   // müssen nie "bezahlt" werden. Ausschließen, sonst tauchen sie als
@@ -123,10 +123,9 @@ export default function OverviewSection({ onNavigate }) {
   // sofort als bezahlt, auch bei geteilter Zahlung).
   const offene = entries.filter(isOpenExpense);
   const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  // "Aktuell" = Saldo vor den offenen Zahlungen; Balken: bezahlt ausgefüllt, offen schraffiert
-  const aktuell = saldo + offeneSumme;
-  const paidRatio = einErhalten > 0 ? Math.max(0, (ausAnzeige - offeneSumme) / einErhalten) : 0;
-  const openRatio = einErhalten > 0 ? offeneSumme / einErhalten : 0;
+
+  // "Verfügbar jetzt": alle Eingänge bis heute minus alles Bezahlte, ohne Monatsgrenze (lib/income.js)
+  const stand = available(allEntries, today, startIdx);
 
   const expiring =
     templates.filter((t) => getTemplateStatus(t) === 'expiring').length +
@@ -135,110 +134,42 @@ export default function OverviewSection({ onNavigate }) {
     templates.filter((t) => getTemplateStatus(t) !== 'expired').length +
     contracts.filter((c) => getContractStatus(c) !== 'expired').length;
 
-  const barTotal = Math.max(totalEin, totalAus) || 1;
-
   return (
     <>
-      {/* Kopfzeile: Titel + Monat als Text (kein Wechsler mehr) */}
-      <div className="fin-overview-head">
-        <h1 className="overview-page-title">Finanzen</h1>
-        <span className="t-meta" style={{ color: 'var(--text-muted)', alignSelf: 'center' }}>
-          {MONTHS_DE[month - 1]} {year}
-        </span>
-      </div>
+      {/* Fokuskarte: Verfügbar jetzt (dieselbe Karte wie in Buchungen, Offene Posten und Hub); antippen öffnet die Einnahmen */}
+      <AvailableCard
+        stand={standSummary(stand)}
+        loading={loading}
+        flow
+        right="Einnahmen ›"
+        onPress={() => onNavigate('einnahmen')}
+        label="Verfügbar jetzt, Einnahmen öffnen"
+      />
 
-      {/* Fokuskarte: Saldo */}
-      <FocusCard>
-        <FocusCard.Eyebrow>Saldo</FocusCard.Eyebrow>
-        <FocusCard.Value>{loading ? '—' : formatEur(saldo)}</FocusCard.Value>
-        {!loading && offene.length > 0 && (
-          <FocusCard.Meta>
-            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
-          </FocusCard.Meta>
-        )}
-        <FocusCard.Progress value={paidRatio} open={openRatio} />
-        <FocusCard.Meta>
-          {/* "+" statt "Ein", "−" statt "Aus" */}
-          <span>+ <b>{formatEur(einErhalten)}</b></span>
-          <span>− <b>{formatEur(ausAnzeige)}</b></span>
-        </FocusCard.Meta>
-      </FocusCard>
-
-      {/* Sparschwein — direkt unter dem Saldo, über der Schnellübersicht */}
-      <SparschweinSection year={year} month={month} />
-
-      {/* ── Schnellübersicht ──────────────────────────────────────────
-          Gesamter Block antippbar → navigiert zu Buchungen.
-          Einnahmen als 4. Kategorie (Ton "d") neben den drei Ausgabenblöcken.
-          Der gestapelte Balken zeigt alle 4 Segmente.
-      ─────────────────────────────────────────────────────────────── */}
-      <PageSection title="Schnellübersicht">
-        <button
-          className="fin-split-card fin-split-card--tappable"
-          onClick={() => onNavigate('buchungen')}
-          aria-label="Alle Buchungen ansehen"
-        >
-          {/* Balken: Ausgaben-Segmente + Einnahmen-Segment */}
-          {(totalAus > 0 || totalEin > 0) ? (
-            <>
-              <div className="fin-split-bar">
-                {spend.map((c) =>
-                  c.value > 0 && (
-                    <div
-                      key={c.key}
-                      className={`fin-split-seg fin-split-seg--${c.tone}`}
-                      style={{ width: `${(c.value / barTotal) * 100}%` }}
-                    />
-                  )
-                )}
-                {totalEin > 0 && (
-                  <div
-                    className="fin-split-seg fin-split-seg--d"
-                    style={{ width: `${(totalEin / barTotal) * 100}%` }}
-                  />
-                )}
-              </div>
-
-              {/* Legende: Fixkosten, Variable, Sonstiges, Einnahmen */}
-              <div className="fin-split-legend">
-                {spend.map((c) => (
-                  <span key={c.key} className="fin-split-legend-item">
-                    <i className={`fin-split-dot fin-split-dot--${c.tone}`} />
-                    {c.label} <b>{formatEur(c.value)}</b>
-                  </span>
-                ))}
-                <span className="fin-split-legend-item">
-                  <i className="fin-split-dot fin-split-dot--d" />
-                  Einnahmen <b>{formatEur(totalEin)}</b>
-                </span>
-              </div>
-            </>
-          ) : (
-            <div className="fin-split-empty">
-              {loading ? 'Lädt …' : 'In diesem Monat noch keine Einträge erfasst.'}
-            </div>
-          )}
-
-
+      {/* Offene Posten: nur sichtbar, wenn wirklich etwas offen ist */}
+      {offene.length > 0 && (
+        <button type="button" className="fin-open-strip" onClick={() => onNavigate('offen')}>
+          <span className="fin-open-strip-badge" aria-hidden="true"><AreaIcon id="clock" size={20} /></span>
+          <span className="fin-open-strip-text">
+            <b>{offene.length === 1 ? '1 offener Posten' : `${offene.length} offene Posten`}</b>
+            <small>noch zu bezahlen</small>
+          </span>
+          <span className="fin-open-strip-sum">{formatEur(offeneSumme)}</span>
+          <span className="fin-open-strip-chev" aria-hidden="true">›</span>
         </button>
-      </PageSection>
+      )}
 
-      {/* ── Bereiche */}
-      <PageSection title="Bereiche">
-        <AreaList variant="tiles">
+      {/* Schnellübersicht: Kreisdiagramm, Einnahmen in der Mitte, drei Ausgabebereiche im Ring */}
+      <SpendDonut cats={spend} income={totalEin} monthLabel={MONTHS_DE[month - 1]} />
+
+      {/* Bereiche als Liste, ohne Überschrift (Offene Posten steht als Streifen unter der Fokuskarte) */}
+      <section className="page-section">
+        <AreaList icons>
           <AreaRow
             label="Buchungen"
             icon="list"
-            featured
             value={`${entries.filter(isListedEntry).length} im Monat`}
             onPress={() => onNavigate('buchungen')}
-          />
-          <AreaRow
-            label="Offene Posten"
-            icon="clock"
-            value={offene.length > 0 ? `${offene.length} · ${formatEur(offeneSumme)}` : 'alles bezahlt'}
-            tone={offene.length > 0 ? 'critical' : 'neutral'}
-            onPress={() => onNavigate('offen')}
           />
           <AreaRow
             label="Verträge"
@@ -259,7 +190,10 @@ export default function OverviewSection({ onNavigate }) {
             onPress={() => onNavigate('einstellungen')}
           />
         </AreaList>
-      </PageSection>
+      </section>
+
+      {/* Sparen ganz unten: Sparschwein und Sparpläne */}
+      <SparschweinSection year={year} month={month} />
     </>
   );
 }

@@ -10,6 +10,8 @@
 //
 // variant: 'list' (Standard, eine Karte mit Trennlinien) | 'tiles' (zwei
 // Spalten Kacheln; eine einzelne letzte Kachel läuft über beide Spalten)
-export default function AreaList({ children, variant = 'list' }) {
-  return <div className={`area-list${variant === 'tiles' ? ' area-list--tiles' : ''}`}>{children}</div>;
+// icons: in der Listen-Variante zusätzlich den Symbolkreis je Zeile zeigen (z. B. Finanzen)
+export default function AreaList({ children, variant = 'list', icons = false }) {
+  const cls = ['area-list', variant === 'tiles' ? 'area-list--tiles' : '', icons ? 'area-list--icons' : ''].filter(Boolean).join(' ');
+  return <div className={cls}>{children}</div>;
 }

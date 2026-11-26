@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { INTERVALS, PAYMENTS, MONTHS_DE, addMonthsClamped, dueDateFor } from '../lib/finance';
 import SheetShell from '../../../core/components/SheetShell';
-import { ChipGroup, DateButton, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
+import { ChipGroup, DateButton, SegGroup, WizardFoot, WizardFrame } from '../../../core/components/wizard/WizardKit';
 import { parseMoney } from '../../../core/lib/wizardDates';
 import { IconContract, IconFixed } from './ContractIcons';
 
@@ -62,6 +62,10 @@ export default function RecurringSheet({
   const [notes,        setNotes]        = useState(item?.notes || '');
 
   const isContract   = kind === 'vertrag';
+  // Einnahme: Eingang jeden Monat am selben Tag (Fix) oder unterschiedlich. Fix = Tag gesetzt (due_day);
+  // der Eingang wird dann ab diesem Tag bestätigt (lib/income.js).
+  const isIncome     = kind === 'einnahme';
+  const [incomeMode, setIncomeMode] = useState(item ? (item.due_day ? 'fix' : 'varies') : 'fix');
   const isRecurring  = interval !== 'monthly';
   const intervalMths = INTERVALS[interval]?.months ?? 1;
   const amtNum       = parseMoney(amount) || 0;
@@ -75,7 +79,8 @@ export default function RecurringSheet({
     if (!name.trim()) return showToast('Bitte Name eingeben');
     const amt = parseMoney(amount);
     if (Number.isNaN(amt) || amt < 0) return showToast('Bitte gültigen Betrag eingeben');
-    const dd = dueDate ? parseInt(dueDate.slice(8, 10), 10) : null;
+    if (isIncome && incomeMode === 'fix' && !dueDate) return showToast('Bitte den Tag des Eingangs wählen');
+    const dd = (isIncome && incomeMode === 'varies') ? null : (dueDate ? parseInt(dueDate.slice(8, 10), 10) : null);
 
     let contractDurationMonths = null;
     let resolvedEndDate = null;
@@ -161,9 +166,32 @@ export default function RecurringSheet({
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} placeholder="0,00" autoComplete="off" />
           {monthlyHint ? <div className="rf-hint">{monthlyHint}</div> : null}
 
-          <div className="wz-lbl">Fällig am <span className="opt">optional</span></div>
-          <DateButton value={dueDate} onChange={pickDueDate} optional placeholder="Datum wählen" label="Fällig am" />
-          {dueDay ? <div className="rf-hint">{isRecurring ? `Am ${dueDay}. des Fälligkeitsmonats` : `Jeden Monat am ${dueDay}.`}</div> : null}
+          {isIncome ? (
+            <>
+              <div className="wz-lbl">Eingang</div>
+              <SegGroup
+                label="Eingang"
+                value={incomeMode}
+                onChange={setIncomeMode}
+                options={[{ value: 'fix', label: 'Jeden Monat am selben Tag' }, { value: 'varies', label: 'Unterschiedlich' }]}
+              />
+              {incomeMode === 'fix' ? (
+                <>
+                  <div className="wz-lbl">Tag des Eingangs</div>
+                  <DateButton value={dueDate} onChange={pickDueDate} placeholder="Tag wählen" label="Tag des Eingangs" />
+                  <div className="rf-hint">{dueDay ? `Ab dem ${dueDay}. jedes Monats kannst du den Eingang bestätigen.` : 'Der Knopf „Eingang bestätigen“ erscheint ab diesem Tag.'}</div>
+                </>
+              ) : (
+                <div className="rf-hint">Der Knopf „Eingang bestätigen“ ist immer sichtbar, einmal pro Monat. Du bestätigst, wenn das Geld da ist.</div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="wz-lbl">Fällig am <span className="opt">optional</span></div>
+              <DateButton value={dueDate} onChange={pickDueDate} optional placeholder="Datum wählen" label="Fällig am" />
+              {dueDay ? <div className="rf-hint">{isRecurring ? `Am ${dueDay}. des Fälligkeitsmonats` : `Jeden Monat am ${dueDay}.`}</div> : null}
+            </>
+          )}
 
           <div className="wz-lbl">Zahlungsart</div>
           <ChipGroup options={PAYMENTS} value={payment} onChange={setPayment} label="Zahlungsart" />

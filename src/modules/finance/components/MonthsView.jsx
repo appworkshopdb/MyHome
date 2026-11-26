@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../../core/lib/AuthContext';
 import { useUi } from '../../../core/lib/UiContext';
 import { useEntrySheet } from '../../../core/lib/EntrySheetContext';
 import { useFinanceMonth } from '../lib/FinanceMonthContext';
 import {
-  MONTHS_DE, formatEur, sumCat, isSparschweinDeposit, isSparschweinDirectWithdrawal,
-  formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, isIncomePending, offenePostenText, offenerZahlungenText, localTodayStr, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
+  MONTHS_DE, formatEur, isSparschweinDeposit, isSparschweinDirectWithdrawal, formatPayments, isInstantMethod, entryParts, openAmount, isOpenExpense, offenePostenText, localTodayStr, paidAmount, isFullyPaid, isPartlyPaid, setPartsPaid,
 } from '../lib/finance';
+import { available, standSummary } from '../../../core/lib/finAvailable';
+import AvailableCard from '../../../core/components/AvailableCard';
 import { formatRelativeDate } from '../../../core/lib/format';
 import * as db from '../lib/finData';
 import EntryDetailSheet from './EntryDetailSheet';
@@ -24,7 +25,7 @@ const FILTERS = [
   { key: 'alle',  label: 'Alle'  },
   { key: 'offen', label: 'Offen' },
   { key: 'fix',   label: 'Fix'   },
-  { key: 'ein',   label: 'Ein'   },
+  { key: 'sonst', label: 'Sonstige' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -71,7 +72,15 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
         </div>
       )}
       <div className="fin-row-info">
-        <div className={`fin-row-name ${fully && !isIncome ? 'paid' : ''}`}>{e.name}</div>
+        <div className={`fin-row-name ${fully && !isIncome ? 'paid' : ''}`}>
+          {e.name}
+          {/* Notiz: nur ein kleines Symbol hinter dem Namen; den Text gibt es in der Ansicht des Postens */}
+          {e.note && (
+            <span className="fin-row-noteicon" role="img" aria-label="Notiz vorhanden">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><polyline points="14 3 14 8 19 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="13" y2="17" /></svg>
+            </span>
+          )}
+        </div>
         <div className="fin-row-meta">
           {formatPayments(e)}
           {/* Sparplan-Rate: wann sie fällig ist, sonst wann der Posten erfasst wurde */}
@@ -85,7 +94,6 @@ function EntryRow({ e, onOpenModal, onTogglePaid, onEdit, onDelete, showOpen = f
             {formatEur(paidAmount(e))} bezahlt ({paidMethods})
           </div>
         )}
-        {e.note && <div className="fin-row-note">{e.note}</div>}
       </div>
       <div className="fin-row-side">
         <div className={`fin-row-amount ${fully && !isIncome ? 'paid' : ''}`}>
@@ -160,8 +168,9 @@ function OffenList({ entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
 }
 
 // Aufklappbare Kategorie-Sektion (für alle anderen Filter)
-function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete }) {
-  const [open, setOpen] = useState(false);
+// defaultOpen: in "Fix" und "Ein" steht der einzelne Bereich gleich aufgeklappt, in "Alle" eingeklappt
+function CollapseSection({ col, entries, onOpenModal, onTogglePaid, onEdit, onDelete, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   // Sparschwein-Einlagen ("Ersparnisse") aus normalen Ausgaben-Sektionen
   // herausfiltern — sie sind Sparschwein-Transfers, keine Ausgaben.
@@ -222,6 +231,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]); // alle Monate, für "Verfügbar jetzt"
+  const [startIdx, setStartIdx] = useState(-Infinity);
   const [loading, setLoading] = useState(true);
   // Tipp auf einen Posten öffnet die Ansicht (EntryDetailSheet); "Bearbeiten"
   // schaltet darin auf die Bearbeiten-Ansicht um.
@@ -240,10 +251,14 @@ export default function MonthsView({ initialFilter = 'alle' }) {
       const s = sessionRef.current;
       // Posten und Vorlagen in einer Runde laden, fehlende Vorlagen daraus
       // berechnen; nur wenn etwas angelegt wurde, die Posten neu laden.
-      const [es0, ts] = await Promise.all([
+      const [es0, ts, all, st] = await Promise.all([
         db.getEntriesByMonth(s, year, month),
         db.getFixTemplates(s),
+        db.getAllEntries(s),
+        db.getFinStartIdx(s, localTodayStr()),
       ]);
+      setAllEntries(all);
+      setStartIdx(st);
       const added = await db.applyMissingFixTemplatesWith(s, year, month, ts, es0);
       setEntries(added > 0 ? await db.getEntriesByMonth(s, year, month) : es0);
     } catch (e) {
@@ -365,49 +380,22 @@ export default function MonthsView({ initialFilter = 'alle' }) {
 
   const detailEntry = detailId ? entries.find((e) => e.id === detailId) : null;
 
-  // Dynamisches Saldo-Label: "diesen Monat" nur wenn wir im aktuellen Monat sind
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const saldoLabel = isCurrentMonth ? 'Saldo diesen Monat' : `Saldo ${MONTHS_DE[month - 1]}`;
-
-  // Kennzahlen für die Saldo-Karte
-  // Sparschwein-Einlagen nicht als normale Ausgabe mitzählen —
-  // sie sind Transfers zum Sparschwein, keine Ausgaben.
-  // Sparschwein-Entnahmen ("Sparschwein"-Einnahme) sind KEINE echte
-  // Einnahme — sie werden aus totalEin herausgerechnet und stattdessen
-  // mit dem Gespart-Betrag verrechnet: Gespart = Einzahlungen − Entnahmen.
-  const totalEntnommen = entries
-    .filter((e) => isSparschweinDirectWithdrawal(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalEin    = sumCat(entries, 'fixeinnahmen') + sumCat(entries, 'sonstige_einnahmen') - totalEntnommen;
-  const totalAus    = entries
-    .filter((e) => ['fixkosten', 'variable_kosten', 'sonstige_ausgaben'].includes(e.category) && !isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalGespart = entries
-    .filter((e) => isSparschweinDeposit(e))
-    .reduce((s, e) => s + Number(e.amount || 0), 0) - totalEntnommen;
-  // "−" auf der Saldo-Karte = Ausgaben + Gespartes, damit "+ Ein − Aus" genau den
-  // Saldo ergibt (Entnahmen sind schon aus totalEin herausgerechnet).
-  const ausAnzeige  = totalAus + totalGespart;
-  // Einnahmen mit Fälligkeitsdatum in der Zukunft zählen erst ab diesem Tag.
-  const heute       = localTodayStr();
-  const einErhalten = totalEin - entries
-    .filter((e) => isIncomePending(e, heute))
-    .reduce((s, e) => s + Number(e.amount || 0), 0);
-  const verfuegbar  = einErhalten - ausAnzeige;
-  // Sparschwein-Einlagen sind KEINE offenen Posten — sie werden sofort
-  // verbucht und müssen nie "bezahlt" werden. Daher hier ausschließen,
-  // sonst zählt die Saldo-Karte sie fälschlich als "N offen".
-  const offene      = entries.filter(isOpenExpense);
-  const offeneSumme = offene.reduce((s, e) => s + openAmount(e), 0);
-  // Balken: bezahlt ausgefüllt, offen schraffiert
-  const spentRatio  = einErhalten > 0 ? Math.min(100, Math.max(0, ((ausAnzeige - offeneSumme) / einErhalten) * 100)) : 0;
-  const openRatio   = einErhalten > 0 ? Math.min(100 - spentRatio, (offeneSumme / einErhalten) * 100) : 0;
-  const aktuell     = verfuegbar + offeneSumme;   // Saldo vor den offenen Zahlungen
+  // "Verfügbar jetzt": laufender Stand über alle Monate (nicht der angezeigte Monat). Die Posten des
+  // angezeigten Monats kommen aus dem lokalen Stand, damit Abhaken sofort wirkt.
+  const stand = useMemo(
+    () => standSummary(available(
+      [...allEntries.filter((e) => !(e.year === year && e.month === month)), ...entries],
+      localTodayStr(),
+      startIdx,
+    )),
+    [allEntries, entries, year, month, startIdx],
+  );
 
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
-    if (filter === 'ein') return COLUMNS.filter((c) => c.key === 'einnahmen');
+    // "Sonstige" = alle Ausgaben außer Fixkosten (Variable Kosten und Sonstige Ausgaben); Einnahmen stehen in "Alle" und über die Fokuskarte
+    if (filter === 'sonst') return COLUMNS.filter((c) => c.key === 'variable' || c.key === 'sonstige');
     return COLUMNS;
   }
 
@@ -424,32 +412,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         </button>
       </div>
 
-      {/* Saldo-Karte mit allen Infos in einer Zeile */}
-      <div className="fin-summary-card">
-        <div className="fin-summary-eyebrow t-chip">{saldoLabel}</div>
-        <div className="fin-summary-value t-display">
-          {loading ? '—' : formatEur(verfuegbar)}
-        </div>
-        {!loading && offene.length > 0 && (
-          <div className="fin-summary-sub">
-            <span>Aktuell inkl. {offenerZahlungenText(offene.length)}: <b>{formatEur(aktuell)}</b></span>
-          </div>
-        )}
-        {/* Infozeile: + Einnahmen  − Ausgaben  N offen  N Buchungen */}
-        <div className="fin-summary-sub">
-          <span>+ <b>{formatEur(einErhalten)}</b></span>
-          <span>− <b>{formatEur(ausAnzeige)}</b></span>
-          {offene.length > 0 && (
-            <span style={{ color: 'var(--status-critical)' }}>
-              {offene.length} offen
-            </span>
-          )}
-        </div>
-        <div className="fin-bar" role="progressbar" aria-valuenow={Math.round(spentRatio)}>
-          <div className="fin-bar-spent" style={{ width: `${spentRatio}%` }} />
-          <div className="fin-bar-open"  style={{ width: `${openRatio}%`  }} />
-        </div>
-      </div>
+      {/* Fokuskarte: Verfügbar jetzt, dieselbe wie in Übersicht und Hub */}
+      <AvailableCard stand={stand} loading={loading} flow />
 
       {/* Filter — abgerundete Pills */}
       <div className="fin-filter-pills">
@@ -479,7 +443,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
         <div className="fin-collapse-list">
           {visibleColumns().map((col) => (
             <CollapseSection
-              key={col.key}
+              key={`${filter}-${col.key}`} // neu starten, wenn der Filter wechselt (Anfangszustand aufgeklappt/eingeklappt)
+              defaultOpen={filter !== 'alle'}
               col={col}
               entries={entries}
               onOpenModal={openEntry}
