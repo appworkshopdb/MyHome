@@ -25,7 +25,7 @@ const FILTERS = [
   { key: 'alle',  label: 'Alle'  },
   { key: 'offen', label: 'Offen' },
   { key: 'fix',   label: 'Fix'   },
-  { key: 'ein',   label: 'Ein'   },
+  { key: 'sonst', label: 'Sonstige' },
 ];
 
 function sortByCreated(arr, dir = 'asc') {
@@ -387,7 +387,8 @@ export default function MonthsView({ initialFilter = 'alle' }) {
   // Sichtbare Spalten je nach aktivem Filter
   function visibleColumns() {
     if (filter === 'fix') return COLUMNS.filter((c) => c.key === 'fixkosten');
-    if (filter === 'ein') return COLUMNS.filter((c) => c.key === 'einnahmen');
+    // "Sonstige" = alle Ausgaben außer Fixkosten (Variable Kosten und Sonstige Ausgaben); Einnahmen stehen in "Alle" und über die Fokuskarte
+    if (filter === 'sonst') return COLUMNS.filter((c) => c.key === 'variable' || c.key === 'sonstige');
     return COLUMNS;
   }
 
