@@ -15,7 +15,6 @@
 import { useEffect, useState } from 'react';
 import { loadFrequentItems, saveItem, pickActiveList } from '../lib/shoData.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
@@ -63,8 +62,6 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
 
   return (
     <>
-      <h1 className="overview-page-title">Einkauf</h1>
-
       {/* Fokuskarte: aktive Liste */}
       <FocusCard>
         {active ? (
@@ -93,10 +90,7 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
       </FocusCard>
 
       {/* Häufig — Chips legen den Artikel direkt in die aktive Liste */}
-      <PageSection
-        title="Häufig"
-        action={{ label: 'Mehr ›', onPress: () => onNavigate('haeufig') }}
-      >
+      <section className="page-section">
         <div className="sho-freq-card">
           {freq.length === 0 ? (
             <div className="sho-freq-empty">
@@ -118,10 +112,10 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
           )}
           {error && <div className="sho-freq-error">{error}</div>}
         </div>
-      </PageSection>
+      </section>
 
-      {/* Bereiche */}
-      <PageSection title="Bereiche">
+      {/* Bereiche, ohne Überschrift */}
+      <section className="page-section">
         <AreaList variant="tiles">
           <AreaRow
             label="Alle Listen"
@@ -130,8 +124,14 @@ export default function OverviewSection({ lists, onOpenList, onListsChange, onNa
             value={`${lists.length} · ${offeneListen.length} offen`}
             onPress={() => onNavigate('listen')}
           />
+          {/* Ersetzt den früheren Link "Mehr ›" neben der Überschrift "Häufig" */}
+          <AreaRow
+            label="Häufig"
+            icon="list"
+            onPress={() => onNavigate('haeufig')}
+          />
         </AreaList>
-      </PageSection>
+      </section>
     </>
   );
 }

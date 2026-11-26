@@ -11,7 +11,6 @@ import { useState, useEffect } from 'react';
 import { loadDeletedHabits } from '../lib/habData.js';
 import FocusCard from '../../../core/components/FocusCard.jsx';
 import Ring from '../../../core/components/Ring.jsx';
-import PageSection from '../../../core/components/PageSection.jsx';
 import AreaList from '../../../core/components/AreaList.jsx';
 import AreaRow from '../../../core/components/AreaRow.jsx';
 
@@ -85,8 +84,6 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
 
   return (
     <>
-      <h1 className="overview-page-title">Gewohnheiten</h1>
-
       {/* Fokuskarte */}
       <FocusCard>
         <div className="hab-ring-row">
@@ -107,10 +104,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
       </FocusCard>
 
       {/* Heute — offen + erledigt, flach, immer sichtbar */}
-      <PageSection
-        title="Heute"
-        action={{ label: `Alle ${activeHabits.length} ›`, onPress: () => onNavigate('gewohnheiten') }}
-      >
+      <section className="page-section">
         <AreaList>
           {totalDue === 0 && (
             <div className="hab-overview-empty">Keine Gewohnheiten für heute.</div>
@@ -154,10 +148,10 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
             );
           })}
         </AreaList>
-      </PageSection>
+      </section>
 
-      {/* Bereiche */}
-      <PageSection title="Bereiche">
+      {/* Bereiche, ohne Überschrift */}
+      <section className="page-section">
         <AreaList variant="tiles">
           <AreaRow
             label="Eigene"
@@ -179,7 +173,7 @@ export default function OverviewSection({ habits, entries, onNavigate }) {
             onPress={() => onNavigate('archiv')}
           />
         </AreaList>
-      </PageSection>
+      </section>
     </>
   );
 }

@@ -31,3 +31,5 @@ innerhalb der Karte (auch "Aufgaben"); "+ Mahlzeit eintragen" gibt es nur noch i
 Sport zeigt und fragt KEINE Dauer mehr (weder Einheiten, Hub, Auswertung noch Anlegen-Dialoge); die Spalten `duration_min`
 bleiben in der DB und werden nur durchgereicht, nichts anzeigen oder neu abfragen. Auswertung (`AuswertungView`, `BadgesCard`,
 `SportIcons.jsx`, Klassen `.sa-*` in `design-v2.css`): Zahlen auf ruhigen Kacheln, Erfolge als Medaillen mit Symbol je Badge-Schlüssel. Aktivität = 12 Monatsspalten mit Wochenzellen, vorgewählt ist immer die aktuelle Woche.
+
+Modul-Startseiten ohne Überschriften (26.11.2026, wie Hub und Finanzen): Weder Seitentitel (`overview-page-title`) noch Abschnittsüberschriften ("Heute", "Diese Woche", "Rezepte", "Häufig", "Bereiche") in Gewohnheiten, Sport, Ernährung und Einkauf; Abschnitte sind `<section className="page-section">` ohne Kopf. Die früheren Kopf-Links sind ersetzt: Sport-Wochenkarte öffnet den Kalender (Antippen), Einkauf hat die Kachel "Häufig" statt "Mehr ›", Gewohnheiten "Alle N ›" entfällt (Kachel "Eigene"), Ernährung "Alle N ›" entfällt (Rezeptkarten öffnen die Rezepte).
