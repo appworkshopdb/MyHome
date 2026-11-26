@@ -93,4 +93,4 @@ Doppelte Gehälter: alte, automatisch angelegte Einnahme-Posten (aus Vorlage, oh
 
 Buchungen/Offene Posten: Filter sind Alle, Offen, Fix, Sonstige ("Ein" entfiel, Einnahmen stehen in "Alle" und über die Fokuskarte; "Sonstige" zeigt Variable Kosten und Sonstige Ausgaben). In "Fix" und "Sonstige" stehen die Bereiche gleich aufgeklappt, in "Offen" ist die Liste offen, in "Alle" sind alle vier Bereiche eingeklappt (`CollapseSection defaultOpen`, beim Filterwechsel neu gestartet).
 
-Posten-Zeilen (Buchungen, Offene Posten, alle Filter) zeigen eine Notiz nur als Hinweis "Notiz" mit kleinem Symbol (`.fin-row-notehint`), nicht mehr ausgeschrieben; den Text gibt es in der Ansicht des Postens.
+Posten-Zeilen (Buchungen, Offene Posten, alle Filter) zeigen eine Notiz nur als kleines Dokument-Symbol hinter dem Namen (`.fin-row-noteicon`, Entwurf 1), nicht mehr ausgeschrieben; den Text gibt es in der Ansicht des Postens.

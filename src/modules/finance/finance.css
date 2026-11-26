@@ -43,7 +43,7 @@
 .fin-row-name { font-size:14px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fin-row-name.paid { color:var(--text-muted); text-decoration:line-through; }
 .fin-row-meta { margin-top:var(--space-1,4px); font-size:10px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); }
-.fin-row-notehint { display:inline-flex; align-items:center; gap:var(--sp-1); margin-top:var(--sp-1); font-size:var(--fs-caption); font-weight:600; color:var(--text-muted); }
+.fin-row-noteicon { display:inline-block; margin-left:var(--sp-2); vertical-align:-2px; color:var(--mod-fin-deep); text-decoration:none; }
 .fin-row-amount { flex-shrink:0; font-size:14px; font-weight:700; color:var(--text-primary); }
 .fin-row-amount.paid { color:var(--text-muted); }
 .fin-offen-list { background:var(--surface-raised); border:1px solid var(--border-hairline); border-radius:var(--r-xl); box-shadow:var(--shadow-card); padding:0 var(--space-4,14px); }
