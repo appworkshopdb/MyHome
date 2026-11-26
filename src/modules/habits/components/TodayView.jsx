@@ -7,6 +7,7 @@ import { goalText } from '../../../core/lib/habitCatalog.js';
 import { toggleHabitOn, setHabitCount } from '../../../core/lib/habitsStore.js';
 import { fb } from '../../../core/lib/feedback.js';
 import Icon from '../../../core/components/Icon';
+import { ErrorState } from '../../../core/components/ui';
 
 const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
@@ -116,7 +117,7 @@ export default function TodayView({ habits, entries, onEntriesChange, onNavigate
         )}
       </div>
 
-      {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+      {error && <ErrorState title={error} />}
 
       {/* Wochenübersicht Toggle */}
       {totalDue > 0 && (

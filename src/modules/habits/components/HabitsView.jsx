@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import SheetShell from '../../../core/components/SheetShell.jsx';
 import Icon from '../../../core/components/Icon.jsx';
+import { ListGroup, ListRow, IconButton, Button, EmptyState, ErrorState, SheetHeader } from '../../../core/components/ui';
 import {
   DndContext,
   closestCenter,
@@ -62,6 +63,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
   const [form, setForm]               = useState(EMPTY_HABIT);
   const [saving, setSaving]           = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+  const [actionHabit, setActionHabit] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // Habit, dessen Löschen bestätigt wird
   const [deleteHideStats, setDeleteHideStats] = useState(false);
   // Name der Vorlage, aus der das Formular stammt: Kategorie und Ziel-Art sind dann fest
@@ -272,14 +274,10 @@ export default function HabitsView({ habits, onHabitsChange }) {
           </button>
         </div>
 
-        <button
-          type="button"
-          className={`hab-del-confirm${deleteHideStats ? ' danger' : ''}`}
-          onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}
-        >
+        <Button variant={deleteHideStats ? 'danger' : 'primary'} block onClick={() => handleDelete(deleteTarget.id, deleteHideStats)}>
           {deleteHideStats ? 'Überall löschen' : 'Aus der Liste löschen'}
-        </button>
-        <button type="button" className="hab-cp-link hab-del-cancel" onClick={() => setDeleteTarget(null)}>Abbrechen</button>
+        </Button>
+        <Button variant="text" block onClick={() => setDeleteTarget(null)}>Abbrechen</Button>
       </div>
     </SheetShell>
   );
@@ -310,7 +308,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
           <h2>{editHabit ? 'Gewohnheit bearbeiten' : 'Neue Gewohnheit'}</h2>
         </div>
 
-        {error && <div className="toast toast-error" style={{ margin: 0 }}>{error}</div>}
+        {error && <ErrorState title={error} />}
 
         {/* Grundlagen (die Beschreibung wird nicht mehr abgefragt; vorhandene Werte bleiben beim Speichern erhalten) */}
         <div className="hab-ef-card">
@@ -536,20 +534,15 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
       {showOverloadWarning && (
         <div className="hab-overload-warning">
-          <span className="hab-overload-icon">💡</span>
-          <span>Du hast {activeHabits.length} aktive Gewohnheiten. Für nachhaltigen Erfolg empfehlen Experten max. 3–5.</span>
+          <Icon name="info" size={20} />
+          <span>{activeHabits.length} aktive Gewohnheiten. Empfohlen sind höchstens 5.</span>
         </div>
       )}
 
-      {error && <div className="toast toast-error" style={{ margin: '0 0 12px' }}>{error}</div>}
+      {error && <ErrorState title={error} />}
 
       {habits.filter((h) => !h.deleted_at).length === 0 && (
-        <div className="hab-empty">
-          <div className="hab-empty-icon">🌱</div>
-          <div className="hab-empty-title">Noch keine Gewohnheiten</div>
-          <div className="hab-empty-text">Starte mit 1–3 Gewohnheiten. Weniger ist am Anfang mehr.</div>
-          <div className="hab-empty-fab-hint">Tippe unten rechts auf <b>＋</b>: dort findest du Vorlagen oder legst selbst eine an.</div>
-        </div>
+        <EmptyState icon="habits" title="Noch keine Gewohnheiten" />
       )}
 
       {/* Aktive Habits — sortierbar per Drag & Drop */}
@@ -572,10 +565,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
                   <SortableHabitCard
                     key={habit.id}
                     habit={habit}
-                    onEdit={() => openEdit(habit)}
-                    onDelete={() => openDelete(habit)}
-                    onToggleActive={() => handleToggleActive(habit)}
-                    deleting={deletingId === habit.id}
+                    onMore={() => setActionHabit(habit)}
                   />
                 ))}
               </div>
@@ -586,19 +576,29 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
       {deleteSheet}
 
+      {actionHabit && (
+        <SheetShell onClose={() => setActionHabit(null)} labelledBy="hab-act-title">
+          <div className="hab-act">
+            <SheetHeader id="hab-act-title" title={actionHabit.name} onClose={() => setActionHabit(null)} />
+            <ListGroup>
+              <ListRow icon="edit" title="Bearbeiten" onClick={() => { const h = actionHabit; setActionHabit(null); openEdit(h); }} />
+              <ListRow icon={actionHabit.active ? 'pause' : 'play'} title={actionHabit.active ? 'Pausieren' : 'Aktivieren'} onClick={() => { const h = actionHabit; setActionHabit(null); handleToggleActive(h); }} />
+              <ListRow icon="trash" title="Löschen" onClick={() => { const h = actionHabit; setActionHabit(null); openDelete(h); }} />
+            </ListGroup>
+          </div>
+        </SheetShell>
+      )}
+
       {/* Pausierte Habits */}
       {inactiveHabits.length > 0 && (
-        <div className="hab-section" style={{ marginTop: 24 }}>
+        <div className="hab-section hab-section--gap">
           <div className="hab-section-label">Pausiert</div>
           <div className="hab-manage-list">
             {inactiveHabits.map((habit) => (
               <SortableHabitCard
                 key={habit.id}
                 habit={habit}
-                onEdit={() => openEdit(habit)}
-                onDelete={() => openDelete(habit)}
-                onToggleActive={() => handleToggleActive(habit)}
-                deleting={deletingId === habit.id}
+                onMore={() => setActionHabit(habit)}
                 paused
                 noSort
               />
@@ -612,7 +612,7 @@ export default function HabitsView({ habits, onHabitsChange }) {
 
 // ─── Sortierbare Habit-Karte ──────────────────────────────
 
-function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, paused, noSort }) {
+function SortableHabitCard({ habit, onMore, paused, noSort }) {
   const {
     attributes,
     listeners,
@@ -633,46 +633,19 @@ function SortableHabitCard({ habit, onEdit, onDelete, onToggleActive, deleting, 
     <div
       ref={setNodeRef}
       style={style}
-      className={`hab-manage-card ${paused ? 'hab-manage-card--paused' : ''} ${isDragging ? 'hab-manage-card--dragging' : ''}`}
+      className={`hab-mrow${paused ? ' hab-mrow--paused' : ''}${isDragging ? ' hab-mrow--dragging' : ''}`}
     >
-      {/* Drag-Handle */}
       {!noSort && (
-        <div className="hab-drag-handle" {...attributes} {...listeners} title="Ziehen zum Sortieren">
-          <svg width="14" height="18" viewBox="0 0 14 18" fill="currentColor" aria-hidden="true">
-            <circle cx="4" cy="3" r="1.5" /><circle cx="10" cy="3" r="1.5" />
-            <circle cx="4" cy="9" r="1.5" /><circle cx="10" cy="9" r="1.5" />
-            <circle cx="4" cy="15" r="1.5" /><circle cx="10" cy="15" r="1.5" />
-          </svg>
-        </div>
+        <button type="button" className="hab-drag-handle" {...attributes} {...listeners} aria-label="Ziehen zum Sortieren" title="Ziehen zum Sortieren">
+          <Icon name="drag" size={20} />
+        </button>
       )}
-
-      <div className="hab-manage-card-left">
-        <span className="hab-item-icon hab-item-icon--tile">{habit.icon}</span>
-        <div className="hab-manage-text">
-          <div className="hab-manage-name">{habit.name}</div>
-          <div className="hab-manage-meta">
-            {[habit.category, FREQ_LABELS[habit.frequency] ?? habit.frequency, goalText(habit), habit.reminder_time && `${habit.reminder_time} Uhr`].filter(Boolean).join(' · ')}
-          </div>
-        </div>
-      </div>
-
-      <div className="hab-manage-card-right">
-        <button className="hab-manage-btn" onClick={onToggleActive} title={paused ? 'Aktivieren' : 'Pausieren'} aria-label={paused ? 'Aktivieren' : 'Pausieren'}>
-          <Icon name={paused ? 'play' : 'pause'} size={18} />
-        </button>
-        <button className="hab-manage-btn" onClick={onEdit} title="Bearbeiten" aria-label="Bearbeiten">
-          <Icon name="edit" size={18} />
-        </button>
-        <button
-          className="hab-manage-btn hab-manage-btn--del"
-          onClick={onDelete}
-          disabled={deleting}
-          title="Löschen"
-          aria-label="Löschen"
-        >
-          {deleting ? '…' : <Icon name="trash" size={18} />}
-        </button>
-      </div>
+      <ListRow
+        leading={<span className="hab-lead">{habit.icon}</span>}
+        title={habit.name}
+        sub={[habit.category, FREQ_LABELS[habit.frequency] ?? habit.frequency, goalText(habit), habit.reminder_time && `${habit.reminder_time} Uhr`].filter(Boolean).join(' · ')}
+        trailing={<IconButton icon="more" label={`Aktionen für ${habit.name}`} onClick={onMore} />}
+      />
     </div>
   );
 }

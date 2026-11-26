@@ -14,7 +14,7 @@ const HabitsView = lazy(() => import('./components/HabitsView.jsx'));
 const HabitArchiveView = lazy(() => import('./components/HabitArchiveView.jsx'));
 
 import { useHabitsStore, loadHabitsData, reloadHabits, reloadEntries } from '../../core/lib/habitsStore.js';
-import { PageSkeleton } from '../../core/components/ui';
+import { PageSkeleton, ErrorState } from '../../core/components/ui';
 import './habits.css';
 
 export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
@@ -47,7 +47,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
       <>
         <ModuleTopBar onBack={() => onNavigateView(null)} title="Meine Gewohnheiten" hasWarnings={hasWarnings} />
         <div className="hab-module-content with-topbar-space">
-          {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
+          {error && <ErrorState title={error} />}
           <Suspense fallback={<PageSkeleton />}>
             <HabitsView
               habits={habits}
@@ -81,7 +81,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
       <>
         <ModuleTopBar onBack={() => onNavigateView(null)} title="Statistik" hasWarnings={hasWarnings} />
         <div className="hab-module-content with-topbar-space">
-          {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
+          {error && <ErrorState title={error} />}
           <StatsView
             habits={habits}
             entries={entries}
@@ -96,7 +96,7 @@ export default function HabitsModule({ view, onNavigateView, hasWarnings }) {
     <>
       <ModuleTopBar hasWarnings={hasWarnings} />
       <div className="hab-module-content with-topbar-space">
-        {error && <div className="toast toast-error" style={{ marginBottom: 16 }}>{error}</div>}
+        {error && <ErrorState title={error} />}
         <OverviewSection
           habits={habits}
           entries={entries}
